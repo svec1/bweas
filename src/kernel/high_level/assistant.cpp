@@ -5,7 +5,7 @@
 
 #ifdef _WIN32
 #include <windows.h>
-
+#include "hook_winapi.hpp"
 #endif
 
 assistant::assistant(){
@@ -60,7 +60,9 @@ void assistant::call_err(std::string name_err, std::string addit){
         err_fatal_ref(get_kernel_err(0));
     }
 
+    SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 4);
     this->operator<<(std::string(err_assistant[ind]->name_e) + "("+ std::to_string(ind) +"): " + err_assistant[ind]->desc_e + "\nDetail: [" + addit + "]");
+    SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 7);
     exit(EXIT_FAILURE);
 }
 
@@ -103,6 +105,20 @@ void assistant::dump_dll(std::string dll_name){
         return;
     FreeLibrary(hDLL_s[dll_name]);
     hDLL_s.erase(dll_name);
+}
+void assistant::safe_call_dll_func_begin(){
+    _winapi_call_hook();
+}
+void assistant::check_safe_call_dll_func(){
+    if(_winapi_call_knw_was_hook()){
+        printf("\n");
+        if(log)
+            log_file << HOOK_TEXT_DETECTED << "\n";
+        err_fatal_ref(get_kernel_err(2));
+    }
+}
+void assistant::safe_call_dll_func_end(){
+    _winapi_call_remove();
 }
 void* assistant::get_ptr_func(std::string dll_name, std::string name_func){
     if(hDLL_s.find(dll_name) == hDLL_s.end())
