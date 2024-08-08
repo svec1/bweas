@@ -27,6 +27,7 @@ void init_assistf(u32t output_warning){
 
     KERNEL_ERR[0] = make_err("KNL001:Undefined behavior", "The kernel can no longer serve the program.", 1);
     KERNEL_ERR[1] = make_err("KNL002:Out of range", "The kernel noticed that the value was out of range.", 2);
+    KERNEL_ERR[2] = make_err("KNL003:Danger Found", "Security is not guaranteed. The kernel can no longer support the application.", 3);
 }
 __declspec(noinline)
 void dump_assistf(){

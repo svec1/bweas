@@ -51,13 +51,16 @@ void interpreter_exec::build_aef(){
 
 void interpreter_exec::interpreter_run(){
     curr_expr = 0;
+    assist.safe_call_dll_func_begin();
     for(; curr_expr < aef.size(); ++curr_expr){
         if(aef[curr_expr].expr_func.func_n.func_ref == sl_func::set)
             continue;
         wrap_callf_interpreter(
             aef[curr_expr].expr_func.func_n.func_ref(aef[curr_expr].sub_expr_s, global_scope);
         ,)
+        assist.check_safe_call_dll_func();
     }
+    assist.safe_call_dll_func_end();
 }
 void interpreter_exec::interpreter_next_expr(){
     if(curr_expr < aef.size()){

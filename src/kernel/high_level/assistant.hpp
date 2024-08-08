@@ -56,6 +56,10 @@ class assistant{
         HMODULE load_dll(std::string dll_name);
         void dump_dll(std::string dll_name);
 
+        void safe_call_dll_func_begin();
+        void check_safe_call_dll_func();
+        void safe_call_dll_func_end();
+
         void* get_ptr_func(std::string dll_name, std::string name_func);
 
         HMODULE get_handle_module_dll(std::string dll_name);
