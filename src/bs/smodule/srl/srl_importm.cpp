@@ -13,7 +13,9 @@
                                      else if(expected_separator && expected_enum_params) call_err_tk_inf_lex(count_line, count_sym, lexem, "OPERATOR \',\'", "SRL-IMP000") \
                                      else if(expected_filename_dll) call_err_tk_inf_lex(count_line, count_sym, lexem, "filename.dll", "SRL-IMP000") \
                                      else if(expected_func_name) call_err_tk_inf_lex(count_line, count_sym, lexem, "func_name: ", "SRL-IMP000") \
-                                     else if(expected_enum_params) call_err_tk_inf_lex(count_line, count_sym, lexem, "PARAM[INT,STRING...]", "SRL-IMP000")
+                                     else if(expected_enum_params) call_err_tk_inf_lex(count_line, count_sym, lexem, "PARAM[INT,STRING...]", "SRL-IMP000") \
+                                     else if(expected_open_br) call_err_tk_inf_lex(count_line, count_sym, lexem, "SYMBOL \'(\'", "SRL-IMP000") \
+                                     else if(expected_close_br) call_err_tk_inf_lex(count_line, count_sym, lexem, "SYMBOL \')\'", "SRL-IMP000")
                  
 
 static bool init_glob{0};
@@ -31,7 +33,7 @@ char get(std::string sym_s, u32t& pos){
     return sym_s[pos++];
 }
 
-std::vector<srl::token> srl::parser(std::string symbols){
+std::pair<std::vector<srl::token>, std::vector<std::string>> srl::parser(std::string symbols){
     bool expected_close_ang_br = 0;
     bool expected_start_module = 1, expected_end_module = 0;
     bool expected_filename_dll = 0;
@@ -39,12 +41,16 @@ std::vector<srl::token> srl::parser(std::string symbols){
     bool expected_enum_params = 0;
     bool expected_qouts = 0;
     bool expected_separator = 0;
+    bool expected_open_br = 0, expected_close_br = 0;
     
     u32t pos = 0;
     u32t count_line = 0, count_sym = 0;
 
     std::vector<srl::token> tokens;
     std::string lexem;
+
+    std::string tmp_name_func;
+    std::vector<std::string> name_func_smt;
 
     char ch;
     while ((ch = get(symbols, pos)))
@@ -117,6 +123,7 @@ std::vector<srl::token> srl::parser(std::string symbols){
                 expected_separator = 0;
                 tokens.push_back(token(lexem, count_line, count_sym, srl::token_type::NAME_FUNC_OF_MODULE));
                 expected_enum_params = 1;
+                tmp_name_func = lexem;
 
                 lexem.clear();
 
@@ -139,7 +146,7 @@ std::vector<srl::token> srl::parser(std::string symbols){
                 expected_enum_params = 0;
                 expected_separator = 0;
                 tokens.push_back(token(lexem, count_line, count_sym, srl::token_type::PARAM, parser::type_param_in_str(lexem)));
-                expected_func_name = 1;
+                expected_open_br = 1;
                 lexem.clear();
 
                 continue;
@@ -150,6 +157,29 @@ std::vector<srl::token> srl::parser(std::string symbols){
                     expected_func_name = 0;
                 }
                 expected_close_ang_br = 1;
+                continue;
+            }
+            else if(ch == '('){
+                if(!expected_open_br || !lexem.empty())
+                    call_err_identify_expected()
+                expected_open_br = 0;
+                expected_close_br = 1;
+
+                continue;
+            }
+            else if(ch == ')'){
+                if(!expected_close_br || lexem.empty())
+                    call_err_identify_expected()
+                expected_close_br = 0;
+                if(lexem == "SMT")
+                    name_func_smt.push_back(tmp_name_func);
+                else if(lexem != "INTP")
+                    call_err_tk_inf_lex(count_line, count_sym, lexem, "expression - [SMT] or [INTP]", "SRL-IMP000")
+                expected_func_name = 1;
+                
+                lexem.clear();
+                tmp_name_func.clear();
+
                 continue;
             }
         }
@@ -164,7 +194,7 @@ std::vector<srl::token> srl::parser(std::string symbols){
         call_err_identify_expected()
     }
 
-    return tokens;
+    return std::pair<std::vector<srl::token>, std::vector<std::string>>(tokens, name_func_smt);
 }
 srl::modules srl::build_modules(std::vector<srl::token> tokens){
     modules mdls;

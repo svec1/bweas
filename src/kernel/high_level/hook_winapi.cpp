@@ -6,6 +6,15 @@
 BOOL HOOK_PROCCES{0};
 BOOL WAS_HOOK{0};
 
+// List for success hook - real function of WinAPI
+//   - WriteConsoleW, WriteConsoleA
+//   - CreateProcessW, CreateProcessA
+//   - CreateRemoteThread,
+//   - VirtualAlloc, VirtualAllocEx
+//   - WriteProcessMemory, ReadProcessMemory
+//   - RegOpenKeyExW, RegOpenKeyExA
+// -----------------------------------------------
+
 BOOL
 (WINAPI *realWriteConsoleW)(
     _In_ HANDLE hConsoleOutput,

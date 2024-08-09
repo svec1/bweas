@@ -29,6 +29,9 @@ namespace parser{
                     : func_ref(func),  expected_args(params){}
         void(*func_ref)(const std::vector<subexpressions>&, var::scope&);
         std::vector<params> expected_args;
+
+        bool is_declaration_var{0};
+        bool only_with_semantic{0};
     };
 
     struct notion_expr_func{
@@ -37,6 +40,9 @@ namespace parser{
     };
 
     struct expression{
+
+        bool execute_with_semantic_an();
+
         notion_expr_func expr_func;
         std::vector<subexpressions> sub_expr_s;
     };

@@ -13,8 +13,10 @@ namespace var{
         public:
             datatype_var() = default;
 
-            datatype_var(datatype_var&&) = delete;
-            datatype_var(const datatype_var&) = delete;
+            datatype_var(const datatype_var&) = default;
+            datatype_var(datatype_var&&) = default;
+
+            datatype_var<T>& operator=(const datatype_var<T>& dt_var);
                 
             ~datatype_var() = default;
 
@@ -42,7 +44,11 @@ namespace var{
 
             std::vector<std::pair<std::string, T>> variable_s;
     };
-
+    template<typename T>
+    datatype_var<T>& datatype_var<T>::operator=(const datatype_var<T>& dt_var){
+        variable_s = dt_var.variable_s;
+        return *this;
+    }
     template<typename T>
     u32t datatype_var<T>::find_var_ind(std::string name_var){
         for(u32t i = 0; i < variable_s.size(); ++i){

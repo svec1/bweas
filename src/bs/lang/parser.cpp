@@ -111,6 +111,10 @@ parser::params parser::type_param_in_str(std::string str){
         return params::SIZE_ENUM_PARAMS;
 }
 
+bool parser::expression::execute_with_semantic_an(){
+    return expr_func.func_n.is_declaration_var || expr_func.func_n.only_with_semantic;
+}
+
 using namespace parser;
 
 

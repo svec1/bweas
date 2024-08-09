@@ -47,6 +47,7 @@ std::vector<token> lex_an::analysis(){
     bool was_br = 0;
 
     bool lexer_option = 0;
+    bool comment = 0;
 
     u32t count_line = 1;
     u32t count_sym = 0;
@@ -68,6 +69,7 @@ std::vector<token> lex_an::analysis(){
                 if (ch == '\n') {
                     ++count_line;
                     count_sym = 1;
+                    comment = 0;
 
                 }
                 else if (ch == '\0') break;
@@ -77,7 +79,18 @@ std::vector<token> lex_an::analysis(){
                 expected_separate = 1;
         }
         
-        if(ch == '\"'){
+        if(ch == '#'){
+            if(!lexem.empty())
+                assist.call_err("LEX000", "\n(Line: " + std::to_string(count_line) + "; Symbols start pos: " + std::to_string(count_sym-lexem.size()) + "): Lexem - \"" + lexem + "\"\n");
+            if(comment)
+                comment = 0;
+            else
+                comment = 1;
+            continue;
+        }
+        else if(comment)
+            continue;
+        else if(ch == '\"'){
             if(!br) br = 1;
             else{
                 br = 0;
