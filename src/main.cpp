@@ -46,6 +46,8 @@ int main(int argv, char** args)
 
         interpreter::interpreter_exec::config config_intp;
         config_intp.debug_output = 1;
+        config_intp.import_module = 1;
+        config_intp.transmit_smt_name_func_with_smt = 1;
         interpreter::interpreter_exec _interpreter(config_intp);
         _interpreter.build_aef();
         _interpreter.interpreter_run();

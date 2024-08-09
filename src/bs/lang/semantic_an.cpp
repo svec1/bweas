@@ -32,6 +32,8 @@ void semantic_analyzer::add_func_flink(
     nfunc.func_ref = func_ref;
     nfunc.expected_args = expected_args;
 
+    defining_call_func(name_token_func, nfunc);
+
     std::pair<std::string, parser::notion_func> n_link_func_spec = {name_token_func, nfunc};
 
     notion_all_func.insert(n_link_func_spec);
@@ -46,6 +48,9 @@ void semantic_analyzer::analysis(abstract_expr_func &expr_s, var::scope& global_
 
 void semantic_analyzer::load_external_func_table(const table_func& notion_external_func){
     this->notion_external_func = notion_external_func;
+}
+void semantic_analyzer::load_list_func_with_semantic_an(const std::vector<std::string>& list_name_func){
+    this->name_func_with_semantic_an = list_name_func;
 }
 
 void semantic_analyzer::smt_zero_pass(const abstract_expr_func &expr_s){
@@ -71,7 +76,7 @@ void semantic_analyzer::smt_zero_pass(const abstract_expr_func &expr_s){
         else if(expr_s[i].expr_func.func_t.token_val=="exp_data")
             add_func_flink(expr_s[i].expr_func.func_t.token_val,
                        sl_func::exp_data,
-                       {params::LSTR_OR_ID_VAR, params::LNUM_OR_ID_VAR});
+                       {params::LSTR_OR_ID_VAR});
         else if(expr_s[i].expr_func.func_t.token_val=="cmd")
             add_func_flink(expr_s[i].expr_func.func_t.token_val,
                        sl_func::cmd,
@@ -124,6 +129,7 @@ void semantic_analyzer::smt_zero_pass(const abstract_expr_func &expr_s){
             if(notion_external_func.find(expr_s[i].expr_func.func_t.token_val) != notion_external_func.end()){
                 std::pair<std::string, parser::notion_func> n_link_func_spec = 
                     {expr_s[i].expr_func.func_t.token_val, notion_external_func[expr_s[i].expr_func.func_t.token_val]};
+                defining_call_func(n_link_func_spec.first, n_link_func_spec.second);
                 notion_all_func.insert(n_link_func_spec);
                 continue;
             }
@@ -388,7 +394,7 @@ void semantic_analyzer::smt_second_pass(abstract_expr_func &expr_s, var::scope& 
                                 else if((str || vec) && expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_t != lexer::token_type::LITERALS &&
                                                         expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_t != lexer::token_type::OPERATOR)
                                     assist.call_err("SMT004", build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]) + " Expected: [STRING] or [VECTOR STRING] or [VAR ID->([STRING] or [VECTOR STRING])]\n");
-                                else if((num || vec) && expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_t != lexer::token_type::LITERALS &&
+                                else if((num || vec) && expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_t != lexer::token_type::LITERAL &&
                                                         expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_t != lexer::token_type::OPERATOR)
                                     assist.call_err("SMT004", build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]) + " Expected: [NUMBER] or [VECTOR NUMBER] or [VAR ID->([NUMBER] or [VECTOR NUMBER])]\n");
                             }
@@ -398,9 +404,6 @@ void semantic_analyzer::smt_second_pass(abstract_expr_func &expr_s, var::scope& 
                 num = 0, str = 0;
             }
             for(u32t j = 0; j < expr_s[i].sub_expr_s.size(); ++j){
-                if(expr_s[i].sub_expr_s[j].subexpr_t == subexpressions::type_subexpr::INT_COMPARE ||
-                   expr_s[i].sub_expr_s[j].subexpr_t == subexpressions::type_subexpr::STRING_ADD ||
-                   expr_s[i].sub_expr_s[j].subexpr_t == subexpressions::type_subexpr::ID)
                 parse_subexpr_param(expr_s[i].sub_expr_s[j], expr_s[i].sub_expr_s, j, curr_scope, params::SIZE_ENUM_PARAMS);
             }
             expr_s[i].expr_func.func_n.func_ref(expr_s[i].sub_expr_s, curr_scope);
@@ -416,13 +419,12 @@ void semantic_analyzer::smt_second_pass(abstract_expr_func &expr_s, var::scope& 
                     if (before_nextt_param != params::SIZE_ENUM_PARAMS) {
                         if (before_nextt_param == params::FUTURE_VAR_ID) {
                             u32t index_type = curr_scope.what_type(expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_val);
-                            if (index_type != 0 ||
-                                table_symbol.find(expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_val) != table_symbol.end())
+                            if (index_type != 0)
                                 assist.call_err("SMT010", build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]) + " Expected: NEW [VAR ID]\n");
-                            table_symbol.insert(expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_val);
                         }
                         else if (before_nextt_param == params::VAR_STRUCT_ID) {
-                            if (table_symbol.find(expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_val) == table_symbol.end())
+                            u32t index_type = curr_scope.what_type(expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_val);
+                            if(index_type != 5 && index_type != 6)
                                 assist.call_err("SMT011", build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]) + " Expected: [VAR STRUCT ID]\n");
                         }
                         else if (expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_t == lexer::token_type::ID) {
@@ -439,13 +441,12 @@ void semantic_analyzer::smt_second_pass(abstract_expr_func &expr_s, var::scope& 
                     }
                     else if(expr_s[i].expr_func.func_n.expected_args[j] == params::FUTURE_VAR_ID){
                         u32t index_type = curr_scope.what_type(expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_val);
-                        if(index_type != 0 ||
-                           table_symbol.find(expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_val) != table_symbol.end())
+                        if(index_type != 0)
                             assist.call_err("SMT010", build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]) + " Expected: NEW [VAR ID]\n");
-                        table_symbol.insert(expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_val);
                     }
                     else if(expr_s[i].expr_func.func_n.expected_args[j] == params::VAR_STRUCT_ID){
-                        if(table_symbol.find(expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_val) == table_symbol.end())
+                        u32t index_type = curr_scope.what_type(expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_val);
+                        if(index_type != 5 && index_type != 6)
                             assist.call_err("SMT011", build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]) + " Expected: [VAR STRUCT ID]\n");
                     }
                     else if(expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_t == lexer::token_type::ID){
@@ -467,6 +468,10 @@ void semantic_analyzer::smt_second_pass(abstract_expr_func &expr_s, var::scope& 
                     parse_subexpr_param(expr_s[i].sub_expr_s[j], expr_s[i].sub_expr_s, j, curr_scope, before_nextt_param);
                 else
                     parse_subexpr_param(expr_s[i].sub_expr_s[j], expr_s[i].sub_expr_s, j, curr_scope, expr_s[i].expr_func.func_n.expected_args[j]);
+            }
+            if(expr_s[i].execute_with_semantic_an()){
+                wrap_callf_declaration(expr_s[i].expr_func.func_n.func_ref(expr_s[i].sub_expr_s, curr_scope))
+                assist.check_safe_call_dll_func();
             }
         }
     }
@@ -629,4 +634,10 @@ void semantic_analyzer::parse_subexpr_param(subexpressions& sub_expr, std::vecto
     else
         parse_subexpr.subexpr_t = subexpressions::type_subexpr::STRING;
     sub_expr = parse_subexpr;
+}
+void semantic_analyzer::defining_call_func(const std::string& name, notion_func& nfunc){
+    if(std::find(nfunc.expected_args.begin(), nfunc.expected_args.end(), params::FUTURE_VAR_ID) != nfunc.expected_args.end())
+        nfunc.is_declaration_var = 1;
+    else if(std::find(name_func_with_semantic_an.begin(), name_func_with_semantic_an.end(), name) != name_func_with_semantic_an.end())
+        nfunc.only_with_semantic = 1;
 }

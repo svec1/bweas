@@ -39,7 +39,7 @@ namespace srl{
 
     extern void init_err();
     
-    extern std::vector<srl::token> parser(std::string symbols);
+    extern std::pair<std::vector<srl::token>, std::vector<std::string>> parser(std::string symbols);
     extern modules build_modules(std::vector<srl::token> tokens);
 
 }

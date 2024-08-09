@@ -4,6 +4,8 @@
 #include "parser.hpp"
 #include "scope.hpp"
 
+#include "../tools/exception.hpp"
+
 #include <unordered_map>
 #include <set>
 
@@ -32,11 +34,31 @@
 //
 namespace semantic_an{
 
+    #define wrap_callf_declaration(func_decl) try{\
+                                                    func_decl; \
+                                                    } \
+                                                catch(semantic_excp& excp){ \
+                                                    assist.call_err(excp.get_assist_err(), excp.what()); \
+                                                }
+
     using namespace parser;
-    using table_decl_symbol = std::set<std::string>;
     using table_func = std::unordered_map<std::string, parser::notion_func>;
 
     extern var::scope global_scope;
+
+    class semantic_excp : public bw_excp::bweas_exception{
+        public:
+            semantic_excp(std::string _what_hp, std::string number_err)
+                : what_hp(_what_hp), bweas_exception("SMT"+number_err){}
+            ~semantic_excp() noexcept override final = default;
+        public:
+            const char* what() const noexcept override final{
+                return what_hp.c_str();
+            }
+
+        private:
+            std::string what_hp; 
+    };
 
     class semantic_analyzer{
         public:
@@ -51,6 +73,7 @@ namespace semantic_an{
             void analysis(abstract_expr_func& expr_s, var::scope& global_scope);
 
             void load_external_func_table(const table_func& notion_external_func);
+            void load_list_func_with_semantic_an(const std::vector<std::string>& list_name_func);
 
         private:
             // Adding a function definition to the functions table
@@ -70,11 +93,12 @@ namespace semantic_an{
             void parse_subexpr_param(subexpressions& sub_expr, std::vector<subexpressions>& sub_exprs,
                                      u32t& pos_sub_expr_in_vec, var::scope& curr_scope,
                                      params expected_param);
+            void defining_call_func(const std::string& name, notion_func& nfunc);
     
         private:
             static inline bool init_glob{0};
 
-            table_decl_symbol table_symbol;    
+            std::vector<std::string> name_func_with_semantic_an;
             
             // functions tables
             table_func notion_all_func;

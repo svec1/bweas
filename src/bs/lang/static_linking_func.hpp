@@ -4,6 +4,9 @@
 #include "parser.hpp"
 
 namespace sl_func{
+
+    extern const std::vector<std::string> name_static_func_sm;
+
     extern void set(const std::vector<parser::subexpressions>& sub_expr, var::scope& curr_scope);
 
     extern void project(const std::vector<parser::subexpressions>& sub_expr, var::scope& curr_scope);

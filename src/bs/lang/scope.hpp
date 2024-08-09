@@ -16,8 +16,8 @@ namespace var{
         public:
             inline scope();
 
-            scope(scope&&) = delete;
-            scope(const scope&) = delete;
+            inline scope(const scope&) = default;
+            inline scope(scope&&) = default;
 
             ~scope() = default;
 
@@ -65,7 +65,6 @@ namespace var{
             assist.add_err("SCOP002", "Unknown data type");
         }
     }
-
     template<>
     inline int& scope::create_var<int>(std::string name_var, int val){
         if(int_v.create_var(name_var, val))

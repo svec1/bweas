@@ -1,6 +1,8 @@
 #include "static_linking_func.hpp"
 #include "interpreter.hpp"
 
+const std::vector<std::string> sl_func::name_static_func_sm = {"exp_data"};
+
 void sl_func::set(const std::vector<parser::subexpressions>& sub_expr, var::scope& curr_scope){
     if(sub_expr.size() == 0)
         return;
@@ -60,7 +62,9 @@ void sl_func::project(const std::vector<parser::subexpressions>& sub_expr, var::
 }
 void sl_func::executable(const std::vector<parser::subexpressions>& sub_expr, var::scope& curr_scope){
     if(curr_scope.what_type(sub_expr[1].token_of_subexpr[0].token_val) != 5)
-        throw interpreter::realtime_excp("RTT003", parser::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) + " Var id of struct(expected project): " + sub_expr[1].token_of_subexpr[0].token_val);
+        throw semantic_an::semantic_excp(parser::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
+                                            " Var id of struct(expected project): " + sub_expr[1].token_of_subexpr[0].token_val + "\n",
+                                         "011");
     var::struct_sb::target& trg_ref = curr_scope.create_var<var::struct_sb::target>(sub_expr[0].token_of_subexpr[0].token_val);
     
     trg_ref.name_target = sub_expr[0].token_of_subexpr[0].token_val;
@@ -68,14 +72,24 @@ void sl_func::executable(const std::vector<parser::subexpressions>& sub_expr, va
     trg_ref.version_target = var::struct_sb::version(0,0,0);
 }
 
-void sl_func::link_lib(const std::vector<parser::subexpressions>& sub_expr, var::scope& curr_scope){
+void sl_func::link_lib(const std::vector<parser::subexpressions>& sub_expr, var::scope& curr_scope){    
     if(curr_scope.what_type(sub_expr[0].token_of_subexpr[0].token_val) != 6)
-        throw interpreter::realtime_excp("RTT003", parser::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) + " Var id of struct(expected target): " + sub_expr[0].token_of_subexpr[0].token_val);
+        throw interpreter::realtime_excp(parser::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
+                                            " Var id of struct(expected target): " + sub_expr[0].token_of_subexpr[0].token_val + "\n",
+                                         "003");
     var::struct_sb::target& trg_ref = curr_scope.get_var_value<var::struct_sb::target>(sub_expr[0].token_of_subexpr[0].token_val);
     for(u32t i = 1; i < sub_expr.size(); ++i)
         trg_ref.target_vec_libs.push_back(sub_expr[i].token_of_subexpr[0].token_val);
 }
-void sl_func::exp_data(const std::vector<parser::subexpressions>& sub_expr, var::scope& curr_scope){}
+void sl_func::exp_data(const std::vector<parser::subexpressions>& sub_expr, var::scope& curr_scope){
+    interpreter::interpreter_exec::config tmp_conf;
+    tmp_conf.filename_interp = sub_expr[0].token_of_subexpr[0].token_val.c_str();
+    tmp_conf.import_module = 0;
+    tmp_conf.use_external_scope = 1;
+    interpreter::interpreter_exec tmp_interpreter(tmp_conf);
+    tmp_interpreter.set_external_scope(&curr_scope);
+    tmp_interpreter.build_aef();
+}
 void sl_func::cmd(const std::vector<parser::subexpressions>& sub_expr, var::scope& curr_scope){
     u32t val = std::stoi(sub_expr[0].token_of_subexpr[0].token_val.c_str());
     if(!val)
@@ -89,7 +103,9 @@ void sl_func::debug(const std::vector<parser::subexpressions>& sub_expr, var::sc
 
 void sl_func::flags_compiler(const std::vector<parser::subexpressions>& sub_expr, var::scope& curr_scope){
     if(curr_scope.what_type(sub_expr[0].token_of_subexpr[0].token_val) != 5)
-        throw interpreter::realtime_excp("RTT003", parser::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) + " Var id of struct(expected project): " + sub_expr[0].token_of_subexpr[0].token_val);
+        throw interpreter::realtime_excp(parser::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
+                                            " Var id of struct(expected project): " + sub_expr[0].token_of_subexpr[0].token_val + "\n",
+                                         "003");
     var::struct_sb::project& prj_ref =  curr_scope.get_var_value<var::struct_sb::project>(sub_expr[0].token_of_subexpr[0].token_val);
     if((var::struct_sb::configuration)std::stoi(sub_expr[1].token_of_subexpr[0].token_val.c_str()) == var::struct_sb::configuration::RELEASE)
         for(u32t i = 2; i < sub_expr.size(); ++i){
@@ -102,7 +118,9 @@ void sl_func::flags_compiler(const std::vector<parser::subexpressions>& sub_expr
 }
 void sl_func::flags_linker(const std::vector<parser::subexpressions>& sub_expr, var::scope& curr_scope){
     if(curr_scope.what_type(sub_expr[0].token_of_subexpr[0].token_val) != 5)
-        throw interpreter::realtime_excp("RTT003", parser::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) + " Var id of struct(expected project): " + sub_expr[0].token_of_subexpr[0].token_val);
+        throw interpreter::realtime_excp(parser::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
+                                            " Var id of struct(expected project): " + sub_expr[0].token_of_subexpr[0].token_val + "\n",
+                                         "003");
     var::struct_sb::project& prj_ref =  curr_scope.get_var_value<var::struct_sb::project>(sub_expr[0].token_of_subexpr[0].token_val);
     if((var::struct_sb::configuration)std::stoi(sub_expr[1].token_of_subexpr[0].token_val.c_str()) == var::struct_sb::configuration::RELEASE)
         for(u32t i = 2; i < sub_expr.size(); ++i){
@@ -115,27 +133,37 @@ void sl_func::flags_linker(const std::vector<parser::subexpressions>& sub_expr, 
 }
 void sl_func::path_compiler(const std::vector<parser::subexpressions>& sub_expr, var::scope& curr_scope){
     if(curr_scope.what_type(sub_expr[0].token_of_subexpr[0].token_val) != 5)
-        throw interpreter::realtime_excp("RTT003", parser::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) + " Var id of struct(expected project): " + sub_expr[0].token_of_subexpr[0].token_val);
+        throw interpreter::realtime_excp(parser::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
+                                            " Var id of struct(expected project): " + sub_expr[0].token_of_subexpr[0].token_val + "\n",
+                                         "003");
     curr_scope.get_var_value<var::struct_sb::project>(sub_expr[0].token_of_subexpr[0].token_val).path_compiler = sub_expr[1].token_of_subexpr[0].token_val;
 }
 void sl_func::path_linker(const std::vector<parser::subexpressions>& sub_expr, var::scope& curr_scope){
     if(curr_scope.what_type(sub_expr[0].token_of_subexpr[0].token_val) != 5)
-        throw interpreter::realtime_excp("RTT003", parser::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) + " Var id of struct(expected project): " + sub_expr[0].token_of_subexpr[0].token_val);
+        throw interpreter::realtime_excp(parser::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
+                                            " Var id of struct(expected project): " + sub_expr[0].token_of_subexpr[0].token_val + "\n",
+                                         "003");
     curr_scope.get_var_value<var::struct_sb::project>(sub_expr[0].token_of_subexpr[0].token_val).path_linker = sub_expr[1].token_of_subexpr[0].token_val;
 }
 void sl_func::standart_c(const std::vector<parser::subexpressions>& sub_expr, var::scope& curr_scope){
     if(curr_scope.what_type(sub_expr[0].token_of_subexpr[0].token_val) != 5)
-        throw interpreter::realtime_excp("RTT003", parser::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) + " Var id of struct(expected project): " + sub_expr[0].token_of_subexpr[0].token_val);
+        throw interpreter::realtime_excp(parser::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
+                                            " Var id of struct(expected project): " + sub_expr[0].token_of_subexpr[0].token_val + "\n",
+                                         "003");
     curr_scope.get_var_value<var::struct_sb::project>(sub_expr[0].token_of_subexpr[0].token_val).standart_c = std::stoi(sub_expr[1].token_of_subexpr[0].token_val.c_str());
 }
 void sl_func::standart_cpp(const std::vector<parser::subexpressions>& sub_expr, var::scope& curr_scope){
     if(curr_scope.what_type(sub_expr[0].token_of_subexpr[0].token_val) != 5)
-        throw interpreter::realtime_excp("RTT003", parser::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) + " Var id of struct(expected project): " + sub_expr[0].token_of_subexpr[0].token_val);
+        throw interpreter::realtime_excp(parser::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
+                                            " Var id of struct(expected project): " + sub_expr[0].token_of_subexpr[0].token_val + "\n",
+                                         "003");
     curr_scope.get_var_value<var::struct_sb::project>(sub_expr[0].token_of_subexpr[0].token_val).standart_cpp = std::stoi(sub_expr[1].token_of_subexpr[0].token_val.c_str());
 }
 void sl_func::lang(const std::vector<parser::subexpressions>& sub_expr, var::scope& curr_scope){
     if(curr_scope.what_type(sub_expr[0].token_of_subexpr[0].token_val) != 5)
-        throw interpreter::realtime_excp("RTT003", parser::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) + " Var id of struct(expected project): " + sub_expr[0].token_of_subexpr[0].token_val);
+        throw interpreter::realtime_excp(parser::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
+                                            " Var id of struct(expected project): " + sub_expr[0].token_of_subexpr[0].token_val + "\n",
+                                         "003");
     curr_scope.get_var_value<var::struct_sb::project>(sub_expr[0].token_of_subexpr[0].token_val).lang = (var::struct_sb::language)std::stoi(sub_expr[1].token_of_subexpr[0].token_val);
 } 
 
@@ -144,7 +172,9 @@ void sl_func::add_param_template(const std::vector<parser::subexpressions>& sub_
 }
 void sl_func::use_templates(const std::vector<parser::subexpressions>& sub_expr, var::scope& curr_scope){
     if(curr_scope.what_type(sub_expr[0].token_of_subexpr[0].token_val) != 5)
-        throw interpreter::realtime_excp("RTT003", parser::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) + " Var id of struct(expected project): " + sub_expr[0].token_of_subexpr[0].token_val);
+        throw interpreter::realtime_excp(parser::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
+                                            " Var id of struct(expected project): " + sub_expr[0].token_of_subexpr[0].token_val + "\n",
+                                         "003");
     var::struct_sb::project& prj_ref = curr_scope.get_var_value<var::struct_sb::project>(sub_expr[0].token_of_subexpr[0].token_val);
     for(u32t i = 1; i < sub_expr.size(); ++i){
         prj_ref.vec_templates.push_back(sub_expr[i].token_of_subexpr[0].token_val);
@@ -152,7 +182,9 @@ void sl_func::use_templates(const std::vector<parser::subexpressions>& sub_expr,
 }
 void sl_func::use_it_template(const std::vector<parser::subexpressions>& sub_expr, var::scope& curr_scope){
     if(curr_scope.what_type(sub_expr[0].token_of_subexpr[0].token_val) != 5)
-        throw interpreter::realtime_excp("RTT003", parser::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) + " Var id of struct(expected project): " + sub_expr[0].token_of_subexpr[0].token_val);
+        throw interpreter::realtime_excp(parser::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
+                                            " Var id of struct(expected project): " + sub_expr[0].token_of_subexpr[0].token_val + "\n",
+                                         "003");
     
     curr_scope.get_var_value<var::struct_sb::project>(sub_expr[0].token_of_subexpr[0].token_val).use_it_templates = std::stoi(sub_expr[1].token_of_subexpr[0].token_val);
 }

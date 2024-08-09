@@ -7,7 +7,13 @@ void mdl_manager::import_module_decl(const char* import_file){
     std::string buf = assist.read_file(hndl);
     assist.close_file(hndl);
 
-    mdls = srl::build_modules(srl::parser(buf));
+    std::pair<std::vector<srl::token>, std::vector<std::string>> data_after_parse = srl::parser(buf);
+
+    mdls = srl::build_modules(data_after_parse.first);
+    func_with_smt = data_after_parse.second;
+}
+const std::vector<std::string>& mdl_manager::get_func_with_smt(){
+    return func_with_smt;
 }
 semantic_an::table_func mdl_manager::load_module(std::string name){
     semantic_an::table_func external_func_table;
