@@ -2,32 +2,35 @@
 
 #include "parser.hpp"
 
-#define is_param(token)(token.token_t == lexer::token_type::ID || \
-                        token.token_t == lexer::token_type::LITERAL || \
-                        token.token_t == lexer::token_type::LITERALS)
+using namespace aef_expr;
+using namespace token_expr;
 
-std::string parser::type_token_str(lexer::token_type token_t){
+#define is_param(token)(token.token_t == token_type::ID || \
+                        token.token_t == token_type::LITERAL || \
+                        token.token_t == token_type::LITERALS)
+
+std::string parser::type_token_str(token_type token_t){
     switch (token_t)
     {
-    case lexer::token_type::ID:
+    case token_type::ID:
         return "ID";
-    case lexer::token_type::LITERAL:
+    case token_type::LITERAL:
         return "LITERAL";
-    case lexer::token_type::LITERALS:
+    case token_type::LITERALS:
         return "LITERALS";
-    case lexer::token_type::OPERATOR:
+    case token_type::OPERATOR:
         return "OPERATOR";
-    case lexer::token_type::OPEN_BR:
+    case token_type::OPEN_BR:
         return "OPEN_BR";
-    case lexer::token_type::CLOSE_BR:
+    case token_type::CLOSE_BR:
         return "CLOSE_BR";
-    case lexer::token_type::COMMA:
+    case token_type::COMMA:
         return "COMMA";
     default:
         return "UNDEF";
     }
 }
-std::string parser::build_pos_tokenb_str(const lexer::token& tk){
+std::string parser::build_pos_tokenb_str(const token& tk){
     if(!tk.token_val.empty())
         return "\n(Line: " + std::to_string(tk.pos_defined_line) +
                "; Symbols start pos: " + std::to_string(tk.pos_beg_defined_sym) +
@@ -88,7 +91,7 @@ std::string parser::tree_build_visually_str(const abstract_expr_func& aef){
     }
     return tree_visible.str();
 }
-parser::params parser::type_param_in_str(std::string str){
+params parser::type_param_in_str(std::string str){
     if(str == "FUTURE_VAR_ID")
         return params::FUTURE_VAR_ID;
     else if(str == "VAR_ID")
@@ -109,10 +112,6 @@ parser::params parser::type_param_in_str(std::string str){
         return params::NEXT_TOO;
     else
         return params::SIZE_ENUM_PARAMS;
-}
-
-bool parser::expression::execute_with_semantic_an(){
-    return expr_func.func_n.is_declaration_var || expr_func.func_n.only_with_semantic;
 }
 
 using namespace parser;
@@ -136,12 +135,12 @@ pars_an::pars_an(){
     }
 }
 
-pars_an::pars_an(const std::vector<lexer::token> &tk_s){
+pars_an::pars_an(const std::vector<token> &tk_s){
     pars_an();
     tokens = tk_s;
 }
 
-void pars_an::set_tokens(const std::vector<lexer::token> &tk_s){
+void pars_an::set_tokens(const std::vector<token> &tk_s){
     tokens = tk_s;
 }
 abstract_expr_func pars_an::get_exprs(){
@@ -156,14 +155,14 @@ void pars_an::check_valid_subexpr_first_pass(const subexpressions& sub_expr){
     bool expected_op = 0;
 
     for(u32t i = 0; i < sub_expr.token_of_subexpr.size(); ++i){
-        if(sub_expr.token_of_subexpr[i].token_t == lexer::token_type::ID ||
-           sub_expr.token_of_subexpr[i].token_t == lexer::token_type::LITERAL|| 
-           sub_expr.token_of_subexpr[i].token_t == lexer::token_type::LITERALS){
+        if(sub_expr.token_of_subexpr[i].token_t == token_type::ID ||
+           sub_expr.token_of_subexpr[i].token_t == token_type::LITERAL|| 
+           sub_expr.token_of_subexpr[i].token_t == token_type::LITERALS){
            if(expected_op)
                 assist.call_err("PARS003", build_pos_tokenb_str(sub_expr.token_of_subexpr[i]));
            expected_op = 1;
         }
-        else if(sub_expr.token_of_subexpr[i].token_t == lexer::token_type::OPERATOR){
+        else if(sub_expr.token_of_subexpr[i].token_t == token_type::OPERATOR){
             if(expected_op){
                 expected_op = 0;
                 continue;
@@ -181,7 +180,7 @@ void pars_an::check_valid_subexpr_second_pass(subexpressions& sub_expr){
     bool operator_plus = 0, operator_compare = 0;
 
     for(u32t i = 0; i < sub_expr.token_of_subexpr.size(); ++i){
-        if(sub_expr.token_of_subexpr[i].token_t == lexer::token_type::LITERALS){
+        if(sub_expr.token_of_subexpr[i].token_t == token_type::LITERALS){
             if(num_type_expr) {
                 if(operator_plus)
                     assist.call_err("PARS006", build_pos_tokenb_str(sub_expr.token_of_subexpr[i]));
@@ -190,7 +189,7 @@ void pars_an::check_valid_subexpr_second_pass(subexpressions& sub_expr){
             }
             str_type_expr = 1;
         }
-        else if(sub_expr.token_of_subexpr[i].token_t == lexer::token_type::LITERAL){
+        else if(sub_expr.token_of_subexpr[i].token_t == token_type::LITERAL){
             if(str_type_expr) {
                 if(operator_plus)
                     assist.call_err("PARS006", build_pos_tokenb_str(sub_expr.token_of_subexpr[i]));
@@ -199,9 +198,9 @@ void pars_an::check_valid_subexpr_second_pass(subexpressions& sub_expr){
             }
             num_type_expr = 1;
         }
-        else if(sub_expr.token_of_subexpr[i].token_t == lexer::token_type::ID)
+        else if(sub_expr.token_of_subexpr[i].token_t == token_type::ID)
             id_type_expr = 1;
-        else if(sub_expr.token_of_subexpr[i].token_t == lexer::token_type::OPERATOR &&
+        else if(sub_expr.token_of_subexpr[i].token_t == token_type::OPERATOR &&
                 sub_expr.token_of_subexpr[i].token_val == "+"){
                 if(operator_compare)
                     if(str_type_expr)
@@ -210,7 +209,7 @@ void pars_an::check_valid_subexpr_second_pass(subexpressions& sub_expr){
                         assist.call_err("PARS009", build_pos_tokenb_str(sub_expr.token_of_subexpr[i]));
                 operator_plus = 1;
             }
-        else if(sub_expr.token_of_subexpr[i].token_t == lexer::token_type::OPERATOR &&
+        else if(sub_expr.token_of_subexpr[i].token_t == token_type::OPERATOR &&
                 sub_expr.token_of_subexpr[i].token_val == ">" ||
                 sub_expr.token_of_subexpr[i].token_val == "<" ||
                 sub_expr.token_of_subexpr[i].token_val == "="){
@@ -244,7 +243,7 @@ void pars_an::try_parse_subexpr(subexpressions &sub_expr){
     subexpressions const_parse_subexpr, tmp_parse_subexpr;
     if(sub_expr.subexpr_t == subexpressions::type_subexpr::INT_COMPARE){
         for(u32t i = 0; i < sub_expr.token_of_subexpr.size(); ++i){
-            if(sub_expr.token_of_subexpr[i].token_t == lexer::token_type::ID){
+            if(sub_expr.token_of_subexpr[i].token_t == token_type::ID){
                 for(u32t j = 0; j < const_parse_subexpr.token_of_subexpr.size(); ++j){
                     parse_subexpr.token_of_subexpr.push_back(const_parse_subexpr.token_of_subexpr[j]);
                 }
@@ -252,10 +251,10 @@ void pars_an::try_parse_subexpr(subexpressions &sub_expr){
                 const_parse_subexpr.token_of_subexpr.clear();
                 continue;
             }
-            else if(sub_expr.token_of_subexpr[i].token_t == lexer::token_type::LITERALS)
+            else if(sub_expr.token_of_subexpr[i].token_t == token_type::LITERALS)
                 assist.call_err("PARS010", build_pos_tokenb_str(sub_expr.token_of_subexpr[i]));
             if(const_parse_subexpr.token_of_subexpr.size() == 0 &&
-               (sub_expr.token_of_subexpr[i].token_t == lexer::token_type::OPERATOR ||
+               (sub_expr.token_of_subexpr[i].token_t == token_type::OPERATOR ||
                (i == sub_expr.token_of_subexpr.size()-1)))
                 parse_subexpr.token_of_subexpr.push_back(sub_expr.token_of_subexpr[i]);
             else
@@ -284,13 +283,13 @@ void pars_an::try_parse_subexpr(subexpressions &sub_expr){
                 const_parse_subexpr.token_of_subexpr.clear();
                 if(condition)
                     const_parse_subexpr.token_of_subexpr.push_back(
-                        lexer::token(lexer::token_type::LITERAL, "1",
+                        token(token_type::LITERAL, "1",
                         tmp_parse_subexpr.token_of_subexpr[0].pos_defined_line,
                         tmp_parse_subexpr.token_of_subexpr[0].pos_beg_defined_sym)
                     );
                 else
                     const_parse_subexpr.token_of_subexpr.push_back(
-                        lexer::token(lexer::token_type::LITERAL, "0",
+                        token(token_type::LITERAL, "0",
                         tmp_parse_subexpr.token_of_subexpr[0].pos_defined_line,
                         tmp_parse_subexpr.token_of_subexpr[0].pos_beg_defined_sym)
                     );
@@ -299,7 +298,7 @@ void pars_an::try_parse_subexpr(subexpressions &sub_expr){
     }
     else if(sub_expr.subexpr_t == subexpressions::type_subexpr::STRING_ADD){
         for(u32t i = 0; i < sub_expr.token_of_subexpr.size(); ++i){
-            if(sub_expr.token_of_subexpr[i].token_t == lexer::token_type::ID){
+            if(sub_expr.token_of_subexpr[i].token_t == token_type::ID){
                 for(u32t j = 0; j < const_parse_subexpr.token_of_subexpr.size(); ++j){
                     parse_subexpr.token_of_subexpr.push_back(const_parse_subexpr.token_of_subexpr[j]);
                 }
@@ -307,10 +306,10 @@ void pars_an::try_parse_subexpr(subexpressions &sub_expr){
                 const_parse_subexpr.token_of_subexpr.clear();
                 continue;
             }
-            else if(sub_expr.token_of_subexpr[i].token_t == lexer::token_type::LITERAL)
+            else if(sub_expr.token_of_subexpr[i].token_t == token_type::LITERAL)
                 assist.call_err("PARS009", build_pos_tokenb_str(sub_expr.token_of_subexpr[i]));
             if (const_parse_subexpr.token_of_subexpr.size() == 0 &&
-                (sub_expr.token_of_subexpr[i].token_t == lexer::token_type::OPERATOR ||
+                (sub_expr.token_of_subexpr[i].token_t == token_type::OPERATOR ||
                     (i == sub_expr.token_of_subexpr.size() - 1)))
                 parse_subexpr.token_of_subexpr.push_back(sub_expr.token_of_subexpr[i]);
             else
@@ -319,7 +318,7 @@ void pars_an::try_parse_subexpr(subexpressions &sub_expr){
                 tmp_parse_subexpr = const_parse_subexpr;
                 const_parse_subexpr.token_of_subexpr.clear();
                 const_parse_subexpr.token_of_subexpr.push_back(
-                    lexer::token(lexer::token_type::LITERALS, tmp_parse_subexpr.token_of_subexpr[0].token_val+
+                    token(token_type::LITERALS, tmp_parse_subexpr.token_of_subexpr[0].token_val+
                                                               tmp_parse_subexpr.token_of_subexpr[2].token_val,
                         tmp_parse_subexpr.token_of_subexpr[0].pos_defined_line,
                         tmp_parse_subexpr.token_of_subexpr[0].pos_beg_defined_sym)
@@ -334,7 +333,7 @@ void pars_an::try_parse_subexpr(subexpressions &sub_expr){
         parse_subexpr.token_of_subexpr.push_back(const_parse_subexpr.token_of_subexpr[j]);
     }
     if(parse_subexpr.token_of_subexpr.size() == 1){
-        if(parse_subexpr.token_of_subexpr[0].token_t == lexer::token_type::LITERAL)
+        if(parse_subexpr.token_of_subexpr[0].token_t == token_type::LITERAL)
             parse_subexpr.subexpr_t = subexpressions::type_subexpr::INT;
         else
             parse_subexpr.subexpr_t = subexpressions::type_subexpr::STRING;
@@ -352,20 +351,20 @@ abstract_expr_func pars_an::analysis(){
 
     for(u32t i = 0; i < tokens.size(); ++i){
         if(start_expr){
-            if(tokens[i].token_t != lexer::token_type::ID && tokens[i].token_t != lexer::token_type::KEYWORD)
+            if(tokens[i].token_t != token_type::ID && tokens[i].token_t != token_type::KEYWORD)
                 assist.call_err("PARS000", build_pos_tokenb_str(tokens[i]));
             curr_expr.expr_func.func_t = tokens[i];
             start_expr = 0;
         }
         else{
             if(!func_param_curr){
-                if(tokens[i].token_t == lexer::token_type::OPEN_BR){
+                if(tokens[i].token_t == token_type::OPEN_BR){
                     func_param_curr = 1;
                     continue;
                 }
                 assist.call_err("PARS001", build_pos_tokenb_str(tokens[i]));
             }
-            else if(func_param_curr && tokens[i].token_t == lexer::token_type::COMMA){
+            else if(func_param_curr && tokens[i].token_t == token_type::COMMA){
                 if(!is_param(tokens[i-1]))
                     assist.call_err("PARS004", build_pos_tokenb_str(tokens[i]));
                 check_valid_subexpr_first_pass(curr_sub_expr);
@@ -374,7 +373,7 @@ abstract_expr_func pars_an::analysis(){
                 curr_sub_expr.token_of_subexpr.clear();
                 continue;
             }
-            else if(func_param_curr && tokens[i].token_t == lexer::token_type::CLOSE_BR){
+            else if(func_param_curr && tokens[i].token_t == token_type::CLOSE_BR){
                 if(!is_param(tokens[i-1]))
                     assist.call_err("PARS004", build_pos_tokenb_str(tokens[i]));
                 check_valid_subexpr_first_pass(curr_sub_expr);
@@ -390,10 +389,10 @@ abstract_expr_func pars_an::analysis(){
 
                 continue;
             }
-            else if(func_param_curr && tokens[i].token_t != lexer::token_type::ID
-                                    && tokens[i].token_t != lexer::token_type::LITERAL
-                                    && tokens[i].token_t != lexer::token_type::LITERALS
-                                    && tokens[i].token_t != lexer::token_type::OPERATOR)
+            else if(func_param_curr && tokens[i].token_t != token_type::ID
+                                    && tokens[i].token_t != token_type::LITERAL
+                                    && tokens[i].token_t != token_type::LITERALS
+                                    && tokens[i].token_t != token_type::OPERATOR)
                 assist.call_err("PARS002", build_pos_tokenb_str(tokens[i]));
             curr_sub_expr.token_of_subexpr.push_back(tokens[i]);
         }

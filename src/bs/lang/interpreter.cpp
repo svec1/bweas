@@ -39,13 +39,8 @@ void interpreter_exec::build_aef(){
         clock_t beg;
 
         smt_analyzer.load_external_func_table(external_func_table);
-        if(interp_conf.transmit_smt_name_func_with_smt){
-            std::vector<std::string> tmp_vec = get_func_with_smt();
-            for(u32t i = 0; i < sl_func::name_static_func_sm.size(); ++i){
-                tmp_vec.push_back(sl_func::name_static_func_sm[i]);
-            }
-            smt_analyzer.load_list_func_with_semantic_an(tmp_vec);
-        }
+        if(interp_conf.transmit_smt_name_func_with_smt)
+            smt_analyzer.append_external_name_func_w_smt(get_func_with_smt());
         if(interp_conf.debug_output){
             debug_mark_time_func(lexer.analysis(), "lexer")
             parser.set_tokens(lexer.get_tokens());
@@ -59,7 +54,6 @@ void interpreter_exec::build_aef(){
             else{
                 debug_mark_time_func(smt_analyzer.analysis(aef, global_scope), "semantic analyzer")
             }
-        //assist << tree_build_visually_str(aef);
         }
         else{
             parser.set_tokens(lexer.analysis());

@@ -1,7 +1,7 @@
 #ifndef _VAR__H
 #define _VAR__H
 
-#include "../../mdef.hpp"
+#include "../../kernel/low_level/type.h"
 
 #include <vector>
 #include <string>

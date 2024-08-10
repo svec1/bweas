@@ -3,6 +3,7 @@
 #include "lexer.hpp"
 
 using namespace lexer;
+using namespace token_expr;
 
 lex_an::lex_an(){
     if(!init_glob){
@@ -58,7 +59,7 @@ std::vector<token> lex_an::analysis(){
     while(ch = get()){
         ++count_sym;
         if((ch == ' ' || ch == '\n' || ch == '\r' | ch == '\t') && !br){
-            if(lexer_option && ch == '\r'){
+            if(lexer_option && (ch == '\r' || ch == '\n')){
                 if(lexem.empty())
                     assist.call_err("LEX000", "\n(Line: " + std::to_string(count_line) + "; Symbols start pos: " + std::to_string(count_sym-lexem.size()) + "): Lexem - \"" + lexem + "\"\n");
                 if(lexem == "lexer_stop") break;

@@ -2,40 +2,13 @@
 #define _LEXER__H
 
 #include "../../kernel/low_level/type.h"
+#include "token.hpp"
 
 #include <vector>
 #include <string>
 
 namespace lexer{
-
-    enum class token_type{
-        KEYWORD = 0,
-        
-        LITERAL,
-        LITERALS,
-
-        ID,
-
-        COMMA,
-        OPEN_BR,
-        CLOSE_BR,
-        OPERATOR
-    };
-
-    struct token{
-        token() = default;
-        token(token_type tk_t, std::string tk_val, u32t pos_def_line, u32t pos_beg_def_sym)
-          : token_t(tk_t),
-            token_val(tk_val),
-            pos_defined_line(pos_def_line),
-            pos_beg_defined_sym(pos_beg_def_sym) {}
-
-        token_type token_t;
-        std::string token_val;
-
-        u32t pos_defined_line{0};
-        u32t pos_beg_defined_sym{0};
-    };
+    
 
     class lex_an{
         public:
@@ -50,19 +23,34 @@ namespace lexer{
 
         public:
             void set_symbols(const std::string& _symbols);
-            std::vector<token> get_tokens();
+            std::vector<token_expr::token> get_tokens();
             void clear_tokens();
 
-            std::vector<token> analysis();
+            // lexical analysis
+            // ----------------
+            // Creates tokens with type "token_type".
+            // Prohibits:
+            //  1. use of symbols: * / ! - uh.
+            //  2. form mixed lexemes: "32ggtn5var"
+            //  3. form a literal greater than UINT_MAX32/2.
+            // ---------------------------------------------
+            // When the @ symbol is encountered, it begins to form a lexeme until the end of the line 
+            // (until the sequence of characters \r\n or \n is found), this lexeme will be a special word for the lexer, 
+            // which, depending on its value, will perform one or another action.
+            // Available special words:
+            //  1. lexer_stop
+            std::vector<token_expr::token> analysis();
 
         private:
             char get();
+            
+            // Prohibits characters
             bool check_sym_valid_grammar(char ch);
 
         private:
             static inline bool init_glob{0};
 
-            std::vector<token> tokens;
+            std::vector<token_expr::token> tokens;
             std::string symbols;
             
             u32t pos{0};

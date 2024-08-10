@@ -1,4 +1,5 @@
 #include "srl_importm.hpp"
+#include "../../lang/parser.hpp"
 
 #define call_err_tk_inf_lex(count_line, count_sym, lexem, expected, err) assist.call_err(err, \
                             "\n(Line: " + std::to_string(count_line) + "; Symbols start pos: " + \
@@ -226,7 +227,7 @@ srl::modules srl::build_modules(std::vector<srl::token> tokens){
             tmp_func[tmp_name_func];
         }
         else if(tokens[i].token_t == token_type::PARAM){
-            if(tokens[i].token_p == parser::params::SIZE_ENUM_PARAMS)
+            if(tokens[i].token_p == aef_expr::params::SIZE_ENUM_PARAMS)
                 call_err_tk_inf_lex(tokens[i].lines,
                                     tokens[i].symbols,
                                     tokens[i].val,

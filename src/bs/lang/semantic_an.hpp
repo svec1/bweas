@@ -1,37 +1,14 @@
 #ifndef _SEMANTIC_AN__H
 #define _SEMANTIC_AN__H
 
+#include "static_linking_func.hpp"
 #include "parser.hpp"
 #include "scope.hpp"
 
 #include "../tools/exception.hpp"
 
 #include <unordered_map>
-#include <set>
 
-// Semantic analysis:
-//  - through the vector of expressions and
-//    compiles a table of symbols-function for subsequent linking
-//
-//    ^^^
-//    zero pass
-//
-// - linking all representations of functions
-//   in expressions with functions that describe their behavior.
-//   Checks the correspondence of the transmitted types of indicators
-//   with the expected types of the function.
-//
-//   ^^^
-//   first pass
-//
-// - creates a *table* of symbols (creates, in the scope 
-//   of the current file that is being processed, all
-//   variables that were declared independently, through the set command)
-//   and checks the correspondence between indicators.
-//
-//   ^^^
-//   second pass
-//
 namespace semantic_an{
 
     #define wrap_callf_declaration(func_decl) try{\
@@ -41,8 +18,7 @@ namespace semantic_an{
                                                     assist.call_err(excp.get_assist_err(), excp.what()); \
                                                 }
 
-    using namespace parser;
-    using table_func = std::unordered_map<std::string, parser::notion_func>;
+    using table_func = std::unordered_map<std::string, aef_expr::notion_func>;
 
     extern var::scope global_scope;
 
@@ -70,35 +46,61 @@ namespace semantic_an{
             ~semantic_analyzer() = default;
 
         public:
-            void analysis(abstract_expr_func& expr_s, var::scope& global_scope);
+
+            // Semantic analysis:
+            // ------------------
+            //  - through the vector of expressions and
+            //    compiles a table of symbols-function for subsequent linking,
+            //    and also determines at what stage the function will be called
+            //
+            //    ^^^
+            //    zero pass
+            //
+            // - linking all representations of functions
+            //   in expressions with functions that describe their behavior.
+            //   Checks the correspondence of the transmitted types of indicators
+            //   with the expected types of the function.
+            //
+            //   ^^^
+            //   first pass
+            //
+            // - creates a *table* of symbols (creates, in the scope 
+            //   of the current file that is being processed, all
+            //   variables that were declared independently, through the set command)
+            //   and checks the correspondence between indicators.
+            //
+            //   ^^^
+            //   second pass
+            //
+            void analysis(parser::abstract_expr_func& expr_s, var::scope& global_scope);
 
             void load_external_func_table(const table_func& notion_external_func);
-            void load_list_func_with_semantic_an(const std::vector<std::string>& list_name_func);
+            void append_external_name_func_w_smt(const std::vector<std::string>& list_name_func);
 
         private:
             // Adding a function definition to the functions table
             void add_func_flink(std::string name_token_func,
-                                void(*func_ref)(const std::vector<subexpressions>&, var::scope& curr_scope),
-                                std::vector<params> expected_args);
+                                void(*func_ref)(const std::vector<aef_expr::subexpressions>&, var::scope& curr_scope),
+                                std::vector<aef_expr::params> expected_args);
             
-            void smt_zero_pass(const abstract_expr_func& expr_s);
-            void smt_first_pass(abstract_expr_func& expr_s);
+            void smt_zero_pass(const parser::abstract_expr_func& expr_s);
+            void smt_first_pass(parser::abstract_expr_func& expr_s);
 
             // The set command (initialization or assignment) is called here
-            void smt_second_pass(abstract_expr_func& expr_s, var::scope& curr_scope);
+            void smt_second_pass(parser::abstract_expr_func& expr_s, var::scope& curr_scope);
 
         private:
             // Parses a subexpression if it has not taken the type 
             // INT, STRING, or VAR_STRUCT_ID after parsing at the AEF construction stage
-            void parse_subexpr_param(subexpressions& sub_expr, std::vector<subexpressions>& sub_exprs,
+            void parse_subexpr_param(aef_expr::subexpressions& sub_expr, std::vector<aef_expr::subexpressions>& sub_exprs,
                                      u32t& pos_sub_expr_in_vec, var::scope& curr_scope,
-                                     params expected_param);
-            void defining_call_func(const std::string& name, notion_func& nfunc);
+                                     aef_expr::params expected_param);
+            void defining_call_func(const std::string& name, aef_expr::notion_func& nfunc);
     
         private:
             static inline bool init_glob{0};
 
-            std::vector<std::string> name_func_with_semantic_an;
+            std::vector<std::string> name_func_with_semantic_an{sl_func::name_static_func_sm};
             
             // functions tables
             table_func notion_all_func;
