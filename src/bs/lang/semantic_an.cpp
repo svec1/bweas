@@ -1,8 +1,9 @@
 #include "../../mdef.hpp"
 
-#include "static_linking_func.hpp"
 #include "semantic_an.hpp"
 
+using namespace parser;
+using namespace aef_expr;
 using namespace semantic_an;
 
 semantic_analyzer::semantic_analyzer(){
@@ -28,13 +29,13 @@ void semantic_analyzer::add_func_flink(
     void(*func_ref)(const std::vector<subexpressions>&, var::scope& curr_scope),
     std::vector<params> expected_args){
     
-    parser::notion_func nfunc;
+    notion_func nfunc;
     nfunc.func_ref = func_ref;
     nfunc.expected_args = expected_args;
 
     defining_call_func(name_token_func, nfunc);
 
-    std::pair<std::string, parser::notion_func> n_link_func_spec = {name_token_func, nfunc};
+    std::pair<std::string, notion_func> n_link_func_spec = {name_token_func, nfunc};
 
     notion_all_func.insert(n_link_func_spec);
 }
@@ -49,12 +50,14 @@ void semantic_analyzer::analysis(abstract_expr_func &expr_s, var::scope& global_
 void semantic_analyzer::load_external_func_table(const table_func& notion_external_func){
     this->notion_external_func = notion_external_func;
 }
-void semantic_analyzer::load_list_func_with_semantic_an(const std::vector<std::string>& list_name_func){
-    this->name_func_with_semantic_an = list_name_func;
+void semantic_analyzer::append_external_name_func_w_smt(const std::vector<std::string>& list_name_func){
+    for(u32t i = 0; i < list_name_func.size(); ++i){
+        name_func_with_semantic_an.push_back(list_name_func[i]);
+    }
 }
 
 void semantic_analyzer::smt_zero_pass(const abstract_expr_func &expr_s){
-    parser::notion_func nfunc;
+    notion_func nfunc;
     for(u32t i = 0; i < expr_s.size(); ++i){
         if(notion_all_func.find(expr_s[i].expr_func.func_t.token_val) != notion_all_func.end()) continue;
         if(expr_s[i].expr_func.func_t.token_val=="set")
@@ -68,7 +71,7 @@ void semantic_analyzer::smt_zero_pass(const abstract_expr_func &expr_s){
         else if(expr_s[i].expr_func.func_t.token_val=="executable")
             add_func_flink(expr_s[i].expr_func.func_t.token_val,
                        sl_func::executable,
-                       {params::FUTURE_VAR_ID, params::VAR_STRUCT_ID});
+                       {params::FUTURE_VAR_ID, params::LNUM_OR_ID_VAR, params::VAR_STRUCT_ID});
         else if(expr_s[i].expr_func.func_t.token_val=="link_lib")
             add_func_flink(expr_s[i].expr_func.func_t.token_val,
                        sl_func::link_lib,
@@ -127,7 +130,7 @@ void semantic_analyzer::smt_zero_pass(const abstract_expr_func &expr_s){
                        {params::VAR_STRUCT_ID, params::LNUM_OR_ID_VAR});
         else{
             if(notion_external_func.find(expr_s[i].expr_func.func_t.token_val) != notion_external_func.end()){
-                std::pair<std::string, parser::notion_func> n_link_func_spec = 
+                std::pair<std::string, notion_func> n_link_func_spec = 
                     {expr_s[i].expr_func.func_t.token_val, notion_external_func[expr_s[i].expr_func.func_t.token_val]};
                 defining_call_func(n_link_func_spec.first, n_link_func_spec.second);
                 notion_all_func.insert(n_link_func_spec);
@@ -193,11 +196,11 @@ check_valied_exp_type:
                         expr_s[i].sub_expr_s[b].subexpr_t != subexpressions::type_subexpr::ID)
                         assist.call_err("SMT001", build_pos_subexpr_str(expr_s[i].sub_expr_s[b]) + " Expected: [VAR ID]\n");
                     else if(expr_s[i].expr_func.func_n.expected_args[j-1] == params::ANY_VALUE_WITHOUT_FUTUREID_NEXT){
-                        if(expr_s[i].sub_expr_s[j-1].token_of_subexpr[0].token_t == lexer::token_type::LITERAL &&
+                        if(expr_s[i].sub_expr_s[j-1].token_of_subexpr[0].token_t == token_expr::token_type::LITERAL &&
                             expr_s[i].sub_expr_s[b].subexpr_t != subexpressions::type_subexpr::INT &&
                             expr_s[i].sub_expr_s[b].subexpr_t != subexpressions::type_subexpr::INT_COMPARE)
                             assist.call_err("SMT001", build_pos_subexpr_str(expr_s[i].sub_expr_s[b]) + " Expected: [NUMBER]\n");
-                        else if(expr_s[i].sub_expr_s[j-1].token_of_subexpr[0].token_t == lexer::token_type::LITERALS &&
+                        else if(expr_s[i].sub_expr_s[j-1].token_of_subexpr[0].token_t == token_expr::token_type::LITERALS &&
                                 expr_s[i].sub_expr_s[b].subexpr_t != subexpressions::type_subexpr::STRING &&
                                 expr_s[i].sub_expr_s[b].subexpr_t != subexpressions::type_subexpr::STRING_ADD)
                             assist.call_err("SMT001", build_pos_subexpr_str(expr_s[i].sub_expr_s[b]) + " Expected: [STRING]\n");
@@ -235,10 +238,10 @@ void semantic_analyzer::smt_second_pass(abstract_expr_func &expr_s, var::scope& 
             if(index_type == 1){
                 for(u32t j = 1; j < expr_s[i].sub_expr_s.size(); ++j){
                     for(u32t b = 0; b < expr_s[i].sub_expr_s[j].token_of_subexpr.size(); ++b){
-                        if(expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_t == lexer::token_type::OPERATOR &&
+                        if(expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_t == token_expr::token_type::OPERATOR &&
                            expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_val == "+")
                            assist.call_err("SMT005", build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]));
-                        else if(expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_t == lexer::token_type::ID){
+                        else if(expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_t == token_expr::token_type::ID){
                             tmp_index_type_var = curr_scope.what_type(expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_val);
                             if(tmp_index_type_var == 0)
                                 assist.call_err("SMT008", build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]) + " Expected: exist variable\n");
@@ -251,12 +254,12 @@ void semantic_analyzer::smt_second_pass(abstract_expr_func &expr_s, var::scope& 
             else if(index_type == 2){
                 for(u32t j = 1; j < expr_s[i].sub_expr_s.size(); ++j){
                     for(u32t b = 0; b < expr_s[i].sub_expr_s[j].token_of_subexpr.size(); ++b){
-                        if(expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_t == lexer::token_type::OPERATOR &&
+                        if(expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_t == token_expr::token_type::OPERATOR &&
                            expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_val == ">" ||
                            expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_val == "<" ||
                            expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_val == "=")
                            assist.call_err("SMT006", build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]));
-                        else if(expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_t == lexer::token_type::ID){
+                        else if(expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_t == token_expr::token_type::ID){
                             tmp_index_type_var = curr_scope.what_type(expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_val);
                             if(tmp_index_type_var == 0)
                                 assist.call_err("SMT008", build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]) + " Expected: exist variable\n");
@@ -269,19 +272,19 @@ void semantic_analyzer::smt_second_pass(abstract_expr_func &expr_s, var::scope& 
             else if(index_type == 3){
                 for(u32t j = 1; j < expr_s[i].sub_expr_s.size(); ++j){
                     for(u32t b = 0; b < expr_s[i].sub_expr_s[j].token_of_subexpr.size(); ++b){
-                        if(expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_t == lexer::token_type::OPERATOR &&
+                        if(expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_t == token_expr::token_type::OPERATOR &&
                             expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_val == ">" ||
                             expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_val == "<" ||
                             expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_val == "=")
                             assist.call_err("SMT006", build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]));
-                        else if(expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_t == lexer::token_type::ID){
+                        else if(expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_t == token_expr::token_type::ID){
                                  tmp_index_type_var = curr_scope.what_type(expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_val);
                                  if(tmp_index_type_var == 0)
                                     assist.call_err("SMT008", build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]) + " Expected: exist variable\n");
                                  else if(tmp_index_type_var != 1 && tmp_index_type_var != 3)
                                     assist.call_err("SMT004", build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]) + " Expected: [NUMBER] or [VECTOR NUMBER] or [VAR ID->([NUMBER] or [VECTOR NUMBER])]\n");
                         }
-                        else if(expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_t != lexer::token_type::LITERALS){
+                        else if(expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_t != token_expr::token_type::LITERALS){
                             assist.call_err("SMT004", build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]) + " Expected: [NUMBER] or [VECTOR NUMBER] or [VAR ID->([NUMBER] or [VECTOR NUMBER])]\n");
                         }
                     }
@@ -290,19 +293,19 @@ void semantic_analyzer::smt_second_pass(abstract_expr_func &expr_s, var::scope& 
             else if(index_type == 4){
                 for(u32t j = 1; j < expr_s[i].sub_expr_s.size(); ++j){
                     for(u32t b = 0; b < expr_s[i].sub_expr_s[j].token_of_subexpr.size(); ++b){
-                        if(expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_t == lexer::token_type::OPERATOR &&
+                        if(expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_t == token_expr::token_type::OPERATOR &&
                            expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_val == ">" ||
                            expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_val == "<" ||
                            expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_val == "=")
                            assist.call_err("SMT006", build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]));
-                        else if(expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_t == lexer::token_type::ID){
+                        else if(expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_t == token_expr::token_type::ID){
                                  tmp_index_type_var = curr_scope.what_type(expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_val);
                                  if(tmp_index_type_var == 0)
                                     assist.call_err("SMT008", build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]) + " Expected: exist variable\n");
                                  else if(tmp_index_type_var != 2 && tmp_index_type_var != 4)
                                     assist.call_err("SMT004", build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]) + " Expected: [STRING] or [VECTOR STRING] or [VAR ID->([STRING] or [VECTOR STRING])]\n");
                         }
-                        else if(expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_t != lexer::token_type::LITERAL){
+                        else if(expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_t != token_expr::token_type::LITERAL){
                             assist.call_err("SMT004", build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]) + " Expected: [STRING] or [VECTOR STRING] or [VAR ID->([STRING] or [VECTOR STRING])]\n");
                         }
                     }
@@ -314,7 +317,7 @@ void semantic_analyzer::smt_second_pass(abstract_expr_func &expr_s, var::scope& 
                 bool num = 0, str = 0;
                 for(u32t j = 1; j < expr_s[i].sub_expr_s.size(); ++j){
                     if(expr_s[i].sub_expr_s[j].token_of_subexpr.size() == 1 &&
-                       expr_s[i].sub_expr_s[j].token_of_subexpr[0].token_t == lexer::token_type::ID){
+                       expr_s[i].sub_expr_s[j].token_of_subexpr[0].token_t == token_expr::token_type::ID){
                         if(j == 1){
                             u32t index_type_id = curr_scope.what_type(expr_s[i].sub_expr_s[j].token_of_subexpr[0].token_val);
                             if(index_type_id == 1 || index_type_id == 3)
@@ -338,17 +341,17 @@ void semantic_analyzer::smt_second_pass(abstract_expr_func &expr_s, var::scope& 
                         bool vec = 0;
                         for(u32t b = 0; b < expr_s[i].sub_expr_s[j].token_of_subexpr.size(); ++b){
                             if(j == 1 && b == 0){
-                                if(expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_t == lexer::token_type::LITERAL ||
-                                   (expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_t == lexer::token_type::OPERATOR &&
+                                if(expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_t == token_expr::token_type::LITERAL ||
+                                   (expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_t == token_expr::token_type::OPERATOR &&
                                          expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_val == ">" ||
                                          expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_val == "<" ||
                                          expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_val == "="))
                                    num = 1;
-                                else if(expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_t == lexer::token_type::LITERALS ||
-                                        (expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_t == lexer::token_type::OPERATOR &&
+                                else if(expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_t == token_expr::token_type::LITERALS ||
+                                        (expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_t == token_expr::token_type::OPERATOR &&
                                          expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_val == "+"))
                                    str = 1;
-                                else if(expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_t == lexer::token_type::ID){
+                                else if(expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_t == token_expr::token_type::ID){
                                     u32t index_type_id = curr_scope.what_type(expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_val);
                                     if(index_type_id == 1 || index_type_id == 3)
                                         num = 1;
@@ -364,16 +367,16 @@ void semantic_analyzer::smt_second_pass(abstract_expr_func &expr_s, var::scope& 
                             }
                             else{
                                 u32t tmp_index_type_var = 0;
-                                if((num || vec) && expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_t == lexer::token_type::OPERATOR &&
+                                if((num || vec) && expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_t == token_expr::token_type::OPERATOR &&
                                    expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_val == "+")
                                    assist.call_err("SMT005", build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]));
-                                else if((str || vec) && expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_t == lexer::token_type::OPERATOR &&
+                                else if((str || vec) && expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_t == token_expr::token_type::OPERATOR &&
                                        (expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_val == ">" ||
                                         expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_val == "<" ||
                                         expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_val == "=")){
                                         assist.call_err("SMT006", build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]));
                                 }
-                                else if(num && expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_t == lexer::token_type::ID){
+                                else if(num && expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_t == token_expr::token_type::ID){
                                         tmp_index_type_var = curr_scope.what_type(expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_val);
                                         if(tmp_index_type_var == 0)
                                             assist.call_err("SMT008", build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]) + " Expected: exist variable\n");
@@ -382,7 +385,7 @@ void semantic_analyzer::smt_second_pass(abstract_expr_func &expr_s, var::scope& 
                                         else if(tmp_index_type_var == 3)
                                             vec = 1;
                                 }
-                                else if(str && expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_t == lexer::token_type::ID){
+                                else if(str && expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_t == token_expr::token_type::ID){
                                         tmp_index_type_var = curr_scope.what_type(expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_val);
                                         if(tmp_index_type_var == 0)
                                             assist.call_err("SMT008", build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]) + " Expected: exist variable\n");
@@ -391,11 +394,11 @@ void semantic_analyzer::smt_second_pass(abstract_expr_func &expr_s, var::scope& 
                                         else if(tmp_index_type_var == 4)
                                             vec = 1;
                                 }
-                                else if((str || vec) && expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_t != lexer::token_type::LITERALS &&
-                                                        expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_t != lexer::token_type::OPERATOR)
+                                else if((str || vec) && expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_t != token_expr::token_type::LITERALS &&
+                                                        expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_t != token_expr::token_type::OPERATOR)
                                     assist.call_err("SMT004", build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]) + " Expected: [STRING] or [VECTOR STRING] or [VAR ID->([STRING] or [VECTOR STRING])]\n");
-                                else if((num || vec) && expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_t != lexer::token_type::LITERAL &&
-                                                        expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_t != lexer::token_type::OPERATOR)
+                                else if((num || vec) && expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_t != token_expr::token_type::LITERAL &&
+                                                        expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_t != token_expr::token_type::OPERATOR)
                                     assist.call_err("SMT004", build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]) + " Expected: [NUMBER] or [VECTOR NUMBER] or [VAR ID->([NUMBER] or [VECTOR NUMBER])]\n");
                             }
                         }
@@ -427,7 +430,7 @@ void semantic_analyzer::smt_second_pass(abstract_expr_func &expr_s, var::scope& 
                             if(index_type != 5 && index_type != 6)
                                 assist.call_err("SMT011", build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]) + " Expected: [VAR STRUCT ID]\n");
                         }
-                        else if (expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_t == lexer::token_type::ID) {
+                        else if (expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_t == token_expr::token_type::ID) {
                             u32t index_type = curr_scope.what_type(expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_val);
                             if (before_nextt_param == params::LNUM_OR_ID_VAR &&
                                 index_type != 1 && index_type != 3)
@@ -449,7 +452,7 @@ void semantic_analyzer::smt_second_pass(abstract_expr_func &expr_s, var::scope& 
                         if(index_type != 5 && index_type != 6)
                             assist.call_err("SMT011", build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]) + " Expected: [VAR STRUCT ID]\n");
                     }
-                    else if(expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_t == lexer::token_type::ID){
+                    else if(expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_t == token_expr::token_type::ID){
                         u32t index_type = curr_scope.what_type(expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_val);
                         if(expr_s[i].expr_func.func_n.expected_args[j] == params::LNUM_OR_ID_VAR &&
                            index_type != 1 && index_type != 3)
@@ -481,9 +484,9 @@ void semantic_analyzer::parse_subexpr_param(subexpressions& sub_expr, std::vecto
     subexpressions parse_subexpr, tmp_parse_subexpr;
     if(sub_expr.subexpr_t == subexpressions::type_subexpr::INT_COMPARE){
         for(u32t i = 0; i < sub_expr.token_of_subexpr.size(); ++i){
-            if(sub_expr.token_of_subexpr[i].token_t == lexer::token_type::ID){
+            if(sub_expr.token_of_subexpr[i].token_t == token_expr::token_type::ID){
                 parse_subexpr.token_of_subexpr.push_back(
-                    lexer::token(lexer::token_type::LITERAL,
+                    token_expr::token(token_expr::token_type::LITERAL,
                     std::to_string(curr_scope.get_var_value<int>(sub_expr.token_of_subexpr[i].token_val.c_str())),
                     sub_expr.token_of_subexpr[i].pos_defined_line,
                     sub_expr.token_of_subexpr[i].pos_beg_defined_sym)
@@ -518,13 +521,13 @@ void semantic_analyzer::parse_subexpr_param(subexpressions& sub_expr, std::vecto
                 parse_subexpr.token_of_subexpr.clear();
                 if(condition)
                     parse_subexpr.token_of_subexpr.push_back(
-                        lexer::token(lexer::token_type::LITERAL, "1",
+                        token_expr::token(token_expr::token_type::LITERAL, "1",
                         tmp_parse_subexpr.token_of_subexpr[0].pos_defined_line,
                         tmp_parse_subexpr.token_of_subexpr[0].pos_beg_defined_sym)
                     );
                 else
                     parse_subexpr.token_of_subexpr.push_back(
-                        lexer::token(lexer::token_type::LITERAL, "0",
+                        token_expr::token(token_expr::token_type::LITERAL, "0",
                         tmp_parse_subexpr.token_of_subexpr[0].pos_defined_line,
                         tmp_parse_subexpr.token_of_subexpr[0].pos_beg_defined_sym)
                     );
@@ -533,9 +536,9 @@ void semantic_analyzer::parse_subexpr_param(subexpressions& sub_expr, std::vecto
     }
     else if(sub_expr.subexpr_t == subexpressions::type_subexpr::STRING_ADD){
         for(u32t i = 0; i < sub_expr.token_of_subexpr.size(); ++i){
-            if(sub_expr.token_of_subexpr[i].token_t == lexer::token_type::ID){
+            if(sub_expr.token_of_subexpr[i].token_t == token_expr::token_type::ID){
                 parse_subexpr.token_of_subexpr.push_back(
-                    lexer::token(lexer::token_type::LITERALS,
+                    token_expr::token(token_expr::token_type::LITERALS,
                     curr_scope.get_var_value<std::string>(sub_expr.token_of_subexpr[i].token_val),
                     sub_expr.token_of_subexpr[i].pos_defined_line,
                     sub_expr.token_of_subexpr[i].pos_beg_defined_sym)
@@ -550,7 +553,7 @@ void semantic_analyzer::parse_subexpr_param(subexpressions& sub_expr, std::vecto
                 tmp_parse_subexpr = parse_subexpr;
                 parse_subexpr.token_of_subexpr.clear();
                 parse_subexpr.token_of_subexpr.push_back(
-                    lexer::token(lexer::token_type::LITERALS, tmp_parse_subexpr.token_of_subexpr[0].token_val+
+                    token_expr::token(token_expr::token_type::LITERALS, tmp_parse_subexpr.token_of_subexpr[0].token_val+
                                                               tmp_parse_subexpr.token_of_subexpr[2].token_val,
                         tmp_parse_subexpr.token_of_subexpr[0].pos_defined_line,
                         tmp_parse_subexpr.token_of_subexpr[0].pos_beg_defined_sym)
@@ -563,7 +566,7 @@ void semantic_analyzer::parse_subexpr_param(subexpressions& sub_expr, std::vecto
         if(index_var == 1){
             parse_subexpr.subexpr_t = subexpressions::type_subexpr::INT;
             parse_subexpr.token_of_subexpr.push_back(
-                lexer::token(lexer::token_type::LITERAL,
+                token_expr::token(token_expr::token_type::LITERAL,
                 std::to_string(curr_scope.get_var_value<int>(sub_expr.token_of_subexpr[0].token_val.c_str())),
                 sub_expr.token_of_subexpr[0].pos_defined_line,
                 sub_expr.token_of_subexpr[0].pos_beg_defined_sym)
@@ -572,7 +575,7 @@ void semantic_analyzer::parse_subexpr_param(subexpressions& sub_expr, std::vecto
         else if(index_var == 2){
             parse_subexpr.subexpr_t = subexpressions::type_subexpr::STRING;
             parse_subexpr.token_of_subexpr.push_back(
-                lexer::token(lexer::token_type::LITERALS,
+                token_expr::token(token_expr::token_type::LITERALS,
                 curr_scope.get_var_value<std::string>(sub_expr.token_of_subexpr[0].token_val),
                 sub_expr.token_of_subexpr[0].pos_defined_line,
                 sub_expr.token_of_subexpr[0].pos_beg_defined_sym)
@@ -587,7 +590,7 @@ void semantic_analyzer::parse_subexpr_param(subexpressions& sub_expr, std::vecto
                 new_sub_exprs.push_back(sub_exprs[i]);
             for(u32t i = 0; i < vec_int_id.size(); ++i){
                 tmp_sub_expr.token_of_subexpr.push_back(
-                    lexer::token(lexer::token_type::LITERAL,
+                    token_expr::token(token_expr::token_type::LITERAL,
                     std::to_string(vec_int_id[i]),
                     sub_expr.token_of_subexpr[0].pos_defined_line,
                     sub_expr.token_of_subexpr[0].pos_beg_defined_sym)
@@ -609,7 +612,7 @@ void semantic_analyzer::parse_subexpr_param(subexpressions& sub_expr, std::vecto
                 new_sub_exprs.push_back(sub_exprs[i]);
             for(u32t i = 0; i < vec_str_id.size(); ++i){
                 tmp_sub_expr.token_of_subexpr.push_back(
-                    lexer::token(lexer::token_type::LITERALS,
+                    token_expr::token(token_expr::token_type::LITERALS,
                     vec_str_id[i],
                     sub_expr.token_of_subexpr[0].pos_defined_line,
                     sub_expr.token_of_subexpr[0].pos_beg_defined_sym)
@@ -629,7 +632,7 @@ void semantic_analyzer::parse_subexpr_param(subexpressions& sub_expr, std::vecto
     else
         return;
 
-    if(parse_subexpr.token_of_subexpr[0].token_t == lexer::token_type::LITERAL)
+    if(parse_subexpr.token_of_subexpr[0].token_t == token_expr::token_type::LITERAL)
             parse_subexpr.subexpr_t = subexpressions::type_subexpr::INT;
     else
         parse_subexpr.subexpr_t = subexpressions::type_subexpr::STRING;

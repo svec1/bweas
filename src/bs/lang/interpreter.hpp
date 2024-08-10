@@ -55,8 +55,14 @@ namespace interpreter{
                 // construction of dynamic post-semantic command module(DPCM)
                 bool CDPCM{0};
 
+                // whether to import modules
                 bool import_module{0};
+
+                // whether to use external scope
                 bool use_external_scope{0};
+
+                // whether to pass the list of external functions that 
+                // should be called in semantic analysis to semantic analysis
                 bool transmit_smt_name_func_with_smt{0};
 
                 const char* filename_interp{MAIN_FILE};
@@ -74,10 +80,12 @@ namespace interpreter{
             ~interpreter_exec() = default;
 
         public:
+            // Compiles an abstract expression of function
             void build_aef();
 
+            // Interpretation of functions (not declaring, and which are not 
+            // explicitly marked as called in the semantic analysis)
             void interpreter_run();
-            void debug_run();
 
             void set_config(config conf);
             void set_external_scope(var::scope* _external_scope);

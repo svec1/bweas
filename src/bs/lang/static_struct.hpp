@@ -1,12 +1,13 @@
 #ifndef _STATIC_STRUCT__H
 #define _STATIC_STRUCT__H
 
+#include "../../kernel/low_level/type.h"
+
 #include <string>
-#include "../../mdef.hpp"
 
 namespace var{
     namespace struct_sb{
-
+        
         enum class language{
             c = 0,
             cpp,
@@ -23,6 +24,9 @@ namespace var{
             DEBUG
         };
 
+        // structure for naming versions in a style MinorMajorPatch
+        // --------------------------------------------------------
+        // default(0.0.0)
         struct version{
             version() = default;
             version(u32t mj, u32t mn, u32t ptch)
@@ -39,6 +43,10 @@ namespace var{
             u32t patch{0};
         };
 
+        // project structure
+        // -----------------
+        // includes settings that are needed
+        // to generate compilation commands, linking, etc.
         struct project{
             project() = default;
             std::string name_project;
@@ -57,6 +65,10 @@ namespace var{
             std::vector<std::string> vec_templates;
         };
 
+        // target structure
+        // ----------------
+        // includes the main project, the current configuration
+        // and additional dependencies
         struct target{
             target() = default;
             std::shared_ptr<project> prj;
@@ -66,6 +78,7 @@ namespace var{
             std::string name_target;
             version version_target;
 
+            std::vector<target> othr_dependence{0};
             std::vector<std::string> target_vec_libs;
         };
     }

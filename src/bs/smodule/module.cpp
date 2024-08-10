@@ -23,9 +23,9 @@ semantic_an::table_func mdl_manager::load_module(std::string name){
             if(!assist.load_dll(it->first))
                 assist.call_err("RTT001", "Error code(+" + std::to_string(assist.get_error_win32()) + "); Library: " + it->first);
             for(const auto& it_j : it->second){
-                parser::notion_func nfunc;
+                aef_expr::notion_func nfunc;
                 for(const auto& it_b : it_j){
-                    nfunc.func_ref = (void(*)(const std::vector<parser::subexpressions>&, var::scope&))assist.get_ptr_func(it->first, it_b.first);
+                    nfunc.func_ref = (void(*)(const std::vector<aef_expr::subexpressions>&, var::scope&))assist.get_ptr_func(it->first, it_b.first);
                     if(nfunc.func_ref == nullptr)
                         assist.call_err("RTT002", "Error code(+" + std::to_string(assist.get_error_win32()) + "); Improper handling: "+ it->first + "->" + it_b.first);
                     nfunc.expected_args = it_b.second;
@@ -51,9 +51,9 @@ semantic_an::table_func mdl_manager::load_modules(const std::vector<std::string>
             if(!assist.load_dll(it.first))
                 assist.call_err("RTT001", "Error code(+" + std::to_string(assist.get_error_win32()) + "); Library: " + it.first);
             for(const auto& it_j : it.second){
-                parser::notion_func nfunc;
+                aef_expr::notion_func nfunc;
                 for(const auto& it_b : it_j){
-                    nfunc.func_ref = (void(*)(const std::vector<parser::subexpressions>&, var::scope&))assist.get_ptr_func(it.first, it_b.first);
+                    nfunc.func_ref = (void(*)(const std::vector<aef_expr::subexpressions>&, var::scope&))assist.get_ptr_func(it.first, it_b.first);
                     if(nfunc.func_ref == nullptr)
                         assist.call_err("RTT002", "Error code(+" + std::to_string(assist.get_error_win32()) + "); Improper handling: "+ it.first + "->" + it_b.first);
                     nfunc.expected_args = it_b.second;
@@ -73,9 +73,9 @@ semantic_an::table_func mdl_manager::load_modules_all(){
             if(!assist.load_dll(it.first))
                 assist.call_err("RTT001", "Error code(+" + std::to_string(assist.get_error_win32()) + "); Library: " + it.first);
             for(const auto& it_j : it.second){
-                parser::notion_func nfunc;
+                aef_expr::notion_func nfunc;
                 for(const auto& it_b : it_j){
-                    nfunc.func_ref = (void(*)(const std::vector<parser::subexpressions>&, var::scope&))assist.get_ptr_func(it.first, it_b.first);
+                    nfunc.func_ref = (void(*)(const std::vector<aef_expr::subexpressions>&, var::scope&))assist.get_ptr_func(it.first, it_b.first);
                     if(nfunc.func_ref == nullptr)
                         assist.call_err("RTT002", "Error code(+" + std::to_string(assist.get_error_win32()) + "); Improper handling: "+ it.first + "->" + it_b.first);
                     nfunc.expected_args = it_b.second;
