@@ -117,6 +117,12 @@ i32t kl_find_file_p(const pfile file){
     return -1;
 }
 
+i32t kl_file_ind_valid(u32t ind){
+    if(ind < krnlFiles.count)
+        return 1;
+    return 0;
+}
+
 const inf_file* kl_get_info_file(u32t ind){
     if(ind >= krnlFiles.count)
         err_fatal_ref(get_kernel_err(1));

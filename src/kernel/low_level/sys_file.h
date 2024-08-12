@@ -36,6 +36,8 @@ char* kl_get_track_list();
 i32t kl_find_file(str name);
 i32t kl_find_file_p(const pfile file);
 
+i32t kl_file_ind_valid(u32t ind);
+
 const inf_file* kl_get_info_file(u32t ind);
 char* kl_build_inf_file(const inf_file* file);
 

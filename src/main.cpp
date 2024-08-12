@@ -5,7 +5,6 @@
 
 int main(int argv, char** args)
 {
-
     clock_t beg = clock();
 
     /*
