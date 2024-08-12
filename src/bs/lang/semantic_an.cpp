@@ -460,9 +460,15 @@ void semantic_analyzer::smt_second_pass(abstract_expr_func &expr_s, var::scope& 
                         else if(expr_s[i].expr_func.func_n.expected_args[j] == params::LSTR_OR_ID_VAR &&
                            index_type != 2 && index_type != 4)
                            assist.call_err("SMT004", build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]) + " Expected: [VAR ID->([STRING] or [VECTOR STRING])]\n");
+                        else if((index_type == 3 || index_type == 4) && 
+                                (j < expr_s[i].expr_func.func_n.expected_args.size()-1 && expr_s[i].expr_func.func_n.expected_args[j+1] != params::NEXT_TOO)){
+                            if(expr_s[i].expr_func.func_n.expected_args[j] == params::LNUM_OR_ID_VAR)
+                                assist.call_err("SMT004", build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]) + " Expected: [VAR ID->[NUMBER]]\n");
+                            else
+                                assist.call_err("SMT004", build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]) + " Expected: [VAR ID->[STRING]]\n");
+                        }
                         else if(expr_s[i].expr_func.func_n.expected_args[j] == params::VAR_ID && index_type == 0)
                             assist.call_err("SMT008", build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]) + " Expected: exist variable with any type\n");
-                        
                     }
                 }
             }

@@ -77,7 +77,7 @@ class assistant{
         std::unordered_map<std::string, HMODULE> hDLL_s;
         #endif
 
-        std::ofstream log_file;
+        HND log_file_handle{0};
 
         bool output{1}, log{1};
 };

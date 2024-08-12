@@ -20,7 +20,8 @@ assistant::~assistant(){
     for(const auto& it : hDLL_s)
         FreeLibrary(it.second);
     #endif
-    log_file.close();
+    if(file_exist(log_file_handle))
+        close_file(log_file_handle);
     dump_assistf();
 
     for(u32t i = 0; i < err_assistant.size(); ++i){
@@ -32,7 +33,8 @@ assistant::~assistant(){
 
 void assistant::file_log_name(std::string name_file){
     if(name_file.empty()) return;
-    log_file.open(name_file, std::ios::app);
+    if(!file_exist(log_file_handle))
+        log_file_handle = open_file(name_file, MODE_WRITE_TO_FILE);
 }
 void assistant::switch_log(bool val){
     log = val;
@@ -113,7 +115,7 @@ void assistant::check_safe_call_dll_func(){
     if(_winapi_call_knw_was_hook()){
         printf("\n");
         if(log)
-            log_file << HOOK_TEXT_DETECTED << "\n";
+            write_file(log_file_handle, HOOK_TEXT_DETECTED);
         err_fatal_ref(get_kernel_err(2));
     }
 }
@@ -134,8 +136,8 @@ HMODULE assistant::get_handle_module_dll(std::string dll_name){
 void assistant::operator<<(std::string text){
     if(output)
         printf("%s\n", text.c_str());
-    if(log)
-        log_file << text << "\n";
+    if(log && file_exist(log_file_handle))
+        write_file(log_file_handle, text + "\n");
 }
 
 

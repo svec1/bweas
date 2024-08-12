@@ -52,7 +52,10 @@ extern "C"
     str get_path_file(const pfile file);
     str get_desc_file(const pfile file);
 
+    i32t file_exist(u32t ind);
+
     str get_list_open_files();
+
 
     /* functions which print in a output stream error of type _err*/
 

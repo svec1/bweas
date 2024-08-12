@@ -27,7 +27,7 @@ void init_assistf(u32t output_warning){
 
     KERNEL_ERR[0] = make_err("KNL001:Undefined behavior", "The kernel can no longer serve the program.", 1);
     KERNEL_ERR[1] = make_err("KNL002:Out of range", "The kernel noticed that the value was out of range.", 2);
-    KERNEL_ERR[2] = make_err("KNL003:Danger Found", "Security is not guaranteed. The kernel can no longer support the application.", 3);
+    KERNEL_ERR[2] = make_err("KNL003:Danger Found", "The kernel has noticed the danger. Security is not guaranteed.", 3);
 }
 __declspec(noinline)
 void dump_assistf(){
@@ -36,6 +36,10 @@ void dump_assistf(){
         c_wout_kernel("Was not closed:\n[\n%s]\n", FOREGROUND_RED, buf_f);
         free(buf_f);
     }
+    hndl = NULL;
+    kl_output_warning = KL_NO_DEBUG_OUTPUT;
+    memset(&KERNEL_ERR, NULL, COUNT_KERN_ERR);
+
     kl_reset_track_file();
     free_track_f_list();
 }
@@ -131,6 +135,12 @@ __declspec(noinline)
 str get_desc_file(const pfile file){
     if(file == NULL) return NULL;
     return kl_get_desc_track_file(kl_find_file_p(file));
+}
+__declspec(noinline)
+i32t file_exist(u32t ind){
+    if(kl_file_ind_valid(ind))
+        return 1;
+    return 0;
 }
 __declspec(noinline)
 str get_list_open_files(){
