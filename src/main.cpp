@@ -3,8 +3,8 @@
 
 #include "bs/build_sys.hpp"
 
-int main(int argv, char** args)
-{
+int
+main(int argv, char **args) {
     clock_t beg = clock();
 
     /*
@@ -52,7 +52,6 @@ int main(int argv, char** args)
         _interpreter.interpreter_run();
 
         assist << std::string("Sec: " + std::to_string((double)(clock() - beg) / CLOCKS_PER_SEC));
-
     }
 
     return 0;

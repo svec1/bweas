@@ -1,0 +1,14 @@
+BasedOnStyle: Microsoft     
+Language: Cpp
+
+BraceWrapping :
+    AfterControlStatement: Never
+    AfterFunction: False
+    AfterStruct: False
+    AfterNamespace: False
+    AfterClass: False
+    AfterEnum: False
+    BeforeElse: True
+
+AlwaysBreakAfterDefinitionReturnType: All
+AlwaysBreakAfterReturnType: All

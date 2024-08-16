@@ -4,58 +4,64 @@
 #include "../../kernel/low_level/type.h"
 #include "token.hpp"
 
-#include <vector>
 #include <string>
+#include <vector>
 
-namespace lexer{
-    
+namespace lexer {
 
-    class lex_an{
-        public:
-            lex_an();
-            lex_an(const std::string& _symbols);
-            
-            lex_an(lex_an&&) = delete;
-            lex_an(const lex_an&) = delete;
-            lex_an& operator=(lex_an&&) = delete;
+class lex_an {
+  public:
+    lex_an();
+    lex_an(const std::string &_symbols);
 
-            ~lex_an() = default;
+    lex_an(lex_an &&) = delete;
+    lex_an(const lex_an &) = delete;
+    lex_an &
+    operator=(lex_an &&) = delete;
 
-        public:
-            void set_symbols(const std::string& _symbols);
-            std::vector<token_expr::token> get_tokens();
-            void clear_tokens();
+    ~lex_an() = default;
 
-            // lexical analysis
-            // ----------------
-            // Creates tokens with type "token_type".
-            // Prohibits:
-            //  1. use of symbols: * / ! - uh.
-            //  2. form mixed lexemes: "32ggtn5var"
-            //  3. form a literal greater than UINT_MAX32/2.
-            // ---------------------------------------------
-            // When the @ symbol is encountered, it begins to form a lexeme until the end of the line 
-            // (until the sequence of characters \r\n or \n is found), this lexeme will be a special word for the lexer, 
-            // which, depending on its value, will perform one or another action.
-            // Available special words:
-            //  1. lexer_stop
-            std::vector<token_expr::token> analysis();
+  public:
+    void
+    set_symbols(const std::string &_symbols);
+    std::vector<token_expr::token>
+    get_tokens();
+    void
+    clear_tokens();
 
-        private:
-            char get();
-            
-            // Prohibits characters
-            bool check_sym_valid_grammar(char ch);
+    // lexical analysis
+    // ----------------
+    // Creates tokens with type "token_type".
+    // Prohibits:
+    //  1. use of symbols: * / ! - uh.
+    //  2. form mixed lexemes: "32ggtn5var"
+    //  3. form a literal greater than UINT_MAX32/2.
+    // ---------------------------------------------
+    // When the @ symbol is encountered, it begins to form a lexeme until the end of the line
+    // (until the sequence of characters \r\n or \n is found), this lexeme will be a special word for the lexer,
+    // which, depending on its value, will perform one or another action.
+    // Available special words:
+    //  1. lexer_stop
+    std::vector<token_expr::token>
+    analysis();
 
-        private:
-            static inline bool init_glob{0};
+  private:
+    char
+    get();
 
-            std::vector<token_expr::token> tokens;
-            std::string symbols;
-            
-            u32t pos{0};
-    };
+    // Prohibits characters
+    bool
+    check_sym_valid_grammar(char ch);
 
-}
+  private:
+    static inline bool init_glob{0};
+
+    std::vector<token_expr::token> tokens;
+    std::string symbols;
+
+    u32t pos{0};
+};
+
+} // namespace lexer
 
 #endif
