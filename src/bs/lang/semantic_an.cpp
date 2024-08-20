@@ -23,6 +23,10 @@ semantic_analyzer::semantic_analyzer() {
         assist.add_err("SMT010", "A new symbol was expected");
         assist.add_err("SMT011", "Expected an existing symbol");
         assist.add_err("SMT012", "Another type of expression was expected");
+        assist.add_err("SMT013", "The expected keyword was endif");
+        assist.add_err("SMT014", "The endif keyword is only expected after the if or else keyword");
+        assist.add_err("SMT015", "The expected keyword was if");
+        assist.add_err("SMT016", "Keyword cannot be called");
 
         assist.add_err("SMT-RT001", "An existing character was expected when "
                                     "accessed during semantic analysis");
@@ -71,7 +75,15 @@ semantic_analyzer::smt_zero_pass(const abstract_expr_func &expr_s) {
     for (u32t i = 0; i < expr_s.size(); ++i) {
         if (notion_all_func.find(expr_s[i].expr_func.func_t.token_val) != notion_all_func.end())
             continue;
-        if (expr_s[i].expr_func.func_t.token_val == "set")
+        if (expr_s[i].expr_func.func_t.token_t == token_expr::token_type::KEYWORD) {
+            if (expr_s[i].expr_func.func_t.token_val == STR_KEYWORD_IF)
+                add_func_flink(expr_s[i].expr_func.func_t.token_val, NULL, {params::LNUM_OR_ID_VAR});
+            else if (expr_s[i].expr_func.func_t.token_val == STR_KEYWORD_ELSE)
+                add_func_flink(expr_s[i].expr_func.func_t.token_val, NULL, {});
+            else if (expr_s[i].expr_func.func_t.token_val == STR_KEYWORD_ENDIF)
+                add_func_flink(expr_s[i].expr_func.func_t.token_val, NULL, {});
+        }
+        else if (expr_s[i].expr_func.func_t.token_val == "set")
             add_func_flink(expr_s[i].expr_func.func_t.token_val, sl_func::set,
                            {params::NCHECK_VAR_ID, params::ANY_VALUE_WITHOUT_FUTUREID_NEXT, params::NEXT_TOO});
         else if (expr_s[i].expr_func.func_t.token_val == "project")
@@ -139,7 +151,8 @@ semantic_analyzer::smt_first_pass(abstract_expr_func &expr_s) {
     for (u32t i = 0; i < expr_s.size(); ++i) {
         expr_s[i].expr_func.func_n = notion_all_func[expr_s[i].expr_func.func_t.token_val];
         if (expr_s[i].expr_func.func_n.expected_args.size() != expr_s[i].sub_expr_s.size()) {
-            if (expr_s[i].expr_func.func_n.expected_args[expr_s[i].expr_func.func_n.expected_args.size() - 1] ==
+            if (expr_s[i].expr_func.func_n.expected_args.size() != 0 &&
+                expr_s[i].expr_func.func_n.expected_args[expr_s[i].expr_func.func_n.expected_args.size() - 1] ==
                     params::NEXT_TOO &&
                 (expr_s[i].expr_func.func_n.expected_args.size() - 1 == expr_s[i].sub_expr_s.size() ||
                  expr_s[i].expr_func.func_n.expected_args.size() < expr_s[i].sub_expr_s.size()))
@@ -242,6 +255,14 @@ semantic_analyzer::smt_first_pass(abstract_expr_func &expr_s) {
 }
 void
 semantic_analyzer::smt_second_pass(abstract_expr_func &expr_s, var::scope &curr_scope) {
+
+    // <0 - if_skip, 1 - else_skip; 0 - current if, 1- current else>
+    std::vector<std::pair<bool, bool>> branch_s;
+
+    u32t nested_if = 0;
+
+    bool skip = 0;
+
     for (u32t i = 0; i < expr_s.size(); ++i) {
         params before_nextt_param = params::SIZE_ENUM_PARAMS;
         u32t index_before_nextt_param = 0;
@@ -405,7 +426,58 @@ semantic_analyzer::smt_second_pass(abstract_expr_func &expr_s, var::scope &curr_
             parse_subexpr_param(expr_s[i].sub_expr_s[j], expr_s[i].sub_expr_s, j, curr_scope,
                                 expr_s[i].expr_func.func_n.expected_args[b]);
         }
-        if (expr_s[i].execute_with_semantic_an()) {
+
+        // skips branches
+        if (skip) {
+            if (expr_s[i].expr_func.func_t.token_val == STR_KEYWORD_IF)
+                ++nested_if;
+
+            else if (expr_s[i].expr_func.func_t.token_val == STR_KEYWORD_ELSE)
+                ++nested_if;
+
+            else if (expr_s[i].expr_func.func_t.token_val == STR_KEYWORD_ENDIF) {
+                if (!nested_if)
+                    goto endif_end;
+
+                --nested_if;
+            }
+            expr_s.erase(expr_s.begin() + i);
+            --i;
+        }
+        // keyword handler(if, else, endif)
+        else if (expr_s[i].expr_func.func_t.token_t == token_expr::token_type::KEYWORD) {
+            if (expr_s[i].expr_func.func_t.token_val == STR_KEYWORD_IF) {
+                u32t val = std::stoi(expr_s[i].sub_expr_s[0].token_of_subexpr[0].token_val);
+                if (!val) {
+                    skip = 1;
+                    branch_s.push_back(std::pair<bool, bool>(0, 0));
+                }
+                else
+                    branch_s.push_back(std::pair<bool, bool>(1, 0));
+            }
+            else if (expr_s[i].expr_func.func_t.token_val == STR_KEYWORD_ELSE) {
+                if (!branch_s.size() || branch_s[branch_s.size() - 1].second)
+                    assist.call_err("SMT015", build_pos_tokenb_str(expr_s[i].expr_func.func_t));
+
+                if (branch_s[branch_s.size() - 1].first)
+                    skip = 1;
+            }
+            else if (expr_s[i].expr_func.func_t.token_val == STR_KEYWORD_ENDIF) {
+            endif_end:
+                if (!branch_s.size())
+                    assist.call_err("SMT014", build_pos_tokenb_str(expr_s[i].expr_func.func_t));
+
+                skip = 0;
+                if (branch_s[branch_s.size() - 1].second ||
+                    (i < expr_s.size() - 1 && expr_s[i + 1].expr_func.func_t.token_val != STR_KEYWORD_ELSE))
+                    branch_s.pop_back();
+            }
+            else
+                assist.call_err("SMT016", build_pos_tokenb_str(expr_s[i].expr_func.func_t));
+            expr_s.erase(expr_s.begin() + i);
+            --i;
+        }
+        else if (expr_s[i].execute_with_semantic_an()) {
             wrap_callf_declaration(expr_s[i].expr_func.func_n.func_ref(expr_s[i].sub_expr_s, curr_scope))
                 assist.check_safe_call_dll_func();
         }

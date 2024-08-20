@@ -11,6 +11,8 @@
 // add_param_template, use_tamplates, use_it_template
 namespace sl_func {
 
+using func_decl = void (*)(const std::vector<aef_expr::subexpressions> &sub_expr, var::scope &curr_scope);
+
 // list of all static global functions that
 // should be called in semantic analysis (second pass)
 extern const std::vector<std::string> name_static_func_sm;

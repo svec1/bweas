@@ -9,6 +9,10 @@
 
 namespace lexer {
 
+#define STR_KEYWORD_IF "if"
+#define STR_KEYWORD_ELSE "else"
+#define STR_KEYWORD_ENDIF "endif"
+
 class lex_an {
   public:
     lex_an();

@@ -54,9 +54,6 @@ class interpreter_exec : private module::mdl_manager {
         // - run time every of components interpreter(lexer, parser...)
         bool debug_output{0};
 
-        bool analyzer{0};
-        bool optimyzer{0};
-
         // construction of dynamic post-semantic command module(DPCM)
         bool CDPCM{0};
 
