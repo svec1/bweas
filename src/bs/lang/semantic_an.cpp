@@ -482,6 +482,9 @@ semantic_analyzer::smt_second_pass(abstract_expr_func &expr_s, var::scope &curr_
                 assist.check_safe_call_dll_func();
         }
     }
+
+    if (branch_s.size())
+        assist.call_err("SMT013", "End Of AEF");
 }
 void
 semantic_analyzer::parse_subexpr_param(subexpressions &sub_expr, std::vector<subexpressions> &sub_exprs,
