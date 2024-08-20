@@ -353,7 +353,7 @@ pars_an::try_parse_subexpr(subexpressions &sub_expr) {
     sub_expr = parse_subexpr;
 }
 
-abstract_expr_func
+abstract_expr_func &
 pars_an::analysis() {
     bool start_expr = 1, func_param_curr = 0;
 

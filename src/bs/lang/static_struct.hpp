@@ -3,6 +3,7 @@
 
 #include "../../kernel/low_level/type.h"
 
+#include <memory>
 #include <string>
 
 namespace var {

@@ -17,6 +17,7 @@ const std::vector<std::string> &
 mdl_manager::get_func_with_smt() {
     return func_with_smt;
 }
+#ifdef _WIN32
 semantic_an::table_func
 mdl_manager::load_module(std::string name) {
     semantic_an::table_func external_func_table;
@@ -102,3 +103,17 @@ mdl_manager::load_modules_all() {
 
     return external_func_table;
 }
+#else
+semantic_an::table_func
+mdl_manager::load_module(std::string name) {
+    return semantic_an::table_func{};
+}
+semantic_an::table_func
+mdl_manager::load_modules(const std::vector<std::string> &load_module_name) {
+    return semantic_an::table_func{};
+}
+semantic_an::table_func
+mdl_manager::load_modules_all() {
+    return semantic_an::table_func{};
+}
+#endif

@@ -1,5 +1,7 @@
 .vscode/
+.vs/
 build/
+build_linux/
 
 
 folder-alias.json

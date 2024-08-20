@@ -6,6 +6,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
 
 #ifdef _WIN32
 HANDLE hndl;
@@ -170,11 +171,12 @@ const _err* get_kernel_err(u32t ind){
 __attribute__ ((noinline))
 void init_assistf(u32t output_warning){
     kl_output_warning = output_warning;
-
-    init_track_file();
+    
+    init_track_file(128);
 
     KERNEL_ERR[0] = make_err("KNL001:Undefined behavior", "The kernel can no longer serve the program.", 1);
     KERNEL_ERR[1] = make_err("KNL002:Out of range", "The kernel noticed that the value was out of range.", 2);
+    KERNEL_ERR[2] = make_err("KNL003:Danger Found", "The kernel has noticed the danger. Security is not guaranteed.", 3);
 }
 __attribute__ ((noinline))
 void dump_assistf(){
@@ -194,7 +196,7 @@ i8t KERNELF c_wout(str str_, str clr){
     return 1;
 }
 __attribute__ ((noinline))
-i8t KERNELF c_wout_kernel(str fmt, u32t clr, ...){
+i8t KERNELF c_wout_kernel(str fmt, str clr, ...){
     str str = malloc((strlen(fmt)+strlen(clr)+5)*sizeof(char));
     sprintf(str, "%s%s\033[0m", clr, fmt);
 
@@ -246,13 +248,38 @@ void  KERNELF write_file_out(const pfile file, str src){
     fwrite(src, sizeof(char), strlen(src), *file);
 }
 __attribute__ ((noinline))
-void close_file(str path){
+void close_file_assist(str path){
     if(kl_find_file(path) == -1) return;
     kl_strack_file(kl_find_file(path));
 }
 __attribute__ ((noinline))
+const pfile get_pfile_ind(u32t ind){
+    return kl_get_track_file(ind);
+}
+__attribute__ ((noinline))
 const pfile get_pfile(str path){
     return kl_get_track_file(kl_find_file(path));
+}
+__attribute__ ((noinline))
+i32t get_index_file(const pfile file){
+    if(file == NULL) return NULL;
+    return kl_find_file_p(file);
+}
+__attribute__ ((noinline))
+str get_path_file(const pfile file){
+    if(file == NULL) return NULL;
+    return kl_get_info_file(kl_find_file_p(file))->name;
+}
+__attribute__ ((noinline))
+str get_desc_file(const pfile file){
+    if(file == NULL) return NULL;
+    return kl_get_desc_track_file(kl_find_file_p(file));
+}
+__attribute__ ((noinline))
+i32t file_exist(u32t ind){
+    if(kl_file_ind_valid(ind))
+        return 1;
+    return 0;
 }
 __attribute__ ((noinline))
 str get_list_open_files(){
@@ -264,7 +291,7 @@ void KERNELF err_fatal_obj(_err obj_err){
     exit(EXIT_FAILURE);
 }
 __attribute__ ((noinline))
-void KERNELF err_fatal_ref(_err *obj){
+void KERNELF err_fatal_ref(const _err *obj_err){
     if(obj_err == NULL){
         c_wout_kernel("[KERNEL]: uninitialized error object %x", "\033[31m", &(err_fatal_ref));
         exit(EXIT_FAILURE);
