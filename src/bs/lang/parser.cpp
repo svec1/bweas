@@ -11,6 +11,8 @@ using namespace token_expr;
 std::string
 parser::type_token_str(token_type token_t) {
     switch (token_t) {
+    case token_type::KEYWORD:
+        return "KEYWORD";
     case token_type::ID:
         return "ID";
     case token_type::LITERAL:
@@ -383,13 +385,17 @@ pars_an::analysis() {
                 continue;
             }
             else if (func_param_curr && tokens[i].token_t == token_type::CLOSE_BR) {
-                if (!is_param(tokens[i - 1]))
-                    assist.call_err("PARS004", build_pos_tokenb_str(tokens[i]));
+                if (!is_param(tokens[i - 1])) {
+                    if (tokens[i - 1].token_t != token_type::OPEN_BR)
+                        assist.call_err("PARS004", build_pos_tokenb_str(tokens[i]));
+                    goto start_expr_func;
+                }
                 check_valid_subexpr_first_pass(curr_sub_expr);
                 check_valid_subexpr_second_pass(curr_sub_expr);
                 curr_expr.sub_expr_s.push_back(curr_sub_expr);
                 curr_sub_expr.token_of_subexpr.clear();
 
+            start_expr_func:
                 func_param_curr = 0;
                 start_expr = 1;
 

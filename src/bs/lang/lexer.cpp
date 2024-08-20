@@ -134,7 +134,7 @@ lex_an::analysis() {
             tmp_curr_token.pos_defined_line = count_line;
             if (!lexem.empty()) {
                 tmp_curr_token.token_val = lexem;
-                if (lexem == "if" || lexem == "else") {
+                if (lexem == STR_KEYWORD_IF || lexem == STR_KEYWORD_ELSE || lexem == STR_KEYWORD_ENDIF) {
                     tmp_curr_token.token_t = token_type::KEYWORD;
                     tokens.push_back(tmp_curr_token);
                 }

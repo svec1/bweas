@@ -5,83 +5,82 @@
 
 #include <string>
 
-namespace var{
-    namespace struct_sb{
-        
-        enum class language{
-            c = 0,
-            cpp,
-            csharp,
-            asm_
-        };
-        enum class type_target{
-            exe = 0,
-            lib,
-            interpret
-        };
-        enum class configuration{
-            RELEASE,
-            DEBUG
-        };
+namespace var {
+namespace struct_sb {
 
-        // structure for naming versions in a style MinorMajorPatch
-        // --------------------------------------------------------
-        // default(0.0.0)
-        struct version{
-            version() = default;
-            version(u32t mj, u32t mn, u32t ptch)
-                : major{mj}, minor{mn}, patch{ptch}{}
-            
-            std::string get_str_version(){
-                return std::to_string(major) + "." +
-                       std::to_string(minor) + "." +
-                       std::to_string(patch);
-            }
+enum class language {
+    c = 0,
+    cpp,
+    csharp,
+    asm_
+};
+enum class type_target {
+    exe = 0,
+    lib,
+    interpret
+};
+enum class configuration {
+    RELEASE,
+    DEBUG
+};
 
-            u32t major{0};
-            u32t minor{0};
-            u32t patch{0};
-        };
-
-        // project structure
-        // -----------------
-        // includes settings that are needed
-        // to generate compilation commands, linking, etc.
-        struct project{
-            project() = default;
-            std::string name_project;
-            version version_project;
-
-            language lang;
-
-            std::string path_compiler, path_linker;
-            std::string rflags_compiler, rflags_linker;
-            std::string dflags_compiler, dflags_linker;
-            u32t standart_c{98}, standart_cpp{14};
-
-            bool use_it_templates = 0;
-
-            std::vector<std::string> src_files;
-            std::vector<std::string> vec_templates;
-        };
-
-        // target structure
-        // ----------------
-        // includes the main project, the current configuration
-        // and additional dependencies
-        struct target{
-            target() = default;
-            std::shared_ptr<project> prj;
-            type_target target_t;
-            configuration target_cfg;
-            
-            std::string name_target;
-            version version_target;
-
-            std::vector<target> othr_dependence{0};
-            std::vector<std::string> target_vec_libs;
-        };
+// structure for naming versions in a style MinorMajorPatch
+// --------------------------------------------------------
+// default(0.0.0)
+struct version {
+    version() = default;
+    version(u32t mj, u32t mn, u32t ptch) : major{mj}, minor{mn}, patch{ptch} {
     }
-}
+
+    std::string
+    get_str_version() {
+        return std::to_string(major) + "." + std::to_string(minor) + "." + std::to_string(patch);
+    }
+
+    u32t major{0};
+    u32t minor{0};
+    u32t patch{0};
+};
+
+// project structure
+// -----------------
+// includes settings that are needed
+// to generate compilation commands, linking, etc.
+struct project {
+    project() = default;
+    std::string name_project;
+    version version_project;
+
+    language lang;
+
+    std::string path_compiler, path_linker;
+    std::string rflags_compiler, rflags_linker;
+    std::string dflags_compiler, dflags_linker;
+    u32t standart_c{98}, standart_cpp{14};
+
+    bool use_it_templates = 0;
+
+    std::vector<std::string> src_files;
+    std::vector<std::string> vec_templates;
+};
+
+// target structure
+// ----------------
+// includes the main project, the current configuration
+// and additional dependencies
+struct target {
+    target() = default;
+    std::shared_ptr<project> prj;
+    type_target target_t;
+    configuration target_cfg;
+
+    std::string name_target;
+    version version_target;
+
+    std::vector<target> othr_dependence{0};
+    std::vector<std::string> target_vec_libs;
+};
+} // namespace struct_sb
+} // namespace var
 
 #endif
