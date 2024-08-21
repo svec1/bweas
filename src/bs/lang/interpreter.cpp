@@ -28,8 +28,11 @@ interpreter_exec::set_external_scope(var::scope *_external_scope) {
 
 void
 interpreter_exec::build_aef() {
+#ifdef _WIN32
+    assist.safe_call_dll_func_begin();
+#endif
     wrap_interpreter(
-        assist.safe_call_dll_func_begin(); HND handle_f = assist.open_file(interp_conf.filename_interp, MODE_READ_FILE);
+        HND handle_f = assist.open_file(interp_conf.filename_interp, MODE_READ_FILE);
         lexer.set_symbols(assist.read_file(handle_f)); assist.close_file(handle_f);
 
         if (interp_conf.import_module) build_external_func_table();
@@ -58,17 +61,28 @@ interpreter_exec::build_aef() {
                 smt_analyzer.analysis(parser.analysis(), *external_scope);
             else
                 smt_analyzer.analysis(parser.analysis(), global_scope);
-        } assist.safe_call_dll_func_end();)
+        })
+#ifdef _WIN32
+        assist.safe_call_dll_func_end();
+#endif
 }
 
 void
 interpreter_exec::interpreter_run() {
+#ifdef _WIN32
     wrap_interpreter(curr_expr = 0; assist.safe_call_dll_func_begin(); for (; curr_expr < aef.size(); ++curr_expr) {
         if (aef[curr_expr].expr_func.func_n.func_ref == sl_func::set || aef[curr_expr].execute_with_semantic_an())
             continue;
         wrap_callf_interpreter(aef[curr_expr].expr_func.func_n.func_ref(aef[curr_expr].sub_expr_s, global_scope);, )
             assist.check_safe_call_dll_func();
     } assist.safe_call_dll_func_end();)
+#else
+    wrap_interpreter(curr_expr = 0; for (; curr_expr < aef.size(); ++curr_expr) {
+        if (aef[curr_expr].expr_func.func_n.func_ref == sl_func::set || aef[curr_expr].execute_with_semantic_an())
+            continue;
+        wrap_callf_interpreter(aef[curr_expr].expr_func.func_n.func_ref(aef[curr_expr].sub_expr_s, global_scope);, )
+    })
+#endif
 }
 
 void

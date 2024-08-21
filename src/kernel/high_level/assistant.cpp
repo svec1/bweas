@@ -3,11 +3,9 @@
 #include <filesystem>
 #include <stdlib.h>
 
-
 #ifdef _WIN32
 #include "hook_winapi.hpp"
 #include <windows.h>
-
 #endif
 
 assistant::assistant() {
@@ -72,17 +70,21 @@ assistant::call_err(std::string name_err, std::string addit) {
         err_fatal_ref(get_kernel_err(0));
     }
 
+#ifdef _WIN32
     SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 4);
+#endif
     this->operator<<(std::string(err_assistant[ind]->name_e) + "(" + std::to_string(ind) +
                      "): " + err_assistant[ind]->desc_e + "\nDetail: [" + addit + "]");
+#ifdef _WIN32
     SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 7);
+#endif
     exit(EXIT_FAILURE);
 }
 
 HND
 assistant::open_file(std::string name_file, i32t mode) {
-    if (name_file.find("C:\\") == name_file.npos)
-        name_file = std::filesystem::current_path().string() + "\\" + name_file;
+    if (name_file.find("C:/") == name_file.npos)
+        name_file = std::filesystem::current_path().string() + "/" + name_file;
     name_all_files.push_back(name_file);
     return open_file(mode, name_all_files[name_all_files.size() - 1]);
 }
@@ -92,8 +94,8 @@ assistant::close_file(HND handle) {
 }
 HND
 assistant::get_handle_file(std::string name_file) {
-    if (name_file.find("C:\\") == name_file.npos)
-        name_file = std::filesystem::current_path().string() + "\\" + name_file;
+    if (name_file.find("C:/") == name_file.npos)
+        name_file = std::filesystem::current_path().string() + "/" + name_file;
     return get_index_file(get_pfile(const_cast<char *>(name_file.c_str())));
 }
 std::string

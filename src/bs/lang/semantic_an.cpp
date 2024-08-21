@@ -2,6 +2,8 @@
 
 #include "semantic_an.hpp"
 
+#include <algorithm>
+
 using namespace parser;
 using namespace aef_expr;
 using namespace semantic_an;
@@ -479,7 +481,9 @@ semantic_analyzer::smt_second_pass(abstract_expr_func &expr_s, var::scope &curr_
         }
         else if (expr_s[i].execute_with_semantic_an()) {
             wrap_callf_declaration(expr_s[i].expr_func.func_n.func_ref(expr_s[i].sub_expr_s, curr_scope))
+#ifdef _WIN32
                 assist.check_safe_call_dll_func();
+#endif
         }
     }
 

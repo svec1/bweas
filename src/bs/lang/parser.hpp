@@ -58,7 +58,7 @@ class pars_an {
     // It requires that a certain sequence of tokens begin with a keyword or function identifier,
     // that the enumeration of parameters begins with the token "(" and ends with ")",
     // when enumerating parameters, the separator is used ","
-    abstract_expr_func
+    abstract_expr_func &
     analysis();
 
   private:
