@@ -121,8 +121,11 @@ This small API is presented in the [assist_f.h](https://github.com/svec1/bweas/b
 
 ### HIGH-LEVEL
 
-The high  level of the kernel  provides a class  for  easy  access  to the low-level kernel,  logging,  as  well as the ability to load  dynamic  libraries  with  interception of WinAPI  functions.
+The high  level of the kernel  provides a class  for  easy  access  to the low-level kernel,  logging,  as  well as the ability to load  dynamic  libraries  with  interception of WinAPI  functions(Windows) and interception of system call(functions from standarts libraries for linux).
 To  achieve  logging,  this  level is used  for  any  output of information(must).
+
+##### WINAPI
+
 It's not  worth  disassembling  default  functions, it's a waste of time,  but  downloading  dll  libraries  and  interceptions is worth it.
 
  -     HMODULE  load_dll(std::string  dll_name);
@@ -142,3 +145,6 @@ It's not  worth  disassembling  default  functions, it's a waste of time,  but  
 	   void  safe_call_dll_func_end();
 
 	A function  with the prefix  begin  produces a hook, a function  with the prefix  end,  returns  all  pointers  back  (ends the interception).
+
+##### UNIX
+For Unix-like systems, exactly the same functions are presented (relevant) as for WinApi. The only difference is that in the case of WinAPI, interception occurs in real time, and in UNIX-like systems, interception occurs during the assembly of this system, when, after generating a special dynamic library where the intercepted functions are declared, the linker links this library with the LD_PRELOAD preset.
