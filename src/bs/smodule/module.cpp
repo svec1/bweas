@@ -17,24 +17,33 @@ const std::vector<std::string> &
 mdl_manager::get_func_with_smt() {
     return func_with_smt;
 }
-#ifdef _WIN32
 semantic_an::table_func
 mdl_manager::load_module(std::string name) {
     semantic_an::table_func external_func_table;
     for (u32t i = 0; i < mdls.size(); ++i) {
         const auto &it = mdls[i].find(name);
         if (it != mdls[i].end()) {
+#ifdef _WIN32
             if (!assist.load_dll(it->first))
                 assist.call_err("RTT001",
                                 "Error code(+" + std::to_string(assist.get_error_win32()) + "); Library: " + it->first);
+#else
+            if (assist.load_dl(it->first))
+                assist.call_err("RTT001", "Error(+" + std::string(assist.get_error_dl()) + "); Library: " + it->first);
+#endif
             for (const auto &it_j : it->second) {
                 aef_expr::notion_func nfunc;
                 for (const auto &it_b : it_j) {
                     nfunc.func_ref = (void (*)(const std::vector<aef_expr::subexpressions> &,
                                                var::scope &))assist.get_ptr_func(it->first, it_b.first);
                     if (nfunc.func_ref == nullptr)
+#ifdef _WIN32
                         assist.call_err("RTT002", "Error code(+" + std::to_string(assist.get_error_win32()) +
                                                       "); Improper handling: " + it->first + "->" + it_b.first);
+#else
+                        assist.call_err("RTT002", "Error(+" + std::string(assist.get_error_dl()) +
+                                                      "); Improper handling: " + it->first + "->" + it_b.first);
+#endif
                     nfunc.expected_args = it_b.second;
                     external_func_table.emplace(it_b.first, nfunc);
                 }
@@ -57,17 +66,27 @@ mdl_manager::load_modules(const std::vector<std::string> &load_module_name) {
             continue;
 
         load_module:
+#ifdef _WIN32
             if (!assist.load_dll(it.first))
                 assist.call_err("RTT001",
                                 "Error code(+" + std::to_string(assist.get_error_win32()) + "); Library: " + it.first);
+#else
+            if (assist.load_dl(it.first))
+                assist.call_err("RTT001", "Error(+" + std::string(assist.get_error_dl()) + "); Library: " + it.first);
+#endif
             for (const auto &it_j : it.second) {
                 aef_expr::notion_func nfunc;
                 for (const auto &it_b : it_j) {
                     nfunc.func_ref = (void (*)(const std::vector<aef_expr::subexpressions> &,
                                                var::scope &))assist.get_ptr_func(it.first, it_b.first);
                     if (nfunc.func_ref == nullptr)
+#ifdef _WIN32
                         assist.call_err("RTT002", "Error code(+" + std::to_string(assist.get_error_win32()) +
                                                       "); Improper handling: " + it.first + "->" + it_b.first);
+#else
+                        assist.call_err("RTT002", "Error(+" + std::string(assist.get_error_dl()) +
+                                                      "); Improper handling: " + it.first + "->" + it_b.first);
+#endif
                     nfunc.expected_args = it_b.second;
                     external_func_table.emplace(it_b.first, nfunc);
                 }
@@ -83,17 +102,27 @@ mdl_manager::load_modules_all() {
     semantic_an::table_func external_func_table;
     for (u32t i = 0; i < mdls.size(); ++i) {
         for (const auto &it : mdls[i]) {
+#ifdef _WIN32
             if (!assist.load_dll(it.first))
                 assist.call_err("RTT001",
                                 "Error code(+" + std::to_string(assist.get_error_win32()) + "); Library: " + it.first);
+#else
+            if (assist.load_dl(it.first))
+                assist.call_err("RTT001", "Error(+" + std::string(assist.get_error_dl()) + "); Library: " + it.first);
+#endif
             for (const auto &it_j : it.second) {
                 aef_expr::notion_func nfunc;
                 for (const auto &it_b : it_j) {
                     nfunc.func_ref = (void (*)(const std::vector<aef_expr::subexpressions> &,
                                                var::scope &))assist.get_ptr_func(it.first, it_b.first);
                     if (nfunc.func_ref == nullptr)
+#ifdef _WIN32
                         assist.call_err("RTT002", "Error code(+" + std::to_string(assist.get_error_win32()) +
                                                       "); Improper handling: " + it.first + "->" + it_b.first);
+#else
+                        assist.call_err("RTT002", "Error(+" + std::string(assist.get_error_dl()) +
+                                                      "); Improper handling: " + it.first + "->" + it_b.first);
+#endif
                     nfunc.expected_args = it_b.second;
                     external_func_table.emplace(it_b.first, nfunc);
                 }
@@ -103,17 +132,3 @@ mdl_manager::load_modules_all() {
 
     return external_func_table;
 }
-#else
-semantic_an::table_func
-mdl_manager::load_module(std::string name) {
-    return semantic_an::table_func{};
-}
-semantic_an::table_func
-mdl_manager::load_modules(const std::vector<std::string> &load_module_name) {
-    return semantic_an::table_func{};
-}
-semantic_an::table_func
-mdl_manager::load_modules_all() {
-    return semantic_an::table_func{};
-}
-#endif

@@ -77,12 +77,22 @@ class assistant {
     void
     safe_call_dll_func_end();
 
-    void *
-    get_ptr_func(std::string dll_name, std::string name_func);
-
     HMODULE
     get_handle_module_dll(std::string dll_name);
+
+#elif __unix__
+
+    const char *
+    get_error_dl();
+
+    u32t
+    load_dl(std::string dl_name);
+    u32t
+    dump_dl(std::string dl_name);
+
 #endif
+    void *
+    get_ptr_func(std::string dl_name, std::string name_func);
 
     // output to console(if output = true) and logging(if log = true)
     void
@@ -96,6 +106,8 @@ class assistant {
     std::vector<std::string> name_all_files;
 #ifdef _WIN32
     std::unordered_map<std::string, HMODULE> hDLL_s;
+#elif __unix__
+    std::unordered_map<std::string, void *> hDL_s;
 #endif
 
     HND log_file_handle{0};

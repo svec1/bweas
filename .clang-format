@@ -1,5 +1,4 @@
-BasedOnStyle: Microsoft     
-Language: Cpp
+BasedOnStyle: Microsoft
 
 BraceWrapping :
     AfterControlStatement: Never
