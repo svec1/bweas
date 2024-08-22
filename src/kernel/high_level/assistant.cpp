@@ -6,6 +6,8 @@
 #ifdef _WIN32
 #include "hook_winapi.hpp"
 #include <windows.h>
+#elif __unix__
+#include <dlfcn.h>
 #endif
 
 assistant::assistant() {
@@ -19,6 +21,9 @@ assistant::~assistant() {
 #ifdef _WIN32
     for (const auto &it : hDLL_s)
         FreeLibrary(it.second);
+#elif __unix__
+    for (const auto &it : hDL_s)
+        dlclose(it.second);
 #endif
     if (file_exist(log_file_handle))
         close_file(log_file_handle);
@@ -158,6 +163,39 @@ assistant::get_handle_module_dll(std::string dll_name) {
         return 0;
     return hDLL_s[dll_name];
 }
+#elif __unix__
+
+const char *
+assistant::get_error_dl() {
+    return dlerror();
+}
+
+u32t
+assistant::load_dl(std::string dl_name) {
+    if (hDL_s.find(dl_name) != hDL_s.end())
+        return 1;
+    void *dlmem_p = dlopen(dl_name.c_str(), RTLD_LAZY);
+    if (dlmem_p == nullptr)
+        return 1;
+    hDL_s[dl_name] = dlmem_p;
+    return 0;
+}
+u32t
+assistant::dump_dl(std::string dl_name) {
+    if (hDL_s.find(dl_name) == hDL_s.end())
+        return 1;
+    dlclose(hDL_s[dl_name]);
+    return 0;
+}
+
+void *
+assistant::get_ptr_func(std::string dl_name, std::string name_func) {
+    if (hDL_s.find(dl_name) == hDL_s.end())
+        return nullptr;
+    void *ptr_sym = dlsym(hDL_s[dl_name], name_func.c_str());
+    return ptr_sym;
+}
+
 #endif
 void
 assistant::operator<<(std::string text) {
