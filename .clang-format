@@ -11,3 +11,4 @@ BraceWrapping :
 
 AlwaysBreakAfterDefinitionReturnType: All
 AlwaysBreakAfterReturnType: All
+StatementMacros: [call_err_tk_inf_lex, wrap_interpreter, debug_mark_time_func]

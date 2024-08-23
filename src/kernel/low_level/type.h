@@ -1,11 +1,7 @@
 #ifndef TYPE__H_
 #define TYPE__H_
 
-#ifdef _WIN32
-typedef struct _iobuf FILE;
-#else
 #include <stdio.h>
-#endif
 
 typedef unsigned long long u64t;
 typedef unsigned int u32t;

@@ -4,7 +4,6 @@
 /* ^^^ Here is the definition of assistant functions */
 
 #include "kernel_def.h"
-#include "macros.h"
 #include "type.h"
 
 typedef struct err _err;
@@ -22,10 +21,10 @@ extern "C"
     dump_assistf();
 
 /* writes and output some information to a output stream; */
-#ifdef _WIN32
+#if defined(WIN)
     i8t KERNELF
     c_wout(str str_, u32t clr);
-#else
+#elif defined(UNIX)
     i8t KERNELF
     c_wout(str str_, str clr);
 #endif
@@ -87,11 +86,11 @@ err_fatal_ref(const _err *obj_err);
 extern const _err *
 get_kernel_err(u32t ind);
 
-#ifdef _WIN32
+#if defined(WIN)
 extern i8t KERNELF
 c_wout_kernel(str fmt, u32t clr, ...);
 
-#else
+#elif defined(UNIX)
 
 extern i8t KERNELF
 c_wout_kernel(str fmt, str clr, ...);

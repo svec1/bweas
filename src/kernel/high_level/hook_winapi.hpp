@@ -1,8 +1,6 @@
 #ifndef HOOK_WINAPI__H
 #define HOOK_WINAPI__H
 
-#ifdef _WIN32
-
 #include <Windows.h>
 #include <memoryapi.h>
 #include <processthreadsapi.h>
@@ -38,7 +36,5 @@ extern "C"
     BOOL
     _winapi_call_knw_was_hook();
 }
-
-#endif
 
 #endif

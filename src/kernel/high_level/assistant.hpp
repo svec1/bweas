@@ -61,7 +61,7 @@ class assistant {
     void
     write_file(HND handle, std::string buf);
 
-#ifdef _WIN32
+#if defined(WIN)
     DWORD
     get_error_win32();
 
@@ -80,7 +80,11 @@ class assistant {
     HMODULE
     get_handle_module_dll(std::string dll_name);
 
-#elif __unix__
+#elif defined(UNIX)
+
+#define SBW_LIB_HOOK_STAT_SYM "HOOK_STATUS"
+#define HOOK_DETECTED_STR                                                                                              \
+    "WARNING!!!A system call was detected, most likely the dynamically loaded dll library is hostile."
 
     const char *
     get_error_dl();
@@ -89,6 +93,9 @@ class assistant {
     load_dl(std::string dl_name);
     u32t
     dump_dl(std::string dl_name);
+
+    void
+    check_safe_call_dl_func();
 
 #endif
     void *
@@ -104,9 +111,9 @@ class assistant {
 
     std::vector<_err *> err_assistant;
     std::vector<std::string> name_all_files;
-#ifdef _WIN32
+#if defined(WIN)
     std::unordered_map<std::string, HMODULE> hDLL_s;
-#elif __unix__
+#elif defined(UNIX)
     std::unordered_map<std::string, void *> hDL_s;
 #endif
 

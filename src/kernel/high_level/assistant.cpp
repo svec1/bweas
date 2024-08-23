@@ -8,20 +8,25 @@
 #include <windows.h>
 #elif __unix__
 #include <dlfcn.h>
+extern "C" int
+init_hook();
 #endif
 
 assistant::assistant() {
     init_assistf(KL_DEBUG_OUTPUT);
+#if defined(UNIX)
+    init_hook();
+#endif
 }
 assistant::assistant(bool _output, bool _log) : output(_output), log(_log) {
     init_assistf(KL_DEBUG_OUTPUT);
 }
 
 assistant::~assistant() {
-#ifdef _WIN32
+#if defined(WIN)
     for (const auto &it : hDLL_s)
         FreeLibrary(it.second);
-#elif __unix__
+#elif defined(UNIX)
     for (const auto &it : hDL_s)
         dlclose(it.second);
 #endif
@@ -75,12 +80,12 @@ assistant::call_err(std::string name_err, std::string addit) {
         err_fatal_ref(get_kernel_err(0));
     }
 
-#ifdef _WIN32
+#if defined(WIN)
     SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 4);
 #endif
     this->operator<<(std::string(err_assistant[ind]->name_e) + "(" + std::to_string(ind) +
                      "): " + err_assistant[ind]->desc_e + "\nDetail: [" + addit + "]");
-#ifdef _WIN32
+#if defined(WIN)
     SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 7);
 #endif
     exit(EXIT_FAILURE);
@@ -114,7 +119,7 @@ void
 assistant::write_file(HND handle, std::string buf) {
     write_file_out(get_pfile_ind(handle), const_cast<char *>(buf.c_str()));
 }
-#ifdef _WIN32
+#if defined(WIN)
 DWORD
 assistant::get_error_win32() {
     return GetLastError();
@@ -163,7 +168,7 @@ assistant::get_handle_module_dll(std::string dll_name) {
         return 0;
     return hDLL_s[dll_name];
 }
-#elif __unix__
+#elif defined(UNIX)
 
 const char *
 assistant::get_error_dl() {
@@ -196,13 +201,26 @@ assistant::get_ptr_func(std::string dl_name, std::string name_func) {
     return ptr_sym;
 }
 
+void
+assistant::check_safe_call_dl_func() {
+    void *ptr_sym = dlsym(RTLD_DEFAULT, SBW_LIB_HOOK_STAT_SYM);
+    if (ptr_sym == nullptr)
+        return;
+    if (*((int *)ptr_sym)) {
+        if (log)
+            write_file(log_file_handle, HOOK_DETECTED_STR);
+        err_fatal_ref(get_kernel_err(2));
+    }
+}
+
 #endif
 void
 assistant::operator<<(std::string text) {
     if (output)
         printf("%s\n", text.c_str());
-    if (log && file_exist(log_file_handle))
+    if (log && file_exist(log_file_handle)) {
         write_file(log_file_handle, text + "\n");
+    }
 }
 
 HND
