@@ -13,9 +13,13 @@
 #define BEG_RED_TEXT "\033[1;31m"
 #define END_RED_TEXT "\033[0m\n"
 
-#define HOOK_DETECTED_INF(add_inf) printf(BEG_RED_TEXT HOOK_DETECTED_STR END_RED_TEXT "Detail: " add_inf "\n");
+#define HOOK_DETECTED_INF(add_inf)                                                                                     \
+    printf(BEG_RED_TEXT HOOK_DETECTED_STR END_RED_TEXT "Detail: " add_inf "\n");                                       \
+    HOOK_STATUS = 1;
 
 typedef int socklen_t;
+
+int HOOK_STATUS;
 
 int
 system(const char *string) {
@@ -122,4 +126,10 @@ ssize_t
 sendmsg(int s, const struct msghdr *msg, int flags) {
     HOOK_DETECTED_INF("sendmsg() call")
     return HOOK_DETECTED;
+}
+
+void
+init_hook() {
+    HOOK_STATUS = 0;
+    return 1;
 }

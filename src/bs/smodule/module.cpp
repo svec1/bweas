@@ -23,11 +23,11 @@ mdl_manager::load_module(std::string name) {
     for (u32t i = 0; i < mdls.size(); ++i) {
         const auto &it = mdls[i].find(name);
         if (it != mdls[i].end()) {
-#ifdef _WIN32
+#if defined(WIN)
             if (!assist.load_dll(it->first))
                 assist.call_err("RTT001",
                                 "Error code(+" + std::to_string(assist.get_error_win32()) + "); Library: " + it->first);
-#else
+#elif defined(UNIX)
             if (assist.load_dl(it->first))
                 assist.call_err("RTT001", "Error(+" + std::string(assist.get_error_dl()) + "); Library: " + it->first);
 #endif
@@ -37,10 +37,10 @@ mdl_manager::load_module(std::string name) {
                     nfunc.func_ref = (void (*)(const std::vector<aef_expr::subexpressions> &,
                                                var::scope &))assist.get_ptr_func(it->first, it_b.first);
                     if (nfunc.func_ref == nullptr)
-#ifdef _WIN32
+#if defined(WIN)
                         assist.call_err("RTT002", "Error code(+" + std::to_string(assist.get_error_win32()) +
                                                       "); Improper handling: " + it->first + "->" + it_b.first);
-#else
+#elif defined(UNIX)
                         assist.call_err("RTT002", "Error(+" + std::string(assist.get_error_dl()) +
                                                       "); Improper handling: " + it->first + "->" + it_b.first);
 #endif
@@ -66,11 +66,11 @@ mdl_manager::load_modules(const std::vector<std::string> &load_module_name) {
             continue;
 
         load_module:
-#ifdef _WIN32
+#if defined(WIN)
             if (!assist.load_dll(it.first))
                 assist.call_err("RTT001",
                                 "Error code(+" + std::to_string(assist.get_error_win32()) + "); Library: " + it.first);
-#else
+#elif defined(UNIX)
             if (assist.load_dl(it.first))
                 assist.call_err("RTT001", "Error(+" + std::string(assist.get_error_dl()) + "); Library: " + it.first);
 #endif
@@ -80,10 +80,10 @@ mdl_manager::load_modules(const std::vector<std::string> &load_module_name) {
                     nfunc.func_ref = (void (*)(const std::vector<aef_expr::subexpressions> &,
                                                var::scope &))assist.get_ptr_func(it.first, it_b.first);
                     if (nfunc.func_ref == nullptr)
-#ifdef _WIN32
+#if defined(WIN)
                         assist.call_err("RTT002", "Error code(+" + std::to_string(assist.get_error_win32()) +
                                                       "); Improper handling: " + it.first + "->" + it_b.first);
-#else
+#elif defined(UNIX)
                         assist.call_err("RTT002", "Error(+" + std::string(assist.get_error_dl()) +
                                                       "); Improper handling: " + it.first + "->" + it_b.first);
 #endif
@@ -102,11 +102,11 @@ mdl_manager::load_modules_all() {
     semantic_an::table_func external_func_table;
     for (u32t i = 0; i < mdls.size(); ++i) {
         for (const auto &it : mdls[i]) {
-#ifdef _WIN32
+#if defined(WIN)
             if (!assist.load_dll(it.first))
                 assist.call_err("RTT001",
                                 "Error code(+" + std::to_string(assist.get_error_win32()) + "); Library: " + it.first);
-#else
+#elif defined(UNIX)
             if (assist.load_dl(it.first))
                 assist.call_err("RTT001", "Error(+" + std::string(assist.get_error_dl()) + "); Library: " + it.first);
 #endif
@@ -116,10 +116,10 @@ mdl_manager::load_modules_all() {
                     nfunc.func_ref = (void (*)(const std::vector<aef_expr::subexpressions> &,
                                                var::scope &))assist.get_ptr_func(it.first, it_b.first);
                     if (nfunc.func_ref == nullptr)
-#ifdef _WIN32
+#if defined(WIN)
                         assist.call_err("RTT002", "Error code(+" + std::to_string(assist.get_error_win32()) +
                                                       "); Improper handling: " + it.first + "->" + it_b.first);
-#else
+#elif defined(UNIX)
                         assist.call_err("RTT002", "Error(+" + std::string(assist.get_error_dl()) +
                                                       "); Improper handling: " + it.first + "->" + it_b.first);
 #endif

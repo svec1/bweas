@@ -37,9 +37,9 @@ main(int argv, char **args) {
         dump_assistf();
     */
 
-    system("echo lox");
-    // mmap(NULL, NULL, NULL, NULL, NULL, NULL);
-    //  void *f = malloc(45);
+    // system("echo lox");
+    //    mmap(NULL, NULL, NULL, NULL, NULL, NULL);
+    //     void *f = malloc(45);
 
     {
         hax cons(args, argv);

@@ -37,8 +37,8 @@ class lex_an {
     // ----------------
     // Creates tokens with type "token_type".
     // Prohibits:
-    //  1. use of symbols: * / ! - uh.
-    //  2. form mixed lexemes: "32ggtn5var"
+    //  1. use of symbols: * / ! - ' \.
+    //  2. form mixed lexemes: "32ggtn5var".
     //  3. form a literal greater than UINT_MAX32/2.
     // ---------------------------------------------
     // When the @ symbol is encountered, it begins to form a lexeme until the end of the line
