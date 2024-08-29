@@ -7,7 +7,6 @@ bool build{0};
 bool all_output{1};
 bool logging{1};
 bool warning_prj{1};
-bool optimization_script{1};
 
 bool export_var{0};
 

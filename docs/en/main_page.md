@@ -4,6 +4,6 @@
 
 -  build-system
  - [kernel](https://github.com/svec1/bweas/blob/main/docs/en/kernel.md)
--  language
+-  [language](https://github.com/svec1/bweas/blob/main/docs/en/language.md)
 -  modules
--  exception
+-  error and exceptions
