@@ -101,7 +101,7 @@ class semantic_analyzer {
     smt_second_pass(parser::abstract_expr_func &expr_s, var::scope &curr_scope);
 
   private:
-    // Parses a subexpression if it has not taken the type
+    // Parses a subexpression if it has not token the type
     // INT, STRING, or VAR_STRUCT_ID after parsing at the AEF construction
     // stage
     void

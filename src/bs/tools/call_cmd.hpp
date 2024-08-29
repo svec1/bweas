@@ -1,7 +1,10 @@
 #ifndef CALL_CMD__H
 #define CALL_CMD__H
 
+#include "../../../mdef.hpp"
+
 #include <string>
+#include <vector>
 
 namespace tools {
 class call_cmd_manager {
