@@ -15,7 +15,7 @@ This  language  supports  modules  (dynamic  libraries)  that  can  provide  add
 - system
 
 #### For  Unix-like  systems:  standard  library  functions
-- System
+- system
 - chmod, chmod
 - chown, fchown, lchown
 - mmap, munmap
