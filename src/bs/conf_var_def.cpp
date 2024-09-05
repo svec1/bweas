@@ -3,8 +3,6 @@
 namespace config_var {
 const char *version{"0.1d"};
 
-bool build{0};
-bool all_output{1};
 bool logging{1};
 bool warning_prj{1};
 
