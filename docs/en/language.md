@@ -192,9 +192,8 @@ Subexpressions, as mentioned earlier, are part of an expression (command). An ex
 
     struct notion_func {
 	    void (*func_ref)(const std::vector<subexpressions>&, var::scope&);			   
-	    std::vector<params> expected_args;
-     	    bool is_declaration_var{0};
-	    bool only_with_semantic{0};
+	    std::vector<params> expected_args; bool is_declaration_var{0}; bool
+     	    only_with_semantic{0};
     };
 - **func_ref** is a function pointer (binding occurs during the semantic analysis stage and is described below). 
 - **expected_args** are the expected arguments, which come in order.
