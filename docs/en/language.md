@@ -199,7 +199,7 @@ Subexpressions, as mentioned earlier, are part of an expression (command). An ex
 - **func_ref** is a function pointer (binding occurs during the semantic analysis stage and is described below). 
 - **expected_args** are the expected arguments, which come in order.
 - **is_declaration_var** is a flag indicating that this function is declared (described below). 
-- ** only_with_semantic** is a flag indicating that this function should be called during the semantic analysis stage in any case.
+- **only_with_semantic** is a flag indicating that this function should be called during the semantic analysis stage in any case.
 
 ### - Semantic analysis
 Semantic analysis is the most important part of the interpreter, since it is here that functions are linked, passed parameters are checked, symbols (variables) are created, and the existence or absence of variables specified by identifiers is checked.
