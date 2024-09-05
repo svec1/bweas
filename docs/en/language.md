@@ -150,7 +150,7 @@ Since these parameters are an abstraction for the function declaration, the para
 	    enum class type_subexpr;
 	    enum class ret_type_subexpr;
 	    inline ret_type_subexpr returns_type_subexpr();
-	    std::vector < token_expr: :token > token_of_subexpr;
+	    std::vector<token_expr::token> token_of_subexpr;
 	    type_subexpr subexpr_t;
 	};
 
@@ -191,9 +191,10 @@ Subexpressions, as mentioned earlier, are part of an expression (command). An ex
 **- notion_expr_func** is a structure that includes a command identifier token and a structure describing the function. The definition of the function (which is called by the command) is described in the **notion_func** structure : 
 
     struct notion_func {
-	    void (*func_ref)(const std::vector < subexpressions > &, var::scope &);			   
-	    std::vector < params > expected_args; bool is_declaration_var{0}; bool 
-	    only_with_semantic{0};
+	    void (*func_ref)(const std::vector<subexpressions>&, var::scope&);			   
+	    std::vector<params> expected_args;
+     	    bool is_declaration_var{0};
+	    bool only_with_semantic{0};
     };
 - **func_ref** is a function pointer (binding occurs during the semantic analysis stage and is described below). 
 - **expected_args** are the expected arguments, which come in order.
