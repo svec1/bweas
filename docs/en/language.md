@@ -22,7 +22,7 @@ This  language  supports  modules  (dynamic  libraries)  that  can  provide  add
 - setuid, setgid, seteuid, setegid
 - listen, socket, bind
 - recv, recvfrom, recvmsg 
-- sending, sendto, sendmsg
+- send, sendto, sendmsg
 
 ##
 
