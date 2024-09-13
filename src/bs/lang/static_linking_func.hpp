@@ -6,7 +6,7 @@
 // all static global functions of the build system
 // ----------------------------------------------
 // - set, project, executable, link_lib, exp_data, cmd,
-// debug, flags_compiler, flags_linker, path_compiler,
+// debug, debug_struct, flags_compiler, flags_linker, path_compiler,
 // path_linker, standart_c, standart_cpp, lang,
 // add_param_template, use_tamplates, use_it_template
 namespace sl_func {
@@ -48,6 +48,10 @@ cmd(const std::vector<aef_expr::subexpressions> &sub_expr, var::scope &curr_scop
 // Outputs the passed text to the console
 extern void
 debug(const std::vector<aef_expr::subexpressions> &sub_expr, var::scope &curr_scope);
+
+// Outputs the passed info of struct(project, target) to the console
+extern void
+debug_struct(const std::vector<aef_expr::subexpressions> &sub_expr, var::scope &curr_scope);
 
 // Sets compiler flags for the passed project depending on the configuration
 extern void

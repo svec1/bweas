@@ -9,6 +9,4 @@ bool warning_prj{1};
 bool export_var{0};
 
 const char *logfile_name{"bwlog.txt"};
-
-namespace basic_project {}
 } // namespace config_var
