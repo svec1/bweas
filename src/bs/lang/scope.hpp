@@ -14,9 +14,7 @@ namespace var {
 
 inline std::string
 type_var_to_str(u32t ind) {
-    if (ind == 0)
-        return "undef";
-    else if (ind == 1)
+    if (ind == 1)
         return "int";
     else if (ind == 2)
         return "string";
@@ -28,6 +26,7 @@ type_var_to_str(u32t ind) {
         return "project";
     else if (ind == 6)
         return "target";
+    return "undef";
 }
 
 class scope {
@@ -43,6 +42,10 @@ class scope {
     template <typename T>
     inline T &
     create_var(std::string name_var, T val = T{});
+    template <typename T>
+    inline bool
+    try_create_var(std::string name_var, T val = T{});
+
     template <typename T>
     inline void
     delete_var(std::string name_var);
@@ -88,6 +91,7 @@ inline scope::scope() {
         assist.add_err("SCOP002", "Unknown data type");
     }
 }
+
 template <>
 inline int &
 scope::create_var<int>(std::string name_var, int val) {
@@ -129,6 +133,48 @@ scope::create_var<std::vector<std::string>>(std::string name_var, std::vector<st
     if (vec_str_v.create_var(name_var, val))
         assist.call_err("SCOP001", "vector<string>(" + val[0] + ", ..." + ") <- " + name_var);
     return vec_str_v.get_val_ref(name_var);
+}
+template <>
+inline bool
+scope::try_create_var<int>(std::string name_var, int val) {
+    if (int_v.create_var(name_var, val))
+        return 0;
+    return 1;
+}
+template <>
+inline bool
+scope::try_create_var<std::string>(std::string name_var, std::string val) {
+    if (str_v.create_var(name_var, val))
+        return 0;
+    return 1;
+}
+template <>
+inline bool
+scope::try_create_var<struct_sb::project>(std::string name_var, struct_sb::project val) {
+    if (prj_v.create_var(name_var, val))
+        return 0;
+    return 1;
+}
+template <>
+inline bool
+scope::try_create_var<struct_sb::target>(std::string name_var, struct_sb::target val) {
+    if (trg_v.create_var(name_var, val))
+        return 0;
+    return 1;
+}
+template <>
+inline bool
+scope::try_create_var<std::vector<int>>(std::string name_var, std::vector<int> val) {
+    if (vec_int_v.create_var(name_var, val))
+        return 0;
+    return 1;
+}
+template <>
+inline bool
+scope::try_create_var<std::vector<std::string>>(std::string name_var, std::vector<std::string> val) {
+    if (vec_str_v.create_var(name_var, val))
+        return 0;
+    return 1;
 }
 
 template <>

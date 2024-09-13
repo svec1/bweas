@@ -103,7 +103,10 @@ semantic_analyzer::smt_zero_pass(const abstract_expr_func &expr_s) {
             add_func_flink(expr_s[i].expr_func.func_t.token_val, sl_func::cmd,
                            {params::LNUM_OR_ID_VAR, params::LSTR_OR_ID_VAR});
         else if (expr_s[i].expr_func.func_t.token_val == "debug")
-            add_func_flink(expr_s[i].expr_func.func_t.token_val, sl_func::debug, {params::LSTR_OR_ID_VAR});
+            add_func_flink(expr_s[i].expr_func.func_t.token_val, sl_func::debug,
+                           {params::LSTR_OR_ID_VAR, params::NEXT_TOO});
+        else if (expr_s[i].expr_func.func_t.token_val == "debug_struct")
+            add_func_flink(expr_s[i].expr_func.func_t.token_val, sl_func::debug_struct, {params::VAR_STRUCT_ID});
         else if (expr_s[i].expr_func.func_t.token_val == "flags_compiler")
             add_func_flink(expr_s[i].expr_func.func_t.token_val, sl_func::flags_compiler,
                            {params::VAR_STRUCT_ID, params::LNUM_OR_ID_VAR, params::LSTR_OR_ID_VAR, params::NEXT_TOO});
@@ -423,8 +426,14 @@ semantic_analyzer::smt_second_pass(abstract_expr_func &expr_s, var::scope &curr_
                 }
             }
         }
-        for (u32t j = 0, b = 0; b < expr_s[i].expr_func.func_n.expected_args.size() && j < expr_s[i].sub_expr_s.size();
-             ++j, ++b) {
+        for (u32t j = 0, b = 0; j < expr_s[i].sub_expr_s.size(); ++j, ++b) {
+            if (b >= expr_s[i].expr_func.func_n.expected_args.size() &&
+                before_nextt_param != params::SIZE_ENUM_PARAMS) {
+                parse_subexpr_param(
+                    expr_s[i].sub_expr_s[j], expr_s[i].sub_expr_s, j, curr_scope,
+                    expr_s[i].expr_func.func_n.expected_args[expr_s[i].expr_func.func_n.expected_args.size() - 1]);
+                continue;
+            }
             parse_subexpr_param(expr_s[i].sub_expr_s[j], expr_s[i].sub_expr_s, j, curr_scope,
                                 expr_s[i].expr_func.func_n.expected_args[b]);
         }

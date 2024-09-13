@@ -24,10 +24,9 @@
 #define RELEASE_FLAGS_LINKER ""
 #define DEBUG_FLAGS_LINKER ""
 
-#define DEFUALT_COMPILER_C1 "clang"
-#define DEFUALT_COMPILER_C2 "gcc"
+#define DEFUALT_COMPILER_C "clang"
 
-#define PATH_TO_COMPILER_UNIX1 ""
+#define PATH_TO_COMPILER_UNIX_CL1 ""
 
 #endif
 
