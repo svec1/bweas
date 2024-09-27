@@ -6,9 +6,6 @@
 
 namespace interpreter {
 
-#define MAIN_FILE "bweasconf.txt"
-#define IMPORT_FILE "import-modules.imp"
-
 #define wrap_interpreter(action)                                                                                       \
     try {                                                                                                              \
         action                                                                                                         \
@@ -67,8 +64,8 @@ class interpreter_exec : private module::mdl_manager {
         // should be called in semantic analysis to semantic analysis
         bool transmit_smt_name_func_with_smt{0};
 
-        const char *filename_interp{MAIN_FILE};
-        const char *file_import_file_f{IMPORT_FILE};
+        const char *filename_interp{""};
+        const char *file_import_file_f{""};
     };
 
   public:
@@ -96,6 +93,9 @@ class interpreter_exec : private module::mdl_manager {
     set_config(config conf);
     void
     set_external_scope(var::scope *_external_scope);
+
+    std::vector<var::struct_sb::target>
+    export_targets();
 
   private:
     void

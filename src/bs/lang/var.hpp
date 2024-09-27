@@ -41,6 +41,9 @@ template <typename T> class datatype_var {
     T &
     get_val_ref(std::string name_var);
 
+    std::vector<std::pair<std::string, T>> &
+    get_vector_variables();
+
     bool
     is_exist_var(std::string name_var);
 
@@ -134,6 +137,12 @@ template <typename T>
 T &
 datatype_var<T>::get_val_ref(std::string name_var) {
     return variable_s[find_var_ind(name_var)].second;
+}
+
+template <typename T>
+std::vector<std::pair<std::string, T>> &
+datatype_var<T>::get_vector_variables() {
+    return variable_s;
 }
 
 template <typename T>

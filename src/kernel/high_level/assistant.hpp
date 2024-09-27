@@ -53,6 +53,9 @@ class assistant {
     void
     close_file(HND handle);
 
+    bool
+    exist_file(HND handle);
+
     HND
     get_handle_file(std::string name_file);
 

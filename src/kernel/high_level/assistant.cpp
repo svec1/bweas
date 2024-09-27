@@ -102,6 +102,13 @@ void
 assistant::close_file(HND handle) {
     close_file_assist(get_path_file(get_pfile_ind(handle)));
 }
+bool
+assistant::exist_file(HND handle) {
+    if (handle == NULL)
+        return 0;
+    return 1;
+}
+
 HND
 assistant::get_handle_file(std::string name_file) {
     if (name_file.find("C:/") == name_file.npos)
