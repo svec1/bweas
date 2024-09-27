@@ -91,14 +91,33 @@ bwbuilder::gen_cache_target() {
         serel_target_tmp += std::to_string(out_targets[i].prj.src_files.size()) + " " +
                             std::to_string(out_targets[i].prj.vec_templates.size()) + " " +
                             std::to_string(out_targets[i].target_vec_libs.size()) + " ";
+        for (u32t j = 0; j < sizeof(var::struct_sb::project); j += sizeof(std::string)) {
+
+            // version project
 #if defined(X64)
-        for (u32t j = 0; j < sizeof var::struct_sb::project; j += 40) {
+#if defined(WIN)
             if (j == 40) {
+#elif defined(UNIX)
+            if (j == 32) {
+#endif
+#elif defined(X32)
+            if (j == 28) {
+#endif
                 serel_target_tmp += (*(var::struct_sb::version *)(prj_v + j)).get_str_version() + " " +
                                     std::to_string(*(int *)(prj_v + j + 12)) + " ";
                 j += 16;
             }
-            else if (j == 296) { // standart c
+
+            // standart c
+#if defined(X64)
+#if defined(WIN)
+            else if (j == 296) {
+#elif defined(UNIX)
+            else if (j == 240) {
+#endif
+#elif defined(X32)
+            else if (j == 128) {
+#endif
                 serel_target_tmp += std::to_string(*(int *)(prj_v + j)) + " " +
                                     std::to_string(*(int *)(prj_v + j + 4)) + " " +
                                     std::to_string(*(int *)(prj_v + j + 5)) + " ";
@@ -109,22 +128,6 @@ bwbuilder::gen_cache_target() {
             else
                 serel_target_tmp += *(std::string *)(prj_v + j) + " ";
         }
-#elif defined(X32)
-        for (u32t j = 0; j < sizeof var::struct_sb::project; j += 28) {
-            if (j == 28) {
-                serel_target_tmp += (*(var::struct_sb::version *)(prj_v + j)).get_str_version() + " " +
-                                    std::to_string(*(int *)(prj_v + j + 12)) + " ";
-                j += 16;
-            }
-            else if (j == 128) { // standart c
-                serel_target_tmp += std::to_string(*(int *)(prj_v + j)) + " " +
-                                    std::to_string(*(int *)(prj_v + j + 4)) + " " +
-                                    std::to_string(*(int *)(prj_v + j + 8)) + " ";
-                break;
-            }
-            serel_target_tmp += *(std::string *)(prj_v + j) + " ";
-        }
-#endif
         for (u32t j = 0; j < out_targets[i].prj.src_files.size(); ++j)
             serel_target_tmp += out_targets[i].prj.src_files[j] + " ";
         for (u32t j = 0; j < out_targets[i].prj.vec_templates.size(); ++j)
@@ -218,11 +221,7 @@ bwbuilder::deserl_cache() {
                 }
                 else {
                     *(std::string *)(prj_v + byte_offset_s) = str_tmp;
-#if defined(X64)
-                    byte_offset_s += 40;
-#elif defined(X32)
-                    byte_offset_s += 28;
-#endif
+                    byte_offset_s += sizeof(std::string);
                 }
             }
 
