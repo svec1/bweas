@@ -53,6 +53,11 @@ class scope {
 
     inline T &
     get_var_value(std::string name_var);
+
+    template <typename T>
+    inline std::vector<std::pair<std::string, T>> &
+    get_vector_variables_t();
+
     inline bool
     is_exist(std::string name_var);
 
@@ -256,6 +261,37 @@ scope::get_var_value<std::vector<std::string>>(std::string name_var) {
     return vec_str_v.get_val_ref(name_var);
 }
 
+template <>
+inline std::vector<std::pair<std::string, int>> &
+scope::get_vector_variables_t() {
+    return int_v.get_vector_variables();
+}
+template <>
+inline std::vector<std::pair<std::string, std::string>> &
+scope::get_vector_variables_t() {
+    return str_v.get_vector_variables();
+}
+template <>
+inline std::vector<std::pair<std::string, std::vector<int>>> &
+scope::get_vector_variables_t() {
+    return vec_int_v.get_vector_variables();
+}
+template <>
+inline std::vector<std::pair<std::string, std::vector<std::string>>> &
+scope::get_vector_variables_t() {
+    return vec_str_v.get_vector_variables();
+}
+template <>
+inline std::vector<std::pair<std::string, var::struct_sb::project>> &
+scope::get_vector_variables_t() {
+    return prj_v.get_vector_variables();
+}
+template <>
+inline std::vector<std::pair<std::string, var::struct_sb::target>> &
+scope::get_vector_variables_t() {
+    return trg_v.get_vector_variables();
+}
+
 inline bool
 scope::is_exist(std::string name_var) {
     if (int_v.is_exist_var(name_var) || str_v.is_exist_var(name_var) || vec_int_v.is_exist_var(name_var) ||
@@ -263,7 +299,6 @@ scope::is_exist(std::string name_var) {
         return 1;
     return 0;
 }
-
 inline u32t
 scope::what_type(std::string name_var) {
     if (int_v.is_exist_var(name_var))

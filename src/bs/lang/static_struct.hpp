@@ -2,9 +2,11 @@
 #define _STATIC_STRUCT__H
 
 #include "../../kernel/low_level/type.h"
+#include "../conf_var.hpp"
 
 #include <memory>
 #include <string>
+#include <vector>
 
 // The name of a variable that, when set to 1,
 // will allow project functions and many target functions
@@ -83,6 +85,37 @@ cfg_str(const configuration &target_t) {
     return "null";
 }
 
+inline language
+to_lang(std::string lang) {
+    if (lang == "C")
+        return language::c;
+    else if (lang == "C++")
+        return language::cpp;
+    else if (lang == "C#")
+        return language::csharp;
+    else if (lang == "ASM")
+        return language::asm_;
+    return language::c;
+}
+inline type_target
+to_type_target(std::string target_t) {
+    if (target_t == "EXECUTABLE")
+        return type_target::exe;
+    else if (target_t == "LIBRARY")
+        return type_target::lib;
+    else if (target_t == "RUN-TIME")
+        return type_target::interpret;
+    return type_target::exe;
+}
+inline configuration
+to_cfg(std::string target_t) {
+    if (target_t == "RELEASE")
+        return configuration::RELEASE;
+    else if (target_t == "DEBUG")
+        return configuration::DEBUG;
+    return configuration::RELEASE;
+}
+
 // structure for naming versions in a style MinorMajorPatch
 // --------------------------------------------------------
 // default(0.0.0)
@@ -126,15 +159,15 @@ struct project {
 
     language lang;
 
-    std::string path_compiler, path_linker;
-    std::string rflags_compiler, rflags_linker;
-    std::string dflags_compiler, dflags_linker;
+    std::string path_compiler{DEFAULT_COMPILER_C}, path_linker{DEFAULT_COMPILER_C};
+    std::string rflags_compiler{RELEASE_FLAGS_COMPILER}, rflags_linker{RELEASE_FLAGS_LINKER};
+    std::string dflags_compiler{DEBUG_FLAGS_COMPILER}, dflags_linker{DEBUG_FLAGS_LINKER};
     u32t standart_c{98}, standart_cpp{14};
 
-    bool use_it_templates = 0;
+    bool use_it_templates{0};
 
     std::vector<std::string> src_files;
-    std::vector<std::string> vec_templates;
+    std::vector<std::string> vec_templates{"null"};
 };
 
 // target structure
@@ -150,9 +183,21 @@ struct target {
     std::string name_target;
     version version_target;
 
-    std::vector<target> othr_dependence{0};
-    std::vector<std::string> target_vec_libs;
+    std::vector<std::string> target_vec_libs{"null"};
 };
+
+struct target_out {
+    target_out() = default;
+    project prj;
+    type_target target_t;
+    configuration target_cfg;
+
+    std::string name_target;
+    version version_target;
+
+    std::vector<std::string> target_vec_libs{"null"};
+};
+
 } // namespace struct_sb
 } // namespace var
 

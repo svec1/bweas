@@ -1,47 +1,46 @@
 #ifndef _CONF_VAR__H
 #define _CONF_VAR__H
 
-#include "../mdef.hpp"
-
-#include <string>
-#include <vector>
-
 #if defined(WIN)
 
-#define RELEASE_FLAGS_COMPILER ""
-#define DEBUG_FLAGS_COMPILER ""
-#define RELEASE_FLAGS_LINKER ""
-#define DEBUG_FLAGS_LINKER ""
+#define RELEASE_FLAGS_COMPILER                                                                                         \
+    "-Wall -Wextra -Waddress -Warray-bounds -Wbool-operation -Wunused-value -Wchar-subscripts -Wcomment "              \
+    "-Wint-in-bool-context -Wuninitialized -Wvec-elem-size -Wmisleading-indentation -Wmisleading-indentation "         \
+    "-Wparentheses -Wpessimizing-move -Wsign-compare -Wsizeof-pointer-div -Wstrict-aliasing -Wtautological-compare "   \
+    "-Wuninitialized -Wunused-function -Wunused-variable -Wpedantic -Wsign-promo"
+#define DEBUG_FLAGS_COMPILER                                                                                           \
+    "-g -gno-inline-points -Wall -Wextra -Waddress -Warray-bounds -Wbool-operation -Wunused-value -Wchar-subscripts "  \
+    "-Wcomment "                                                                                                       \
+    "-Wint-in-bool-context -Wuninitialized -Wvec-elem-size -Wmisleading-indentation -Wmisleading-indentation "         \
+    "-Wparentheses -Wpessimizing-move -Wsign-compare -Wsizeof-pointer-div -Wstrict-aliasing -Wtautological-compare "   \
+    "-Wuninitialized -Wunused-function -Wunused-variable -Wpedantic -Wsign-promo"
+#define RELEASE_FLAGS_LINKER "-fuse-ld=lld -s"
+#define DEBUG_FLAGS_LINKER "-fuse-ld=lld"
 
-#define DEFUALT_COMPILER_C "clang"
+#define DEFAULT_COMPILER_C "clang"
 
-#define PATH_TO_COMPILER_WIN1 ""
+#define PATH_TO_COMPILER_WIN1 "null"
 
 #elif defined(UNIX)
 
-#define RELEASE_FLAGS_COMPILER ""
-#define DEBUG_FLAGS_COMPILER ""
-#define RELEASE_FLAGS_LINKER ""
-#define DEBUG_FLAGS_LINKER ""
+#define RELEASE_FLAGS_COMPILER                                                                                         \
+    "-Wall -Wextra -Waddress -Warray-bounds -Wbool-operation -Wunused-value -Wchar-subscripts -Wcomment "              \
+    "-Wint-in-bool-context -Wuninitialized -Wvec-elem-size -Wmisleading-indentation -Wmisleading-indentation "         \
+    "-Wparentheses -Wpessimizing-move -Wsign-compare -Wsizeof-pointer-div -Wstrict-aliasing -Wtautological-compare "   \
+    "-Wuninitialized -Wunused-function -Wunused-variable -Wpedantic -Wsign-promo"
+#define DEBUG_FLAGS_COMPILER                                                                                           \
+    "-g -gno-inline-points -Wall -Wextra -Waddress -Warray-bounds -Wbool-operation -Wunused-value -Wchar-subscripts "  \
+    "-Wcomment "                                                                                                       \
+    "-Wint-in-bool-context -Wuninitialized -Wvec-elem-size -Wmisleading-indentation -Wmisleading-indentation "         \
+    "-Wparentheses -Wpessimizing-move -Wsign-compare -Wsizeof-pointer-div -Wstrict-aliasing -Wtautological-compare "   \
+    "-Wuninitialized -Wunused-function -Wunused-variable -Wpedantic -Wsign-promo"
+#define RELEASE_FLAGS_LINKER "-fuse-ld=lld -s"
+#define DEBUG_FLAGS_LINKER "-fuse-ld=lld"
 
-#define DEFUALT_COMPILER_C "clang"
+#define DEFAULT_COMPILER_C "clang"
 
-#define PATH_TO_COMPILER_UNIX_CL1 ""
+#define PATH_TO_COMPILER_UNIX_CL1 "null"
 
 #endif
 
-namespace config_var {
-
-extern const char *version;
-
-extern bool logging;
-
-// stop the build if the build of one of the targets fails
-extern bool warning_prj;
-
-// dynamic post-semantic command module(DPCM)
-extern bool make_dpcm;
-
-extern const char *logfile_name;
-} // namespace config_var
 #endif

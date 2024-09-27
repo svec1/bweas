@@ -4,9 +4,11 @@ using namespace module;
 
 void
 mdl_manager::import_module_decl(const char *import_file) {
-    HND hndl = assist.open_file(import_file, MODE_READ_FILE);
-    std::string buf = assist.read_file(hndl);
-    assist.close_file(hndl);
+    HND handle_f = assist.open_file(import_file, MODE_READ_FILE);
+    if (!assist.exist_file(handle_f))
+        assist.call_err("RTT004", "File: " + std::string(import_file));
+    std::string buf = assist.read_file(handle_f);
+    assist.close_file(handle_f);
 
     std::pair<std::vector<srl::token>, std::vector<std::string>> data_after_parse = srl::parser(buf);
 

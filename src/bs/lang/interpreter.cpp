@@ -10,6 +10,7 @@ interpreter_exec::interpreter_exec() {
         assist.add_err("RTT001", "The DLL cannot be loaded");
         assist.add_err("RTT002", "Function declarations cannot be found");
         assist.add_err("RTT003", "It is impossible to find the structure");
+        assist.add_err("RTT004", "Failed to open file");
     }
 }
 interpreter_exec::interpreter_exec(config conf) {
@@ -33,6 +34,9 @@ interpreter_exec::build_aef() {
 #endif
     wrap_interpreter(
         HND handle_f = assist.open_file(interp_conf.filename_interp, MODE_READ_FILE);
+        // if (!assist.exist_file(handle_f))
+        //     assist.call_err("RTT004", "File: " + std::string(interp_conf.filename_interp));
+
         lexer.set_symbols(assist.read_file(handle_f)); assist.close_file(handle_f);
 
         if (interp_conf.import_module) build_external_func_table();
@@ -91,4 +95,17 @@ void
 interpreter_exec::build_external_func_table() {
     import_module_decl(interp_conf.file_import_file_f);
     external_func_table = load_modules_all();
+}
+
+std::vector<var::struct_sb::target>
+interpreter_exec::export_targets() {
+    std::vector<std::pair<std::string, var::struct_sb::target>> vec_targets_ref =
+        global_scope.get_vector_variables_t<var::struct_sb::target>();
+
+    std::vector<var::struct_sb::target> targets;
+    for (u32t i = 0; i < vec_targets_ref.size(); ++i) {
+        targets.push_back(vec_targets_ref[i].second);
+    }
+
+    return targets;
 }

@@ -1,7 +1,7 @@
 #include <iostream>
 #include <time.h>
 
-#include "bs/build_sys.hpp"
+#include "bs/bwbuild_sys.hpp"
 
 int
 main(int argv, char **args) {
@@ -48,13 +48,8 @@ main(int argv, char **args) {
         assist << assist.read_file(hand);
         assist.close_file(hand);
 
-        interpreter::interpreter_exec::config config_intp;
-        config_intp.debug_output = 1;
-        config_intp.import_module = 1;
-        config_intp.transmit_smt_name_func_with_smt = 1;
-        interpreter::interpreter_exec _interpreter(config_intp);
-        _interpreter.build_aef();
-        _interpreter.interpreter_run();
+        bwbuilder bw;
+        bw.start_build();
 
         assist << std::string("Sec: " + std::to_string((double)(clock() - beg) / CLOCKS_PER_SEC));
     }

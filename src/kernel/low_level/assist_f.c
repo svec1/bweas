@@ -166,7 +166,7 @@ const pfile KERNELF
 open_file_out(str path, str inf_open) {
     if (kl_find_file(path) != -1)
         return NULL;
-    FILE *file = fopen(path, "a");
+    FILE *file = fopen(path, "w");
     if (file == NULL)
         return NULL;
 
