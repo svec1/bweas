@@ -94,15 +94,7 @@ bwbuilder::gen_cache_target() {
         for (u32t j = 0; j < sizeof(var::struct_sb::project); j += sizeof(std::string)) {
 
             // version project
-#if defined(X64)
-#if defined(WIN)
-            if (j == 40) {
-#elif defined(UNIX)
-            if (j == 32) {
-#endif
-#elif defined(X32)
-            if (j == 28) {
-#endif
+            if (j == sizeof(std::string)) {
                 serel_target_tmp += (*(var::struct_sb::version *)(prj_v + j)).get_str_version() + " " +
                                     std::to_string(*(int *)(prj_v + j + 12)) + " ";
                 j += 16;
