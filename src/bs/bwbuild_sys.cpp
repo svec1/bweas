@@ -29,6 +29,7 @@ bwbuilder::start_build() {
         if (mftime >= cftime)
             goto interpreter_start;
 
+        assist.next_output_important();
         assist << " - [BWEAS]: The configuration file will not be interpreted";
 
         deserl_cache();
@@ -39,6 +40,11 @@ bwbuilder::start_build() {
         load_target();
         gen_cache_target();
     }
+
+    assist.next_output_important();
+    assist << "*Build start time: " + assist.get_time();
+
+    build_targets();
 }
 
 void
@@ -101,15 +107,7 @@ bwbuilder::gen_cache_target() {
             }
 
             // standart c
-#if defined(X64)
-#if defined(WIN)
-            else if (j == 296) {
-#elif defined(UNIX)
-            else if (j == 240) {
-#endif
-#elif defined(X32)
-            else if (j == 128) {
-#endif
+            else if (j == sizeof(std::string) * 7 + 16) {
                 serel_target_tmp += std::to_string(*(int *)(prj_v + j)) + " " +
                                     std::to_string(*(int *)(prj_v + j + 4)) + " " +
                                     std::to_string(*(int *)(prj_v + j + 5)) + " ";
@@ -241,6 +239,11 @@ bwbuilder::deserl_cache() {
 void
 bwbuilder::build_targets() {
     assist << " - [BWEAS]: Building targets...";
+
+    std::string command_compiler, comman_linker;
+
+    for (u32t i = 0; i < out_targets.size(); ++i) {
+    }
 }
 
 void

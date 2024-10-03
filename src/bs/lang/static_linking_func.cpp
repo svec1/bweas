@@ -160,8 +160,8 @@ sl_func::set(const std::vector<subexpressions> &sub_expr, var::scope &curr_scope
                                             std::stoi(sub_expr[1].token_of_subexpr[0].token_val.c_str()));
             else
                 throw semantic_an::rt_semantic_excp(parser::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
-                                                        " Var - " + sub_expr[0].token_of_subexpr[0].token_val + " is " +
-                                                        var::type_var_to_str(index_var),
+                                                        " Var - [" + sub_expr[0].token_of_subexpr[0].token_val +
+                                                        "] is " + var::type_var_to_str(index_var) + "\n",
                                                     "003");
         }
         else if (sub_expr[1].subexpr_t == subexpressions::type_subexpr::STRING) {
@@ -176,8 +176,8 @@ sl_func::set(const std::vector<subexpressions> &sub_expr, var::scope &curr_scope
                                             sub_expr[1].token_of_subexpr[0].token_val);
             else
                 throw semantic_an::rt_semantic_excp(parser::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
-                                                        " Var - " + sub_expr[0].token_of_subexpr[0].token_val + " is " +
-                                                        var::type_var_to_str(index_var),
+                                                        " Var - [" + sub_expr[0].token_of_subexpr[0].token_val +
+                                                        "] is " + var::type_var_to_str(index_var) + "\n",
                                                     "003");
         }
     }
@@ -196,13 +196,13 @@ sl_func::set(const std::vector<subexpressions> &sub_expr, var::scope &curr_scope
                 curr_scope.get_var_value<std::vector<int>>(sub_expr[0].token_of_subexpr[0].token_val) = vec_int_params;
             else if (index_var == 1)
                 throw semantic_an::rt_semantic_excp(parser::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
-                                                        " Var - " + sub_expr[0].token_of_subexpr[0].token_val +
-                                                        " is int\n",
+                                                        " Var - [" + sub_expr[0].token_of_subexpr[0].token_val +
+                                                        "] is int\n",
                                                     "002");
             else
                 throw semantic_an::rt_semantic_excp(parser::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
-                                                        " Var - " + sub_expr[0].token_of_subexpr[0].token_val + " is " +
-                                                        var::type_var_to_str(index_var),
+                                                        " Var - [" + sub_expr[0].token_of_subexpr[0].token_val +
+                                                        "] is " + var::type_var_to_str(index_var) + "\n",
                                                     "003");
         }
         else if (sub_expr[1].subexpr_t == subexpressions::type_subexpr::STRING) {
@@ -220,13 +220,13 @@ sl_func::set(const std::vector<subexpressions> &sub_expr, var::scope &curr_scope
                     vec_str_params;
             else if (index_var == 2)
                 throw semantic_an::rt_semantic_excp(parser::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
-                                                        " Var - " + sub_expr[0].token_of_subexpr[0].token_val +
-                                                        " is string\n",
+                                                        " Var - [" + sub_expr[0].token_of_subexpr[0].token_val +
+                                                        "] is string\n",
                                                     "002");
             else
                 throw semantic_an::rt_semantic_excp(parser::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
-                                                        " Var - " + sub_expr[0].token_of_subexpr[0].token_val + " is " +
-                                                        var::type_var_to_str(index_var),
+                                                        " Var - [" + sub_expr[0].token_of_subexpr[0].token_val +
+                                                        "] is " + var::type_var_to_str(index_var) + "\n",
                                                     "003");
         }
     }
@@ -585,6 +585,97 @@ sl_func::add_param_template(const std::vector<subexpressions> &sub_expr, var::sc
     curr_scope.create_var<std::string>(sub_expr[0].token_of_subexpr[0].token_val,
                                        sub_expr[1].token_of_subexpr[0].token_val);
 }
+
+void
+sl_func::create_templates(const std::vector<aef_expr::subexpressions> &sub_expr, var::scope &curr_scope) {
+    std::string tmp_param;
+
+    var::struct_sb::template_command tcmd_tmp;
+    tcmd_tmp.name = sub_expr[0].token_of_subexpr[0].token_val;
+
+    bool beg_param = 0, end_param = 0;
+    bool op_comma = 0;
+
+    for (u32t i = 0; i < sub_expr[1].token_of_subexpr[0].token_val.size(); ++i) {
+
+        if (sub_expr[1].token_of_subexpr[0].token_val[i] == ' ' ||
+            sub_expr[1].token_of_subexpr[0].token_val[i] == '\n' ||
+            sub_expr[1].token_of_subexpr[0].token_val[i] == '\t')
+            continue;
+
+        if (sub_expr[1].token_of_subexpr[0].token_val[i] == ':') {
+            if (tmp_param.empty())
+                throw semantic_an::rt_semantic_excp(
+                    parser::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
+                        " The name of the call component is empty: " + sub_expr[1].token_of_subexpr[0].token_val + "\n",
+                    "004");
+            else if (!tcmd_tmp.name_call_component.empty())
+                throw semantic_an::rt_semantic_excp(parser::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
+                                                        " The name of the call component that already exists: " +
+                                                        sub_expr[1].token_of_subexpr[0].token_val + "\n",
+                                                    "004");
+
+            beg_param = 1;
+
+            tcmd_tmp.name_call_component = tmp_param;
+            tmp_param.clear();
+
+            continue;
+        }
+        else if (beg_param) {
+            if (sub_expr[1].token_of_subexpr[0].token_val[i] != '<')
+                throw semantic_an::rt_semantic_excp(parser::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
+                                                        " The enumeration of parameters is expected: " +
+                                                        sub_expr[1].token_of_subexpr[0].token_val + "\n",
+                                                    "004");
+
+            end_param = 1;
+            beg_param = 0;
+
+            continue;
+        }
+        else if (end_param && sub_expr[1].token_of_subexpr[0].token_val[i] == '>') {
+            if (tmp_param.empty())
+                continue;
+            else if (curr_scope.what_type(tmp_param) != 2)
+                throw semantic_an::rt_semantic_excp(parser::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
+                                                        " Template argument does not exist externally[" + tmp_param +
+                                                        "]: " + sub_expr[1].token_of_subexpr[0].token_val + "\n",
+                                                    "004");
+
+            tcmd_tmp.name_args.push_back(tmp_param);
+
+            tmp_param.clear();
+
+            op_comma = 1;
+            end_param = 0;
+            continue;
+        }
+        else if (op_comma) {
+            if (sub_expr[1].token_of_subexpr[0].token_val[i] != ',')
+                throw semantic_an::rt_semantic_excp(
+                    parser::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
+                        " The operator is expected - ',': " + sub_expr[1].token_of_subexpr[0].token_val + "\n",
+                    "004");
+
+            beg_param = 1;
+            op_comma = 0;
+
+            continue;
+        }
+
+        tmp_param += sub_expr[1].token_of_subexpr[0].token_val[i];
+    }
+
+    if (beg_param)
+        throw semantic_an::rt_semantic_excp(
+            parser::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
+                " Template argument expected: " + sub_expr[1].token_of_subexpr[0].token_val + "\n",
+            "004");
+
+    curr_scope.create_var<var::struct_sb::template_command>(sub_expr[0].token_of_subexpr[0].token_val, tcmd_tmp);
+}
+
 void
 sl_func::use_templates(const std::vector<subexpressions> &sub_expr, var::scope &curr_scope) {
     if (curr_scope.what_type(sub_expr[0].token_of_subexpr[0].token_val) != 5)

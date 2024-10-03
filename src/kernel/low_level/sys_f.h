@@ -22,6 +22,8 @@ del_el_last_c(void **arr, size32t bit_size, size32t size);
 str
 get_time();
 str
+get_full_time();
+str
 get_time_stm(struct tm *_time);
 
 #endif

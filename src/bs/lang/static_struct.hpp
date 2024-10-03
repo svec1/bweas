@@ -198,6 +198,13 @@ struct target_out {
     std::vector<std::string> target_vec_libs{"null"};
 };
 
+struct template_command {
+    std::string name;
+
+    std::string name_call_component;
+    std::vector<std::string> name_args;
+};
+
 } // namespace struct_sb
 } // namespace var
 

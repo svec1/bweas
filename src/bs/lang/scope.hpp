@@ -26,6 +26,8 @@ type_var_to_str(u32t ind) {
         return "project";
     else if (ind == 6)
         return "target";
+    else if (ind == 7)
+        return "template command";
     return "undef";
 }
 
@@ -70,6 +72,7 @@ class scope {
     // 4 - vector<string>
     // 5 - project
     // 6 - target
+    // 7 - template command
     // 0 - undefined
     inline u32t
     what_type(std::string name_var);
@@ -86,6 +89,8 @@ class scope {
     var::datatype_var<struct_sb::target> trg_v;
     var::datatype_var<std::vector<int>> vec_int_v;
     var::datatype_var<std::vector<std::string>> vec_str_v;
+
+    var::datatype_var<struct_sb::template_command> tcmd_v;
 };
 
 inline scope::scope() {
@@ -140,6 +145,13 @@ scope::create_var<std::vector<std::string>>(std::string name_var, std::vector<st
     return vec_str_v.get_val_ref(name_var);
 }
 template <>
+inline struct_sb::template_command &
+scope::create_var<struct_sb::template_command>(std::string name_var, struct_sb::template_command val) {
+    if (tcmd_v.create_var(name_var, val))
+        assist.call_err("SCOP001", "template_command(" + val.name + ", ..." + ") <- " + name_var);
+    return tcmd_v.get_val_ref(name_var);
+}
+template <>
 inline bool
 scope::try_create_var<int>(std::string name_var, int val) {
     if (int_v.create_var(name_var, val))
@@ -181,6 +193,13 @@ scope::try_create_var<std::vector<std::string>>(std::string name_var, std::vecto
         return 0;
     return 1;
 }
+template <>
+inline bool
+scope::try_create_var<struct_sb::template_command>(std::string name_var, struct_sb::template_command val) {
+    if (tcmd_v.create_var(name_var, val))
+        return 0;
+    return 1;
+}
 
 template <>
 inline void
@@ -218,6 +237,13 @@ scope::delete_var<std::vector<std::string>>(std::string name_var) {
     if (vec_str_v.delete_var(name_var))
         assist.call_err("SCOP000", "vector<std::string>() <- " + name_var);
 }
+template <>
+inline void
+scope::delete_var<struct_sb::template_command>(std::string name_var) {
+    if (tcmd_v.delete_var(name_var))
+        assist.call_err("SCOP000", "template_command() <- " + name_var);
+}
+
 template <>
 inline int &
 scope::get_var_value<int>(std::string name_var) {
@@ -260,6 +286,13 @@ scope::get_var_value<std::vector<std::string>>(std::string name_var) {
         assist.call_err("SCOP000", "vector<string>() <- " + name_var);
     return vec_str_v.get_val_ref(name_var);
 }
+template <>
+inline struct_sb::template_command &
+scope::get_var_value<struct_sb::template_command>(std::string name_var) {
+    if (!tcmd_v.is_exist_var(name_var))
+        assist.call_err("SCOP000", "template_command() <- " + name_var);
+    return tcmd_v.get_val_ref(name_var);
+}
 
 template <>
 inline std::vector<std::pair<std::string, int>> &
@@ -282,20 +315,26 @@ scope::get_vector_variables_t() {
     return vec_str_v.get_vector_variables();
 }
 template <>
-inline std::vector<std::pair<std::string, var::struct_sb::project>> &
+inline std::vector<std::pair<std::string, struct_sb::project>> &
 scope::get_vector_variables_t() {
     return prj_v.get_vector_variables();
 }
 template <>
-inline std::vector<std::pair<std::string, var::struct_sb::target>> &
+inline std::vector<std::pair<std::string, struct_sb::target>> &
 scope::get_vector_variables_t() {
     return trg_v.get_vector_variables();
+}
+template <>
+inline std::vector<std::pair<std::string, struct_sb::template_command>> &
+scope::get_vector_variables_t() {
+    return tcmd_v.get_vector_variables();
 }
 
 inline bool
 scope::is_exist(std::string name_var) {
     if (int_v.is_exist_var(name_var) || str_v.is_exist_var(name_var) || vec_int_v.is_exist_var(name_var) ||
-        vec_str_v.is_exist_var(name_var) || prj_v.is_exist_var(name_var) || trg_v.is_exist_var(name_var))
+        vec_str_v.is_exist_var(name_var) || prj_v.is_exist_var(name_var) || trg_v.is_exist_var(name_var) ||
+        tcmd_v.is_exist_var(name_var))
         return 1;
     return 0;
 }
@@ -313,6 +352,8 @@ scope::what_type(std::string name_var) {
         return 5;
     else if (trg_v.is_exist_var(name_var))
         return 6;
+    else if (tcmd_v.is_exist_var(name_var))
+        return 7;
     else
         return 0;
 }
