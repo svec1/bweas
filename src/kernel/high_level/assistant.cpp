@@ -46,7 +46,7 @@ assistant::file_log_name(std::string name_file) {
     if (name_file.empty())
         return;
     if (!file_exist(log_file_handle))
-        log_file_handle = open_file(name_file, MODE_WRITE_TO_FILE);
+        log_file_handle = open_file(name_file, MODE_WRITE_ADD_TO_FILE);
 }
 void
 assistant::switch_log(bool val) {
@@ -126,6 +126,40 @@ void
 assistant::write_file(HND handle, std::string buf) {
     write_file_out(get_pfile_ind(handle), const_cast<char *>(buf.c_str()));
 }
+
+std::string
+assistant::get_time() {
+    char *ptr_v = get_time_k();
+    std::string str_p = ptr_v;
+    free(ptr_v);
+    return str_p;
+}
+
+void
+assistant::next_output_unsuccess() {
+#if defined(WIN)
+    SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_RED);
+#elif defined(UNIX)
+    printf("\033[31m");
+#endif
+}
+void
+assistant::next_output_important() {
+#if defined(WIN)
+    SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_INTENSITY);
+#elif defined(UNIX)
+    printf("\033[33m");
+#endif
+}
+void
+assistant::next_output_success() {
+#if defined(WIN)
+    SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_GREEN);
+#elif defined(UNIX)
+    printf("\033[32m");
+#endif
+}
+
 #if defined(WIN)
 DWORD
 assistant::get_error_win32() {
@@ -228,6 +262,12 @@ assistant::operator<<(std::string text) {
     if (log && file_exist(log_file_handle)) {
         write_file(log_file_handle, text + "\n");
     }
+
+#if defined(WIN)
+    SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 15);
+#elif defined(UNIX)
+    printf("\033[0m");
+#endif
 }
 
 HND
@@ -235,8 +275,10 @@ assistant::open_file(i32t mode, std::string &path) {
     pfile pf;
     if (mode == MODE_READ_FILE)
         pf = open_file_inp(const_cast<char *>(path.c_str()), "read of file");
+    else if (mode == MODE_WRITE_TO_FILE)
+        pf = open_file_out(const_cast<char *>(path.c_str()), "write to file", OPEN_FILE_TO_WRITE);
     else
-        pf = open_file_out(const_cast<char *>(path.c_str()), "write to file");
+        pf = open_file_out(const_cast<char *>(path.c_str()), "write to file for add inf", OPEN_FILE_TO_W_ADD);
 
     return get_index_file(pf);
 }

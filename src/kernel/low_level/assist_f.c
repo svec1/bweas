@@ -152,6 +152,11 @@ err_fatal_ref(const _err *obj_err) {
     exit(EXIT_FAILURE);
 }
 #endif
+
+// in sys_f.h
+str
+get_full_time();
+
 const pfile KERNELF
 open_file_inp(str path, str inf_open) {
     if (kl_find_file(path) != -1)
@@ -163,16 +168,26 @@ open_file_inp(str path, str inf_open) {
     return kl_get_track_file(kl_get_size_list_tf() - 1);
 }
 const pfile KERNELF
-open_file_out(str path, str inf_open) {
+open_file_out(str path, str inf_open, u32t open_arg) {
     if (kl_find_file(path) != -1)
         return NULL;
-    FILE *file = fopen(path, "w");
+    FILE *file;
+    if (open_arg == OPEN_FILE_TO_WRITE)
+        file = fopen(path, "w");
+    else
+        file = fopen(path, "a");
     if (file == NULL)
         return NULL;
 
     kl_track_file(file, path, inf_open);
     return kl_get_track_file(kl_get_size_list_tf() - 1);
 }
+
+str KERNELF
+get_time_k() {
+    return get_full_time();
+}
+
 str KERNELF
 read_file_inp(const pfile file) {
     if (*file == NULL)

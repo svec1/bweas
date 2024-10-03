@@ -11,6 +11,7 @@ interpreter_exec::interpreter_exec() {
         assist.add_err("RTT002", "Function declarations cannot be found");
         assist.add_err("RTT003", "It is impossible to find the structure");
         assist.add_err("RTT004", "Failed to open file");
+        assist.add_err("RTT005", "Internal function error");
     }
 }
 interpreter_exec::interpreter_exec(config conf) {

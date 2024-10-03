@@ -10,6 +10,7 @@
 
 #define MODE_READ_FILE 1
 #define MODE_WRITE_TO_FILE 2
+#define MODE_WRITE_ADD_TO_FILE 3
 
 typedef u32t HND;
 
@@ -63,6 +64,16 @@ class assistant {
     read_file(HND handle);
     void
     write_file(HND handle, std::string buf);
+
+    std::string
+    get_time();
+
+    void
+    next_output_unsuccess();
+    void
+    next_output_important();
+    void
+    next_output_success();
 
 #if defined(WIN)
     DWORD

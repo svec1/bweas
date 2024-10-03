@@ -11,6 +11,9 @@ typedef struct err _err;
 #define KL_DEBUG_OUTPUT 1
 #define KL_NO_DEBUG_OUTPUT 0
 
+#define OPEN_FILE_TO_W_ADD 3
+#define OPEN_FILE_TO_WRITE 4
+
 #ifdef __cplusplus
 
 extern "C"
@@ -36,7 +39,10 @@ extern "C"
     const pfile KERNELF
     open_file_inp(str path, str inf_open);
     const pfile KERNELF
-    open_file_out(str path, str inf_open);
+    open_file_out(str path, str inf_open, u32t open_arg);
+
+    str KERNELF
+    get_time_k();
 
     // the function returns the buffer for which memory was allocated via malloc
     str KERNELF

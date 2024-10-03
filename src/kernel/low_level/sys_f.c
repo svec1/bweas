@@ -91,7 +91,14 @@ get_time() {
     sprintf(buf_tm, "[Min: %i; Sec: %i]", local->tm_min, local->tm_sec);
     return buf_tm;
 }
-
+str
+get_full_time() {
+    time_t _time = time(NULL);
+    struct tm *local = localtime(&_time);
+    char *buf_tm = malloc(256);
+    sprintf(buf_tm, "%im : %id - [Min: %i; Sec: %i]", local->tm_mon, local->tm_mday, local->tm_min, local->tm_sec);
+    return buf_tm;
+}
 str
 get_time_stm(struct tm *_time) {
     char buf_tm[256];

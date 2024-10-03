@@ -150,7 +150,7 @@ kl_build_inf_file(const inf_file *file) {
     char *buf_t = malloc(sizeof(char) * _kl_size_buf_inf_f);
     memset(buf_t, NULL, sizeof(char) * _kl_size_buf_inf_f);
     strcat(buf_t, file->name);
-    strcat(buf_t, get_time(file->strack_file));
+    strcat(buf_t, get_time_stm(file->strack_file));
     strcat(buf_t, ": ");
     strcat(buf_t, file->descr);
     strcat(buf_t, "\n");

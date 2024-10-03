@@ -34,6 +34,7 @@ semantic_analyzer::semantic_analyzer() {
                                     "accessed during semantic analysis");
         assist.add_err("SMT-RT002", "The number of arguments has been exceeded");
         assist.add_err("SMT-RT003", "The type of the identifier does not match the types of parameters");
+        assist.add_err("SMT-RT004", "Internal error of the declared function");
     }
 }
 
@@ -131,6 +132,9 @@ semantic_analyzer::smt_zero_pass(const abstract_expr_func &expr_s) {
         else if (expr_s[i].expr_func.func_t.token_val == "add_param_template")
             add_func_flink(expr_s[i].expr_func.func_t.token_val, sl_func::add_param_template,
                            {params::FUTURE_VAR_ID, params::VAR_ID});
+        else if (expr_s[i].expr_func.func_t.token_val == "create_templates")
+            add_func_flink(expr_s[i].expr_func.func_t.token_val, sl_func::create_templates,
+                           {params::FUTURE_VAR_ID, params::LSTR_OR_ID_VAR});
         else if (expr_s[i].expr_func.func_t.token_val == "use_templates")
             add_func_flink(expr_s[i].expr_func.func_t.token_val, sl_func::use_templates,
                            {params::VAR_STRUCT_ID, params::LSTR_OR_ID_VAR, params::NEXT_TOO});

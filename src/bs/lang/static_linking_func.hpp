@@ -87,6 +87,14 @@ lang(const std::vector<aef_expr::subexpressions> &sub_expr, var::scope &curr_sco
 extern void
 add_param_template(const std::vector<aef_expr::subexpressions> &sub_expr, var::scope &curr_scope);
 
+// Creates a template that can be used to generate commands
+// ----------
+// syntax: NAME_CALL_COMPONENT: <param1>,<param2>,<param3>...
+// If the call component does not exist, it is created.
+// Available components: COMPILER, LINKER, ARCHIVER, INTERPRETER
+extern void
+create_templates(const std::vector<aef_expr::subexpressions> &sub_expr, var::scope &curr_scope);
+
 // Adds the name of the template that will be used when generating commands
 extern void
 use_templates(const std::vector<aef_expr::subexpressions> &sub_expr, var::scope &curr_scope);
