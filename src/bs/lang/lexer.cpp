@@ -26,7 +26,7 @@ lex_an::get() {
 
 bool
 lex_an::check_sym_valid_grammar(char ch) {
-    if (ch == '*' || ch == '/' || ch == '!' || ch == '-' || ch == '\'' || ch == '\\')
+    if (ch == '*' || ch == '/' || ch == '!' || ch == '-' || ch == '\'' || ch == '[' || ch == ']')
         return 0;
     return 1;
 }
@@ -181,6 +181,13 @@ lex_an::analysis() {
             expected_separate = 0;
 
             continue;
+        }
+        else if(ch == '\\' && br){
+            if(pos == symbols.size())
+                assist.call_err("LEX000", "\n(Line: " + std::to_string(count_line) +
+                                            "; Symbols start pos: " + std::to_string(count_sym - lexem.size()) +
+                                            "): Lexem - \"" + lexem + "\"\n");
+            ch = get();
         }
         if (lexem.empty() && (isdigit(ch) || br)) {
             literal = 1;

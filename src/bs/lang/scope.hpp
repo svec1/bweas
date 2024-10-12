@@ -28,6 +28,8 @@ type_var_to_str(u32t ind) {
         return "target";
     else if (ind == 7)
         return "template command";
+    else if (ind == 8)
+        return "call component";
     return "undef";
 }
 
@@ -73,6 +75,7 @@ class scope {
     // 5 - project
     // 6 - target
     // 7 - template command
+    // 8 - call component
     // 0 - undefined
     inline u32t
     what_type(std::string name_var);
@@ -91,6 +94,7 @@ class scope {
     var::datatype_var<std::vector<std::string>> vec_str_v;
 
     var::datatype_var<struct_sb::template_command> tcmd_v;
+    var::datatype_var<struct_sb::call_component> ccmp_v;
 };
 
 inline scope::scope() {
@@ -152,6 +156,13 @@ scope::create_var<struct_sb::template_command>(std::string name_var, struct_sb::
     return tcmd_v.get_val_ref(name_var);
 }
 template <>
+inline struct_sb::call_component &
+scope::create_var<struct_sb::call_component>(std::string name_var, struct_sb::call_component val) {
+    if (ccmp_v.create_var(name_var, val))
+        assist.call_err("SCOP001", "call_component(" + val.name + ", ..." + ") <- " + name_var);
+    return ccmp_v.get_val_ref(name_var);
+}
+template <>
 inline bool
 scope::try_create_var<int>(std::string name_var, int val) {
     if (int_v.create_var(name_var, val))
@@ -200,6 +211,13 @@ scope::try_create_var<struct_sb::template_command>(std::string name_var, struct_
         return 0;
     return 1;
 }
+template <>
+inline bool
+scope::try_create_var<struct_sb::call_component>(std::string name_var, struct_sb::call_component val) {
+    if (ccmp_v.create_var(name_var, val))
+        return 0;
+    return 1;
+}
 
 template <>
 inline void
@@ -242,6 +260,12 @@ inline void
 scope::delete_var<struct_sb::template_command>(std::string name_var) {
     if (tcmd_v.delete_var(name_var))
         assist.call_err("SCOP000", "template_command() <- " + name_var);
+}
+template <>
+inline void
+scope::delete_var<struct_sb::call_component>(std::string name_var) {
+    if (ccmp_v.delete_var(name_var))
+        assist.call_err("SCOP000", "call_component() <- " + name_var);
 }
 
 template <>
@@ -293,6 +317,13 @@ scope::get_var_value<struct_sb::template_command>(std::string name_var) {
         assist.call_err("SCOP000", "template_command() <- " + name_var);
     return tcmd_v.get_val_ref(name_var);
 }
+template <>
+inline struct_sb::call_component &
+scope::get_var_value<struct_sb::call_component>(std::string name_var) {
+    if (!ccmp_v.is_exist_var(name_var))
+        assist.call_err("SCOP000", "template_command() <- " + name_var);
+    return ccmp_v.get_val_ref(name_var);
+}
 
 template <>
 inline std::vector<std::pair<std::string, int>> &
@@ -329,12 +360,17 @@ inline std::vector<std::pair<std::string, struct_sb::template_command>> &
 scope::get_vector_variables_t() {
     return tcmd_v.get_vector_variables();
 }
+template <>
+inline std::vector<std::pair<std::string, struct_sb::call_component>> &
+scope::get_vector_variables_t() {
+    return ccmp_v.get_vector_variables();
+}
 
 inline bool
 scope::is_exist(std::string name_var) {
     if (int_v.is_exist_var(name_var) || str_v.is_exist_var(name_var) || vec_int_v.is_exist_var(name_var) ||
         vec_str_v.is_exist_var(name_var) || prj_v.is_exist_var(name_var) || trg_v.is_exist_var(name_var) ||
-        tcmd_v.is_exist_var(name_var))
+        tcmd_v.is_exist_var(name_var) || ccmp_v.is_exist_var(name_var))
         return 1;
     return 0;
 }
@@ -354,6 +390,8 @@ scope::what_type(std::string name_var) {
         return 6;
     else if (tcmd_v.is_exist_var(name_var))
         return 7;
+    else if (ccmp_v.is_exist_var(name_var))
+        return 8;
     else
         return 0;
 }
@@ -366,6 +404,8 @@ scope::clear() {
     vec_str_v.clear();
     prj_v.clear();
     trg_v.clear();
+    tcmd_v.clear();
+    ccmp_v.clear();
 }
 
 } // namespace var

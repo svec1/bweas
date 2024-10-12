@@ -35,6 +35,27 @@
 #define TRG_VAR_NAME_TYPE_T "_TYPE_TARGET"
 #define TRG_VAR_NAME_LLIBS "_LIBS"
 
+// enum of the name field of target struct
+#define NAME_FIELD_TARGET_NAME "TARGET_NAME"
+#define NAME_FIELD_TARGET_LIBS "TARGET_LIBS"
+#define NAME_FIELD_TARGET_TYPE "TARGET_TYPE"
+#define NAME_FIELD_TARGET_CFG "TARGET_CFG"
+#define NAME_FIELD_TARGET_VER "TARGET_VER"
+
+// enum of the name field of project struct
+#define NAME_FIELD_PROJECT_NAME "T_PROJECT_NAME"
+#define NAME_FIELD_PROJECT_VER "T_PROJECT_VER"
+#define NAME_FIELD_PROJECT_LANG "T_PROJECT_LANG"
+#define NAME_FIELD_PROJECT_PCOMPILER "T_PROJECT_PATH_COMPILER"
+#define NAME_FIELD_PROJECT_PLINKER "T_PROJECT_PATH_LINKER"
+#define NAME_FIELD_PROJECT_RFCOMPILER "T_PROJECT_RFLAGS_COMPILER"
+#define NAME_FIELD_PROJECT_RFLINKER "T_PROJECT_RFLAGS_LINKER"
+#define NAME_FIELD_PROJECT_DFCOMPILER "T_PROJECT_DFLAGS_COMPILER"
+#define NAME_FIELD_PROJECT_DFLINKER "T_PROJECT_DFLAGS_LINKER"
+#define NAME_FIELD_PROJECT_STD_C "T_PROJECT_STANDART_C"
+#define NAME_FIELD_PROJECT_STD_CPP "T_PROJECT_STANDART_CPP"
+#define NAME_FIELD_PROJECT_SRC_FILES "T_PROJECT_SRC_FILES"
+
 namespace var {
 namespace struct_sb {
 
@@ -160,8 +181,8 @@ struct project {
     language lang;
 
     std::string path_compiler{DEFAULT_COMPILER_C}, path_linker{DEFAULT_COMPILER_C};
-    std::string rflags_compiler{RELEASE_FLAGS_COMPILER}, rflags_linker{RELEASE_FLAGS_LINKER};
-    std::string dflags_compiler{DEBUG_FLAGS_COMPILER}, dflags_linker{DEBUG_FLAGS_LINKER};
+    std::string rflags_compiler{RELEASE_FLAGS_COMPILER_CPP}, rflags_linker{RELEASE_FLAGS_LINKER_CXX};
+    std::string dflags_compiler{DEBUG_FLAGS_COMPILER_CPP}, dflags_linker{DEBUG_FLAGS_LINKER_CXX};
     u32t standart_c{98}, standart_cpp{14};
 
     bool use_it_templates{0};
@@ -186,6 +207,8 @@ struct target {
     std::vector<std::string> target_vec_libs{"null"};
 };
 
+// target structure for build system
+// ---------------------------------
 struct target_out {
     target_out() = default;
     project prj;
@@ -202,7 +225,18 @@ struct template_command {
     std::string name;
 
     std::string name_call_component;
+    std::vector<std::string> name_accept_params;
+    std::string returnable;
+
     std::vector<std::string> name_args;
+};
+
+struct call_component {
+    std::string name;
+    std::string name_program;
+
+    // file.txt
+    std::string pattern_ret_files;
 };
 
 } // namespace struct_sb

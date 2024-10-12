@@ -72,8 +72,8 @@ srl::parser(std::string symbols) {
     char ch;
     while ((ch = get(symbols, pos))) {
         ++count_sym;
-        if (ch == ' ' || ch == '\n' || ch == '\r') {
-            while (ch == ' ' || ch == '\n' || ch == '\r') {
+        if (ch == ' ' || ch == '\n' || ch == '\r' || ch == '\t') {
+            while (ch == ' ' || ch == '\n' || ch == '\r' || ch == '\t') {
                 if (ch == '\n') {
                     ++count_line;
                     count_sym = 1;

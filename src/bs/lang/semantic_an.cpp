@@ -135,6 +135,9 @@ semantic_analyzer::smt_zero_pass(const abstract_expr_func &expr_s) {
         else if (expr_s[i].expr_func.func_t.token_val == "create_templates")
             add_func_flink(expr_s[i].expr_func.func_t.token_val, sl_func::create_templates,
                            {params::FUTURE_VAR_ID, params::LSTR_OR_ID_VAR});
+        else if (expr_s[i].expr_func.func_t.token_val == "create_call_component")
+            add_func_flink(expr_s[i].expr_func.func_t.token_val, sl_func::create_call_component,
+                           {params::FUTURE_VAR_ID, params::LSTR_OR_ID_VAR, params::LSTR_OR_ID_VAR});
         else if (expr_s[i].expr_func.func_t.token_val == "use_templates")
             add_func_flink(expr_s[i].expr_func.func_t.token_val, sl_func::use_templates,
                            {params::VAR_STRUCT_ID, params::LSTR_OR_ID_VAR, params::NEXT_TOO});

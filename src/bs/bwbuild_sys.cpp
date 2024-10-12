@@ -1,4 +1,7 @@
 #include "bwbuild_sys.hpp"
+#include "lang/static_struct.hpp"
+
+#include <unordered_set>
 
 #include <filesystem>
 
@@ -92,6 +95,9 @@ bwbuilder::gen_cache_target() {
 
     std::string serel_target_tmp;
 
+    std::unordered_set<std::string> used_templates;
+    std::unordered_set<std::string> all_used_globally_args;
+
     for (u32t i = 0; i < out_targets.size(); ++i) {
         char *prj_v = (char *)&out_targets[i];
         serel_target_tmp += std::to_string(out_targets[i].prj.src_files.size()) + " " +
@@ -120,8 +126,10 @@ bwbuilder::gen_cache_target() {
         }
         for (u32t j = 0; j < out_targets[i].prj.src_files.size(); ++j)
             serel_target_tmp += out_targets[i].prj.src_files[j] + " ";
-        for (u32t j = 0; j < out_targets[i].prj.vec_templates.size(); ++j)
+        for (u32t j = 0; j < out_targets[i].prj.vec_templates.size(); ++j) {
+            used_templates.emplace(out_targets[i].prj.vec_templates[j]);
             serel_target_tmp += out_targets[i].prj.vec_templates[j] + " ";
+        }
 
         serel_target_tmp += var::struct_sb::target_t_str(out_targets[i].target_t) + " " +
                             var::struct_sb::cfg_str(out_targets[i].target_cfg) + " " + out_targets[i].name_target +
@@ -129,6 +137,31 @@ bwbuilder::gen_cache_target() {
         for (u32t j = 0; j < out_targets[i].target_vec_libs.size(); ++j)
             serel_target_tmp += out_targets[i].target_vec_libs[j] + " ";
     }
+
+    const auto &vec_global_template =
+        _interpreter.get_current_scope().get_vector_variables_t<var::struct_sb::template_command>();
+    for (u32t i = 0; i < vec_global_template.size(); ++i) {
+        serel_target_tmp += std::to_string(vec_global_template[i].second.name_accept_params.size()) + " " +
+                            std::to_string(vec_global_template[i].second.name_args.size()) + " " +
+                            vec_global_template[i].second.name + " " +
+                            vec_global_template[i].second.name_call_component + " " +
+                            vec_global_template[i].second.returnable + " ";
+
+        for (u32t j = 0; j < vec_global_template[i].second.name_accept_params.size(); ++j)
+            serel_target_tmp += vec_global_template[i].second.name_accept_params[j] + " ";
+        for (u32t j = 0; j < vec_global_template[i].second.name_args.size(); ++j) {
+            if (vec_global_template[i].second.name_args[j].find('{') == vec_global_template[i].second.name_args[j].npos)
+                all_used_globally_args.emplace(vec_global_template[i].second.name_args[j]);
+            serel_target_tmp += vec_global_template[i].second.name_args[j] + " ";
+        }
+    }
+
+    serel_target_tmp += std::to_string(all_used_globally_args.size()) + " ";
+
+    for (const auto &g_arg : all_used_globally_args)
+        serel_target_tmp += g_arg + "-\"" + _interpreter.get_current_scope().get_var_value<std::string>(g_arg) + "\" ";
+
+    serel_target_tmp += "EOF";
 
     assist.write_file(handle_f, serel_target_tmp);
     assist.close_file(handle_f);

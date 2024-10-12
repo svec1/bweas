@@ -97,6 +97,9 @@ class interpreter_exec : private module::mdl_manager {
     std::vector<var::struct_sb::target>
     export_targets();
 
+    var::scope &
+    get_current_scope();
+
   private:
     void
     build_external_func_table();
