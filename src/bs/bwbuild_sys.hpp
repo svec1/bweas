@@ -62,6 +62,7 @@ class bwbuilder {
   private:
     interpreter::interpreter_exec _interpreter;
     std::vector<var::struct_sb::target_out> out_targets;
+    std::vector<var::struct_sb::template_command> templates;
 
     static inline bool init_glob{0};
 

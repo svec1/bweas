@@ -110,3 +110,10 @@ interpreter_exec::export_targets() {
 
     return targets;
 }
+
+var::scope &
+interpreter_exec::get_current_scope() {
+    if (interp_conf.use_external_scope)
+        return *external_scope;
+    return global_scope;
+}

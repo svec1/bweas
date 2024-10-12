@@ -89,11 +89,18 @@ add_param_template(const std::vector<aef_expr::subexpressions> &sub_expr, var::s
 
 // Creates a template that can be used to generate commands
 // ----------
-// syntax: NAME_CALL_COMPONENT: <param1>,<param2>,<param3>...
-// If the call component does not exist, it is created.
-// Available components: COMPILER, LINKER, ARCHIVER, INTERPRETER
+// #### NAME_CALL_COMPONENT(ACP1, ...) -> return NAME_smt: <param1>,<param2>,<{ACP1}>...
+// Available components: COMPILER C/C++, LINKER C/C++, ARCHIVER, INTERPRETER, [user]...
+// NAME_ret is file or list of files
 extern void
 create_templates(const std::vector<aef_expr::subexpressions> &sub_expr, var::scope &curr_scope);
+
+// Creates a component of call
+// ----------
+// Creates a call component with the name of the program that will be called
+// when using this component, and also determines the pattern of files in the output of the program
+extern void
+create_call_component(const std::vector<aef_expr::subexpressions> &sub_expr, var::scope &curr_scope);
 
 // Adds the name of the template that will be used when generating commands
 extern void

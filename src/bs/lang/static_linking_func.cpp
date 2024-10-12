@@ -1,5 +1,8 @@
 #include "interpreter.hpp"
+#include "parser.hpp"
+#include "semantic_an.hpp"
 #include "static_linking_func.hpp"
+#include <algorithm>
 
 using namespace aef_expr;
 
@@ -590,80 +593,378 @@ void
 sl_func::create_templates(const std::vector<aef_expr::subexpressions> &sub_expr, var::scope &curr_scope) {
     std::string tmp_param;
 
+    std::vector<std::string> name_field_target = {
+        NAME_FIELD_TARGET_NAME,        NAME_FIELD_TARGET_LIBS,        NAME_FIELD_TARGET_TYPE,
+        NAME_FIELD_TARGET_CFG,         NAME_FIELD_TARGET_VER,         NAME_FIELD_PROJECT_NAME,
+        NAME_FIELD_PROJECT_VER,        NAME_FIELD_PROJECT_LANG,       NAME_FIELD_PROJECT_PCOMPILER,
+        NAME_FIELD_PROJECT_PLINKER,    NAME_FIELD_PROJECT_RFCOMPILER, NAME_FIELD_PROJECT_RFLINKER,
+        NAME_FIELD_PROJECT_DFCOMPILER, NAME_FIELD_PROJECT_DFLINKER,   NAME_FIELD_PROJECT_STD_C,
+        NAME_FIELD_PROJECT_STD_CPP,    NAME_FIELD_PROJECT_SRC_FILES};
+
     var::struct_sb::template_command tcmd_tmp;
     tcmd_tmp.name = sub_expr[0].token_of_subexpr[0].token_val;
 
+    bool defined_template = 0;
+
+    bool op_close_acp_param = 0;
+    bool op_minus_and_next_arrow = 0;
+
+    bool colon = 0;
+
     bool beg_param = 0, end_param = 0;
+
+    // To access internal parameters passed to the template
+    // <{SMT_PARAMETR}>
+    bool used_internal_param = 0;
+    bool was_close_used_internal_param = 0;
+
     bool op_comma = 0;
+
+    // Regular line
+    // <'string'>
+    bool op_quote = 0;
+    bool was_close_quote = 0;
+
+    // To access the fields of the current target during assembly, to obtain its information
+    // <[NAME_FIELD_TARGET_STRCTURE]>
+    bool op_target_hand_field = 0;
+    bool was_close_op_target_hand = 0;
+
+    bool is_name_features_bs = 0;
+
+    bool was_sep = 0;
 
     for (u32t i = 0; i < sub_expr[1].token_of_subexpr[0].token_val.size(); ++i) {
 
-        if (sub_expr[1].token_of_subexpr[0].token_val[i] == ' ' ||
-            sub_expr[1].token_of_subexpr[0].token_val[i] == '\n' ||
-            sub_expr[1].token_of_subexpr[0].token_val[i] == '\t')
-            continue;
+        if ((sub_expr[1].token_of_subexpr[0].token_val[i] == ' ' ||
+             sub_expr[1].token_of_subexpr[0].token_val[i] == '\n' ||
+             sub_expr[1].token_of_subexpr[0].token_val[i] == '\t') &&
+            !op_quote) {
 
-        if (sub_expr[1].token_of_subexpr[0].token_val[i] == ':') {
-            if (tmp_param.empty())
-                throw semantic_an::rt_semantic_excp(
-                    parser::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
-                        " The name of the call component is empty: " + sub_expr[1].token_of_subexpr[0].token_val + "\n",
-                    "004");
+            // te xt <- it is forbidden
+            if (!tmp_param.empty())
+                was_sep = 1;
+            else if (tmp_param.empty() && was_sep) // after processing of operator
+                was_sep = 0;
+            continue;
+        }
+
+        if (sub_expr[1].token_of_subexpr[0].token_val[i] == '(') {
+            if (defined_template)
+                throw semantic_an::rt_semantic_excp(parser::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
+                                                        " Unexpected operator of parameter enum of template\n",
+                                                    "004");
+            else if (tmp_param.empty())
+                throw semantic_an::rt_semantic_excp(parser::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
+                                                        " The name of the call component is empty: " + tmp_param + "\n",
+                                                    "004");
             else if (!tcmd_tmp.name_call_component.empty())
-                throw semantic_an::rt_semantic_excp(parser::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
-                                                        " The name of the call component that already exists: " +
-                                                        sub_expr[1].token_of_subexpr[0].token_val + "\n",
+                throw semantic_an::rt_semantic_excp(
+                    parser::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
+                        " The name of the call component that already exists: " + tmp_param + "\n",
+                    "004");
+            else if (curr_scope.what_type(tmp_param) != 8)
+                throw semantic_an::rt_semantic_excp(parser::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
+                                                        " The specified call component does not exist: " + tmp_param +
+                                                        "\n",
+                                                    "004");
+            tcmd_tmp.name_call_component = tmp_param;
+            tmp_param.clear();
+
+            defined_template = 1;
+            op_close_acp_param = 1;
+
+            continue;
+        }
+        else if (sub_expr[1].token_of_subexpr[0].token_val[i] == ')') {
+            if (!op_close_acp_param)
+                throw semantic_an::rt_semantic_excp(parser::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
+                                                        " Unexpected operator - \')\': " + tmp_param + "\n",
+                                                    "004");
+            else if (tmp_param.empty())
+                throw semantic_an::rt_semantic_excp(
+                    parser::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
+                        " The name of the parameters of call component is empty: " + tmp_param + "\n",
+                    "004");
+            else if (tmp_param == "NULL")
+                goto next_op_mn;
+            else if (find(tcmd_tmp.name_accept_params.begin(), tcmd_tmp.name_accept_params.end(), tmp_param) !=
+                     tcmd_tmp.name_accept_params.end())
+                throw semantic_an::rt_semantic_excp(
+                    parser::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
+                        " The parameter was already specified in the internal parameters[" + tmp_param +
+                        "]: " + tmp_param + "\n",
+                    "004");
+
+            tcmd_tmp.name_accept_params.push_back(tmp_param);
+
+        next_op_mn:
+
+            tmp_param.clear();
+
+            op_minus_and_next_arrow = 1;
+            op_close_acp_param = 0;
+
+            continue;
+        }
+        else if (sub_expr[1].token_of_subexpr[0].token_val[i] == '-') {
+            if (!op_minus_and_next_arrow)
+                throw semantic_an::rt_semantic_excp(parser::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
+                                                        " Unexpected operator - \'-\': " + tmp_param + "\n",
+                                                    "004");
+            else if (i == sub_expr[1].token_of_subexpr[0].token_val.size() - 1 ||
+                     sub_expr[1].token_of_subexpr[0].token_val[i + 1] != '>')
+                throw semantic_an::rt_semantic_excp(parser::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
+                                                        " Unexpected operator - \'-\': " + tmp_param + "\n",
                                                     "004");
 
-            beg_param = 1;
+            colon = 1;
+            op_minus_and_next_arrow = 0;
 
-            tcmd_tmp.name_call_component = tmp_param;
+            ++i;
+            continue;
+        }
+        else if (sub_expr[1].token_of_subexpr[0].token_val[i] == ':') {
+            if (op_quote || op_target_hand_field)
+                goto curr_sym;
+            if (!colon)
+                throw semantic_an::rt_semantic_excp(parser::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
+                                                        " Unexpected operator - \':\': " + tmp_param + "\n",
+                                                    "004");
+            else if (tmp_param.empty())
+                throw semantic_an::rt_semantic_excp(
+                    parser::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
+                        " The name of the returned value of call component is empty: " + tmp_param + "\n",
+                    "004");
+
+            beg_param = 1;
+            colon = 0;
+
+            tcmd_tmp.returnable = tmp_param;
             tmp_param.clear();
 
             continue;
         }
         else if (beg_param) {
-            if (sub_expr[1].token_of_subexpr[0].token_val[i] != '<')
-                throw semantic_an::rt_semantic_excp(parser::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
-                                                        " The enumeration of parameters is expected: " +
-                                                        sub_expr[1].token_of_subexpr[0].token_val + "\n",
+            if (isalpha(sub_expr[1].token_of_subexpr[0].token_val[i])) {
+                beg_param = 0;
+
+                op_comma = 1;
+                is_name_features_bs = 1;
+                goto curr_sym;
+            }
+            else if (sub_expr[1].token_of_subexpr[0].token_val[i] != '<')
+                throw semantic_an::rt_semantic_excp(parser::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
+                                                        " The enumeration of parameters is expected: " + tmp_param +
+                                                        "\n",
                                                     "004");
 
-            end_param = 1;
             beg_param = 0;
+            end_param = 1;
 
             continue;
         }
         else if (end_param && sub_expr[1].token_of_subexpr[0].token_val[i] == '>') {
+            if ((was_close_used_internal_param || was_close_quote || was_close_op_target_hand) && tmp_param == "NULL") {
+                was_close_used_internal_param = 0;
+                goto next_arg;
+            }
+
+            if (used_internal_param || op_quote || op_target_hand_field)
+                throw semantic_an::rt_semantic_excp(
+                    parser::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
+                        " The construction of using internal arguments, just string and handle to field of target "
+                        "must comply with this structure - {OPEN_OPERATOR}SOMETHING{CLOSE_OPERATOR}: " +
+                        tmp_param + "\n",
+                    "004");
+            else if ((!was_close_used_internal_param && !was_close_quote && !was_close_op_target_hand) &&
+                     curr_scope.what_type(tmp_param) != 2)
+                throw semantic_an::rt_semantic_excp(parser::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
+                                                        " Template argument does not exist externally[" + tmp_param +
+                                                        "]" + "\n",
+                                                    "004");
+            else if (was_close_used_internal_param &&
+                     find(tcmd_tmp.name_accept_params.begin(), tcmd_tmp.name_accept_params.end(), tmp_param) ==
+                         tcmd_tmp.name_accept_params.end())
+                throw semantic_an::rt_semantic_excp(parser::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
+                                                        " Template argument does not exist internally[" + tmp_param +
+                                                        "]" + "\n",
+                                                    "004");
+            else if (was_close_quote) {
+                tmp_param = "STR{" + tmp_param + "}";
+
+                was_close_quote = 0;
+            }
+            else if (was_close_op_target_hand) {
+                if (find(name_field_target.begin(), name_field_target.end(), tmp_param) == name_field_target.end()) {
+                    if (tmp_param.find(":") != tmp_param.npos) {
+                        std::string str_tmp{tmp_param};
+                        str_tmp.erase(str_tmp.find(":"));
+
+                        if (find(name_field_target.begin(), name_field_target.end(), str_tmp) !=
+                            name_field_target.end())
+                            goto proc_hand_target_field;
+                    }
+                    throw semantic_an::rt_semantic_excp(parser::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
+                                                            "Field does not exist in target structure[" + tmp_param +
+                                                            "]" + "\n",
+                                                        "004");
+                }
+            proc_hand_target_field:
+
+                tmp_param = "TRG{" + tmp_param + "}";
+
+                was_close_op_target_hand = 0;
+            }
+            else if (was_close_used_internal_param) {
+                tmp_param = "ACP{" + tmp_param + "}";
+
+                was_close_used_internal_param = 0;
+            }
+
             if (tmp_param.empty())
                 continue;
-            else if (curr_scope.what_type(tmp_param) != 2)
-                throw semantic_an::rt_semantic_excp(parser::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
-                                                        " Template argument does not exist externally[" + tmp_param +
-                                                        "]: " + sub_expr[1].token_of_subexpr[0].token_val + "\n",
-                                                    "004");
 
             tcmd_tmp.name_args.push_back(tmp_param);
 
+        next_arg:
             tmp_param.clear();
 
-            op_comma = 1;
             end_param = 0;
+            op_comma = 1;
+            continue;
+        }
+        else if (end_param && sub_expr[1].token_of_subexpr[0].token_val[i] == '\'') {
+            if ((!tmp_param.empty() || !end_param) && !op_quote)
+                throw semantic_an::rt_semantic_excp(
+                    parser::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
+                        " The symbol - \' must be after the beginning of the argument: " + tmp_param + "\n",
+                    "004");
+            else if (!end_param && op_quote)
+                throw semantic_an::rt_semantic_excp(
+                    parser::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
+                        " The symbol - \' must be at end of the argument: " + tmp_param + "\n",
+                    "004");
+
+            if (!op_quote)
+                op_quote = 1;
+            else {
+                op_quote = 0;
+                was_close_quote = 1;
+            }
+
+            continue;
+        }
+        else if (end_param && sub_expr[1].token_of_subexpr[0].token_val[i] == '[') {
+            if (!tmp_param.empty() || !end_param || op_target_hand_field)
+                throw semantic_an::rt_semantic_excp(
+                    parser::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
+                        " The symbol - \'[\' must be after the beginning of the argument: " + tmp_param + "\n",
+                    "004");
+
+            op_target_hand_field = 1;
+
+            continue;
+        }
+        else if (end_param && sub_expr[1].token_of_subexpr[0].token_val[i] == ']') {
+            if (!end_param)
+                throw semantic_an::rt_semantic_excp(
+                    parser::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
+                        " The symbol - \']\' must be at end of the argument: " + tmp_param + "\n",
+                    "004");
+
+            op_target_hand_field = 0;
+            was_close_op_target_hand = 1;
+
+            continue;
+        }
+        else if (end_param && sub_expr[1].token_of_subexpr[0].token_val[i] == '{') {
+            if (!tmp_param.empty() || !end_param)
+                throw semantic_an::rt_semantic_excp(
+                    parser::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
+                        " The symbol - \'}\' must be after the beginning of the argument: " + tmp_param + "\n",
+                    "004");
+
+            used_internal_param = 1;
+
+            continue;
+        }
+        else if (end_param && sub_expr[1].token_of_subexpr[0].token_val[i] == '}') {
+            if (!end_param)
+                throw semantic_an::rt_semantic_excp(
+                    parser::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
+                        " The symbol - \'}\' must be at the end of the argument: " + tmp_param + "\n",
+                    "004");
+
+            used_internal_param = 0;
+            was_close_used_internal_param = 1;
+
+            continue;
+        }
+        else if (op_close_acp_param && sub_expr[1].token_of_subexpr[0].token_val[i] == ',') {
+            if (tmp_param == "NULL")
+                throw semantic_an::rt_semantic_excp(
+                    parser::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
+                        " If the parameter is zero, there should be no other parameters: " + tmp_param + "\n",
+                    "004");
+
+            tcmd_tmp.name_accept_params.push_back(tmp_param);
+            tmp_param.clear();
             continue;
         }
         else if (op_comma) {
-            if (sub_expr[1].token_of_subexpr[0].token_val[i] != ',')
-                throw semantic_an::rt_semantic_excp(
-                    parser::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
-                        " The operator is expected - ',': " + sub_expr[1].token_of_subexpr[0].token_val + "\n",
-                    "004");
+            if (sub_expr[1].token_of_subexpr[0].token_val[i] != ',' && !is_name_features_bs)
+                throw semantic_an::rt_semantic_excp(parser::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
+                                                        " The operator is expected - \',\': " + tmp_param + "\n",
+                                                    "004");
+            else if (sub_expr[1].token_of_subexpr[0].token_val[i] == ',' && is_name_features_bs) {
+                tcmd_tmp.name_args.push_back("FTRS{" + tmp_param + "}");
+                tmp_param.clear();
 
+                beg_param = 1;
+                is_name_features_bs = 0;
+                op_comma = 0;
+
+                continue;
+            }
+            else if (is_name_features_bs) {
+                if (!isalpha(sub_expr[1].token_of_subexpr[0].token_val[i]) &&
+                    sub_expr[1].token_of_subexpr[0].token_val[i] != '_')
+                    throw semantic_an::rt_semantic_excp(
+                        parser::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) + " The symbol - \'" +
+                            sub_expr[1].token_of_subexpr[0].token_val[i] + "\' was not expected: " + tmp_param + "\n",
+                        "004");
+                goto curr_sym;
+            }
             beg_param = 1;
             op_comma = 0;
 
             continue;
         }
+    curr_sym:
 
+        if (op_minus_and_next_arrow)
+            throw semantic_an::rt_semantic_excp(
+                parser::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
+                    " The operator is expected - \'->\': " + sub_expr[1].token_of_subexpr[0].token_val + "\n",
+                "004");
+        else if (was_sep) {
+            if (beg_param)
+                throw semantic_an::rt_semantic_excp(parser::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
+                                                        " Pattern parameter start operator expected: " + tmp_param +
+                                                        "\n ",
+                                                    "004");
+            else if (end_param)
+                throw semantic_an::rt_semantic_excp(parser::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
+                                                        " Pattern parameter end operator expected: " + tmp_param +
+                                                        "\n ",
+                                                    "004");
+            else if (is_name_features_bs || op_comma)
+                throw semantic_an::rt_semantic_excp(parser::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
+                                                        " Expected end of parameter(comma operator): " + tmp_param +
+                                                        "\n ",
+                                                    "004");
+        }
         tmp_param += sub_expr[1].token_of_subexpr[0].token_val[i];
     }
 
@@ -672,8 +973,37 @@ sl_func::create_templates(const std::vector<aef_expr::subexpressions> &sub_expr,
             parser::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
                 " Template argument expected: " + sub_expr[1].token_of_subexpr[0].token_val + "\n",
             "004");
+    else if (is_name_features_bs)
+        tcmd_tmp.name_args.push_back("FTRS{" + tmp_param + "}");
+
+    const auto &vec_templates_cmd = curr_scope.get_vector_variables_t<var::struct_sb::template_command>();
+
+    for (const std::string &acp_param : tcmd_tmp.name_accept_params) {
+        bool find = 0;
+        for (const auto &tcmd : vec_templates_cmd) {
+            if (acp_param == tcmd.second.returnable) {
+                find = 1;
+                break;
+            }
+        }
+
+        if (!find)
+            throw semantic_an::rt_semantic_excp(
+                parser::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
+                    " there is no command template that returns such a value: " + acp_param + "\n",
+                "004");
+    }
 
     curr_scope.create_var<var::struct_sb::template_command>(sub_expr[0].token_of_subexpr[0].token_val, tcmd_tmp);
+}
+
+void
+sl_func::create_call_component(const std::vector<aef_expr::subexpressions> &sub_expr, var::scope &curr_scope) {
+    var::struct_sb::call_component ccmp_tmp;
+    ccmp_tmp.name_program = sub_expr[1].token_of_subexpr[0].token_val;
+    ccmp_tmp.pattern_ret_files = sub_expr[2].token_of_subexpr[0].token_val;
+
+    curr_scope.create_var<var::struct_sb::call_component>(sub_expr[0].token_of_subexpr[0].token_val, ccmp_tmp);
 }
 
 void
@@ -686,6 +1016,11 @@ sl_func::use_templates(const std::vector<subexpressions> &sub_expr, var::scope &
     var::struct_sb::project &prj_ref =
         curr_scope.get_var_value<var::struct_sb::project>(sub_expr[0].token_of_subexpr[0].token_val);
     for (u32t i = 1; i < sub_expr.size(); ++i) {
+        if (curr_scope.what_type(sub_expr[i].token_of_subexpr[0].token_val) != 7)
+            throw interpreter::realtime_excp(
+                parser::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
+                    " This template does not exist: " + sub_expr[i].token_of_subexpr[0].token_val + "\n",
+                "003");
         prj_ref.vec_templates.push_back(sub_expr[i].token_of_subexpr[0].token_val);
     }
 
