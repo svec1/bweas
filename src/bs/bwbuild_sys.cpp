@@ -97,6 +97,12 @@ bwbuilder::gen_cache_target() {
 
     std::unordered_set<std::string> used_templates;
     std::unordered_set<std::string> all_used_globally_args;
+    std::unordered_set<std::string> all_used_call_component;
+
+    const auto &vec_global_template =
+        _interpreter.get_current_scope().get_vector_variables_t<var::struct_sb::template_command>();
+    const auto &vec_c_components =
+        _interpreter.get_current_scope().get_vector_variables_t<var::struct_sb::call_component>();
 
     for (u32t i = 0; i < out_targets.size(); ++i) {
         char *prj_v = (char *)&out_targets[i];
@@ -138,14 +144,16 @@ bwbuilder::gen_cache_target() {
             serel_target_tmp += out_targets[i].target_vec_libs[j] + " ";
     }
 
-    const auto &vec_global_template =
-        _interpreter.get_current_scope().get_vector_variables_t<var::struct_sb::template_command>();
+    serel_target_tmp += "EOET" + std::to_string(vec_global_template.size()) + " "; // end of enum targets
+
     for (u32t i = 0; i < vec_global_template.size(); ++i) {
         serel_target_tmp += std::to_string(vec_global_template[i].second.name_accept_params.size()) + " " +
                             std::to_string(vec_global_template[i].second.name_args.size()) + " " +
                             vec_global_template[i].second.name + " " +
                             vec_global_template[i].second.name_call_component + " " +
                             vec_global_template[i].second.returnable + " ";
+
+        all_used_call_component.emplace(vec_global_template[i].second.name_call_component);
 
         for (u32t j = 0; j < vec_global_template[i].second.name_accept_params.size(); ++j)
             serel_target_tmp += vec_global_template[i].second.name_accept_params[j] + " ";
@@ -156,12 +164,23 @@ bwbuilder::gen_cache_target() {
         }
     }
 
+    serel_target_tmp += std::to_string(all_used_call_component.size()) + " ";
+
+    for (const auto &c_component : all_used_call_component) {
+        const auto &ref_c_component =
+            find_if(vec_c_components.begin(), vec_c_components.end(),
+                    [c_component](const std::pair<std::string, var::struct_sb::call_component> &ccmp) {
+                        return ccmp.first == c_component;
+                    })
+                ->second;
+        serel_target_tmp +=
+            ref_c_component.name + " " + ref_c_component.name_program + " " + ref_c_component.pattern_ret_files + " ";
+    }
+
     serel_target_tmp += std::to_string(all_used_globally_args.size()) + " ";
 
     for (const auto &g_arg : all_used_globally_args)
         serel_target_tmp += g_arg + "-\"" + _interpreter.get_current_scope().get_var_value<std::string>(g_arg) + "\" ";
-
-    serel_target_tmp += "EOF";
 
     assist.write_file(handle_f, serel_target_tmp);
     assist.close_file(handle_f);
@@ -181,90 +200,197 @@ bwbuilder::deserl_cache() {
     assist << " - [BWEAS]: Cache deserialization...";
 
     var::struct_sb::target_out trg_tmp;
+    var::struct_sb::template_command tcmd_tmp;
+    var::struct_sb::call_component ccmp_tmp;
+
     std::string str_tmp;
 
-    u32t count_word = 0;
-    u32t byte_offset_s = 0;
-    u32t size_src_fs = 0, size_vec_templ = 0, size_vec_libs = 0;
+    u32t count_word = 0, offset_byte_prj = 0, offset_byte_ccmp = 0;
+    u32t size_src_files = 0, size_vec_templates = 0, size_vec_libs = 0;
+    u32t size_templates = 0;
+    u32t size_internal_args = 0, size_external_args = 0, size_call_components = 0, size_global_extern_args = 0;
+
+    char *tproj_p = (char *)&trg_tmp.prj;
+    char *ccmp_p = (char *)&ccmp_tmp;
 
     bool open_sk = 0;
+    bool enum_templates = 0;
+    bool enum_call_component = 0;
+    bool enum_global_extern_args = 0;
 
-    char *prj_v = (char *)&trg_tmp.prj;
-
-    for (u32t i = 0; i < serel_str.size(); ++i) {
-        if (serel_str[i] == ' ' && !open_sk) {
-            ++count_word;
-            if ((count_word < 4 || count_word == 5 || count_word == 6 || (count_word >= 13 && count_word <= 15) ||
-                 count_word == 18 || count_word == 19 || count_word == 21) &&
-                !std::atoll(str_tmp.c_str()) && (str_tmp.size() == 1 && str_tmp[0] != 48))
-                assist.call_err("BWS001");
-
-        srl_new_target:
-            if (count_word == 1)
-                size_src_fs = std::stoi(str_tmp);
-            else if (count_word == 2)
-                size_vec_templ = std::stoi(str_tmp);
-            else if (count_word == 3)
-                size_vec_libs = std::stoi(str_tmp);
-            else if (count_word > 3) {
-                if (count_word == 5) {
-                    *(var::struct_sb::version *)(prj_v + byte_offset_s) = str_tmp;
-                    byte_offset_s += 12;
-                }
-                else if (count_word == 6 || (count_word >= 13 && count_word <= 15)) {
-                    *(int *)(prj_v + byte_offset_s) = std::atoll(str_tmp.c_str());
-                    byte_offset_s += 4;
-                }
-                else if (count_word >= 16 && count_word < 16 + size_src_fs)
-                    trg_tmp.prj.src_files.push_back(str_tmp);
-                else if (count_word >= 16 + size_src_fs && count_word < 16 + size_src_fs + size_vec_templ)
-                    trg_tmp.prj.vec_templates.push_back(str_tmp);
-                else if (count_word == 16 + size_src_fs + size_vec_templ)
-                    trg_tmp.target_t = var::struct_sb::to_type_target(str_tmp);
-                else if (count_word == 16 + size_src_fs + size_vec_templ + 1)
-                    trg_tmp.target_cfg = var::struct_sb::to_cfg(str_tmp);
-                else if (count_word == 16 + size_src_fs + size_vec_templ + 2)
-                    trg_tmp.name_target = str_tmp;
-                else if (count_word == 16 + size_src_fs + size_vec_templ + 3)
-                    trg_tmp.version_target = str_tmp;
-                else if (count_word >= 16 + size_src_fs + size_vec_templ + 4 &&
-                         count_word < 16 + size_src_fs + size_vec_templ + 4 + size_vec_libs)
-                    trg_tmp.target_vec_libs.push_back(str_tmp);
-                else if (count_word == 16 + size_src_fs + size_vec_templ + 4 + size_vec_libs) {
-                    out_targets.push_back(trg_tmp);
-
-                    trg_tmp.target_vec_libs = {};
-                    trg_tmp.prj.src_files = {};
-                    trg_tmp.prj.vec_templates = {};
-
-                    byte_offset_s = 0;
-                    count_word = 1;
-
-                    goto srl_new_target;
-                }
-                else {
-                    *(std::string *)(prj_v + byte_offset_s) = str_tmp;
-                    byte_offset_s += sizeof(std::string);
-                }
+    try {
+        for (u32t i = 0; i < serel_str.size(); ++i) {
+            if (serel_str[i] == '\"') {
+                if (!open_sk)
+                    open_sk = 1;
+                else
+                    open_sk = 0;
+                continue;
             }
 
-            str_tmp.clear();
-            continue;
+            if (serel_str[i] == ' ' && !open_sk) {
+            next_word:
+                ++count_word;
+                if (enum_global_extern_args) {
+                    if (!size_global_extern_args)
+                        break;
+                    std::string name_arg = str_tmp;
+                    name_arg.erase(name_arg.find("-"));
+                    str_tmp.erase(0, str_tmp.find("-") + 1);
+                    global_extern_args.push_back(std::pair<std::string, std::string>(name_arg, str_tmp));
+                }
+                else if (enum_call_component) {
+                    if (offset_byte_ccmp / sizeof(std::string) == 3) {
+                        call_components.push_back(ccmp_tmp);
+                        offset_byte_ccmp = 0;
+
+                        --size_call_components;
+
+                        if (!size_call_components) {
+                            enum_global_extern_args = 1;
+                            enum_call_component = 0;
+
+                            size_global_extern_args = std::stoi(str_tmp);
+                            goto next;
+                        }
+                    }
+                    *(std::string *)(ccmp_p + offset_byte_ccmp) = str_tmp;
+                    offset_byte_ccmp += sizeof(std::string);
+                }
+                else if (enum_templates) {
+                    if (count_word == 1)
+                        size_internal_args = std::stoi(str_tmp);
+                    else if (count_word == 2)
+                        size_external_args = std::stoi(str_tmp);
+                    else if (count_word == 3)
+                        tcmd_tmp.name = str_tmp;
+                    else if (count_word == 4)
+                        tcmd_tmp.name_call_component = str_tmp;
+                    else if (count_word == 5)
+                        tcmd_tmp.returnable = str_tmp;
+                    else if (count_word >= 6 && count_word < 6 + size_internal_args)
+                        tcmd_tmp.name_accept_params.push_back(str_tmp);
+                    else if ((count_word >= 6 + size_internal_args &&
+                              count_word < 6 + size_internal_args + size_external_args) ||
+                             count_word == 6 + size_internal_args)
+                        tcmd_tmp.name_args.push_back(str_tmp);
+                    else if (count_word == 6 + size_internal_args + size_external_args) {
+                        templates.push_back(tcmd_tmp);
+                        --size_templates;
+
+                        tcmd_tmp.name_accept_params = {};
+                        tcmd_tmp.name_args = {};
+
+                        if (!size_templates) {
+                            enum_call_component = 1;
+                            enum_templates = 0;
+
+                            size_call_components = std::stoi(str_tmp);
+                        }
+                        else {
+                            count_word = 0;
+                            goto next_word;
+                        }
+                    }
+                }
+                else {
+                    if (count_word == 1)
+                        size_src_files = std::stoi(str_tmp);
+                    else if (count_word == 2)
+                        size_vec_templates = std::stoi(str_tmp);
+                    else if (count_word == 3)
+                        size_vec_libs = std::stoi(str_tmp);
+                    else if (count_word > 3) {
+                        if (count_word == 6 || (count_word >= 13 && count_word <= 15)) {
+                            *(int *)(tproj_p + offset_byte_prj) = std::atoll(str_tmp.c_str());
+                            offset_byte_prj += sizeof(int);
+                        }
+                        else if (count_word == 5) {
+                            trg_tmp.prj.version_project = str_tmp;
+                            offset_byte_prj += sizeof(var::struct_sb::version);
+                        }
+                        else {
+
+                            if (count_word >= 16 && count_word < 16 + size_src_files)
+                                trg_tmp.prj.src_files.push_back(str_tmp);
+                            else if (count_word >= 16 + size_src_files &&
+                                     count_word < 16 + size_src_files + size_vec_templates)
+                                trg_tmp.prj.vec_templates.push_back(str_tmp);
+                            else if (count_word == 16 + size_src_files + size_vec_templates)
+                                trg_tmp.target_t = var::struct_sb::to_type_target(str_tmp);
+                            else if (count_word == 16 + size_src_files + size_vec_templates + 1)
+                                trg_tmp.target_cfg = var::struct_sb::to_cfg(str_tmp);
+                            else if (count_word == 16 + size_src_files + size_vec_templates + 2)
+                                trg_tmp.name_target = str_tmp;
+                            else if (count_word == 16 + size_src_files + size_vec_templates + 3)
+                                trg_tmp.version_target = str_tmp;
+                            else if (count_word >= 16 + size_src_files + size_vec_templates + 4 &&
+                                     count_word < 16 + size_src_files + size_vec_templates + 4 + size_vec_libs)
+                                trg_tmp.target_vec_libs.push_back(str_tmp);
+                            else if (count_word == 16 + size_src_files + size_vec_templates + 4 + size_vec_libs) {
+                                out_targets.push_back(trg_tmp);
+
+                                trg_tmp.target_vec_libs = {};
+                                trg_tmp.prj.src_files = {};
+                                trg_tmp.prj.vec_templates = {};
+
+                                offset_byte_prj = 0;
+                                count_word = 0;
+
+                                if (str_tmp.find("EOET") != str_tmp.npos) {
+                                    str_tmp.erase(0, str_tmp.find("EOET") + 4);
+
+                                    size_templates = std::stoi(str_tmp);
+
+                                    enum_templates = 1;
+                                }
+                                else
+                                    goto next_word;
+                            }
+                            else {
+                                *(std::string *)(tproj_p + offset_byte_prj) = str_tmp;
+                                offset_byte_prj += sizeof(std::string);
+                            }
+                        }
+                    }
+                }
+
+            next:
+                str_tmp.clear();
+                continue;
+            }
+            str_tmp += serel_str[i];
         }
-        if (serel_str[i] == '\"') {
-            if (open_sk)
-                open_sk = 0;
-            else
-                open_sk = 1;
-            continue;
-        }
-        str_tmp += serel_str[i];
+    }
+    catch (const std::logic_error &_excp) {
+        assist.next_output_unsuccess();
+        assist.call_err("BWS001");
     }
 
-    // last target in the file
-    out_targets.push_back(trg_tmp);
-
     assist << " - [BWEAS]: Cache deserialization was successful!";
+
+    assist.next_output_success();
+    assist << " - [BWEAS]: Was loaded " + std::to_string(templates.size()) + " template of command!";
+
+    /*
+    for (u32t i = 0; i < templates.size(); ++i) {
+        assist << " --- " + std::to_string(i) + ". " + templates[i].name;
+        assist << " --- Name of call component: " + templates[i].name_call_component;
+        assist << " --- Return value: " + templates[i].returnable;
+        assist << " --- Parameters: ";
+        for (u32t j = 0; j < templates[i].name_accept_params.size(); ++j)
+            assist << " ---  - " + templates[i].name_accept_params[j];
+
+        assist << " --- Use externally parameters: ";
+        for (u32t j = 0; j < templates[i].name_args.size(); ++j)
+            assist << " ---  - " + templates[i].name_args[j];
+    }
+
+    assist << " - The following call component templates were loaded:";
+    for (u32t i = 0; i < extern_args.size(); ++i) {
+        assist << extern_args[i].first + " " + extern_args[i].second;
+    }
+    */
 
     return 0;
 }
