@@ -1000,6 +1000,7 @@ sl_func::create_templates(const std::vector<aef_expr::subexpressions> &sub_expr,
 void
 sl_func::create_call_component(const std::vector<aef_expr::subexpressions> &sub_expr, var::scope &curr_scope) {
     var::struct_sb::call_component ccmp_tmp;
+    ccmp_tmp.name = sub_expr[0].token_of_subexpr[0].token_val;
     ccmp_tmp.name_program = sub_expr[1].token_of_subexpr[0].token_val;
     ccmp_tmp.pattern_ret_files = sub_expr[2].token_of_subexpr[0].token_val;
 
