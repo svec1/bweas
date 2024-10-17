@@ -303,8 +303,10 @@ sl_func::executable(const std::vector<subexpressions> &sub_expr, var::scope &cur
         curr_scope.create_var<var::struct_sb::target>(sub_expr[0].token_of_subexpr[0].token_val);
 
     trg_ref.name_target = sub_expr[0].token_of_subexpr[0].token_val;
-    trg_ref.prj = std::make_shared<var::struct_sb::project>(
-        curr_scope.get_var_value<var::struct_sb::project>(sub_expr[2].token_of_subexpr[0].token_val));
+    trg_ref.prj = std::shared_ptr<var::struct_sb::project>(
+        (var::struct_sb::project *)&curr_scope.get_var_value<var::struct_sb::project>(
+            sub_expr[2].token_of_subexpr[0].token_val),
+        [](const var::struct_sb::project *) {});
     trg_ref.target_cfg = (var::struct_sb::configuration)std::stoi(sub_expr[1].token_of_subexpr[0].token_val);
     trg_ref.version_target = var::struct_sb::version(0, 0, 0);
 
@@ -778,7 +780,8 @@ sl_func::create_templates(const std::vector<aef_expr::subexpressions> &sub_expr,
                         tmp_param + "\n",
                     "004");
             else if ((!was_close_used_internal_param && !was_close_quote && !was_close_op_target_hand) &&
-                     curr_scope.what_type(tmp_param) != 2)
+                     (curr_scope.what_type(tmp_param) != 2 ||
+                      curr_scope.what_type(curr_scope.get_var_value<std::string>(tmp_param)) != 2))
                 throw semantic_an::rt_semantic_excp(parser::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
                                                         " Template argument does not exist externally[" + tmp_param +
                                                         "]" + "\n",
@@ -1026,7 +1029,7 @@ sl_func::use_templates(const std::vector<subexpressions> &sub_expr, var::scope &
     }
 
     if (curr_scope.what_type("DECL_CONFIG_VAR") == 1 && curr_scope.get_var_value<int>(DECL_VAR_STRUCT) > 0)
-        if (curr_scope.what_type(prj_ref.name_project + PRJ_VAR_NAME_UTEMPLATES) == 1) {
+        if (curr_scope.what_type(prj_ref.name_project + PRJ_VAR_NAME_UTEMPLATES) == 4) {
             curr_scope.get_var_value<std::vector<std::string>>(prj_ref.name_project + PRJ_VAR_NAME_UTEMPLATES) =
                 prj_ref.vec_templates;
         }

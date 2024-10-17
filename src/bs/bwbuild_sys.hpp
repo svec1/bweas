@@ -8,6 +8,8 @@
 #include "lang/interpreter.hpp"
 #include "tools/call_cmd.hpp"
 
+#include <stack>
+
 #define MAIN_FILE "bweasconf.txt"
 #define IMPORT_FILE "import-modules.imp"
 #define CACHE_FILE "bwcache"
@@ -58,6 +60,16 @@ class bwbuilder {
 
     void
     load_target();
+
+    void
+    imp_data_interpreter_for_bs();
+
+  private:
+    std::stack<std::string>
+    create_stack_target_templates(const var::struct_sb::target_out &target);
+    u32t
+    recovery_stack_templates(std::vector<var::struct_sb::template_command> &vec_templates,
+                             const std::string &name_internal_param, std::stack<std::string> &stack_templates);
 
   private:
     interpreter::interpreter_exec _interpreter;

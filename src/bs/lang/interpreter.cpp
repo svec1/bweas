@@ -62,11 +62,12 @@ interpreter_exec::build_aef() {
             }
         } else {
             parser.set_tokens(lexer.analysis());
+            aef = parser.analysis();
 
             if (interp_conf.use_external_scope)
-                smt_analyzer.analysis(parser.analysis(), *external_scope);
+                smt_analyzer.analysis(aef, *external_scope);
             else
-                smt_analyzer.analysis(parser.analysis(), global_scope);
+                smt_analyzer.analysis(aef, global_scope);
         })
 #ifdef _WIN32
     assist.safe_call_dll_func_end();

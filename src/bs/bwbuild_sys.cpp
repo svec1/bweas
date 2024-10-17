@@ -1,15 +1,18 @@
 #include "bwbuild_sys.hpp"
 #include "lang/static_struct.hpp"
 
-#include <unordered_set>
-
+#include <algorithm>
 #include <filesystem>
+#include <string>
+#include <unordered_set>
 
 bwbuilder::bwbuilder() {
     if (!init_glob) {
         assist << "Initializing system build - bweas " + bwbuilde_ver.get_str_version();
         assist.add_err("BWS000", "Unable to open configuration file \'bweasconf.txt\'");
         assist.add_err("BWS001", "Incorrect cache structure");
+        assist.add_err("BWS002", "Unable to generate command for target");
+        assist.add_err("BWS003", "Unable to generate cache");
     }
 }
 
@@ -42,6 +45,7 @@ bwbuilder::start_build() {
         run_interpreter();
         load_target();
         gen_cache_target();
+        imp_data_interpreter_for_bs();
     }
 
     assist.next_output_important();
@@ -179,9 +183,15 @@ bwbuilder::gen_cache_target() {
 
     serel_target_tmp += std::to_string(all_used_globally_args.size()) + " ";
 
-    for (const auto &g_arg : all_used_globally_args)
-        serel_target_tmp += g_arg + "-\"" + _interpreter.get_current_scope().get_var_value<std::string>(g_arg) + "\" ";
-
+    for (const auto &g_arg : all_used_globally_args) {
+        if (_interpreter.get_current_scope().what_type(
+                _interpreter.get_current_scope().get_var_value<std::string>(g_arg)) != 2)
+            assist.call_err("BWS003", "External global parameter for template is not defined correctly");
+        serel_target_tmp += g_arg + "-\"" +
+                            _interpreter.get_current_scope().get_var_value<std::string>(
+                                _interpreter.get_current_scope().get_var_value<std::string>(g_arg)) +
+                            "\" ";
+    }
     assist.write_file(handle_f, serel_target_tmp);
     assist.close_file(handle_f);
 
@@ -314,8 +324,10 @@ bwbuilder::deserl_cache() {
                             if (count_word >= 16 && count_word < 16 + size_src_files)
                                 trg_tmp.prj.src_files.push_back(str_tmp);
                             else if (count_word >= 16 + size_src_files &&
-                                     count_word < 16 + size_src_files + size_vec_templates)
-                                trg_tmp.prj.vec_templates.push_back(str_tmp);
+                                     count_word < 16 + size_src_files + size_vec_templates) {
+                                if (str_tmp != "null")
+                                    trg_tmp.prj.vec_templates.push_back(str_tmp);
+                            }
                             else if (count_word == 16 + size_src_files + size_vec_templates)
                                 trg_tmp.target_t = var::struct_sb::to_type_target(str_tmp);
                             else if (count_word == 16 + size_src_files + size_vec_templates + 1)
@@ -399,9 +411,28 @@ void
 bwbuilder::build_targets() {
     assist << " - [BWEAS]: Building targets...";
 
-    std::string command_compiler, comman_linker;
+    std::string command;
+
+    std::stack<std::string> target_use_template_q;
 
     for (u32t i = 0; i < out_targets.size(); ++i) {
+        if (out_targets[i].prj.vec_templates.size() == 0)
+            assist.call_err("BWS002", "There are no templates for the target - " + out_targets[i].name_target + "");
+
+        target_use_template_q = create_stack_target_templates(out_targets[i]);
+        // while (stack_templates.size()) {
+        //     assist << stack_templates.top();
+        //     stack_templates.pop();
+        // }
+
+        while (target_use_template_q.size()) {
+            const auto &template_tmp =
+                std::find_if(templates.begin(), templates.end(),
+                             [target_use_template_q](const var::struct_sb::template_command &_template) {
+                                 return target_use_template_q.top() == _template.name;
+                             });
+        
+        }
     }
 }
 
@@ -409,16 +440,89 @@ void
 bwbuilder::load_target() {
     std::vector<var::struct_sb::target> targets = _interpreter.export_targets();
 
-    var::struct_sb::target_out tmp_target;
+    var::struct_sb::target_out target_tmp;
 
     for (u32t i = 0; i < targets.size(); ++i) {
-        tmp_target.name_target = targets[i].name_target;
-        tmp_target.target_t = targets[i].target_t;
-        tmp_target.target_cfg = targets[i].target_cfg;
-        tmp_target.version_target = targets[i].version_target;
-        tmp_target.target_vec_libs = targets[i].target_vec_libs;
-        tmp_target.prj = *targets[i].prj;
+        target_tmp.name_target = targets[i].name_target;
+        target_tmp.target_t = targets[i].target_t;
+        target_tmp.target_cfg = targets[i].target_cfg;
+        target_tmp.version_target = targets[i].version_target;
+        target_tmp.target_vec_libs = targets[i].target_vec_libs;
+        target_tmp.prj = *targets[i].prj;
 
-        out_targets.push_back(tmp_target);
+        out_targets.push_back(target_tmp);
+    }
+}
+
+std::stack<std::string>
+bwbuilder::create_stack_target_templates(const var::struct_sb::target_out &target) {
+    std::vector<var::struct_sb::template_command> vec_templates_tmp;
+    std::stack<std::string> stack_templates;
+
+    for (u32t i = 0; i < target.prj.vec_templates.size(); ++i) {
+        for (u32t j = 0; j < templates.size(); ++j)
+            if (target.prj.vec_templates[i] == templates[j].name)
+                vec_templates_tmp.push_back(templates[j]);
+    }
+
+    const auto &it_template = find_if(vec_templates_tmp.begin(), vec_templates_tmp.end(),
+                                      [target](const var::struct_sb::template_command &_template) {
+                                          return _template.returnable == var::struct_sb::target_t_str(target.target_t);
+                                      });
+
+    if (it_template == vec_templates_tmp.end())
+        assist.call_err("BWS002", "There is no template that returns a target with the given type - " +
+                                      var::struct_sb::target_t_str(target.target_t));
+
+    stack_templates.push(it_template->name);
+    for (u32t i = 0; i < it_template->name_accept_params.size(); ++i)
+        recovery_stack_templates(vec_templates_tmp, it_template->name_accept_params[i], stack_templates);
+
+    return stack_templates;
+}
+
+u32t
+bwbuilder::recovery_stack_templates(std::vector<var::struct_sb::template_command> &vec_templates,
+                                    const std::string &name_internal_param, std::stack<std::string> &stack_templates) {
+    const auto &it = find_if(vec_templates.begin(), vec_templates.end(),
+                             [name_internal_param](const var::struct_sb::template_command &_template) {
+                                 return _template.returnable == name_internal_param;
+                             });
+    if (it == vec_templates.end())
+        return 1;
+
+    stack_templates.push(it->name);
+    for (u32t i = 0; i < it->name_accept_params.size(); ++i)
+        recovery_stack_templates(vec_templates, it->name_accept_params[i], stack_templates);
+
+    return 0;
+}
+
+void
+bwbuilder::imp_data_interpreter_for_bs() {
+    const auto &global_templates =
+        _interpreter.get_current_scope().get_vector_variables_t<var::struct_sb::template_command>();
+    std::unordered_set<std::string> name_global_external_args;
+
+    for (const auto &global_template_it : global_templates) {
+        for (const auto &arg : global_template_it.second.name_args)
+            if (arg.find("{") == arg.npos)
+                name_global_external_args.emplace(arg);
+        templates.push_back(global_template_it.second);
+    }
+
+    const auto &global_call_components =
+        _interpreter.get_current_scope().get_vector_variables_t<var::struct_sb::call_component>();
+    for (const auto &global_call_component : global_call_components)
+        call_components.push_back(global_call_component.second);
+
+    const auto &string_variables = _interpreter.get_current_scope().get_vector_variables_t<std::string>();
+    for (const auto &name_global_external_arg : name_global_external_args) {
+        const auto &extern_arg =
+            find_if(string_variables.begin(), string_variables.end(),
+                    [name_global_external_arg](const std::pair<std::string, std::string> &str_var) {
+                        return str_var.first == name_global_external_arg;
+                    });
+        global_extern_args.push_back(std::pair<std::string, std::string>(extern_arg->first, extern_arg->second));
     }
 }
