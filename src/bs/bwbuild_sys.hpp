@@ -8,6 +8,7 @@
 #include "lang/interpreter.hpp"
 #include "tools/bwfile.hpp"
 #include "tools/call_cmd.hpp"
+#include "tools/exception.hpp"
 
 #include <stack>
 
@@ -17,6 +18,23 @@
 
 #define FEATURE_FIELD_BS_CURRENT_IF "FBS_CURRENT_INPUT_FILE"
 #define FEATURE_FIELD_BS_CURRENT_OF "FBS_CURRENT_OUTPUT_FILE"
+
+class bwbuilder_excp : public bw_excp::bweas_exception {
+  public:
+    bwbuilder_excp(std::string _what_hp, std::string number_err)
+        : what_hp(_what_hp), bweas_exception("BWS" + number_err) {
+    }
+    ~bwbuilder_excp() noexcept override final = default;
+
+  public:
+    const char *
+    what() const noexcept override final {
+        return what_hp.c_str();
+    }
+
+  private:
+    std::string what_hp;
+};
 
 class bwbuilder {
   public:
