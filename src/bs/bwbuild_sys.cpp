@@ -27,32 +27,38 @@ bwbuilder::start_build() {
     std::filesystem::path cache_file = std::filesystem::current_path() / CACHE_FILE;
     std::ifstream{cache_file.c_str()};
 
-    if (std::filesystem::exists(cache_file)) {
-        std::filesystem::path main_file = std::filesystem::current_path() / MAIN_FILE;
-        std::ifstream{main_file.c_str()};
+    try {
 
-        std::filesystem::file_time_type cftime = std::filesystem::last_write_time(cache_file);
-        std::filesystem::file_time_type mftime = std::filesystem::last_write_time(main_file);
-        if (mftime >= cftime)
-            goto interpreter_start;
+        if (std::filesystem::exists(cache_file)) {
+            std::filesystem::path main_file = std::filesystem::current_path() / MAIN_FILE;
+            std::ifstream{main_file.c_str()};
+
+            std::filesystem::file_time_type cftime = std::filesystem::last_write_time(cache_file);
+            std::filesystem::file_time_type mftime = std::filesystem::last_write_time(main_file);
+            if (mftime >= cftime)
+                goto interpreter_start;
+
+            assist.next_output_important();
+            assist << " - [BWEAS]: The configuration file will not be interpreted";
+
+            deserl_cache();
+        }
+        else {
+        interpreter_start:
+            run_interpreter();
+            load_target();
+            gen_cache_target();
+            imp_data_interpreter_for_bs();
+        }
 
         assist.next_output_important();
-        assist << " - [BWEAS]: The configuration file will not be interpreted";
+        assist << "*Build start time: " + assist.get_time();
 
-        deserl_cache();
+        build_targets();
     }
-    else {
-    interpreter_start:
-        run_interpreter();
-        load_target();
-        gen_cache_target();
-        imp_data_interpreter_for_bs();
+    catch (const bwbuilder_excp &excp) {
+        assist.call_err(excp.get_assist_err(), std::string(excp.what()));
     }
-
-    assist.next_output_important();
-    assist << "*Build start time: " + assist.get_time();
-
-    build_targets();
 }
 
 void
@@ -187,7 +193,7 @@ bwbuilder::gen_cache_target() {
     for (const auto &g_arg : all_used_globally_args) {
         if (_interpreter.get_current_scope().what_type(
                 _interpreter.get_current_scope().get_var_value<std::string>(g_arg)) != 2)
-            assist.call_err("BWS003", "External global parameter for template is not defined correctly");
+            throw bwbuilder_excp("External global parameter for template is not defined correctly", "003");
         serel_target_tmp += g_arg + "-\"" +
                             _interpreter.get_current_scope().get_var_value<std::string>(
                                 _interpreter.get_current_scope().get_var_value<std::string>(g_arg)) +
@@ -377,7 +383,7 @@ bwbuilder::deserl_cache() {
     }
     catch (const std::logic_error &_excp) {
         assist.next_output_unsuccess();
-        assist.call_err("BWS001");
+        throw bwbuilder_excp("", "001");
     }
 
     assist << " - [BWEAS]: Cache deserialization was successful!";
@@ -419,7 +425,7 @@ bwbuilder::build_targets() {
 
     for (u32t i = 0; i < out_targets.size(); ++i) {
         if (out_targets[i].prj.vec_templates.size() == 0)
-            assist.call_err("BWS002", "There are no templates for the target - " + out_targets[i].name_target + "");
+            throw bwbuilder_excp("There are no templates for the target - " + out_targets[i].name_target, "002");
 
         assist << "BUILDING A TARGET -" + out_targets[i].name_target;
 
@@ -482,17 +488,18 @@ bwbuilder::build_targets() {
                                          return extern_arg_tmp.first == current_arg;
                                      });
                     if (extern_arg == global_extern_args.end())
-                        assist.call_err("BWS002", "[" + template_tmp->name +
-                                                      "] The specified external parameter does not exist - " +
-                                                      current_arg);
+                        throw bwbuilder_excp("[" + template_tmp->name +
+                                                 "] The specified external parameter does not exist - " + current_arg,
+                                             "002");
 
                     command += extern_arg->second + " ";
                     continue;
                 }
                 else {
                     if (current_arg.find("}") == current_arg.npos)
-                        assist.call_err("BWS002", "[" + template_tmp->name +
-                                                      "] Incorrect use of arguments in template - " + current_arg);
+                        throw bwbuilder_excp("[" + template_tmp->name + "] Incorrect use of arguments in template - " +
+                                                 current_arg,
+                                             "002");
                     if (current_arg.find("STR{") == 0) {
                         current_arg.erase(0, 4);
                         current_arg.erase(current_arg.find("}"));
@@ -507,9 +514,10 @@ bwbuilder::build_targets() {
                                         return current_arg == internal_arg.first;
                                     });
                         if (it == internal_args.end())
-                            assist.call_err("BWS002", "[" + template_tmp->name +
-                                                          "] The specified internal parameter does not exist - " +
-                                                          current_arg);
+                            throw bwbuilder_excp("[" + template_tmp->name +
+                                                     "] The specified internal parameter does not exist - " +
+                                                     current_arg,
+                                                 "002");
                         const auto &it_str = it->first.find(":");
                         if (it_str == it->first.npos) {
                             current_arg = "";
@@ -597,17 +605,18 @@ bwbuilder::build_targets() {
                                 return_internal_arg.second.push_back(output_files_curr);
                             }
                             else
-                                assist.call_err("BWS002", "[" + template_tmp->name +
-                                                              "] The specified attribute of feature (field) does not "
-                                                              "match the possible ones - " +
-                                                              current_arg + ": attr[" + attribute + "]");
+                                throw bwbuilder_excp("[" + template_tmp->name +
+                                                         "] The specified attribute of feature (field) does not "
+                                                         "match the possible ones - " +
+                                                         current_arg + ": attr[" + attribute + "]",
+                                                     "002");
 
                             goto add_current_args_to_cmd;
                         }
                         else
-                            assist.call_err("BWS002", "[" + template_tmp->name +
-                                                          "] The specified feature (field) does not exist - " +
-                                                          current_arg);
+                            throw bwbuilder_excp("[" + template_tmp->name +
+                                                     "] The specified feature (field) does not exist - " + current_arg,
+                                                 "002");
                         template_for_ev_files = 1;
                     }
                     else if (current_arg.find("TRG{") == 0) {
@@ -698,8 +707,8 @@ bwbuilder::build_targets() {
                             }
                         }
                         else
-                            assist.call_err("BWS002",
-                                            "[" + template_tmp->name + "] There is no such parameter - " + current_arg);
+                            throw bwbuilder_excp(
+                                "[" + template_tmp->name + "] There is no such parameter - " + current_arg, "002");
                     }
                 add_current_args_to_cmd:
                     command += current_arg + " ";
@@ -718,9 +727,8 @@ bwbuilder::build_targets() {
                 count_uses_output_pattern_files = 0;
             }
 
-            if (system(command.c_str())) {
-                assist.call_err("BWS004", "[" + template_tmp->name + "] Command execution error - " + command);
-            }
+            if (system(command.c_str()))
+                throw bwbuilder_excp("[" + template_tmp->name + "] Command execution error - " + command, "004");
 
             command.clear();
         }
@@ -762,8 +770,9 @@ bwbuilder::create_stack_target_templates(const var::struct_sb::target_out &targe
                                       });
 
     if (it_template == vec_templates_tmp.end())
-        assist.call_err("BWS002", "There is no template that returns a target with the given type - " +
-                                      var::struct_sb::target_t_str(target.target_t));
+        throw bwbuilder_excp("There is no template that returns a target with the given type - " +
+                                 var::struct_sb::target_t_str(target.target_t),
+                             "002");
 
     stack_templates.push(it_template->name);
     for (u32t i = 0; i < it_template->name_accept_params.size(); ++i)
@@ -815,8 +824,8 @@ bwbuilder::imp_data_interpreter_for_bs() {
                         return str_var.first == name_global_external_arg;
                     });
         if (_interpreter.get_current_scope().what_type(ref_extern_arg->second) != 2)
-            assist.call_err("BWS002", "The parameter reference(name) points to a non-existent variable - " +
-                                          ref_extern_arg->second);
+            throw bwbuilder_excp(
+                "The parameter reference(name) points to a non-existent variable - " + ref_extern_arg->second, "002");
         const auto &extern_arg = _interpreter.get_current_scope().get_var_value<std::string>(ref_extern_arg->second);
         global_extern_args.push_back(std::pair<std::string, std::string>(ref_extern_arg->first, extern_arg));
     }
