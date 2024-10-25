@@ -2,12 +2,14 @@
 #include "parser.hpp"
 #include "semantic_an.hpp"
 #include "static_linking_func.hpp"
+
 #include <algorithm>
+#include <array>
 
 using namespace aef_expr;
 
 const std::vector<std::string> sl_func::name_static_func_sm = {"exp_data"};
-static const std::vector<std::string> vec_name_config_var = {
+static const std::array<std::string, 18> vec_name_config_var = {
     PRJ_VAR_NAME_DFLAGS_C,     PRJ_VAR_NAME_DFLAGS_L, PRJ_VAR_NAME_RFLAGS_C,  PRJ_VAR_NAME_RFLAGS_L,
     PRJ_VAR_NAME_LANG,         PRJ_VAR_NAME_PTH_C,    PRJ_VAR_NAME_PTH_L,     PRJ_VAR_NAME_VER,
     PRJ_VAR_NAME_STD_C,        PRJ_VAR_NAME_STD_CPP,  PRJ_VAR_NAME_SRC_FILES, PRJ_VAR_NAME_UTEMPLATES,
@@ -595,7 +597,7 @@ void
 sl_func::create_templates(const std::vector<aef_expr::subexpressions> &sub_expr, var::scope &curr_scope) {
     std::string tmp_param;
 
-    std::vector<std::string> name_field_target = {
+    std::array<std::string, 17> name_field_target = {
         NAME_FIELD_TARGET_NAME,        NAME_FIELD_TARGET_LIBS,        NAME_FIELD_TARGET_TYPE,
         NAME_FIELD_TARGET_CFG,         NAME_FIELD_TARGET_VER,         NAME_FIELD_PROJECT_NAME,
         NAME_FIELD_PROJECT_VER,        NAME_FIELD_PROJECT_LANG,       NAME_FIELD_PROJECT_PCOMPILER,
@@ -650,6 +652,11 @@ sl_func::create_templates(const std::vector<aef_expr::subexpressions> &sub_expr,
                 was_sep = 0;
             continue;
         }
+        else if ((op_quote && sub_expr[1].token_of_subexpr[0].token_val[i] != '\'') ||
+                 (is_name_features_bs && (sub_expr[1].token_of_subexpr[0].token_val[i] == ':' ||
+                                          isdigit(sub_expr[1].token_of_subexpr[0].token_val[i]) ||
+                                          isalpha(sub_expr[1].token_of_subexpr[0].token_val[i]))))
+            goto curr_sym;
 
         if (sub_expr[1].token_of_subexpr[0].token_val[i] == '(') {
             if (defined_template)
