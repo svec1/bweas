@@ -6,6 +6,7 @@
 
 #include "console_arg/hand_arg.hpp"
 #include "lang/interpreter.hpp"
+#include "tools/bwfile.hpp"
 #include "tools/call_cmd.hpp"
 
 #include <stack>
@@ -13,6 +14,9 @@
 #define MAIN_FILE "bweasconf.txt"
 #define IMPORT_FILE "import-modules.imp"
 #define CACHE_FILE "bwcache"
+
+#define FEATURE_FIELD_BS_CURRENT_IF "FBS_CURRENT_INPUT_FILE"
+#define FEATURE_FIELD_BS_CURRENT_OF "FBS_CURRENT_OUTPUT_FILE"
 
 class bwbuilder {
   public:
@@ -70,6 +74,10 @@ class bwbuilder {
     u32t
     recovery_stack_templates(std::vector<var::struct_sb::template_command> &vec_templates,
                              const std::string &name_internal_param, std::stack<std::string> &stack_templates);
+
+  private:
+    std::string
+    get_file_w_index(std::string pattern_file, u32t index);
 
   private:
     interpreter::interpreter_exec _interpreter;
