@@ -3,8 +3,11 @@
 
 #include <algorithm>
 #include <filesystem>
+#include <memory>
 #include <string>
 #include <unordered_set>
+
+using namespace bweas;
 
 bwbuilder::bwbuilder() {
     if (!init_glob) {
@@ -413,8 +416,7 @@ void bwbuilder::build_targets() {
 
     std::string command;
 
-    std::stack<std::string> target_use_template_q;
-    std::vector<std::pair<std::string, std::vector<std::string>>> internal_args;
+    bwargs_files global_internal_args;
 
     for (u32t i = 0; i < out_targets.size(); ++i) {
         if (out_targets[i].prj.vec_templates.size() == 0)
@@ -427,29 +429,26 @@ void bwbuilder::build_targets() {
         u32t count_uses_input_files = 0, count_uses_output_pattern_files = 0;
         std::string input_file_curr, output_files_curr;
 
-        std::pair<std::string, std::vector<std::string>> return_internal_arg;
+        bwarg_files return_internal_arg;
 
-        target_use_template_q = create_stack_target_templates(out_targets[i]);
+        bwqueue_templates bw_tcmd;
+        set_queue_templates(create_stack_target_templates(out_targets[i]), bw_tcmd);
 
         // generating command on current a template
-        while (target_use_template_q.size() || template_for_ev_files) {
+        while (bw_tcmd.size() || template_for_ev_files) {
             if (template_for_ev_files && left_src_files == 0) {
                 template_for_ev_files = 0;
                 count_uses_output_pattern_files = 0;
 
-                internal_args.push_back(return_internal_arg);
+                global_internal_args.push_back(return_internal_arg);
                 return_internal_arg.second.clear();
 
-                target_use_template_q.pop();
-                if (!target_use_template_q.size())
+                bw_tcmd.erase(bw_tcmd.begin());
+                if (!bw_tcmd.size())
                     break;
             }
 
-            const auto &template_tmp =
-                std::find_if(templates.begin(), templates.end(),
-                             [target_use_template_q](const var::struct_sb::template_command &_template) {
-                                 return target_use_template_q.top() == _template.name;
-                             });
+            const auto &template_tmp = bw_tcmd[0];
             const auto &call_component_tmp =
                 std::find_if(call_components.begin(), call_components.end(),
                              [template_tmp](const var::struct_sb::call_component &ccmp_tmp) {
@@ -502,11 +501,11 @@ void bwbuilder::build_targets() {
                         current_arg.erase(current_arg.find("}"));
 
                         const auto &it =
-                            find_if(internal_args.begin(), internal_args.end(),
+                            find_if(global_internal_args.begin(), global_internal_args.end(),
                                     [current_arg](const std::pair<std::string, std::vector<std::string>> internal_arg) {
                                         return current_arg == internal_arg.first;
                                     });
-                        if (it == internal_args.end())
+                        if (it == global_internal_args.end())
                             throw bwbuilder_excp("[" + template_tmp->name +
                                                      "] The specified internal parameter does not exist - " +
                                                      current_arg,
@@ -713,9 +712,9 @@ void bwbuilder::build_targets() {
             if (template_for_ev_files)
                 --left_src_files;
             else {
-                if (target_use_template_q.size())
-                    target_use_template_q.pop();
-                internal_args.push_back(return_internal_arg);
+                if (bw_tcmd.size())
+                    bw_tcmd.erase(bw_tcmd.begin());
+                global_internal_args.push_back(return_internal_arg);
                 return_internal_arg.second.clear();
                 count_uses_output_pattern_files = 0;
             }
@@ -787,6 +786,18 @@ u32t bwbuilder::recovery_stack_templates(std::vector<var::struct_sb::template_co
         recovery_stack_templates(vec_templates, it->name_accept_params[i], stack_templates);
 
     return 0;
+}
+void bwbuilder::set_queue_templates(std::stack<std::string> &&stack_target_templates,
+                                    bwqueue_templates &target_queue_templates) {
+    while (stack_target_templates.size()) {
+        const auto &it_templates = find_if(templates.begin(), templates.end(),
+                                           [stack_target_templates](const var::struct_sb::template_command &tcmd) {
+                                               return tcmd.name == stack_target_templates.top();
+                                           });
+        target_queue_templates.push_back(std::shared_ptr<var::struct_sb::template_command>(
+            (var::struct_sb::template_command *)(&*it_templates), [](const var::struct_sb::template_command *) {}));
+        stack_target_templates.pop();
+    }
 }
 
 void bwbuilder::imp_data_interpreter_for_bs() {
