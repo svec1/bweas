@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.20)
 
 set(BW_NAME_PRJ bweas)
 
+set(CMAKE_PREFIX_PATH "${CMAKE_SOURCE_DIR}/external/")
+
 set(CMAKE_CXX_STANDARD 17)
 project(${BW_NAME_PRJ} LANGUAGES CXX C)
 
@@ -26,6 +28,11 @@ file(GLOB FILE_SRC ${MAIN} ${KERNEL} ${BS} ${HAX} ${MODULE})
 
 add_executable(${BW_NAME_PRJ} ${FILE_SRC})
 
+# LuaJit
+find_package(LuaJIT REQUIRED)
+target_link_libraries(${BW_NAME_PRJ} PUBLIC ${LuaJIT_LIBRARIES})
+include_directories(${LuaJIT_SRC_DIR})
+
 if(WIN32)
     if(NOT CMAKE_BUILD_TYPE)
         set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
@@ -41,8 +48,12 @@ if(WIN32)
         target_link_libraries(${BW_NAME_PRJ} PUBLIC ${CMAKE_SOURCE_DIR}/external/detours/lib.X64/detours.lib)
     endif ()
     include_directories("external/detours/include")
+
+    file(COPY ${LuaJIT_SRC_DIR}/${LuaJIT_NAME_LIBRARIES}.dll DESTINATION ${CMAKE_BINARY_DIR}/Debug)
 else()
     message(STATUS "Internal enabled interception library for securely connecting modules and plugins on a UNIX system")
     add_subdirectory(src/kernel/high_level/hook_linux_lib)
     target_link_libraries(${BW_NAME_PRJ} PUBLIC bwhook_safe)
+
+    file(COPY ${LuaJIT_SRC_DIR}/${LuaJIT_NAME_LIBRARIES}.a DESTINATION ${CMAKE_BINARY_DIR}/Debug)
 endif()

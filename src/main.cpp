@@ -5,7 +5,6 @@
 
 int main(int argv, char **args) {
     clock_t beg = clock();
-
     /*
         _err a;
         a.name_e = "ERRRR";
@@ -43,11 +42,8 @@ int main(int argv, char **args) {
     {
         hax cons(args, argv);
         assist.file_log_name("log.txt");
-        u32t hand = assist.open_file("dd.txt");
-        assist << assist.read_file(hand);
-        assist.close_file(hand);
 
-        bwbuilder bw;
+        bweas::bwbuilder bw;
         bw.start_build();
 
         assist << std::string("Sec: " + std::to_string((double)(clock() - beg) / CLOCKS_PER_SEC));
