@@ -2,8 +2,7 @@
 
 using namespace module;
 
-void
-mdl_manager::import_module_decl(const char *import_file) {
+void mdl_manager::import_module_decl(const char *import_file) {
     HND handle_f = assist.open_file(import_file, MODE_READ_FILE);
     if (!assist.exist_file(handle_f))
         assist.call_err("RTT004", "File: " + std::string(import_file));
@@ -15,12 +14,10 @@ mdl_manager::import_module_decl(const char *import_file) {
     mdls = srl::build_modules(data_after_parse.first);
     func_with_smt = data_after_parse.second;
 }
-const std::vector<std::string> &
-mdl_manager::get_func_with_smt() {
+const std::vector<std::string> &mdl_manager::get_func_with_smt() {
     return func_with_smt;
 }
-semantic_an::table_func
-mdl_manager::load_module(std::string name) {
+semantic_an::table_func mdl_manager::load_module(std::string name) {
     semantic_an::table_func external_func_table;
     for (u32t i = 0; i < mdls.size(); ++i) {
         const auto &it = mdls[i].find(name);
@@ -56,8 +53,7 @@ mdl_manager::load_module(std::string name) {
 
     return external_func_table;
 }
-semantic_an::table_func
-mdl_manager::load_modules(const std::vector<std::string> &load_module_name) {
+semantic_an::table_func mdl_manager::load_modules(const std::vector<std::string> &load_module_name) {
     semantic_an::table_func external_func_table;
     for (u32t i = 0; i < mdls.size(); ++i) {
         for (const auto &it : mdls[i]) {
@@ -99,8 +95,7 @@ mdl_manager::load_modules(const std::vector<std::string> &load_module_name) {
     return external_func_table;
 }
 
-semantic_an::table_func
-mdl_manager::load_modules_all() {
+semantic_an::table_func mdl_manager::load_modules_all() {
     semantic_an::table_func external_func_table;
     for (u32t i = 0; i < mdls.size(); ++i) {
         for (const auto &it : mdls[i]) {

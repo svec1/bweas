@@ -10,8 +10,7 @@ namespace bwfile {
 // Creates an array of file names based on the mask
 // passed to the function and an array of all files.
 // ### The syntax is fully compliant with the glob() standard.
-static std::vector<std::string>
-file_slc_mask(std::string mask, const std::vector<std::string> &files) {
+static std::vector<std::string> file_slc_mask(std::string mask, const std::vector<std::string> &files) {
     std::vector<std::string> slc_files;
     std::vector<std::string> masks;
 

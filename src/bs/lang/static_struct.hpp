@@ -75,8 +75,7 @@ enum class configuration {
     DEBUG
 };
 
-inline std::string
-lang_str(const language &lang) {
+inline std::string lang_str(const language &lang) {
     if (lang == language::c)
         return "C";
     else if (lang == language::cpp)
@@ -87,8 +86,7 @@ lang_str(const language &lang) {
         return "ASM";
     return "null";
 }
-inline std::string
-target_t_str(const type_target &target_t) {
+inline std::string target_t_str(const type_target &target_t) {
     if (target_t == type_target::exe)
         return "EXECUTABLE";
     else if (target_t == type_target::lib)
@@ -97,8 +95,7 @@ target_t_str(const type_target &target_t) {
         return "RUN-TIME";
     return "null";
 }
-inline std::string
-cfg_str(const configuration &target_t) {
+inline std::string cfg_str(const configuration &target_t) {
     if (target_t == configuration::RELEASE)
         return "RELEASE";
     else if (target_t == configuration::DEBUG)
@@ -106,8 +103,7 @@ cfg_str(const configuration &target_t) {
     return "null";
 }
 
-inline language
-to_lang(std::string lang) {
+inline language to_lang(std::string lang) {
     if (lang == "C")
         return language::c;
     else if (lang == "C++")
@@ -118,8 +114,7 @@ to_lang(std::string lang) {
         return language::asm_;
     return language::c;
 }
-inline type_target
-to_type_target(std::string target_t) {
+inline type_target to_type_target(std::string target_t) {
     if (target_t == "EXECUTABLE")
         return type_target::exe;
     else if (target_t == "LIBRARY")
@@ -128,8 +123,7 @@ to_type_target(std::string target_t) {
         return type_target::interpret;
     return type_target::exe;
 }
-inline configuration
-to_cfg(std::string target_t) {
+inline configuration to_cfg(std::string target_t) {
     if (target_t == "RELEASE")
         return configuration::RELEASE;
     else if (target_t == "DEBUG")
@@ -159,8 +153,7 @@ struct version {
     version(u32t mj, u32t mn, u32t ptch) : major{mj}, minor{mn}, patch{ptch} {
     }
 
-    std::string
-    get_str_version() {
+    std::string get_str_version() {
         return std::to_string(major) + "." + std::to_string(minor) + "." + std::to_string(patch);
     }
 

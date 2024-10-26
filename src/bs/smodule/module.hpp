@@ -13,23 +13,17 @@ class mdl_manager {
 
     mdl_manager(mdl_manager &&) = delete;
     mdl_manager(const mdl_manager &) = delete;
-    mdl_manager &
-    operator=(mdl_manager &&) = delete;
+    mdl_manager &operator=(mdl_manager &&) = delete;
 
     ~mdl_manager() = default;
 
   protected:
-    void
-    import_module_decl(const char *import_file);
-    const std::vector<std::string> &
-    get_func_with_smt();
+    void import_module_decl(const char *import_file);
+    const std::vector<std::string> &get_func_with_smt();
 
-    semantic_an::table_func
-    load_module(std::string name);
-    semantic_an::table_func
-    load_modules(const std::vector<std::string> &load_module_name);
-    semantic_an::table_func
-    load_modules_all();
+    semantic_an::table_func load_module(std::string name);
+    semantic_an::table_func load_modules(const std::vector<std::string> &load_module_name);
+    semantic_an::table_func load_modules_all();
 
   private:
     srl::modules mdls;

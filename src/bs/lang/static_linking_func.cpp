@@ -17,8 +17,7 @@ static const std::array<std::string, 18> vec_name_config_var = {
     TRG_VAR_NAME_TYPE_T,       TRG_VAR_NAME_LLIBS};
 
 // ??????
-static void
-update_cfg_struct(const std::string &name_var, var::scope &curr_scope) {
+static void update_cfg_struct(const std::string &name_var, var::scope &curr_scope) {
     if (curr_scope.what_type("DECL_CONFIG_VAR") == 1 && curr_scope.get_var_value<int>(DECL_VAR_STRUCT) > 0) {
         u32t tmp_it = 0;
         for (const auto &it : vec_name_config_var) {
@@ -143,8 +142,7 @@ update_cfg_struct(const std::string &name_var, var::scope &curr_scope) {
     }
 }
 
-void
-sl_func::set(const std::vector<subexpressions> &sub_expr, var::scope &curr_scope) {
+void sl_func::set(const std::vector<subexpressions> &sub_expr, var::scope &curr_scope) {
     if (sub_expr.size() == 0)
         return;
     u32t index_var = curr_scope.what_type(sub_expr[0].token_of_subexpr[0].token_val);
@@ -241,8 +239,7 @@ sl_func::set(const std::vector<subexpressions> &sub_expr, var::scope &curr_scope
     update_cfg_struct(sub_expr[0].token_of_subexpr[0].token_val, curr_scope);
 }
 
-void
-sl_func::project(const std::vector<subexpressions> &sub_expr, var::scope &curr_scope) {
+void sl_func::project(const std::vector<subexpressions> &sub_expr, var::scope &curr_scope) {
     var::struct_sb::project &prj_ref =
         curr_scope.create_var<var::struct_sb::project>(sub_expr[0].token_of_subexpr[0].token_val);
     prj_ref.name_project = sub_expr[0].token_of_subexpr[0].token_val;
@@ -294,8 +291,7 @@ sl_func::project(const std::vector<subexpressions> &sub_expr, var::scope &curr_s
             prj_ref.use_it_templates = curr_scope.get_var_value<int>(prj_ref.name_project + PRJ_VAR_NAME_UITTEMPLATES);
     }
 }
-void
-sl_func::executable(const std::vector<subexpressions> &sub_expr, var::scope &curr_scope) {
+void sl_func::executable(const std::vector<subexpressions> &sub_expr, var::scope &curr_scope) {
     if (curr_scope.what_type(sub_expr[2].token_of_subexpr[0].token_val) != 5)
         throw semantic_an::rt_semantic_excp(
             parser::build_pos_tokenb_str(sub_expr[2].token_of_subexpr[0]) +
@@ -335,8 +331,7 @@ sl_func::executable(const std::vector<subexpressions> &sub_expr, var::scope &cur
     }
 }
 
-void
-sl_func::link_lib(const std::vector<subexpressions> &sub_expr, var::scope &curr_scope) {
+void sl_func::link_lib(const std::vector<subexpressions> &sub_expr, var::scope &curr_scope) {
     if (curr_scope.what_type(sub_expr[0].token_of_subexpr[0].token_val) != 6)
         throw interpreter::realtime_excp(
             parser::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
@@ -357,8 +352,7 @@ sl_func::link_lib(const std::vector<subexpressions> &sub_expr, var::scope &curr_
                                                             trg_ref.target_vec_libs);
     }
 }
-void
-sl_func::exp_data(const std::vector<subexpressions> &sub_expr, var::scope &curr_scope) {
+void sl_func::exp_data(const std::vector<subexpressions> &sub_expr, var::scope &curr_scope) {
     interpreter::interpreter_exec::config tmp_conf;
     tmp_conf.filename_interp = sub_expr[0].token_of_subexpr[0].token_val.c_str();
     tmp_conf.import_module = 0;
@@ -367,24 +361,21 @@ sl_func::exp_data(const std::vector<subexpressions> &sub_expr, var::scope &curr_
     tmp_interpreter.set_external_scope(&curr_scope);
     tmp_interpreter.build_aef();
 }
-void
-sl_func::cmd(const std::vector<subexpressions> &sub_expr, var::scope &curr_scope) {
+void sl_func::cmd(const std::vector<subexpressions> &sub_expr, var::scope &curr_scope) {
     u32t val = std::stoi(sub_expr[0].token_of_subexpr[0].token_val.c_str());
     if (!val)
         curr_scope.call_cmd.add_call_before(sub_expr[1].token_of_subexpr[0].token_val);
     else
         curr_scope.call_cmd.add_call_after(sub_expr[1].token_of_subexpr[0].token_val);
 }
-void
-sl_func::debug(const std::vector<subexpressions> &sub_expr, var::scope &curr_scope) {
+void sl_func::debug(const std::vector<subexpressions> &sub_expr, var::scope &curr_scope) {
     std::string str_out;
     for (u32t i = 0; i < sub_expr.size(); ++i)
         str_out += sub_expr[i].token_of_subexpr[0].token_val + " ";
     assist << str_out;
 }
 
-void
-sl_func::debug_struct(const std::vector<aef_expr::subexpressions> &sub_expr, var::scope &curr_scope) {
+void sl_func::debug_struct(const std::vector<aef_expr::subexpressions> &sub_expr, var::scope &curr_scope) {
     std::string out_str;
     u32t ind = curr_scope.what_type(sub_expr[0].token_of_subexpr[0].token_val);
     if (ind == 5) {
@@ -425,8 +416,7 @@ sl_func::debug_struct(const std::vector<aef_expr::subexpressions> &sub_expr, var
     assist << out_str;
 }
 
-void
-sl_func::flags_compiler(const std::vector<subexpressions> &sub_expr, var::scope &curr_scope) {
+void sl_func::flags_compiler(const std::vector<subexpressions> &sub_expr, var::scope &curr_scope) {
     if (curr_scope.what_type(sub_expr[0].token_of_subexpr[0].token_val) != 5)
         throw interpreter::realtime_excp(
             parser::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
@@ -463,8 +453,7 @@ sl_func::flags_compiler(const std::vector<subexpressions> &sub_expr, var::scope 
                 curr_scope.create_var<std::string>(prj_ref.name_project + PRJ_VAR_NAME_RFLAGS_C,
                                                    prj_ref.rflags_compiler);
 }
-void
-sl_func::flags_linker(const std::vector<subexpressions> &sub_expr, var::scope &curr_scope) {
+void sl_func::flags_linker(const std::vector<subexpressions> &sub_expr, var::scope &curr_scope) {
     if (curr_scope.what_type(sub_expr[0].token_of_subexpr[0].token_val) != 5)
         throw interpreter::realtime_excp(
             parser::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
@@ -499,8 +488,7 @@ sl_func::flags_linker(const std::vector<subexpressions> &sub_expr, var::scope &c
             else
                 curr_scope.create_var<std::string>(prj_ref.name_project + PRJ_VAR_NAME_RFLAGS_L, prj_ref.dflags_linker);
 }
-void
-sl_func::path_compiler(const std::vector<subexpressions> &sub_expr, var::scope &curr_scope) {
+void sl_func::path_compiler(const std::vector<subexpressions> &sub_expr, var::scope &curr_scope) {
     if (curr_scope.what_type(sub_expr[0].token_of_subexpr[0].token_val) != 5)
         throw interpreter::realtime_excp(
             parser::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
@@ -517,8 +505,7 @@ sl_func::path_compiler(const std::vector<subexpressions> &sub_expr, var::scope &
         else
             curr_scope.create_var<std::string>(prj_ref.name_project + PRJ_VAR_NAME_PTH_C, prj_ref.path_compiler);
 }
-void
-sl_func::path_linker(const std::vector<subexpressions> &sub_expr, var::scope &curr_scope) {
+void sl_func::path_linker(const std::vector<subexpressions> &sub_expr, var::scope &curr_scope) {
     if (curr_scope.what_type(sub_expr[0].token_of_subexpr[0].token_val) != 5)
         throw interpreter::realtime_excp(
             parser::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
@@ -535,8 +522,7 @@ sl_func::path_linker(const std::vector<subexpressions> &sub_expr, var::scope &cu
         else
             curr_scope.create_var<std::string>(prj_ref.name_project + PRJ_VAR_NAME_PTH_C, prj_ref.path_linker);
 }
-void
-sl_func::standart_c(const std::vector<subexpressions> &sub_expr, var::scope &curr_scope) {
+void sl_func::standart_c(const std::vector<subexpressions> &sub_expr, var::scope &curr_scope) {
     if (curr_scope.what_type(sub_expr[0].token_of_subexpr[0].token_val) != 5)
         throw interpreter::realtime_excp(
             parser::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
@@ -552,8 +538,7 @@ sl_func::standart_c(const std::vector<subexpressions> &sub_expr, var::scope &cur
         else
             curr_scope.create_var<int>(prj_ref.name_project + PRJ_VAR_NAME_STD_C, prj_ref.standart_c);
 }
-void
-sl_func::standart_cpp(const std::vector<subexpressions> &sub_expr, var::scope &curr_scope) {
+void sl_func::standart_cpp(const std::vector<subexpressions> &sub_expr, var::scope &curr_scope) {
     if (curr_scope.what_type(sub_expr[0].token_of_subexpr[0].token_val) != 5)
         throw interpreter::realtime_excp(
             parser::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
@@ -569,8 +554,7 @@ sl_func::standart_cpp(const std::vector<subexpressions> &sub_expr, var::scope &c
         else
             curr_scope.create_var<int>(prj_ref.name_project + PRJ_VAR_NAME_STD_CPP, prj_ref.standart_c);
 }
-void
-sl_func::lang(const std::vector<subexpressions> &sub_expr, var::scope &curr_scope) {
+void sl_func::lang(const std::vector<subexpressions> &sub_expr, var::scope &curr_scope) {
     if (curr_scope.what_type(sub_expr[0].token_of_subexpr[0].token_val) != 5)
         throw interpreter::realtime_excp(
             parser::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
@@ -587,14 +571,12 @@ sl_func::lang(const std::vector<subexpressions> &sub_expr, var::scope &curr_scop
             curr_scope.create_var<int>(prj_ref.name_project + PRJ_VAR_NAME_LANG, (int)prj_ref.lang);
 }
 
-void
-sl_func::add_param_template(const std::vector<subexpressions> &sub_expr, var::scope &curr_scope) {
+void sl_func::add_param_template(const std::vector<subexpressions> &sub_expr, var::scope &curr_scope) {
     curr_scope.create_var<std::string>(sub_expr[0].token_of_subexpr[0].token_val,
                                        sub_expr[1].token_of_subexpr[0].token_val);
 }
 
-void
-sl_func::create_templates(const std::vector<aef_expr::subexpressions> &sub_expr, var::scope &curr_scope) {
+void sl_func::create_templates(const std::vector<aef_expr::subexpressions> &sub_expr, var::scope &curr_scope) {
     std::string tmp_param;
 
     std::array<std::string, 17> name_field_target = {
@@ -1007,8 +989,7 @@ sl_func::create_templates(const std::vector<aef_expr::subexpressions> &sub_expr,
     curr_scope.create_var<var::struct_sb::template_command>(sub_expr[0].token_of_subexpr[0].token_val, tcmd_tmp);
 }
 
-void
-sl_func::create_call_component(const std::vector<aef_expr::subexpressions> &sub_expr, var::scope &curr_scope) {
+void sl_func::create_call_component(const std::vector<aef_expr::subexpressions> &sub_expr, var::scope &curr_scope) {
     var::struct_sb::call_component ccmp_tmp;
     ccmp_tmp.name = sub_expr[0].token_of_subexpr[0].token_val;
     ccmp_tmp.name_program = sub_expr[1].token_of_subexpr[0].token_val;
@@ -1017,8 +998,7 @@ sl_func::create_call_component(const std::vector<aef_expr::subexpressions> &sub_
     curr_scope.create_var<var::struct_sb::call_component>(sub_expr[0].token_of_subexpr[0].token_val, ccmp_tmp);
 }
 
-void
-sl_func::use_templates(const std::vector<subexpressions> &sub_expr, var::scope &curr_scope) {
+void sl_func::use_templates(const std::vector<subexpressions> &sub_expr, var::scope &curr_scope) {
     if (curr_scope.what_type(sub_expr[0].token_of_subexpr[0].token_val) != 5)
         throw interpreter::realtime_excp(
             parser::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
@@ -1044,8 +1024,7 @@ sl_func::use_templates(const std::vector<subexpressions> &sub_expr, var::scope &
             curr_scope.create_var<std::vector<std::string>>(prj_ref.name_project + PRJ_VAR_NAME_UTEMPLATES,
                                                             prj_ref.vec_templates);
 }
-void
-sl_func::use_it_template(const std::vector<subexpressions> &sub_expr, var::scope &curr_scope) {
+void sl_func::use_it_template(const std::vector<subexpressions> &sub_expr, var::scope &curr_scope) {
     if (curr_scope.what_type(sub_expr[0].token_of_subexpr[0].token_val) != 5)
         throw interpreter::realtime_excp(
             parser::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +

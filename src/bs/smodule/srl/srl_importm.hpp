@@ -38,13 +38,10 @@ struct token {
     u32t lines = 0, symbols = 0;
 };
 
-extern void
-init_err();
+extern void init_err();
 
-extern std::pair<std::vector<srl::token>, std::vector<std::string>>
-parser(std::string symbols);
-extern modules
-build_modules(std::vector<srl::token> tokens);
+extern std::pair<std::vector<srl::token>, std::vector<std::string>> parser(std::string symbols);
+extern modules build_modules(std::vector<srl::token> tokens);
 
 } // namespace srl
 

@@ -8,8 +8,7 @@ using namespace token_expr;
 #define is_param(token)                                                                                                \
     (token.token_t == token_type::ID || token.token_t == token_type::LITERAL || token.token_t == token_type::LITERALS)
 
-std::string
-parser::type_token_str(token_type token_t) {
+std::string parser::type_token_str(token_type token_t) {
     switch (token_t) {
     case token_type::KEYWORD:
         return "KEYWORD";
@@ -31,8 +30,7 @@ parser::type_token_str(token_type token_t) {
         return "UNDEF";
     }
 }
-std::string
-parser::build_pos_tokenb_str(const token &tk) {
+std::string parser::build_pos_tokenb_str(const token &tk) {
     if (!tk.token_val.empty())
         return "\n(Line: " + std::to_string(tk.pos_defined_line) +
                "; Symbols start pos: " + std::to_string(tk.pos_beg_defined_sym) + "): Type token - " +
@@ -41,8 +39,7 @@ parser::build_pos_tokenb_str(const token &tk) {
            "; Symbols start pos: " + std::to_string(tk.pos_beg_defined_sym) + "): Type token - " +
            type_token_str(tk.token_t) + "\n";
 }
-std::string
-parser::build_pos_subexpr_str(const subexpressions &sub_expr) {
+std::string parser::build_pos_subexpr_str(const subexpressions &sub_expr) {
     std::string str;
     if (sub_expr.subexpr_t == subexpressions::type_subexpr::INT_COMPARE ||
         sub_expr.subexpr_t == subexpressions::type_subexpr::STRING_ADD) {
@@ -57,8 +54,7 @@ parser::build_pos_subexpr_str(const subexpressions &sub_expr) {
         str = build_pos_tokenb_str(sub_expr.token_of_subexpr[0]);
     return str;
 }
-std::string
-parser::type_sybexpr_str(subexpressions::type_subexpr sub_expr_t) {
+std::string parser::type_sybexpr_str(subexpressions::type_subexpr sub_expr_t) {
     switch (sub_expr_t) {
     case subexpressions::type_subexpr::ID:
         return "<ID>";
@@ -74,8 +70,7 @@ parser::type_sybexpr_str(subexpressions::type_subexpr sub_expr_t) {
         return "<UNDEF>";
     }
 }
-std::string
-parser::tree_build_visually_str(const abstract_expr_func &aef) {
+std::string parser::tree_build_visually_str(const abstract_expr_func &aef) {
     std::stringstream tree_visible;
     for (u32t i = 0; i < aef.size(); ++i) {
         tree_visible << "EXPRESSION:\n";
@@ -98,8 +93,7 @@ parser::tree_build_visually_str(const abstract_expr_func &aef) {
     }
     return tree_visible.str();
 }
-params
-parser::type_param_in_str(std::string str) {
+params parser::type_param_in_str(std::string str) {
     if (str == "FUTURE_VAR_ID")
         return params::FUTURE_VAR_ID;
     else if (str == "VAR_ID")
@@ -149,20 +143,16 @@ pars_an::pars_an(const std::vector<token> &tk_s) {
     tokens = tk_s;
 }
 
-void
-pars_an::set_tokens(const std::vector<token> &tk_s) {
+void pars_an::set_tokens(const std::vector<token> &tk_s) {
     tokens = tk_s;
 }
-abstract_expr_func
-pars_an::get_exprs() {
+abstract_expr_func pars_an::get_exprs() {
     return expr_s;
 }
-void
-pars_an::clear_aef() {
+void pars_an::clear_aef() {
     expr_s.clear();
 }
-void
-pars_an::check_valid_subexpr_first_pass(const subexpressions &sub_expr) {
+void pars_an::check_valid_subexpr_first_pass(const subexpressions &sub_expr) {
     if (sub_expr.token_of_subexpr.empty())
         return;
 
@@ -188,8 +178,7 @@ pars_an::check_valid_subexpr_first_pass(const subexpressions &sub_expr) {
         assist.call_err("PARS005",
                         build_pos_tokenb_str(sub_expr.token_of_subexpr[sub_expr.token_of_subexpr.size() - 1]));
 }
-void
-pars_an::check_valid_subexpr_second_pass(subexpressions &sub_expr) {
+void pars_an::check_valid_subexpr_second_pass(subexpressions &sub_expr) {
     if (sub_expr.token_of_subexpr.empty())
         return;
 
@@ -253,8 +242,7 @@ pars_an::check_valid_subexpr_second_pass(subexpressions &sub_expr) {
         sub_expr.subexpr_t = subexpressions::type_subexpr::ID;
 }
 
-void
-pars_an::try_parse_subexpr(subexpressions &sub_expr) {
+void pars_an::try_parse_subexpr(subexpressions &sub_expr) {
     subexpressions parse_subexpr;
     subexpressions const_parse_subexpr, tmp_parse_subexpr;
     if (sub_expr.subexpr_t == subexpressions::type_subexpr::INT_COMPARE) {
@@ -353,8 +341,7 @@ pars_an::try_parse_subexpr(subexpressions &sub_expr) {
     sub_expr = parse_subexpr;
 }
 
-abstract_expr_func &
-pars_an::analysis() {
+abstract_expr_func &pars_an::analysis() {
     bool start_expr = 1, func_param_curr = 0;
 
     expression curr_expr;

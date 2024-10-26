@@ -27,8 +27,7 @@ class bwbuilder_excp : public bw_excp::bweas_exception {
     ~bwbuilder_excp() noexcept override final = default;
 
   public:
-    const char *
-    what() const noexcept override final {
+    const char *what() const noexcept override final {
         return what_hp.c_str();
     }
 
@@ -42,60 +41,44 @@ class bwbuilder {
 
     bwbuilder(bwbuilder &&) = delete;
     bwbuilder(const bwbuilder &) = delete;
-    bwbuilder &
-    operator=(bwbuilder &&) = delete;
+    bwbuilder &operator=(bwbuilder &&) = delete;
 
     ~bwbuilder() = default;
 
   public:
-    void
-    start_build();
+    void start_build();
 
   protected:
-    void
-    run_interpreter();
+    void run_interpreter();
 
-    u32t
-    gen_cache_target();
+    u32t gen_cache_target();
 
-    void
-    gen_DPCM();
+    void gen_DPCM();
 
-    void
-    build_on_aef();
+    void build_on_aef();
 
-    void
-    build_on_cache();
+    void build_on_cache();
 
   public:
-    void
-    switch_log(u32t value);
-    void
-    switch_output_log(u32t value);
+    void switch_log(u32t value);
+    void switch_output_log(u32t value);
 
   private:
-    void
-    build_targets();
+    void build_targets();
 
-    u32t
-    deserl_cache();
+    u32t deserl_cache();
 
-    void
-    load_target();
+    void load_target();
 
-    void
-    imp_data_interpreter_for_bs();
+    void imp_data_interpreter_for_bs();
 
   private:
-    std::stack<std::string>
-    create_stack_target_templates(const var::struct_sb::target_out &target);
-    u32t
-    recovery_stack_templates(std::vector<var::struct_sb::template_command> &vec_templates,
-                             const std::string &name_internal_param, std::stack<std::string> &stack_templates);
+    std::stack<std::string> create_stack_target_templates(const var::struct_sb::target_out &target);
+    u32t recovery_stack_templates(std::vector<var::struct_sb::template_command> &vec_templates,
+                                  const std::string &name_internal_param, std::stack<std::string> &stack_templates);
 
   private:
-    std::string
-    get_file_w_index(std::string pattern_file, u32t index);
+    std::string get_file_w_index(std::string pattern_file, u32t index);
 
   private:
     interpreter::interpreter_exec _interpreter;
