@@ -19,17 +19,14 @@ interpreter_exec::interpreter_exec(config conf) {
     interp_conf = conf;
 }
 
-void
-interpreter_exec::set_config(config conf) {
+void interpreter_exec::set_config(config conf) {
     interp_conf = conf;
 }
-void
-interpreter_exec::set_external_scope(var::scope *_external_scope) {
+void interpreter_exec::set_external_scope(var::scope *_external_scope) {
     external_scope = _external_scope;
 }
 
-void
-interpreter_exec::build_aef() {
+void interpreter_exec::build_aef() {
 #if defined(WIN)
     assist.safe_call_dll_func_begin();
 #endif
@@ -74,8 +71,7 @@ interpreter_exec::build_aef() {
 #endif
 }
 
-void
-interpreter_exec::interpreter_run() {
+void interpreter_exec::interpreter_run() {
 #if defined(WIN)
     wrap_interpreter(curr_expr = 0; assist.safe_call_dll_func_begin(); for (; curr_expr < aef.size(); ++curr_expr) {
         if (aef[curr_expr].expr_func.func_n.func_ref == sl_func::set || aef[curr_expr].execute_with_semantic_an())
@@ -93,14 +89,12 @@ interpreter_exec::interpreter_run() {
 #endif
 }
 
-void
-interpreter_exec::build_external_func_table() {
+void interpreter_exec::build_external_func_table() {
     import_module_decl(interp_conf.file_import_file_f);
     external_func_table = load_modules_all();
 }
 
-std::vector<var::struct_sb::target>
-interpreter_exec::export_targets() {
+std::vector<var::struct_sb::target> interpreter_exec::export_targets() {
     std::vector<std::pair<std::string, var::struct_sb::target>> vec_targets_ref =
         global_scope.get_vector_variables_t<var::struct_sb::target>();
 
@@ -112,8 +106,7 @@ interpreter_exec::export_targets() {
     return targets;
 }
 
-var::scope &
-interpreter_exec::get_current_scope() {
+var::scope &interpreter_exec::get_current_scope() {
     if (interp_conf.use_external_scope)
         return *external_scope;
     return global_scope;

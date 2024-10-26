@@ -12,8 +12,7 @@ class bweas_exception : std::exception {
     ~bweas_exception() noexcept = default;
 
   public:
-    const char *
-    get_assist_err() const noexcept {
+    const char *get_assist_err() const noexcept {
         return assist_err.c_str();
     }
 

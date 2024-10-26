@@ -32,8 +32,7 @@
 
 static bool init_glob{0};
 
-void
-srl::init_err() {
+void srl::init_err() {
     if (!init_glob) {
         assist.add_err("SRL-IMP000",
                        "The lexeme does not obey the rules of the grammar of the __import__ scripting language");
@@ -42,15 +41,13 @@ srl::init_err() {
     }
 }
 
-char
-get(std::string sym_s, u32t &pos) {
+char get(std::string sym_s, u32t &pos) {
     if (pos >= sym_s.size())
         return '\0';
     return sym_s[pos++];
 }
 
-std::pair<std::vector<srl::token>, std::vector<std::string>>
-srl::parser(std::string symbols) {
+std::pair<std::vector<srl::token>, std::vector<std::string>> srl::parser(std::string symbols) {
     bool expected_close_ang_br = 0;
     bool expected_start_module = 1, expected_end_module = 0;
     bool expected_filename_dll = 0;
@@ -205,8 +202,7 @@ srl::parser(std::string symbols) {
 
     return std::pair<std::vector<srl::token>, std::vector<std::string>>(tokens, name_func_smt);
 }
-srl::modules
-srl::build_modules(std::vector<srl::token> tokens) {
+srl::modules srl::build_modules(std::vector<srl::token> tokens) {
     modules mdls;
     module tmp_mdl;
 

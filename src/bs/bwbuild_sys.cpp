@@ -17,8 +17,7 @@ bwbuilder::bwbuilder() {
     }
 }
 
-void
-bwbuilder::start_build() {
+void bwbuilder::start_build() {
     HND handle_f = assist.open_file(MAIN_FILE, MODE_READ_FILE);
     if (!assist.exist_file(handle_f))
         assist.call_err("BWS000");
@@ -61,20 +60,17 @@ bwbuilder::start_build() {
     }
 }
 
-void
-bwbuilder::switch_log(u32t value) {
+void bwbuilder::switch_log(u32t value) {
     log = value;
     assist.switch_log(log);
 }
 
-void
-bwbuilder::switch_output_log(u32t value) {
+void bwbuilder::switch_output_log(u32t value) {
     output_log = value;
     assist.switch_otp(output_log);
 }
 
-void
-bwbuilder::run_interpreter() {
+void bwbuilder::run_interpreter() {
     interpreter::interpreter_exec::config new_config;
 
     new_config.debug_output = 0;
@@ -94,8 +90,7 @@ bwbuilder::run_interpreter() {
     assist << " - [BWEAS]: The interpretation was successful!";
 }
 
-u32t
-bwbuilder::gen_cache_target() {
+u32t bwbuilder::gen_cache_target() {
     if (!out_targets.size()) {
         assist << "Generating a file with a cache will not be performed.";
         return 1;
@@ -207,8 +202,7 @@ bwbuilder::gen_cache_target() {
     return 0;
 }
 
-u32t
-bwbuilder::deserl_cache() {
+u32t bwbuilder::deserl_cache() {
     HND handle_f = assist.open_file(CACHE_FILE, MODE_READ_FILE);
     std::string serel_str = assist.read_file(handle_f);
 
@@ -414,8 +408,7 @@ bwbuilder::deserl_cache() {
     return 0;
 }
 
-void
-bwbuilder::build_targets() {
+void bwbuilder::build_targets() {
     assist << " - [BWEAS]: Building targets...";
 
     std::string command;
@@ -735,8 +728,7 @@ bwbuilder::build_targets() {
     }
 }
 
-void
-bwbuilder::load_target() {
+void bwbuilder::load_target() {
     std::vector<var::struct_sb::target> targets = _interpreter.export_targets();
 
     var::struct_sb::target_out target_tmp;
@@ -753,8 +745,7 @@ bwbuilder::load_target() {
     }
 }
 
-std::stack<std::string>
-bwbuilder::create_stack_target_templates(const var::struct_sb::target_out &target) {
+std::stack<std::string> bwbuilder::create_stack_target_templates(const var::struct_sb::target_out &target) {
     std::vector<var::struct_sb::template_command> vec_templates_tmp;
     std::stack<std::string> stack_templates;
 
@@ -781,9 +772,9 @@ bwbuilder::create_stack_target_templates(const var::struct_sb::target_out &targe
     return stack_templates;
 }
 
-u32t
-bwbuilder::recovery_stack_templates(std::vector<var::struct_sb::template_command> &vec_templates,
-                                    const std::string &name_internal_param, std::stack<std::string> &stack_templates) {
+u32t bwbuilder::recovery_stack_templates(std::vector<var::struct_sb::template_command> &vec_templates,
+                                         const std::string &name_internal_param,
+                                         std::stack<std::string> &stack_templates) {
     const auto &it = find_if(vec_templates.begin(), vec_templates.end(),
                              [name_internal_param](const var::struct_sb::template_command &_template) {
                                  return _template.returnable == name_internal_param;
@@ -798,8 +789,7 @@ bwbuilder::recovery_stack_templates(std::vector<var::struct_sb::template_command
     return 0;
 }
 
-void
-bwbuilder::imp_data_interpreter_for_bs() {
+void bwbuilder::imp_data_interpreter_for_bs() {
     const auto &global_templates =
         _interpreter.get_current_scope().get_vector_variables_t<var::struct_sb::template_command>();
     std::unordered_set<std::string> name_global_external_args;
@@ -831,8 +821,7 @@ bwbuilder::imp_data_interpreter_for_bs() {
     }
 }
 
-std::string
-bwbuilder::get_file_w_index(std::string pattern_file, u32t index) {
+std::string bwbuilder::get_file_w_index(std::string pattern_file, u32t index) {
     std::string name_output_file_curr = pattern_file, extension_output_file_curr = pattern_file;
     name_output_file_curr.erase(name_output_file_curr.find("."), name_output_file_curr.size());
     extension_output_file_curr.erase(0, extension_output_file_curr.find("."));

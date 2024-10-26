@@ -79,8 +79,7 @@ struct notion_expr_func {
 
 // structure is a representation of a single function call
 struct expression {
-    inline bool
-    execute_with_semantic_an();
+    inline bool execute_with_semantic_an();
 
     notion_expr_func expr_func;
     std::vector<subexpressions> sub_expr_s;
@@ -108,8 +107,7 @@ struct subexpressions {
         SIZE_ENUM_RET_TYPE_SUBEXPR
     };
 
-    inline ret_type_subexpr
-    returned_type_subexpr();
+    inline ret_type_subexpr returned_type_subexpr();
 
     // tokens of single parameter
     std::vector<token_expr::token> token_of_subexpr;
@@ -117,14 +115,12 @@ struct subexpressions {
 };
 
 // Determines the need to call this function in semantic analysis
-inline bool
-expression::execute_with_semantic_an() {
+inline bool expression::execute_with_semantic_an() {
     return expr_func.func_n.is_declaration_var || expr_func.func_n.only_with_semantic;
 }
 
 // Defines the return type (expected after semantic analysis)
-inline subexpressions::ret_type_subexpr
-subexpressions::returned_type_subexpr() {
+inline subexpressions::ret_type_subexpr subexpressions::returned_type_subexpr() {
     if (subexpr_t == type_subexpr::INT || subexpr_t == type_subexpr::INT_COMPARE)
         return ret_type_subexpr::INT;
     else if (subexpr_t == type_subexpr::STRING || subexpr_t == type_subexpr::STRING_ADD)

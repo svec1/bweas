@@ -17,34 +17,28 @@ lex_an::lex_an(const std::string &_symbols) {
     set_symbols(_symbols);
 }
 
-char
-lex_an::get() {
+char lex_an::get() {
     if (pos >= symbols.size())
         return '\0';
     return symbols[pos++];
 }
 
-bool
-lex_an::check_sym_valid_grammar(char ch) {
+bool lex_an::check_sym_valid_grammar(char ch) {
     if (ch == '*' || ch == '/' || ch == '!' || ch == '-' || ch == '\'' || ch == '[' || ch == ']')
         return 0;
     return 1;
 }
 
-void
-lex_an::set_symbols(const std::string &_symbols) {
+void lex_an::set_symbols(const std::string &_symbols) {
     symbols = _symbols;
 }
-std::vector<token>
-lex_an::get_tokens() {
+std::vector<token> lex_an::get_tokens() {
     return tokens;
 }
-void
-lex_an::clear_tokens() {
+void lex_an::clear_tokens() {
     tokens.clear();
 }
-std::vector<token>
-lex_an::analysis() {
+std::vector<token> lex_an::analysis() {
     std::string lexem;
     token tmp_curr_token;
 
@@ -182,11 +176,11 @@ lex_an::analysis() {
 
             continue;
         }
-        else if(ch == '\\' && br){
-            if(pos == symbols.size())
+        else if (ch == '\\' && br) {
+            if (pos == symbols.size())
                 assist.call_err("LEX000", "\n(Line: " + std::to_string(count_line) +
-                                            "; Symbols start pos: " + std::to_string(count_sym - lexem.size()) +
-                                            "): Lexem - \"" + lexem + "\"\n");
+                                              "; Symbols start pos: " + std::to_string(count_sym - lexem.size()) +
+                                              "): Lexem - \"" + lexem + "\"\n");
             ch = get();
         }
         if (lexem.empty() && (isdigit(ch) || br)) {

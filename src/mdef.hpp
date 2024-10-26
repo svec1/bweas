@@ -8,5 +8,4 @@ class crtd;
 extern assistant assist;
 extern crtd _crtdebug;
 
-
 #endif

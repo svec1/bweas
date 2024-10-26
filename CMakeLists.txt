@@ -27,6 +27,11 @@ file(GLOB FILE_SRC ${MAIN} ${KERNEL} ${BS} ${HAX} ${MODULE})
 add_executable(${BW_NAME_PRJ} ${FILE_SRC})
 
 if(WIN32)
+    if(NOT CMAKE_BUILD_TYPE)
+        set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
+        message(STATUS "Release build")
+    endif()
+    
     message(STATUS "Enabling the detours lib(Microsoft)")
     if (${CMAKE_SIZEOF_VOID_P} STREQUAL 4)
         message(STATUS "Selected lib 32 bit build")

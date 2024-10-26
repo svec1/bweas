@@ -3,8 +3,7 @@
 
 #include "bs/bwbuild_sys.hpp"
 
-int
-main(int argv, char **args) {
+int main(int argv, char **args) {
     clock_t beg = clock();
 
     /*

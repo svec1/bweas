@@ -20,18 +20,14 @@ class lex_an {
 
     lex_an(lex_an &&) = delete;
     lex_an(const lex_an &) = delete;
-    lex_an &
-    operator=(lex_an &&) = delete;
+    lex_an &operator=(lex_an &&) = delete;
 
     ~lex_an() = default;
 
   public:
-    void
-    set_symbols(const std::string &_symbols);
-    std::vector<token_expr::token>
-    get_tokens();
-    void
-    clear_tokens();
+    void set_symbols(const std::string &_symbols);
+    std::vector<token_expr::token> get_tokens();
+    void clear_tokens();
 
     // lexical analysis
     // ----------------
@@ -46,16 +42,13 @@ class lex_an {
     // which, depending on its value, will perform one or another action.
     // Available special words:
     //  1. lexer_stop
-    std::vector<token_expr::token>
-    analysis();
+    std::vector<token_expr::token> analysis();
 
   private:
-    char
-    get();
+    char get();
 
     // Prohibits characters
-    bool
-    check_sym_valid_grammar(char ch);
+    bool check_sym_valid_grammar(char ch);
 
   private:
     static inline bool init_glob{0};

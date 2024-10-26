@@ -34,8 +34,7 @@ class realtime_excp : public bw_excp::bweas_exception {
     ~realtime_excp() noexcept override final = default;
 
   public:
-    const char *
-    what() const noexcept override final {
+    const char *what() const noexcept override final {
         return what_hp.c_str();
     }
 
@@ -74,35 +73,27 @@ class interpreter_exec : private module::mdl_manager {
 
     interpreter_exec(interpreter_exec &&) = delete;
     interpreter_exec(const interpreter_exec &) = delete;
-    interpreter_exec &
-    operator=(interpreter_exec &&) = delete;
+    interpreter_exec &operator=(interpreter_exec &&) = delete;
 
     ~interpreter_exec() = default;
 
   public:
     // Compiles an abstract expression of function
-    void
-    build_aef();
+    void build_aef();
 
     // Interpretation of functions (not declaring, and which are not
     // explicitly marked as called in the semantic analysis)
-    void
-    interpreter_run();
+    void interpreter_run();
 
-    void
-    set_config(config conf);
-    void
-    set_external_scope(var::scope *_external_scope);
+    void set_config(config conf);
+    void set_external_scope(var::scope *_external_scope);
 
-    std::vector<var::struct_sb::target>
-    export_targets();
+    std::vector<var::struct_sb::target> export_targets();
 
-    var::scope &
-    get_current_scope();
+    var::scope &get_current_scope();
 
   private:
-    void
-    build_external_func_table();
+    void build_external_func_table();
 
   private:
     static inline bool init_glob{0};

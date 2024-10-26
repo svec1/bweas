@@ -31,8 +31,7 @@ class rt_semantic_excp : public bw_excp::bweas_exception {
     ~rt_semantic_excp() noexcept override final = default;
 
   public:
-    const char *
-    what() const noexcept override final {
+    const char *what() const noexcept override final {
         return what_hp.c_str();
     }
 
@@ -45,8 +44,7 @@ class semantic_analyzer {
     semantic_analyzer();
     semantic_analyzer(semantic_analyzer &&) = delete;
     semantic_analyzer(const semantic_analyzer &) = delete;
-    semantic_analyzer &
-    operator=(semantic_analyzer &&) = delete;
+    semantic_analyzer &operator=(semantic_analyzer &&) = delete;
 
     ~semantic_analyzer() = default;
 
@@ -76,39 +74,30 @@ class semantic_analyzer {
     //   ^^^
     //   second pass
     //
-    void
-    analysis(parser::abstract_expr_func &expr_s, var::scope &global_scope);
+    void analysis(parser::abstract_expr_func &expr_s, var::scope &global_scope);
 
-    void
-    load_external_func_table(const table_func &notion_external_func);
-    void
-    append_external_name_func_w_smt(const std::vector<std::string> &list_name_func);
+    void load_external_func_table(const table_func &notion_external_func);
+    void append_external_name_func_w_smt(const std::vector<std::string> &list_name_func);
 
   private:
     // Adding a function definition to the functions table
-    void
-    add_func_flink(std::string name_token_func,
-                   void (*func_ref)(const std::vector<aef_expr::subexpressions> &, var::scope &curr_scope),
-                   std::vector<aef_expr::params> expected_args);
+    void add_func_flink(std::string name_token_func,
+                        void (*func_ref)(const std::vector<aef_expr::subexpressions> &, var::scope &curr_scope),
+                        std::vector<aef_expr::params> expected_args);
 
-    void
-    smt_zero_pass(const parser::abstract_expr_func &expr_s);
-    void
-    smt_first_pass(parser::abstract_expr_func &expr_s);
+    void smt_zero_pass(const parser::abstract_expr_func &expr_s);
+    void smt_first_pass(parser::abstract_expr_func &expr_s);
 
     // The set command (initialization or assignment) is called here
-    void
-    smt_second_pass(parser::abstract_expr_func &expr_s, var::scope &curr_scope);
+    void smt_second_pass(parser::abstract_expr_func &expr_s, var::scope &curr_scope);
 
   private:
     // Parses a subexpression if it has not token the type
     // INT, STRING, or VAR_STRUCT_ID after parsing at the AEF construction
     // stage
-    void
-    parse_subexpr_param(aef_expr::subexpressions &sub_expr, std::vector<aef_expr::subexpressions> &sub_exprs,
-                        u32t &pos_sub_expr_in_vec, var::scope &curr_scope, aef_expr::params expected_param);
-    void
-    defining_call_func(const std::string &name, aef_expr::notion_func &nfunc);
+    void parse_subexpr_param(aef_expr::subexpressions &sub_expr, std::vector<aef_expr::subexpressions> &sub_exprs,
+                             u32t &pos_sub_expr_in_vec, var::scope &curr_scope, aef_expr::params expected_param);
+    void defining_call_func(const std::string &name, aef_expr::notion_func &nfunc);
 
   private:
     static inline bool init_glob{0};

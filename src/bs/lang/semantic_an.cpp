@@ -38,10 +38,9 @@ semantic_analyzer::semantic_analyzer() {
     }
 }
 
-void
-semantic_analyzer::add_func_flink(std::string name_token_func,
-                                  void (*func_ref)(const std::vector<subexpressions> &, var::scope &curr_scope),
-                                  std::vector<params> expected_args) {
+void semantic_analyzer::add_func_flink(std::string name_token_func,
+                                       void (*func_ref)(const std::vector<subexpressions> &, var::scope &curr_scope),
+                                       std::vector<params> expected_args) {
 
     notion_func nfunc;
     nfunc.func_ref = func_ref;
@@ -54,26 +53,22 @@ semantic_analyzer::add_func_flink(std::string name_token_func,
     notion_all_func.insert(n_link_func_spec);
 }
 
-void
-semantic_analyzer::analysis(abstract_expr_func &expr_s, var::scope &global_scope) {
+void semantic_analyzer::analysis(abstract_expr_func &expr_s, var::scope &global_scope) {
     smt_zero_pass(expr_s);
     smt_first_pass(expr_s);
     smt_second_pass(expr_s, global_scope);
 }
 
-void
-semantic_analyzer::load_external_func_table(const table_func &notion_external_func) {
+void semantic_analyzer::load_external_func_table(const table_func &notion_external_func) {
     this->notion_external_func = notion_external_func;
 }
-void
-semantic_analyzer::append_external_name_func_w_smt(const std::vector<std::string> &list_name_func) {
+void semantic_analyzer::append_external_name_func_w_smt(const std::vector<std::string> &list_name_func) {
     for (u32t i = 0; i < list_name_func.size(); ++i) {
         name_func_with_semantic_an.push_back(list_name_func[i]);
     }
 }
 
-void
-semantic_analyzer::smt_zero_pass(const abstract_expr_func &expr_s) {
+void semantic_analyzer::smt_zero_pass(const abstract_expr_func &expr_s) {
     notion_func nfunc;
     for (u32t i = 0; i < expr_s.size(); ++i) {
         if (notion_all_func.find(expr_s[i].expr_func.func_t.token_val) != notion_all_func.end())
@@ -158,8 +153,7 @@ semantic_analyzer::smt_zero_pass(const abstract_expr_func &expr_s) {
     }
 }
 
-void
-semantic_analyzer::smt_first_pass(abstract_expr_func &expr_s) {
+void semantic_analyzer::smt_first_pass(abstract_expr_func &expr_s) {
     for (u32t i = 0; i < expr_s.size(); ++i) {
         expr_s[i].expr_func.func_n = notion_all_func[expr_s[i].expr_func.func_t.token_val];
         if (expr_s[i].expr_func.func_n.expected_args.size() != expr_s[i].sub_expr_s.size()) {
@@ -265,8 +259,7 @@ semantic_analyzer::smt_first_pass(abstract_expr_func &expr_s) {
         }
     }
 }
-void
-semantic_analyzer::smt_second_pass(abstract_expr_func &expr_s, var::scope &curr_scope) {
+void semantic_analyzer::smt_second_pass(abstract_expr_func &expr_s, var::scope &curr_scope) {
 
     // <0 - if_skip, 1 - else_skip; 0 - current if, 1- current else>
     std::vector<std::pair<bool, bool>> branch_s;
@@ -508,9 +501,8 @@ semantic_analyzer::smt_second_pass(abstract_expr_func &expr_s, var::scope &curr_
     if (branch_s.size())
         assist.call_err("SMT013", "End Of AEF");
 }
-void
-semantic_analyzer::parse_subexpr_param(subexpressions &sub_expr, std::vector<subexpressions> &sub_exprs,
-                                       u32t &pos_sub_expr_in_vec, var::scope &curr_scope, params expected_param) {
+void semantic_analyzer::parse_subexpr_param(subexpressions &sub_expr, std::vector<subexpressions> &sub_exprs,
+                                            u32t &pos_sub_expr_in_vec, var::scope &curr_scope, params expected_param) {
     subexpressions parse_subexpr, tmp_parse_subexpr;
     if (sub_expr.subexpr_t == subexpressions::type_subexpr::INT_COMPARE) {
         for (u32t i = 0; i < sub_expr.token_of_subexpr.size(); ++i) {
@@ -652,8 +644,7 @@ semantic_analyzer::parse_subexpr_param(subexpressions &sub_expr, std::vector<sub
         parse_subexpr.subexpr_t = subexpressions::type_subexpr::STRING;
     sub_expr = parse_subexpr;
 }
-void
-semantic_analyzer::defining_call_func(const std::string &name, notion_func &nfunc) {
+void semantic_analyzer::defining_call_func(const std::string &name, notion_func &nfunc) {
     if (std::find(nfunc.expected_args.begin(), nfunc.expected_args.end(), params::FUTURE_VAR_ID) !=
             nfunc.expected_args.end() ||
         std::find(nfunc.expected_args.begin(), nfunc.expected_args.end(), params::NCHECK_VAR_ID) !=
