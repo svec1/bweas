@@ -2,8 +2,11 @@
 > *system build*
 
 <image src="/dev/bweas_logo.png" width=156 height=128>
+  
+<img alt="Static Badge" src="https://img.shields.io/badge/build-passing-brightgree"> <img alt="Static Badge" src="https://img.shields.io/badge/release-pending-red">
 
 [Documentation of the internal device](https://github.com/svec1/bweas/blob/main/docs/en/main_page.md)
+
 
 ## Install
 > ``` git clone https://github.com/svec1/bweas.git ```
