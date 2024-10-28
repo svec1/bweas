@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.20)
 
 set(BW_NAME_PRJ bweas)
 
+option(USER_BUILD_LZ4 "Rep LZ4 on external" OFF)
 option(USER_BUILD_JSON "Rep JSON_C on external" OFF)
 option(USER_BUILD_LUA "Rep LuaJit on external" OFF)
 
@@ -33,13 +34,13 @@ add_executable(${BW_NAME_PRJ} ${FILE_SRC})
 
 # LuaJit
 find_package(LuaJIT REQUIRED)
-target_link_libraries(${BW_NAME_PRJ} PUBLIC ${LuaJIT_LIBRARIES})
+target_link_libraries(${BW_NAME_PRJ} PRIVATE ${LuaJIT_LIBRARIES})
 include_directories(${LuaJIT_SRC_DIR})
 
 # nlohmann_json
 if(USER_BUILD_JSON)
     add_subdirectory(external/json)
-    target_link_libraries(${BW_NAME_PRJ} PUBLIC nlohmann_json::nlohmann_json)
+    target_link_libraries(${BW_NAME_PRJ} PRIVATE nlohmann_json::nlohmann_json)
 
     message(STATUS "Selected nlohmann_json in folder - external")
 else()
@@ -48,6 +49,15 @@ else()
     include_directories(${NLOHMANN_JSON_INCLUDE_INSTALL_DIR})
 endif()
 
+# LZ4
+if(USER_BUILD_LZ4)
+    set(LZ4_BUILD_CLI OFF)
+    add_subdirectory(external/lz4/build/cmake)
+    message(STATUS "Selected LZ4 in folder - external")
+else()
+    find_library(LZ4_LIBRARY NAMES lz4)
+endif()
+target_link_libraries(${BW_NAME_PRJ} PRIVATE lz4)
 
 if(WIN32)
     if(NOT CMAKE_BUILD_TYPE)
