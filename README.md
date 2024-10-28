@@ -16,7 +16,7 @@
 Before building, you should install the LuaJit and nlohmann-json libraries.
 ##### *debian based(for example)*
 ```
-sudo apt install luajit nlohmann-json3-dev 
+sudo apt install luajit nlohmann-json3-dev liblz4-dev
 ```
 #### Default build with cmake:
 ```
@@ -37,12 +37,14 @@ git clone https://github.com/LuaJIT/LuaJIT
 cd luajit
 make
 ```
-**For nlohmann-json**:
+**For lz4 and nlohmann-json**
 ```
+cd external
+git clone https://github.com/lz4/lz4
 git clone https://github.com/nlohmann/json
 ```
 > [!IMPORTANT]
-> You don't need to compile it yourself(nlohmann-json), the cmake call will do it for you next..
+> You don't need to compile it yourself(nlohmann-json and lz4), the cmake call will do it for you next..
 
 > [!TIP]
 > If you did this, then you need to set the appropriate options for cmake when building:
@@ -59,6 +61,7 @@ cmake --build .
 cd external
 git clone https://github.com/LuaJIT/LuaJIT
 git clone https://github.com/nlohmann/json
+git clone https://github.com/lz4/lz4
 cmd /E:ON /K ""C:\Program Files (x86)\Intel\oneAPI\setvars.bat" --force"
 cd luajit/src
 msvcbuild.bat
@@ -68,13 +71,13 @@ exit
 > To build LuaJit library, you need to run msvcbuild.bat in the LuaJit source folder.
 > Although you can build it using mingw-make, the library will be implicit.
 >
-> *You don't need to build nlohmann-json*
+> *You don't need to build nlohmann-json and lz4*
 
 *starting from the source folder*
 ```
 mkdir build
 cd build
-cmake -DUSER_BUILD_LUA=ON -DUSER_BUILD_JSON=ON ..
+cmake -DUSER_BUILD_LUA=ON -DUSER_BUILD_JSON=ON -DUSER_BUILD_LZ4=ON ..
 cmake --build .
 ```
 
