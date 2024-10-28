@@ -1,5 +1,8 @@
 set(LUAJIT_SRC_DIR "${CMAKE_CURRENT_LIST_DIR}/luajit/src" CACHE STRING "LuaJIT include directory")
 
+if(NOT EXISTS "${LUAJIT_SRC_DIR}")
+    message(FATAL_ERROR "LuaJIT directory not found: ${LUAJIT_SRC_DIR}")
+endif()
 
 if(WIN32)
     set(LUAJIT_NAME_LIB "lua51")
@@ -7,10 +10,6 @@ if(WIN32)
 else()
     set(LUAJIT_NAME_LIB "libluajit")
     set(LUAJIT_LIBRARIES "${CMAKE_CURRENT_LIST_DIR}/luajit/src/${LUAJIT_NAME_LIB}" CACHE STRING "LuaJIT library")
-endif()
-
-if(NOT EXISTS "${LUAJIT_SRC_DIR}")
-    message(FATAL_ERROR "LuaJIT include directory not found: ${LUAJIT_SRC_DIR}")
 endif()
 
 if(NOT EXISTS "${LUAJIT_LIBRARIES}")

@@ -6,11 +6,6 @@ option(USER_BUILD_LZ4 "Rep LZ4 on external" OFF)
 option(USER_BUILD_JSON "Rep JSON_C on external" OFF)
 option(USER_BUILD_LUA "Rep LuaJit on external" OFF)
 
-if(USER_BUILD_LUA)
-    set(CMAKE_PREFIX_PATH "${CMAKE_SOURCE_DIR}/external/")
-    message(STATUS "Selected LuaJit in folder - external")
-endif()
-
 set(CMAKE_CXX_STANDARD 17)
 project(${BW_NAME_PRJ} LANGUAGES CXX C)
 
@@ -28,12 +23,21 @@ file(GLOB BS "src/bs/*.cpp" ${LANG})
 file(GLOB MAIN "src/main.cpp" "src/mdef.cpp")
 file(GLOB FILE_SRC ${MAIN} ${KERNEL} ${BS} ${HAX} ${MODULE})
 
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Ox")
-
 add_executable(${BW_NAME_PRJ} ${FILE_SRC})
 
 # LuaJit
-find_package(LuaJIT REQUIRED)
+if(USER_BUILD_LUA)
+    set(CMAKE_PREFIX_PATH "${CMAKE_SOURCE_DIR}/external/")
+    find_package(LuaJIT REQUIRED)
+    message(STATUS "Selected LuaJit in folder - external")
+else()
+    find_library(LuaJIT_LIBRARIES NAMES libluajit-5.1.so)
+    if(NOT LuaJIT_LIBRARIES)
+        message(FATAL_ERROR "LuaJIT not found!")
+    endif()
+
+    set(LuaJIT_SRC_DIR = "/usr/include/luajit-2.1")
+endif()
 target_link_libraries(${BW_NAME_PRJ} PRIVATE ${LuaJIT_LIBRARIES})
 include_directories(${LuaJIT_SRC_DIR})
 
@@ -75,11 +79,11 @@ if(WIN32)
     endif ()
     include_directories("external/detours/include")
 
-    file(COPY ${LuaJIT_SRC_DIR}/${LuaJIT_NAME_LIBRARIES}.dll DESTINATION ${CMAKE_BINARY_DIR})
+    file(COPY ${LuaJIT_SRC_DIR}/${LuaJIT_NAME_LIBRARIES}.dll DESTINATION ${CMAKE_BINARY_DIR}/Debug)
 else()
     message(STATUS "Internal enabled interception library for securely connecting modules and plugins on a UNIX system")
     add_subdirectory(src/kernel/high_level/hook_linux_lib)
     target_link_libraries(${BW_NAME_PRJ} PUBLIC bwhook_safe)
 
-    file(COPY ${LuaJIT_SRC_DIR}/${LuaJIT_NAME_LIBRARIES}.a DESTINATION ${CMAKE_BINARY_DIR}/Debug)
+    file(COPY ${LuaJIT_LIBRARIES} DESTINATION ${CMAKE_BINARY_DIR})
 endif()
