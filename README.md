@@ -13,13 +13,16 @@
 > Globally required: CMake
 
 ### Build on Linux
-Before building, you should install the LuaJit library.
+Before building, you should install the LuaJit and nlohmann-json libraries.
 ##### *debian based(for example)*
 ```
-sudo apt install luajit
+sudo apt install luajit nlohmann-json3-dev 
 ```
-You can also copy the LuaJit repository and follow these steps:
+***
+#### Build with clone rep of libraries
+You can also clone the LuaJit or nlohmann/json repositories and follow these steps:
 > [!NOTE]
+> For LuaJit:
 > Required: Make
 ```
 cd external
@@ -27,20 +30,25 @@ git clone https://github.com/LuaJIT/LuaJIT
 cd luajit
 make
 ```
+**For nlohmann-json**:
+```
+git clone https://github.com/nlohmann/json
+```
+> [!IMPORTANT]
+> You don't need to compile it yourself(nlohmann-json), the cmake call will do it for you next..
 
-Default build with cmake
+> [!TIP]
+> If you did this, then you need to set the appropriate options for cmake when building:
+```
+cmake -DUSER_BUILD_LUA=ON -DUSER_BUILD_JSON=ON ..
+cmake --build .
+```
+***
+#### Default build with cmake:
 ```
 mkdir build
 cd build
 cmake ..
-cmake --build .
-```
-
-> [!WARNING]
-> If you do not build the LuaJit library yourself,
-> but you downloaded it using a package manager, you should run the build:
-```
-cmake -DUSER_BUILD_LUA=OFF ..
 cmake --build .
 ```
 
@@ -50,6 +58,7 @@ cmake --build .
 ```
 cd external
 git clone https://github.com/LuaJIT/LuaJIT
+git clone https://github.com/nlohmann/json
 cmd /E:ON /K ""C:\Program Files (x86)\Intel\oneAPI\setvars.bat" --force"
 cd luajit/src
 msvcbuild.bat
@@ -57,13 +66,15 @@ exit
 ```
 > [!TIP]
 > To build LuaJit library, you need to run msvcbuild.bat in the LuaJit source folder.
-> Although you can build it using mingw-make, the library will be implicit
+> Although you can build it using mingw-make, the library will be implicit.
+>
+> *You don't need to build nlohmann-json*
 
 *starting from the source folder*
 ```
 mkdir build
 cd build
-cmake ..
+cmake -DUSER_BUILD_LUA=ON -DUSER_BUILD_JSON=ON ..
 cmake --build .
 ```
 
