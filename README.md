@@ -18,6 +18,13 @@ Before building, you should install the LuaJit and nlohmann-json libraries.
 ```
 sudo apt install luajit nlohmann-json3-dev 
 ```
+#### Default build with cmake:
+```
+mkdir build
+cd build
+cmake ..
+cmake --build .
+```
 ***
 #### Build with clone rep of libraries
 You can also clone the LuaJit or nlohmann/json repositories and follow these steps:
@@ -44,13 +51,6 @@ cmake -DUSER_BUILD_LUA=ON -DUSER_BUILD_JSON=ON ..
 cmake --build .
 ```
 ***
-#### Default build with cmake:
-```
-mkdir build
-cd build
-cmake ..
-cmake --build .
-```
 
 ### Build on Windows
 > [!NOTE]
