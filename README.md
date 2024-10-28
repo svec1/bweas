@@ -36,6 +36,14 @@ cmake ..
 cmake --build .
 ```
 
+> [!WARNING]
+> If you do not build the LuaJit library yourself,
+> but you downloaded it using a package manager, you should run the build:
+```
+cmake -DUSER_BUILD_LUA=OFF ..
+cmake --build .
+```
+
 ### Build on Windows
 > [!NOTE]
 > Required: Visual Studio 2019+
