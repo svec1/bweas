@@ -2,17 +2,17 @@
 #define _BUILD_SYS__H
 
 #include "../mdef.hpp"
-#include "conf_var.hpp"
 
 #include "bw_defs.hpp"
 #include "bwgenerator.hpp"
-#include "console_arg/hand_arg.hpp"
+#include "bwpackage.hpp"
 #include "lang/interpreter.hpp"
 #include "tools/bwfile.hpp"
 #include "tools/call_cmd.hpp"
 
 #include <stack>
 
+#define JSON_CONFIG_FILE "bweas-config.json"
 #define MAIN_FILE "bweasconf.txt"
 #define IMPORT_FILE "import-modules.imp"
 #define CACHE_FILE "bwcache"
@@ -24,7 +24,8 @@ namespace bweas {
 
 class bwbuilder {
   public:
-    bwbuilder();
+    bwbuilder() = delete;
+    bwbuilder(int argv, char **args);
 
     bwbuilder(bwbuilder &&) = delete;
     bwbuilder(const bwbuilder &) = delete;
@@ -33,18 +34,20 @@ class bwbuilder {
     ~bwbuilder() = default;
 
   public:
+    u32t get_current_mode();
+
     void start_build();
 
   protected:
+    void handle_args(std::vector<std::string> args);
+    // loads the bweas json config
+    void load_json_config(std::string current_name_bweas_prg);
+    // running the interpreter with the configuration
     void run_interpreter();
-
+    // generates a cache file of all targets that were created by the interpreter
     u32t gen_cache_target();
 
     void gen_DPCM();
-
-    void build_on_aef();
-
-    void build_on_cache();
 
   public:
     void switch_log(u32t value);
@@ -72,6 +75,7 @@ class bwbuilder {
 
   private:
     interpreter::interpreter_exec _interpreter;
+    bwpackage loaded_package;
 
     std::vector<var::struct_sb::target_out> out_targets;
     std::vector<var::struct_sb::template_command> templates;
@@ -80,6 +84,10 @@ class bwbuilder {
     bwargs global_extern_args;
 
     static inline bool init_glob{0};
+
+    std::string name_bweas_prg;
+    std::string path_bweas_config, path_build;
+    u32t mode_bweas{1};
 
     var::struct_sb::version bwbuilde_ver{"0.0.1"};
     bool log{1}, output_log{1};

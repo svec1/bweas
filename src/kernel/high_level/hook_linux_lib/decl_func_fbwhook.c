@@ -21,115 +21,93 @@ typedef int socklen_t;
 
 int HOOK_STATUS;
 
-int
-system(const char *string) {
+int system(const char *string) {
     HOOK_DETECTED_INF("system() call")
     return HOOK_DETECTED;
 }
 
-int
-chmod(const char *filename, int mode) {
+int chmod(const char *filename, int mode) {
     HOOK_DETECTED_INF("chmod() call")
     return HOOK_DETECTED;
 }
-int
-fchmod(int fildes, mode_t mode) {
+int fchmod(int fildes, mode_t mode) {
     HOOK_DETECTED_INF("fchmod() call")
     return HOOK_DETECTED;
 }
-int
-chown(const char *pathname, uid_t owner, gid_t group) {
+int chown(const char *pathname, uid_t owner, gid_t group) {
     HOOK_DETECTED_INF("chown() call")
     return HOOK_DETECTED;
 }
-int
-fchown(int fd, uid_t owner, gid_t group) {
+int fchown(int fd, uid_t owner, gid_t group) {
     HOOK_DETECTED_INF("fchown() call")
     return HOOK_DETECTED;
 }
-int
-lchown(const char *pathname, uid_t owner, gid_t group) {
+int lchown(const char *pathname, uid_t owner, gid_t group) {
     HOOK_DETECTED_INF("lchown() call")
     return HOOK_DETECTED;
 }
-void *
-mmap(void *start, size_t length, int prot, int flags, int fd, off_t offset) {
+void *mmap(void *start, size_t length, int prot, int flags, int fd, off_t offset) {
     HOOK_DETECTED_INF("mmap() call")
     return HOOK_DETECTED;
 }
-int
-munmap(void *start, size_t length) {
+int munmap(void *start, size_t length) {
     HOOK_DETECTED_INF("munmap() call")
     return HOOK_DETECTED;
 }
-int
-setuid(uid_t uid) {
+int setuid(uid_t uid) {
     HOOK_DETECTED_INF("setuid() call")
     return HOOK_DETECTED;
 }
-int
-setgid(gid_t gid) {
+int setgid(gid_t gid) {
     HOOK_DETECTED_INF("setgid() call")
     return HOOK_DETECTED;
 }
-int
-seteuid(uid_t euid) {
+int seteuid(uid_t euid) {
     HOOK_DETECTED_INF("seteuid() call")
     return HOOK_DETECTED;
 }
-int
-setegid(gid_t egid) {
+int setegid(gid_t egid) {
     HOOK_DETECTED_INF("setegid() call")
     return HOOK_DETECTED;
 }
-int
-listen(int sockfd, int backlog) {
+int listen(int sockfd, int backlog) {
     HOOK_DETECTED_INF("listen() call")
     return HOOK_DETECTED;
 }
-int
-socket(int domain, int type, int protocol) {
+int socket(int domain, int type, int protocol) {
     HOOK_DETECTED_INF("socket() call")
     return HOOK_DETECTED;
 }
-int
-bind(int sockfd, const struct sockaddr *addr, socklen_t addrlen) {
+int bind(int sockfd, const struct sockaddr *addr, socklen_t addrlen) {
     HOOK_DETECTED_INF("bind() call")
     return HOOK_DETECTED;
 }
-int
-recv(int s, void *buf, size_t len, int flags) {
+int recv(int s, void *buf, size_t len, int flags) {
     HOOK_DETECTED_INF("recv() call")
     return HOOK_DETECTED;
 }
-int
-recvfrom(int s, void *buf, size_t len, int flags, struct sockaddr *from, socklen_t *fromlen) {
+int recvfrom(int s, void *buf, size_t len, int flags, struct sockaddr *from, socklen_t *fromlen) {
     HOOK_DETECTED_INF("recvfrom() call")
     return HOOK_DETECTED;
 }
-int
-recvmsg(int s, struct msghdr *msg, int flags) {
+int recvmsg(int s, struct msghdr *msg, int flags) {
     HOOK_DETECTED_INF("recvmsg() call")
     return HOOK_DETECTED;
 }
-ssize_t
-send(int s, const void *msg, size_t len, int flags) {
+ssize_t send(int s, const void *msg, size_t len, int flags) {
     HOOK_DETECTED_INF("send() call")
     return HOOK_DETECTED;
 }
-ssize_t
-sendto(int s, const void *msg, size_t len, int flags, const struct sockaddr *to, socklen_t tolen) {
+ssize_t sendto(int s, const void *msg, size_t len, int flags, const struct sockaddr *to, socklen_t tolen) {
     HOOK_DETECTED_INF("sendto() call")
     return HOOK_DETECTED;
 }
-ssize_t
-sendmsg(int s, const struct msghdr *msg, int flags) {
+ssize_t sendmsg(int s, const struct msghdr *msg, int flags) {
     HOOK_DETECTED_INF("sendmsg() call")
     return HOOK_DETECTED;
 }
 
-void
-init_hook() {
+void init_hook() {
     HOOK_STATUS = 0;
     return 1;
 }

@@ -16,11 +16,4 @@ typedef char i8t;
 typedef u32t size32t;
 typedef u8t bool8;
 
-typedef char *str;
-typedef const char *cstr;
-
-typedef const void *buf;
-
-typedef FILE **pfile; // reference to pointer FILE
-
 #endif

@@ -1,7 +1,7 @@
 #ifndef _STATIC_STRUCT__H
 #define _STATIC_STRUCT__H
 
-#include "../../kernel/low_level/type.h"
+#include "../../kernel/high_level/bwtype.h"
 #include "../conf_var.hpp"
 
 #include <memory>
@@ -141,20 +141,42 @@ struct version {
         std::string minor_str = version_str;
         std::string patch_str = version_str;
 
+        if (major_str.find('.') == major_str.npos)
+            goto init_mmp;
         major_str.erase(major_str.find('.'));
         minor_str.erase(0, minor_str.find('.') + 1);
+        if (minor_str.find('.') == minor_str.npos)
+            goto init_mmp;
         minor_str.erase(minor_str.find('.'));
         patch_str.erase(0, patch_str.find_last_of('.') + 1);
 
-        major = std::stoi(major_str);
-        minor = std::stoi(minor_str);
-        patch = std::stoi(patch_str);
+    init_mmp:
+        major = std::atoll(major_str.c_str());
+        minor = std::atoll(minor_str.c_str());
+        patch = std::atoll(patch_str.c_str());
     }
     version(u32t mj, u32t mn, u32t ptch) : major{mj}, minor{mn}, patch{ptch} {
     }
 
     std::string get_str_version() {
         return std::to_string(major) + "." + std::to_string(minor) + "." + std::to_string(patch);
+    }
+
+    bool operator==(const version &ver2) {
+        if (major == ver2.major && minor == ver2.minor && patch == ver2.patch)
+            return 1;
+        return 0;
+    }
+    bool operator<(const version &ver2) {
+        if (major < ver2.major || minor < ver2.minor || patch < ver2.patch)
+            return 1;
+        return 0;
+    }
+
+    bool operator==(const std::string ver2) {
+        if (std::to_string(major) + "." + std::to_string(minor) + "." + std::to_string(patch) == ver2)
+            return 1;
+        return 0;
     }
 
     u32t major{0};

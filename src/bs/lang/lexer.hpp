@@ -1,7 +1,6 @@
 #ifndef _LEXER__H
 #define _LEXER__H
 
-#include "../../kernel/low_level/type.h"
 #include "token.hpp"
 
 #include <string>

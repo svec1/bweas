@@ -50,20 +50,20 @@ LSTATUS(APIENTRY *realRegOpenKeyExA)
 
 int(__cdecl *realsystem)(_In_opt_z_ char const *_Command) = system;
 
-BOOL WINAPI
-bwhookCreateProcessW(_In_opt_ LPCWSTR lpApplicationName, _Inout_opt_ LPWSTR lpCommandLine,
-                     _In_opt_ LPSECURITY_ATTRIBUTES lpProcessAttributes,
-                     _In_opt_ LPSECURITY_ATTRIBUTES lpThreadAttributes, _In_ BOOL bInheritHandles,
-                     _In_ DWORD dwCreationFlags, _In_opt_ LPVOID lpEnvironment, _In_opt_ LPCWSTR lpCurrentDirectory,
-                     _In_ LPSTARTUPINFOW lpStartupInfo, _Out_ LPPROCESS_INFORMATION lpProcessInformation) {
+BOOL WINAPI bwhookCreateProcessW(_In_opt_ LPCWSTR lpApplicationName, _Inout_opt_ LPWSTR lpCommandLine,
+                                 _In_opt_ LPSECURITY_ATTRIBUTES lpProcessAttributes,
+                                 _In_opt_ LPSECURITY_ATTRIBUTES lpThreadAttributes, _In_ BOOL bInheritHandles,
+                                 _In_ DWORD dwCreationFlags, _In_opt_ LPVOID lpEnvironment,
+                                 _In_opt_ LPCWSTR lpCurrentDirectory, _In_ LPSTARTUPINFOW lpStartupInfo,
+                                 _Out_ LPPROCESS_INFORMATION lpProcessInformation) {
     hook_handleExA("CreateProcessW call", 20) return DETECTED_HOOK_N;
 }
-BOOL WINAPI
-bwhookCreateProcessA(_In_opt_ LPCSTR lpApplicationName, _Inout_opt_ LPSTR lpCommandLine,
-                     _In_opt_ LPSECURITY_ATTRIBUTES lpProcessAttributes,
-                     _In_opt_ LPSECURITY_ATTRIBUTES lpThreadAttributes, _In_ BOOL bInheritHandles,
-                     _In_ DWORD dwCreationFlags, _In_opt_ LPVOID lpEnvironment, _In_opt_ LPCSTR lpCurrentDirectory,
-                     _In_ LPSTARTUPINFOA lpStartupInfo, _Out_ LPPROCESS_INFORMATION lpProcessInformation) {
+BOOL WINAPI bwhookCreateProcessA(_In_opt_ LPCSTR lpApplicationName, _Inout_opt_ LPSTR lpCommandLine,
+                                 _In_opt_ LPSECURITY_ATTRIBUTES lpProcessAttributes,
+                                 _In_opt_ LPSECURITY_ATTRIBUTES lpThreadAttributes, _In_ BOOL bInheritHandles,
+                                 _In_ DWORD dwCreationFlags, _In_opt_ LPVOID lpEnvironment,
+                                 _In_opt_ LPCSTR lpCurrentDirectory, _In_ LPSTARTUPINFOA lpStartupInfo,
+                                 _Out_ LPPROCESS_INFORMATION lpProcessInformation) {
     hook_handleExA("CreateProcessA call", 20) return DETECTED_HOOK_N;
 }
 HANDLE
@@ -84,15 +84,14 @@ bwhookVirtualAllocEx(_In_ HANDLE hProcess, _In_opt_ LPVOID lpAddress, _In_ SIZE_
                      _In_ DWORD flProtect) {
     hook_handleExA("VirtualAllocEx call", 20) return DETECTED_HOOK_H;
 }
-BOOL WINAPI
-bwhookWriteProcessMemory(_In_ HANDLE hProcess, _In_ LPVOID lpBaseAddress, _In_reads_bytes_(nSize) LPCVOID lpBuffer,
-                         _In_ SIZE_T nSize, _Out_opt_ SIZE_T *lpNumberOfBytesWritten) {
+BOOL WINAPI bwhookWriteProcessMemory(_In_ HANDLE hProcess, _In_ LPVOID lpBaseAddress,
+                                     _In_reads_bytes_(nSize) LPCVOID lpBuffer, _In_ SIZE_T nSize,
+                                     _Out_opt_ SIZE_T *lpNumberOfBytesWritten) {
     hook_handleExA("WriteProcessMemory call", 24) return DETECTED_HOOK_N;
 }
-BOOL WINAPI
-bwhookReadProcessMemory(_In_ HANDLE hProcess, _In_ LPCVOID lpBaseAddress,
-                        _Out_writes_bytes_to_(nSize, *lpNumberOfBytesRead) LPVOID lpBuffer, _In_ SIZE_T nSize,
-                        _Out_opt_ SIZE_T *lpNumberOfBytesRead) {
+BOOL WINAPI bwhookReadProcessMemory(_In_ HANDLE hProcess, _In_ LPCVOID lpBaseAddress,
+                                    _Out_writes_bytes_to_(nSize, *lpNumberOfBytesRead) LPVOID lpBuffer,
+                                    _In_ SIZE_T nSize, _Out_opt_ SIZE_T *lpNumberOfBytesRead) {
     hook_handleExA("ReadProcessMemory call", 23) return DETECTED_HOOK_N;
 }
 LSTATUS
@@ -111,8 +110,7 @@ int __cdecl bwhooksystem(_In_opt_z_ char const *_Command) {
     hook_handleExA("System() call", 19) return DETECTED_HOOK_N;
 }
 
-void
-_winapi_call_hook() {
+void _winapi_call_hook() {
     if (HOOK_PROCCES)
         return;
     DetourTransactionBegin();
@@ -130,8 +128,7 @@ _winapi_call_hook() {
     DetourTransactionCommit();
     HOOK_PROCCES = 1;
 }
-void
-_winapi_call_remove() {
+void _winapi_call_remove() {
     if (!HOOK_PROCCES)
         return;
     DetourTransactionBegin();
@@ -150,7 +147,6 @@ _winapi_call_remove() {
     HOOK_PROCCES = 0;
 }
 
-BOOL
-_winapi_call_knw_was_hook() {
+BOOL _winapi_call_knw_was_hook() {
     return WAS_HOOK;
 }

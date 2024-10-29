@@ -1,7 +1,7 @@
 #ifndef _VAR__H
 #define _VAR__H
 
-#include "../../kernel/low_level/type.h"
+#include "../../kernel/high_level/bwtype.h"
 
 #include <memory>
 #include <string>

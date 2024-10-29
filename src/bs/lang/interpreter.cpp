@@ -3,6 +3,9 @@
 
 using namespace interpreter;
 
+using mf = assistant::file::mode_file;
+using file_it = assistant::file_it;
+
 interpreter_exec::interpreter_exec() {
     if (!init_glob) {
         srl::init_err();
@@ -31,11 +34,12 @@ void interpreter_exec::build_aef() {
     assist.safe_call_dll_func_begin();
 #endif
     wrap_interpreter(
-        HND handle_f = assist.open_file(interp_conf.filename_interp, MODE_READ_FILE);
+        file_it bweas_config = assist.open_file(interp_conf.filename_interp, mf::open::rb);
         // if (!assist.exist_file(handle_f))
         //     assist.call_err("RTT004", "File: " + std::string(interp_conf.filename_interp));
 
-        lexer.set_symbols(assist.read_file(handle_f)); assist.close_file(handle_f);
+        lexer.set_symbols(assist.read_file(assist.get_ref_file(bweas_config), mf::input::read_binary));
+        assist.close_file(bweas_config);
 
         if (interp_conf.import_module) build_external_func_table();
 

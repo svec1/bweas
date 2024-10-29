@@ -1,7 +1,7 @@
 #ifndef _SCOPE__H
 #define _SCOPE__H
 
-#include "../../mdef.hpp"
+#include "../../kernel/high_level/bwtype.h"
 
 #include "../tools/call_cmd.hpp"
 #include "static_struct.hpp"
