@@ -39,14 +39,25 @@ int main(int argv, char **args) {
     //    mmap(NULL, NULL, NULL, NULL, NULL, NULL);
     //     void *f = malloc(45);
 
+    // std::string data = "Hello, World!";
+    // std::string comp_data = bwlz4::compress_data(data);
+    // assist << bwlz4::decompress_data(comp_data, data.size());
+
+    assist.set_file_log_name("log.txt");
     {
-        hax cons(args, argv);
-        assist.file_log_name("log.txt");
+        try {
 
-        bweas::bwbuilder bw;
-        bw.start_build();
+            bweas::bwbuilder bw(argv, args);
+            if (bw.get_current_mode() == 0)
+                goto end;
+            bw.start_build();
 
-        assist << std::string("Sec: " + std::to_string((double)(clock() - beg) / CLOCKS_PER_SEC));
+        end:
+            assist << std::string("Sec: " + std::to_string((double)(clock() - beg) / CLOCKS_PER_SEC));
+        }
+        catch (bweas::exception::bwbuilder_excp &excp) {
+            assist.call_err(excp.get_assist_err(), excp.what());
+        }
     }
 
     return 0;

@@ -1,6 +1,11 @@
 #ifndef _CONF_VAR__H
 #define _CONF_VAR__H
 
+#define DEFAULT_BWEAS_JSON_CONFIG                                                                                      \
+    "{ \
+    \"package\": \"default\" \
+    }"
+
 #if defined(WIN)
 
 #define RELEASE_FLAGS_COMPILER_CPP                                                                                     \

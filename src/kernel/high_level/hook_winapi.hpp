@@ -28,13 +28,10 @@
 
 extern "C"
 {
-    void
-    _winapi_call_hook();
-    void
-    _winapi_call_remove();
+    void _winapi_call_hook();
+    void _winapi_call_remove();
 
-    BOOL
-    _winapi_call_knw_was_hook();
+    BOOL _winapi_call_knw_was_hook();
 }
 
 #endif

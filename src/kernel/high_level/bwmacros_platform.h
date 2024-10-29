@@ -13,6 +13,7 @@
 #else
 #if defined(_WIN32) || defined(_WIN64)
 #define WIN
+#include <Windows.h>
 #endif
 #endif
 
@@ -21,10 +22,5 @@
 #else
 #define X32
 #endif
-
-#define is_digit(ch) (ch >= '0' && ch <= '9')
-#define indch(ind, size_src)                                                                                           \
-    if (ind < 0 || ind >= size_src)                                                                                    \
-    return NULL
 
 #endif

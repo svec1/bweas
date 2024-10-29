@@ -1,7 +1,7 @@
 #ifndef TOKEN__H
 #define TOKEN__H
 
-#include "../../kernel/low_level/type.h"
+#include "../../kernel/high_level/bwtype.h"
 #include <string>
 
 namespace token_expr {

@@ -2,12 +2,15 @@
 
 using namespace module;
 
+using mf = assistant::file::mode_file;
+using file_it = assistant::file_it;
+
 void mdl_manager::import_module_decl(const char *import_file) {
-    HND handle_f = assist.open_file(import_file, MODE_READ_FILE);
-    if (!assist.exist_file(handle_f))
+    file_it module_imp = assist.open_file(import_file, mf::open::rb);
+    if (!assist.exist_file(module_imp))
         assist.call_err("RTT004", "File: " + std::string(import_file));
-    std::string buf = assist.read_file(handle_f);
-    assist.close_file(handle_f);
+    std::string buf = assist.read_file(assist.get_ref_file(module_imp), mf::input::read_binary);
+    assist.close_file(module_imp);
 
     std::pair<std::vector<srl::token>, std::vector<std::string>> data_after_parse = srl::parser(buf);
 
