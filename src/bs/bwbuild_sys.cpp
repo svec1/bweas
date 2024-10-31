@@ -15,7 +15,6 @@ using mf = assistant::file::mode_file;
 using file_it = assistant::file_it;
 
 bwbuilder::bwbuilder(int argv, char **args) {
-    assist << "Initializing system build - bweas " + bwbuilde_ver.get_str_version();
     if (!init_glob) {
         assist.add_err("BWS000", "Unable to open configuration file \'bweasconf.txt\'");
         assist.add_err("BWS001", "Incorrect cache structure");
@@ -29,6 +28,7 @@ bwbuilder::bwbuilder(int argv, char **args) {
 
         assist.add_err("BWS-HAX000", "Unknown parameter");
         assist.add_err("BWS-HAX001", "The package command is a separate subroutine");
+        assist.add_err("BWS-HAX002", "The package routine takes two parameters");
 
         init_glob = 1;
     }
@@ -36,7 +36,13 @@ bwbuilder::bwbuilder(int argv, char **args) {
     std::vector<std::string> vec_args;
     for (u32t i = 0; i < argv; ++i)
         vec_args.push_back(args[i]);
+
     handle_args(vec_args);
+
+    if (mode_bweas != mode_working::build_package) {
+        assist << "Initializing system build - bweas " + bwbuilde_ver.get_str_version();
+        load_json_config(name_bweas_prg);
+    }
 }
 
 void bwbuilder::handle_args(std::vector<std::string> args) {
@@ -44,123 +50,151 @@ void bwbuilder::handle_args(std::vector<std::string> args) {
     name_bweas_prg = args[0];
     path_bweas_config = std::filesystem::current_path().string();
 
+    if (args.size() == 1)
+        mode_bweas = mode_working::collect_cfg;
+
     std::string path_json_cfg_package;
 
-    bool expected_path = 0;
+    bool expected_path_bweas_config = 1, expected_path_to_build = 0;
     bool expected_path_json_cfg_package = 0, expected_path_luad_src_generator = 0;
     for (u32t i = 1; i < args.size(); ++i) {
-        if (expected_path) {
-            path_build = args[i];
-            expected_path = 0;
-        }
-        else if (expected_path_json_cfg_package) {
-            path_json_cfg_package = args[i];
-            expected_path_json_cfg_package = 0;
-            expected_path_luad_src_generator = 1;
-        }
-        else if (expected_path_luad_src_generator) {
-            bwpackage::data_bw_package data_package;
-            const file_it &json_config_package = assist.open_file(path_json_cfg_package, mf::open::r);
-            const file_it &lua_src_generator_package = assist.open_file(args[i], mf::open::r);
-            if (!assist.exist_file(json_config_package))
-                throw bwbuilder_excp(path_json_cfg_package, "006");
-            else if (!assist.exist_file(lua_src_generator_package))
-                throw bwbuilder_excp(args[i], "007");
-            data_package.json_config =
-                assist.read_file(assist.get_ref_file(json_config_package), mf::input::read_default);
-            data_package.src_lua_generator =
-                assist.read_file(assist.get_ref_file(lua_src_generator_package), mf::input::read_default);
-
-            assist.close_file(lua_src_generator_package);
-            assist.close_file(json_config_package);
-
-            std::string pckg = loaded_package.create(data_package);
-            file_it package = assist.open_file(std::filesystem::current_path().string() + "/" +
-                                                   loaded_package.data.cfg_package.name_package + BW_FORMAT_PACKAGE,
-                                               mf::open::w);
-            assist.write_file(assist.get_ref_file(package), pckg, mf::output::write_binary);
-            assist.close_file(package);
-            expected_path_luad_src_generator = 0;
-            mode_bweas = 0;
-            assist.next_output_important();
-            assist << "[Bweas-Package] Created: " + std::to_string(pckg.size()) + " bytes(Compression: " +
-                          std::to_string((data_package.json_config.size() + data_package.src_lua_generator.size()) -
-                                         pckg.size()) +
-                          " bytes)";
-        }
-        else if (args[i].find("--") == 0) {
+        if (args[i].find("--") == 0) {
+            if (i == 1)
+                expected_path_bweas_config = 0;
             args[i].erase(args[i].find("--"), 2);
             if (args[i] == "build") {
-                if (!path_build.empty()) {
+                if (!path_bweas_to_build.empty()) {
                     assist.next_output_important();
                     assist << " - [BWEAS]: The build folder has already been set";
                     continue;
                 }
-                else if (mode_bweas == 0) {
-                }
+                else if (mode_bweas == mode_working::build_package)
+                    throw bwbuilder_excp(args[i], "001", "-HAX");
 
-                mode_bweas = 2;
-                expected_path = 1;
+                if (mode_bweas == mode_working::collect_cfg)
+                    mode_bweas = mode_working::collect_cfg_w_build;
+                else
+                    mode_bweas = mode_working::build;
+                expected_path_to_build = 1;
+            }
+            else if (args[i] == "cfg") {
+                if (mode_bweas == mode_working::build)
+                    mode_bweas = mode_working::collect_cfg_w_build;
+                else
+                    mode_bweas = mode_working::collect_cfg;
+                expected_path_bweas_config = 1;
             }
             else if (args[i] == "package") {
-                if (mode_bweas == 2 && i != 2)
+                if ((mode_bweas == mode_working::build || mode_bweas == mode_working::collect_cfg) && i != 2)
                     throw bwbuilder_excp(path_json_cfg_package, "001", "-HAX");
+                mode_bweas = mode_working::build_package;
                 expected_path_json_cfg_package = 1;
             }
+            else
+                throw bwbuilder_excp("Parameter: " + args[i] + "\n" + BWEAS_HELP, "000", "-HAX");
         }
         else {
-            if (mode_bweas == 2)
+            // --cfg <arg> or arg
+            if (expected_path_bweas_config) {
+                path_bweas_config = std::filesystem::absolute(args[i]).string();
+                expected_path_bweas_config = 0;
+            }
+            // --build <arg>
+            else if (expected_path_to_build) {
+                path_bweas_to_build = std::filesystem::absolute(args[i]).string();
+                expected_path_to_build = 0;
+            }
+            // --package <arg1>
+            else if (expected_path_json_cfg_package) {
+                path_json_cfg_package = args[i];
+                expected_path_json_cfg_package = 0;
+                expected_path_luad_src_generator = 1;
+            }
+            // --package <arg2>
+            else if (expected_path_luad_src_generator) {
+                u32t size_pckg = create_package(path_json_cfg_package, args[i]);
+                expected_path_luad_src_generator = 0;
+
+                assist.next_output_important();
+                assist << "[Bweas-Package] Created: " + std::to_string(size_pckg) + " bytes";
+            }
+            else
                 throw bwbuilder_excp("Parameter: " + args[i] + "\n" + BWEAS_HELP, "000", "-HAX");
-            path_bweas_config = std::filesystem::absolute(args[i]).string();
         }
     }
+
+    if (expected_path_json_cfg_package || expected_path_luad_src_generator)
+        throw bwbuilder_excp(BWEAS_HELP, "002", "-HAX");
 }
 
-u32t bwbuilder::get_current_mode() {
+u32t bwbuilder::create_package(std::string path_json_config_package, std::string path_lua_source_generator) {
+    bwpackage::data_bw_package data_package;
+    const file_it &json_config_package = assist.open_file(path_json_config_package, mf::open::r);
+    const file_it &lua_src_generator_package = assist.open_file(path_lua_source_generator, mf::open::r);
+    if (!assist.exist_file(json_config_package))
+        throw bwbuilder_excp(path_json_config_package, "006");
+    else if (!assist.exist_file(lua_src_generator_package))
+        throw bwbuilder_excp(path_lua_source_generator, "007");
+    data_package.json_config = assist.read_file(assist.get_ref_file(json_config_package), mf::input::read_default);
+    data_package.src_lua_generator =
+        assist.read_file(assist.get_ref_file(lua_src_generator_package), mf::input::read_default);
+
+    assist.close_file(lua_src_generator_package);
+    assist.close_file(json_config_package);
+
+    std::string pckg = loaded_package.init(data_package);
+    file_it package = assist.open_file(std::filesystem::current_path().string() + "/" +
+                                           loaded_package.data.cfg_package.name_package + BW_FORMAT_PACKAGE,
+                                       mf::open::wb);
+    assist.write_file(assist.get_ref_file(package), pckg, mf::output::write_binary);
+    assist.close_file(package);
+
+    return pckg.size();
+}
+
+bwbuilder::mode_working bwbuilder::get_current_mode() {
     return mode_bweas;
 }
 
-void bwbuilder::start_build() {
-    load_json_config(name_bweas_prg);
-    file_it bweas_config = assist.open_file(MAIN_FILE, mf::open::r);
+void bwbuilder::start() {
+    if (mode_bweas == mode_working::build_package)
+        return;
+    file_it bweas_config = assist.open_file(path_bweas_config + "/" MAIN_FILE, mf::open::r);
     if (!assist.exist_file(bweas_config))
         assist.call_err("BWS000");
     assist.close_file(bweas_config);
 
-    std::filesystem::path cache_file = std::filesystem::current_path() / CACHE_FILE;
-    std::ifstream{cache_file.c_str()};
+    if (mode_bweas == mode_working::build) {
+        std::filesystem::path cache_file = std::filesystem::current_path() / CACHE_FILE;
+        if (!std::filesystem::exists(cache_file)) {
+            assist.next_output_unsuccess();
+            assist << " - [BWEAS]: Bweas cache not found";
+            return;
+        }
+        std::filesystem::path main_file = std::filesystem::current_path() / MAIN_FILE;
 
-    try {
-
-        if (std::filesystem::exists(cache_file)) {
-            std::filesystem::path main_file = std::filesystem::current_path() / MAIN_FILE;
-            std::ifstream{main_file.c_str()};
-
-            std::filesystem::file_time_type cftime = std::filesystem::last_write_time(cache_file);
-            std::filesystem::file_time_type mftime = std::filesystem::last_write_time(main_file);
-            if (mftime >= cftime)
-                goto interpreter_start;
-
+        std::filesystem::file_time_type cftime = std::filesystem::last_write_time(cache_file);
+        std::filesystem::file_time_type mftime = std::filesystem::last_write_time(main_file);
+        if (mftime >= cftime) {
             assist.next_output_important();
-            assist << " - [BWEAS]: The configuration file will not be interpreted";
-
-            deserl_cache();
-        }
-        else {
-        interpreter_start:
-            run_interpreter();
-            load_target();
-            gen_cache_target();
-            imp_data_interpreter_for_bs();
+            assist << " - [BWEAS]: The configuration file has been modified";
+            goto interpreter_start;
         }
 
+        deserl_cache();
+    }
+    else if (mode_bweas == mode_working::collect_cfg || mode_bweas == mode_working::collect_cfg_w_build) {
+    interpreter_start:
+        run_interpreter();
+        load_target();
+        gen_cache_target();
+        imp_data_interpreter_for_bs();
+    }
+
+    if (mode_bweas == mode_working::build || mode_bweas == mode_working::collect_cfg_w_build) {
         assist.next_output_important();
         assist << "*Build start time: " + assist.get_time();
-
         build_targets();
-    }
-    catch (const bwbuilder_excp &excp) {
-        assist.call_err(excp.get_assist_err(), std::string(excp.what()));
     }
 }
 
@@ -180,28 +214,24 @@ void bwbuilder::load_json_config(std::string current_name_bweas_prg) {
     nlohmann::json config_json;
     std::string name_package;
     file_it file_json_config = assist.open_file(bweas_path, mf::open::r);
-    try {
-        if (!assist.exist_file(file_json_config)) {
-            assist.get_ref_file(file_json_config).open(bweas_path, mf::open::w);
-            assist.write_file(assist.get_ref_file(file_json_config), DEFAULT_BWEAS_JSON_CONFIG);
-            assist.close_file(file_json_config);
+    if (!assist.exist_file(file_json_config)) {
+        assist.get_ref_file(file_json_config).open(mf::open::w);
+        assist.write_file(assist.get_ref_file(file_json_config), DEFAULT_BWEAS_JSON_CONFIG);
+        assist.close_file(file_json_config);
 
-            config_json = nlohmann::json::parse(DEFAULT_BWEAS_JSON_CONFIG);
-        }
-        else {
-            config_json =
-                nlohmann::json::parse(assist.read_file(assist.get_ref_file(file_json_config), mf::input::read_default));
-            assist.close_file(file_json_config);
-        }
+        config_json = nlohmann::json::parse(DEFAULT_BWEAS_JSON_CONFIG);
+    }
+    else {
+        config_json =
+            nlohmann::json::parse(assist.read_file(assist.get_ref_file(file_json_config), mf::input::read_default));
+        assist.close_file(file_json_config);
+    }
 
-        if (config_json.contains("package") && config_json["package"].is_null()) {
-            throw bwbuilder_excp("At least one package must be defined", "005");
-        }
-        name_package = config_json["package"];
+    if (config_json.contains("package") && config_json["package"].is_null()) {
+        throw bwbuilder_excp("At least one package must be defined", "005");
     }
-    catch (std::exception &excp) {
-        throw bwbuilder_excp(excp.what(), "005");
-    }
+
+    name_package = config_json["package"];
     std::string path_to_package = assist.get_path_program() + "/packages/" + name_package + BW_FORMAT_PACKAGE;
     std::string raw_data_package;
     file_it package = assist.open_file(path_to_package, mf::open::rb);
@@ -210,12 +240,9 @@ void bwbuilder::load_json_config(std::string current_name_bweas_prg) {
     raw_data_package = assist.read_file(assist.get_ref_file(package), mf::input::read_binary);
     assist.close_file(package);
 
-#if defined(WIN)
-    while (raw_data_package.find("\r") != raw_data_package.npos)
-        raw_data_package.erase(raw_data_package.find("\r"), 1);
-#endif
-
     loaded_package.load(raw_data_package);
+    assist.next_output_success();
+    assist << " - [BWEAS]: The package was loaded successfully(" + std::to_string(raw_data_package.size()) + " bytes)";
 }
 
 void bwbuilder::run_interpreter() {

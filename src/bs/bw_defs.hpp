@@ -14,7 +14,12 @@
 #define BWEAS_VERSION_PATCH "0"
 
 #define BWEAS_HELP                                                                                                     \
-    "bweas-call: \n\tbweas <parameter><option>... path_to_build\n\t bweas path_bweas_config <parameter><option>..."
+    "bweas-call: \n   bweas <parameter>... path_depending\n   bweas path_bweas_config <parameter>..."                  \
+    "\nAcceptable parameters:"                                                                                         \
+    "\n   --build - builds the project (either by executing the configuration file or deserializing the cache file "   \
+    "if it exists)"                                                                                                    \
+    "\n   --cfg - executes the configuration file if it has been changed and creates a new cache file"                 \
+    "\n   --package - creates a bweas package based on the transferred files (json config, lua - generator script)"
 
 namespace bweas {
 using bwarg = std::pair<std::string, std::string>;
@@ -23,7 +28,8 @@ using bwarg_files = std::pair<std::string, std::vector<std::string>>;
 using bwargs_files = std::vector<bwarg_files>;
 using bwqueue_templates = std::vector<std::shared_ptr<var::struct_sb::template_command>>;
 
-using commands = std::vector<std::string>;
+using command = std::string;
+using commands = std::vector<command>;
 
 namespace exception {
 
@@ -48,6 +54,13 @@ class bwpackage_excp : public bwbuilder_excp {
     bwpackage_excp(std::string _what_hp, std::string number_err) : bwbuilder_excp(_what_hp, number_err, "-PCKG") {
     }
     ~bwpackage_excp() noexcept override final = default;
+};
+
+class bwgenerator_excp : public bwbuilder_excp {
+  public:
+    bwgenerator_excp(std::string _what_hp, std::string number_err) : bwbuilder_excp(_what_hp, number_err, "-GNRT") {
+    }
+    ~bwgenerator_excp() noexcept override final = default;
 };
 } // namespace exception
 

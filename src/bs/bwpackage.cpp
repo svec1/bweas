@@ -15,11 +15,15 @@ bwpackage::bwpackage() {
 }
 
 std::string bwpackage::create_data_package(data_bw_package _data) {
-    return bwlz4::compress_data(BW_PACKAGE_PREFIX_BYTE BW_PACKAGE_VERSION + _data.json_config +
-                                BW_PACKAGE_SEPARATE_JSON_BYTES + _data.src_lua_generator);
+    std::string data_str = BW_PACKAGE_PREFIX_BYTE BW_PACKAGE_VERSION + _data.json_config +
+                           BW_PACKAGE_SEPARATE_JSON_BYTES + _data.src_lua_generator;
+
+    // if the files were created on windows
+    data_str.erase(std::remove(data_str.begin(), data_str.end(), '\r'), data_str.end());
+    return bwlz4::compress_data(data_str);
 }
 
-std::string bwpackage::create(data_bw_package _data) {
+std::string bwpackage::init(data_bw_package _data) {
     nlohmann::json config_json = nlohmann::json::parse(_data.json_config);
     data.cfg_package.name_package = config_json["name"];
     data.cfg_package.bw_version = var::struct_sb::version(config_json["bweas version"]);
@@ -60,5 +64,5 @@ void bwpackage::load(std::string raw_data_package) {
     data_package.json_config.erase(data_package.json_config.find(BW_PACKAGE_SEPARATE_JSON_BYTES));
     data_package.src_lua_generator.erase(0, data_package.src_lua_generator.find(BW_PACKAGE_SEPARATE_JSON_BYTES) +
                                                 BW_PACKAGE_SEPARATE_JSON_BYTES_LENGHT);
-    create(data_package);
+    init(data_package);
 }

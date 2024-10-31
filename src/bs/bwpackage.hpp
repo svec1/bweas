@@ -37,7 +37,7 @@ class bwpackage {
     };
 
     static std::string create_data_package(data_bw_package _data);
-    std::string create(data_bw_package _data);
+    std::string init(data_bw_package _data);
     void load(std::string raw_data_package);
 
   public:

@@ -15,11 +15,12 @@
 
 #define CHECK_OPEN_FR()                                                                                                \
     if (file.mode_open != file::mode_file::open::rb && file.mode_open != file::mode_file::open::r)                     \
-        call_err("KNL001", file.path_to.string());
+        call_err("KNL003", file.path_to.string());
 
 #define CHECK_OPEN_FW()                                                                                                \
-    if (file.mode_open != file::mode_file::open::w && file.mode_open != file::mode_file::open::wa)                     \
-        call_err("KNL000", file.path_to.string());
+    if (file.mode_open != file::mode_file::open::w && file.mode_open != file::mode_file::open::wa &&                   \
+        file.mode_open != file::mode_file::open::wb)                                                                   \
+        call_err("KNL002", file.path_to.string());
 
 class assistant {
   public:
@@ -48,7 +49,11 @@ class assistant {
                 // open for overwrite or create file with writing
                 w,
                 // open for writes to the end of the file
-                wa
+                wa,
+                // open for overwrite or create file with writing of binary
+                wb,
+                // open for writes to the end of the file of binary
+                wba
             };
 
             // mode of reading
@@ -95,7 +100,7 @@ class assistant {
             return *this;
         }
 
-        void open(std::filesystem::path _path_to, mode_file::open _mode_open) {
+        void open(mode_file::open _mode_open, std::filesystem::path _path_to = {}) {
             path_to = _path_to;
             mode_open = _mode_open;
             open();
@@ -109,11 +114,15 @@ class assistant {
                 stream.open(path_to.string(), std::ios::in);
             else if (mode_open == mode_file::open::w)
                 stream.open(path_to.string(), std::ios::out | std::ios::trunc);
+            else if (mode_open == mode_file::open::wb)
+                stream.open(path_to.string(), std::ios::out | std::ios::binary | std::ios::trunc);
+            else if (mode_open == mode_file::open::wba)
+                stream.open(path_to.string(), std::ios::out | std::ios::binary | std::ios::app);
             else
                 stream.open(path_to.string(), std::ios::out | std::ios::app);
 
             if (!stream.is_open())
-                throw std::runtime_error("Failed to open file!");
+                throw std::runtime_error("[" + path_to.string() + "] Failed to open file!");
 
             file_opened = 1;
         }

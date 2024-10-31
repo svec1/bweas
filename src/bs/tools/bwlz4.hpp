@@ -15,7 +15,8 @@ static inline std::string compress_data(std::string data) {
         return "";
     char *comp_data = (char *)malloc(LZ4_compressBound(data.size()));
     i32t size_comp_data;
-    if ((size_comp_data = LZ4_compress(data.c_str(), comp_data, data.size())) <= 0) {
+    if ((size_comp_data = LZ4_compress_default(data.c_str(), comp_data, data.size(), LZ4_compressBound(data.size()))) <=
+        0) {
         free(comp_data);
         return "";
     }
