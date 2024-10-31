@@ -17,8 +17,10 @@ extern "C" int init_hook();
 #endif
 
 assistant::assistant() {
-    err_s.emplace_back("KNL000", "File opened for reading", 0);
-    err_s.emplace_back("KNL001", "File opened for writing", 0);
+    err_s.emplace_back("KNL000", "Unable to open file", 0);
+    err_s.emplace_back("KNL001", "Unable to close file", 0);
+    err_s.emplace_back("KNL002", "File opened for reading", 1);
+    err_s.emplace_back("KNL003", "File opened for writing", 2);
 }
 assistant::assistant(bool _output, bool _log) : output(_output), log(_log) {
 }
@@ -71,7 +73,10 @@ void assistant::call_err(std::string name_err, std::string addit) {
 #if defined(WIN)
     SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 4);
 #endif
-    this->operator<<(it->name_e + "(" + std::to_string(it->ind) + "): " + it->desc_e + "\nDetail: [" + addit + "]");
+    if (addit.empty())
+        this->operator<<(it->name_e + "(" + std::to_string(it->ind) + ")");
+    else
+        this->operator<<(it->name_e + "(" + std::to_string(it->ind) + "): " + it->desc_e + "\nDetail: [" + addit + "]");
 #if defined(WIN)
     SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 7);
 #endif
@@ -79,10 +84,22 @@ void assistant::call_err(std::string name_err, std::string addit) {
 }
 
 assistant::file_it assistant::open_file(std::string name_file, file::mode_file::open mode) {
-    files.emplace_back(std::filesystem::absolute(name_file), mode);
-    return files.size() - 1;
+    try {
+        file_it it = get_iterator_file(name_file);
+        if (exist_file(it) && !(files.begin() + it)->file_opened) {
+            files[it].open(mode);
+            return it;
+        }
+        files.emplace_back(std::filesystem::absolute(name_file), mode);
+        return files.size() - 1;
+    }
+    catch (std::exception &excp) {
+        call_err("KNL000", excp.what());
+    }
 }
 void assistant::close_file(assistant::file_it file) {
+    if (!exist_file(file))
+        call_err("KNL001");
     files.erase(files.begin() + file);
 }
 bool assistant::exist_file(file_it file) {
@@ -132,8 +149,8 @@ void assistant::write_file(file &file, std::string buf, file::mode_file::output 
 std::string assistant::get_time() {
     auto time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
     tm *time_now = localtime(&time);
-    return std::to_string(time_now->tm_mday) + " " + std::to_string(time_now->tm_hour) + ":" +
-           std::to_string(time_now->tm_min);
+    return std::to_string(time_now->tm_mon) + "." + std::to_string(time_now->tm_mday) + " " +
+           std::to_string(time_now->tm_hour) + ":" + std::to_string(time_now->tm_min);
 }
 
 void assistant::next_output_unsuccess() {

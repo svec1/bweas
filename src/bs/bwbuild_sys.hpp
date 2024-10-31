@@ -34,12 +34,35 @@ class bwbuilder {
     ~bwbuilder() = default;
 
   public:
-    u32t get_current_mode();
+    enum mode_working {
+        collect_cfg = 0,
+        build,
+        collect_cfg_w_build,
+        build_package,
+        undef
+    };
 
-    void start_build();
+    mode_working get_current_mode();
+
+    void start();
 
   protected:
+    // Controls how bweas works, depending on the arguments provided.
+    // -----
+    // ### Struct of call bweas:
+    // #### <arg1>(mode), <arg2>(path_depending)...
+    // #### <arg1>(path_to_config)
+    // --------------------------------------------------------------
+    // arg1 (starts with --):
+    //  --cfg - executes the configuration file if it has been changed and creates a new cache file
+    //
+    //  --build - builds the project (either by executing the configuration file or deserializing the cache file if
+    //            it exists)
+    //  --package - creates a bweas package based on the transferred files (json config, lua - generator script)
+    //
     void handle_args(std::vector<std::string> args);
+    // Creates a bweas package based on the provided package configuration json file
+    u32t create_package(std::string path_json_config_package, std::string path_lua_source_generator);
     // loads the bweas json config
     void load_json_config(std::string current_name_bweas_prg);
     // running the interpreter with the configuration
@@ -86,8 +109,8 @@ class bwbuilder {
     static inline bool init_glob{0};
 
     std::string name_bweas_prg;
-    std::string path_bweas_config, path_build;
-    u32t mode_bweas{1};
+    std::string path_bweas_config, path_bweas_to_build;
+    mode_working mode_bweas{mode_working::undef};
 
     var::struct_sb::version bwbuilde_ver{"0.0.1"};
     bool log{1}, output_log{1};

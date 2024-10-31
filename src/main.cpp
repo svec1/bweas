@@ -3,6 +3,8 @@
 
 #include "bs/bwbuild_sys.hpp"
 
+#include "bs/tools/bwlua.hpp"
+
 int main(int argv, char **args) {
     clock_t beg = clock();
     /*
@@ -43,16 +45,17 @@ int main(int argv, char **args) {
     // std::string comp_data = bwlz4::compress_data(data);
     // assist << bwlz4::decompress_data(comp_data, data.size());
 
-    assist.set_file_log_name("log.txt");
+    // assist.set_file_log_name("log.txt");
+    // bwlua::lua l("function _f(n, b, y, h) io.write(n*y+h) io.write(b) end");
+
+    // for (u32t i = 0; i < 233333; ++i)
+    //     l.call_function<void, int, const char *, int, int>("_f", i + 1, "lox", i, i - 1);
+    // return 0;
     {
         try {
 
             bweas::bwbuilder bw(argv, args);
-            if (bw.get_current_mode() == 0)
-                goto end;
-            bw.start_build();
-
-        end:
+            bw.start();
             assist << std::string("Sec: " + std::to_string((double)(clock() - beg) / CLOCKS_PER_SEC));
         }
         catch (bweas::exception::bwbuilder_excp &excp) {
