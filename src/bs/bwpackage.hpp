@@ -41,6 +41,9 @@ class bwpackage {
     void load(std::string raw_data_package);
 
   public:
+    bool is_init();
+
+  public:
     package data;
 
   private:

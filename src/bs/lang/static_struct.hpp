@@ -56,6 +56,9 @@
 #define NAME_FIELD_PROJECT_STD_CPP "T_PROJECT_STANDART_CPP"
 #define NAME_FIELD_PROJECT_SRC_FILES "T_PROJECT_SRC_FILES"
 
+#define FEATURE_FIELD_BS_CURRENT_IF "FBS_CURRENT_INPUT_FILE"
+#define FEATURE_FIELD_BS_CURRENT_OF "FBS_CURRENT_OUTPUT_FILE"
+
 namespace var {
 namespace struct_sb {
 
@@ -158,7 +161,7 @@ struct version {
     version(u32t mj, u32t mn, u32t ptch) : major{mj}, minor{mn}, patch{ptch} {
     }
 
-    std::string get_str_version() {
+    std::string get_str_version() const {
         return std::to_string(major) + "." + std::to_string(minor) + "." + std::to_string(patch);
     }
 

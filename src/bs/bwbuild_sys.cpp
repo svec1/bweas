@@ -20,7 +20,7 @@ bwbuilder::bwbuilder(int argv, char **args) {
         assist.add_err("BWS001", "Incorrect cache structure");
         assist.add_err("BWS002", "Unable to generate command for target");
         assist.add_err("BWS003", "Unable to generate cache");
-        assist.add_err("BWS004", "External error while calling command");
+        assist.add_err("BWS004", "Failed build, external error while calling command");
         assist.add_err("BWS005", "Incorrect structure of the bweas-json configuration file");
         assist.add_err("BWS006", "The bweas-json configuration for package package file was not found");
         assist.add_err("BWS007", "The bweas-lua generator for package file was not found");
@@ -41,7 +41,7 @@ bwbuilder::bwbuilder(int argv, char **args) {
 
     if (mode_bweas != mode_working::build_package) {
         assist << "Initializing system build - bweas " + bwbuilde_ver.get_str_version();
-        load_json_config(name_bweas_prg);
+        init(name_bweas_prg);
     }
 }
 
@@ -208,7 +208,7 @@ void bwbuilder::switch_output_log(u32t value) {
     assist.switch_otp(output_log);
 }
 
-void bwbuilder::load_json_config(std::string current_name_bweas_prg) {
+void bwbuilder::init(std::string current_name_bweas_prg) {
     std::string bweas_path = assist.get_path_program() + "/" + JSON_CONFIG_FILE;
 
     nlohmann::json config_json;
@@ -227,22 +227,34 @@ void bwbuilder::load_json_config(std::string current_name_bweas_prg) {
         assist.close_file(file_json_config);
     }
 
-    if (config_json.contains("package") && config_json["package"].is_null()) {
-        throw bwbuilder_excp("At least one package must be defined", "005");
+    if (config_json.contains("package")) {
+        if (config_json["package"].is_null())
+            throw bwbuilder_excp("At least one package must be defined", "005");
+
+        name_package = config_json["package"];
+        std::string path_to_package = assist.get_path_program() + "/packages/" + name_package + BW_FORMAT_PACKAGE;
+        std::string raw_data_package;
+        file_it package = assist.open_file(path_to_package, mf::open::rb);
+        if (!assist.exist_file(package))
+            throw bwbuilder_excp(path_to_package, "008");
+        raw_data_package = assist.read_file(assist.get_ref_file(package), mf::input::read_binary);
+        assist.close_file(package);
+
+        loaded_package.load(raw_data_package);
+        assist.next_output_success();
+        assist << " - [BWEAS]: The package was loaded successfully(" + std::to_string(raw_data_package.size()) +
+                      " bytes)";
     }
-
-    name_package = config_json["package"];
-    std::string path_to_package = assist.get_path_program() + "/packages/" + name_package + BW_FORMAT_PACKAGE;
-    std::string raw_data_package;
-    file_it package = assist.open_file(path_to_package, mf::open::rb);
-    if (!assist.exist_file(package))
-        throw bwbuilder_excp(path_to_package, "008");
-    raw_data_package = assist.read_file(assist.get_ref_file(package), mf::input::read_binary);
-    assist.close_file(package);
-
-    loaded_package.load(raw_data_package);
-    assist.next_output_success();
-    assist << " - [BWEAS]: The package was loaded successfully(" + std::to_string(raw_data_package.size()) + " bytes)";
+    if (!config_json.contains("use genlua") || !config_json["use genlua"].is_number_integer())
+        throw bwbuilder_excp("The use of the lua generator is not defined", "005");
+    else if (config_json["use genlua"] == 0) {
+        generator = bwGenerator::createGeneratorInt(bwign0_1v);
+    }
+    else {
+        if (!loaded_package.is_init())
+            throw bwbuilder_excp("At least one package must be defined", "005");
+        generator = bwGenerator::createGeneratorLua(loaded_package.data.src_lua_generator);
+    }
 }
 
 void bwbuilder::run_interpreter() {
@@ -561,35 +573,16 @@ u32t bwbuilder::deserl_cache() {
     assist.next_output_success();
     assist << " - [BWEAS]: Was loaded " + std::to_string(templates.size()) + " template of command!";
 
-    /*
-    for (u32t i = 0; i < templates.size(); ++i) {
-        assist << " --- " + std::to_string(i) + ". " + templates[i].name;
-        assist << " --- Name of call component: " + templates[i].name_call_component;
-        assist << " --- Return value: " + templates[i].returnable;
-        assist << " --- Parameters: ";
-        for (u32t j = 0; j < templates[i].name_accept_params.size(); ++j)
-            assist << " ---  - " + templates[i].name_accept_params[j];
-
-        assist << " --- Use externally parameters: ";
-        for (u32t j = 0; j < templates[i].name_args.size(); ++j)
-            assist << " ---  - " + templates[i].name_args[j];
-    }
-
-    assist << " - The following call component templates were loaded:";
-    for (u32t i = 0; i < extern_args.size(); ++i) {
-        assist << extern_args[i].first + " " + extern_args[i].second;
-    }
-    */
-
     return 0;
 }
 
 void bwbuilder::build_targets() {
     assist << " - [BWEAS]: Building targets...";
 
-    std::string command;
+    global_extern_args.push_back(std::pair<std::string, std::string>("", ""));
 
-    bwargs_files global_internal_args;
+    generator->set_global_data(call_components, global_extern_args);
+    generator->init();
 
     for (u32t i = 0; i < out_targets.size(); ++i) {
         if (out_targets[i].prj.vec_templates.size() == 0)
@@ -597,308 +590,18 @@ void bwbuilder::build_targets() {
 
         assist << "BUILDING A TARGET -" + out_targets[i].name_target;
 
-        bool template_for_ev_files = 0;
-        u32t left_src_files = out_targets[i].prj.src_files.size();
-        u32t count_uses_input_files = 0, count_uses_output_pattern_files = 0;
-        std::string input_file_curr, output_files_curr;
-
-        bwarg_files return_internal_arg;
-
         bwqueue_templates bw_tcmd;
         set_queue_templates(create_stack_target_templates(out_targets[i]), bw_tcmd);
 
-        // generating command on current a template
-        while (bw_tcmd.size() || template_for_ev_files) {
-            if (template_for_ev_files && left_src_files == 0) {
-                template_for_ev_files = 0;
-                count_uses_output_pattern_files = 0;
+        commands cmd_s = generator->gen_commands(out_targets[i], bw_tcmd);
 
-                global_internal_args.push_back(return_internal_arg);
-                return_internal_arg.second.clear();
-
-                bw_tcmd.erase(bw_tcmd.begin());
-                if (!bw_tcmd.size())
-                    break;
-            }
-
-            const auto &template_tmp = bw_tcmd[0];
-            const auto &call_component_tmp =
-                std::find_if(call_components.begin(), call_components.end(),
-                             [template_tmp](const var::struct_sb::call_component &ccmp_tmp) {
-                                 return ccmp_tmp.name == template_tmp->name_call_component;
-                             });
-
-            if (!template_for_ev_files)
-                return_internal_arg.first = template_tmp->returnable;
-
-            std::string current_arg;
-
-            command += call_component_tmp->name_program + " ";
-            if (left_src_files != 0)
-                input_file_curr = out_targets[i].prj.src_files[out_targets[i].prj.src_files.size() - left_src_files];
-
-            if (call_component_tmp->pattern_ret_files.find(".") == call_component_tmp->pattern_ret_files.npos)
-                output_files_curr = call_component_tmp->pattern_ret_files +
-                                    std::to_string(out_targets[i].prj.src_files.size() - left_src_files);
-            else
-                output_files_curr = get_file_w_index(call_component_tmp->pattern_ret_files,
-                                                     out_targets[i].prj.src_files.size() - left_src_files);
-
-            for (u32t j = 0; j < template_tmp->name_args.size(); ++j) {
-                current_arg = template_tmp->name_args[j];
-                if (current_arg.find("{") == current_arg.npos) {
-                    const auto &extern_arg =
-                        std::find_if(global_extern_args.begin(), global_extern_args.end(),
-                                     [current_arg](const std::pair<std::string, std::string> extern_arg_tmp) {
-                                         return extern_arg_tmp.first == current_arg;
-                                     });
-                    if (extern_arg == global_extern_args.end())
-                        throw bwbuilder_excp("[" + template_tmp->name +
-                                                 "] The specified external parameter does not exist - " + current_arg,
-                                             "002");
-
-                    command += extern_arg->second + " ";
-                    continue;
-                }
-                else {
-                    if (current_arg.find("}") == current_arg.npos)
-                        throw bwbuilder_excp("[" + template_tmp->name + "] Incorrect use of arguments in template - " +
-                                                 current_arg,
-                                             "002");
-                    if (current_arg.find("STR{") == 0) {
-                        current_arg.erase(0, 4);
-                        current_arg.erase(current_arg.find("}"));
-                    }
-                    else if (current_arg.find("ACP{") == 0) {
-                        current_arg.erase(0, 4);
-                        current_arg.erase(current_arg.find("}"));
-
-                        const auto &it =
-                            find_if(global_internal_args.begin(), global_internal_args.end(),
-                                    [current_arg](const std::pair<std::string, std::vector<std::string>> internal_arg) {
-                                        return current_arg == internal_arg.first;
-                                    });
-                        if (it == global_internal_args.end())
-                            throw bwbuilder_excp("[" + template_tmp->name +
-                                                     "] The specified internal parameter does not exist - " +
-                                                     current_arg,
-                                                 "002");
-                        const auto &it_str = it->first.find(":");
-                        if (it_str == it->first.npos) {
-                            current_arg = "";
-                            for (u32t k = 0; k < it->second.size(); ++k) {
-                                current_arg += it->second[k];
-                                if (k < it->second.size() - 1)
-                                    current_arg += " ";
-                            }
-
-                            count_uses_input_files = it->second.size();
-                        }
-                        else {
-                            current_arg.erase(0, it_str + 1);
-                            std::string mask = current_arg;
-
-                            if (std::atoll(mask.c_str()) != 0) {
-                                if (std::atoll(mask.c_str()) == 1) {
-                                    current_arg = input_file_curr;
-                                    template_for_ev_files = 1;
-                                }
-                                else {
-                                    for (u32t k = 0; k < it->second.size() && k < std::atoll(mask.c_str());
-                                         ++k, ++count_uses_input_files) {
-                                        current_arg += it->second[k];
-                                        if (k < it->second.size() - 1)
-                                            current_arg += " ";
-                                    }
-                                }
-                                goto add_current_args_to_cmd;
-                            }
-                            current_arg = "";
-                            std::vector<std::string> slc_files = bwfile::file_slc_mask(mask, it->second);
-                            for (u32t k = 0; k < slc_files.size(); ++k) {
-                                current_arg += slc_files[k];
-                                if (k < slc_files.size() - 1)
-                                    current_arg += " ";
-                            }
-
-                            count_uses_input_files += slc_files.size();
-                        }
-                    }
-                    else if (current_arg.find("FTRS{") == 0) {
-                        current_arg.erase(0, 5);
-                        current_arg.erase(current_arg.find("}"));
-
-                        std::string attribute;
-                        size_t it_str = current_arg.find(":");
-                        if (it_str != current_arg.npos) {
-                            attribute = current_arg;
-                            attribute.erase(0, it_str + 1);
-                            current_arg.erase(it_str, attribute.size() + 1);
-                        }
-
-                        if (current_arg == FEATURE_FIELD_BS_CURRENT_IF && left_src_files != 0)
-                            current_arg = input_file_curr;
-                        else if (current_arg == FEATURE_FIELD_BS_CURRENT_OF) {
-                            if (attribute == "all" || attribute.empty()) {
-                                if (left_src_files < out_targets[i].prj.src_files.size() && left_src_files > 0) {
-                                    current_arg = output_files_curr;
-                                    return_internal_arg.second.push_back(output_files_curr);
-                                }
-                                else {
-                                    std::string tmp_output_file_index;
-
-                                    current_arg = "";
-                                    for (; count_uses_output_pattern_files < count_uses_input_files;
-                                         ++count_uses_output_pattern_files) {
-                                        tmp_output_file_index = get_file_w_index(call_component_tmp->pattern_ret_files,
-                                                                                 count_uses_output_pattern_files);
-
-                                        current_arg += tmp_output_file_index;
-                                        return_internal_arg.second.push_back(tmp_output_file_index);
-
-                                        if (count_uses_output_pattern_files < count_uses_input_files - 1)
-                                            current_arg += " ";
-                                    }
-                                }
-                            }
-                            else if (attribute == "1") {
-                                if (left_src_files != 0)
-                                    current_arg = output_files_curr;
-                                else
-                                    current_arg = get_file_w_index(call_component_tmp->pattern_ret_files,
-                                                                   count_uses_output_pattern_files);
-                                return_internal_arg.second.push_back(output_files_curr);
-                            }
-                            else
-                                throw bwbuilder_excp("[" + template_tmp->name +
-                                                         "] The specified attribute of feature (field) does not "
-                                                         "match the possible ones - " +
-                                                         current_arg + ": attr[" + attribute + "]",
-                                                     "002");
-
-                            goto add_current_args_to_cmd;
-                        }
-                        else
-                            throw bwbuilder_excp("[" + template_tmp->name +
-                                                     "] The specified feature (field) does not exist - " + current_arg,
-                                                 "002");
-                        template_for_ev_files = 1;
-                    }
-                    else if (current_arg.find("TRG{") == 0) {
-                        current_arg.erase(0, 4);
-                        current_arg.erase(current_arg.find("}"));
-                        if (current_arg == NAME_FIELD_TARGET_NAME)
-                            current_arg = out_targets[i].name_target;
-                        else if (current_arg == NAME_FIELD_TARGET_LIBS) {
-                            current_arg = "";
-                            for (u32t k = 0; k < out_targets[i].target_vec_libs.size(); ++k) {
-                                current_arg += out_targets[i].target_vec_libs[k];
-                                if (k < out_targets[i].target_vec_libs.size() - 1)
-                                    current_arg += " ";
-                            }
-                        }
-                        else if (current_arg == NAME_FIELD_TARGET_TYPE)
-                            current_arg = var::struct_sb::target_t_str(out_targets[i].target_t);
-                        else if (current_arg == NAME_FIELD_TARGET_CFG)
-                            current_arg = var::struct_sb::cfg_str(out_targets[i].target_cfg);
-                        else if (current_arg == NAME_FIELD_TARGET_VER)
-                            current_arg = out_targets[i].version_target.get_str_version();
-                        else if (current_arg == NAME_FIELD_PROJECT_NAME)
-                            current_arg += out_targets[i].prj.name_project;
-                        else if (current_arg == NAME_FIELD_PROJECT_VER)
-                            current_arg += out_targets[i].prj.version_project.get_str_version();
-                        else if (current_arg == NAME_FIELD_PROJECT_LANG)
-                            current_arg += var::struct_sb::lang_str(out_targets[i].prj.lang);
-                        else if (current_arg == NAME_FIELD_PROJECT_PCOMPILER)
-                            current_arg += out_targets[i].prj.path_compiler;
-                        else if (current_arg == NAME_FIELD_PROJECT_PLINKER)
-                            current_arg += out_targets[i].prj.path_linker;
-                        else if (current_arg == NAME_FIELD_PROJECT_RFCOMPILER)
-                            current_arg += out_targets[i].prj.rflags_compiler;
-                        else if (current_arg == NAME_FIELD_PROJECT_RFLINKER)
-                            current_arg += out_targets[i].prj.rflags_linker;
-                        else if (current_arg == NAME_FIELD_PROJECT_DFCOMPILER)
-                            current_arg += out_targets[i].prj.dflags_compiler;
-                        else if (current_arg == NAME_FIELD_PROJECT_DFLINKER)
-                            current_arg += out_targets[i].prj.dflags_linker;
-                        else if (current_arg == NAME_FIELD_PROJECT_STD_C)
-                            current_arg += std::to_string(out_targets[i].prj.standart_c);
-                        else if (current_arg == NAME_FIELD_PROJECT_STD_CPP)
-                            current_arg += std::to_string(out_targets[i].prj.standart_cpp);
-                        else if (current_arg.find(NAME_FIELD_PROJECT_SRC_FILES) == 0) {
-                            const auto &it_str = current_arg.find(":");
-                            if (it_str != current_arg.npos) {
-                                current_arg.erase(0, it_str + 1);
-                                std::string mask = current_arg;
-
-                                if (std::atoll(mask.c_str()) != 0) {
-                                    if (std::atoll(mask.c_str()) == 1) {
-                                        current_arg = input_file_curr;
-                                        template_for_ev_files = 1;
-                                        ++count_uses_input_files;
-                                    }
-                                    else {
-                                        for (u32t k = 0;
-                                             k < out_targets[i].prj.src_files.size() && k < std::atoll(mask.c_str());
-                                             ++k, ++count_uses_input_files) {
-                                            current_arg += out_targets[i].prj.src_files[k];
-                                            if (k < out_targets[i].prj.src_files.size() - 1)
-                                                current_arg += " ";
-                                        }
-                                    }
-                                    goto add_current_args_to_cmd;
-                                }
-                                current_arg = "";
-
-                                std::vector<std::string> slc_files =
-                                    bwfile::file_slc_mask(mask, out_targets[i].prj.src_files);
-                                for (u32t k = 0; k < slc_files.size(); ++k) {
-                                    current_arg += slc_files[k];
-                                    if (k < slc_files.size() - 1)
-                                        current_arg += " ";
-                                }
-
-                                count_uses_input_files += slc_files.size();
-                            }
-                            else {
-                                current_arg = "";
-                                for (u32t k = 0; k < out_targets[i].prj.src_files.size(); ++k) {
-                                    current_arg += out_targets[i].prj.src_files[k];
-                                    if (k < out_targets[i].prj.src_files.size() - 1)
-                                        current_arg += " ";
-                                }
-
-                                count_uses_input_files = out_targets[i].prj.src_files.size();
-                            }
-                        }
-                        else
-                            throw bwbuilder_excp(
-                                "[" + template_tmp->name + "] There is no such parameter - " + current_arg, "002");
-                    }
-                add_current_args_to_cmd:
-                    command += current_arg + " ";
-                }
-            }
-
-            assist << "WAS GENERATED COMMAND: " + command;
-
-            if (template_for_ev_files)
-                --left_src_files;
-            else {
-                if (bw_tcmd.size())
-                    bw_tcmd.erase(bw_tcmd.begin());
-                global_internal_args.push_back(return_internal_arg);
-                return_internal_arg.second.clear();
-                count_uses_output_pattern_files = 0;
-            }
+        for (const std::string &cmd : cmd_s) {
 #if defined(WIN)
-            if (system(command.c_str()))
+            if (system(cmd.c_str()))
 #elif defined(UNIX)
-            if (((int (*)(const char *))assist.get_realsystem_func())(command.c_str()))
+            if (((int (*)(const char *))assist.get_realsystem_func())(cmd.c_str()))
 #endif
-                throw bwbuilder_excp("[" + template_tmp->name + "] Command execution error - " + command, "004");
-
-            command.clear();
+                throw bwbuilder_excp("Failed build. Command execution error - " + cmd, "004");
         }
     }
 }
@@ -1006,13 +709,4 @@ void bwbuilder::imp_data_interpreter_for_bs() {
         const auto &extern_arg = _interpreter.get_current_scope().get_var_value<std::string>(ref_extern_arg->second);
         global_extern_args.push_back(std::pair<std::string, std::string>(ref_extern_arg->first, extern_arg));
     }
-}
-
-std::string bwbuilder::get_file_w_index(std::string pattern_file, u32t index) {
-    std::string name_output_file_curr = pattern_file, extension_output_file_curr = pattern_file;
-    name_output_file_curr.erase(name_output_file_curr.find("."), name_output_file_curr.size());
-    extension_output_file_curr.erase(0, extension_output_file_curr.find("."));
-    if (index != 0)
-        return name_output_file_curr + std::to_string(index) + extension_output_file_curr;
-    return name_output_file_curr + extension_output_file_curr;
 }

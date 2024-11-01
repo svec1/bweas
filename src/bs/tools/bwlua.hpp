@@ -1,8 +1,6 @@
 #ifndef BWLUA__H
 #define BWLUA__H
 
-#include "../../mdef.hpp"
-
 #include <any>
 #include <exception>
 #include <mutex>

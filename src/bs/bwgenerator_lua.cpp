@@ -2,16 +2,14 @@
 
 using namespace bweas;
 
-bwGeneratorLua::bwGeneratorLua() {
-    if (!init_glob) {
+bwGeneratorLua::bwGeneratorLua(std::string src_lua) {
+    if (!init_glob_gnlua) {
         assist.add_err("BWS-GNRT000", "Lua script not loaded");
         assist.add_err("BWS-GNRT001", "Failed to load lua script");
 
-        init_glob = 1;
+        init_glob_gnlua = 1;
     }
-}
 
-void bwGeneratorLua::load_lua(std::string src_lua) {
     try {
         lua.create__nmutex(src_lua);
     }
@@ -19,11 +17,15 @@ void bwGeneratorLua::load_lua(std::string src_lua) {
         throw exception::bwgenerator_excp(excp.what(), "001");
     }
 }
+
 void bwGeneratorLua::init() {
     if (!lua.is_created())
         throw exception::bwgenerator_excp("", "000");
 }
+void bwGeneratorLua::deleteGenerator() {
+    delete this;
+}
 
-command bwGeneratorLua::gen_commands(const var::struct_sb::target_out &, bwqueue_templates &) {
-    return "";
+commands bwGeneratorLua::gen_commands(const var::struct_sb::target_out &, bwqueue_templates &) {
+    return {};
 }
