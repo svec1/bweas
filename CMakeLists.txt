@@ -85,3 +85,5 @@ else()
 
     file(COPY ${LuaJIT_LIBRARIES} DESTINATION ${CMAKE_BINARY_DIR})
 endif()
+
+file(COPY ${CMAKE_SOURCE_DIR}/bweas-config.json DESTINATION ${CMAKE_BINARY_DIR}/Debug)

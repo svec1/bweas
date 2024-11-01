@@ -14,53 +14,93 @@ class bwIGenerator {
     bwIGenerator &operator=(const bwIGenerator &) = delete;
 
   public:
-    void set_call_components(std::vector<var::struct_sb::call_component> &ccmp) {
-        ccmp_p = std::shared_ptr<std::vector<var::struct_sb::call_component>>(
-            (std::vector<var::struct_sb::call_component> *)&ccmp,
-            [](const std::vector<var::struct_sb::call_component> *) {});
-    }
-
+    virtual void deleteGenerator() = 0;
     virtual void init() = 0;
-    virtual command gen_commands(const var::struct_sb::target_out &, bwqueue_templates &) = 0;
+    virtual commands gen_commands(const var::struct_sb::target_out &, bwqueue_templates &) = 0;
 
   protected:
     virtual ~bwIGenerator() = default;
-
-  protected:
-    std::shared_ptr<std::vector<var::struct_sb::call_component>> ccmp_p;
 };
 
 } // namespace bwInterface
 
-class bwGeneratorIntegral : public bwInterface::bwIGenerator {
-  public:
-    bwGeneratorIntegral();
+namespace tools_generator {
+extern std::string get_file_w_index(std::string pattern_file, u32t index);
+}
+
+class bwGenerator : public bwInterface::bwIGenerator {
+  protected:
+    ~bwGenerator() = default;
 
   public:
-    void set_func_generator(command (*)(const var::struct_sb::target_out &, bwqueue_templates &));
+    void set_global_data(std::vector<var::struct_sb::call_component> &ccmp, bwargs &external_args) {
+        ccmp_p = std::shared_ptr<std::vector<var::struct_sb::call_component>>(
+            (std::vector<var::struct_sb::call_component> *)&ccmp,
+            [](const std::vector<var::struct_sb::call_component> *) {});
+        external_args_p = std::shared_ptr<bwargs>((bwargs *)&external_args, [](const bwargs *) {});
+    }
 
-    void init() override final;
-    command gen_commands(const var::struct_sb::target_out &, bwqueue_templates &) override final;
+  public:
+    static inline bwGenerator *createGeneratorInt(commands (*)(const var::struct_sb::target_out &, bwqueue_templates &,
+                                                               const std::vector<var::struct_sb::call_component> &,
+                                                               const bwargs &));
+    static inline bwGenerator *createGeneratorLua(std::string);
 
-  private:
-    command (*func_p)(const var::struct_sb::target_out &, bwqueue_templates &);
-    static inline bool init_glob{0};
+  protected:
+    std::shared_ptr<std::vector<var::struct_sb::call_component>> ccmp_p;
+    std::shared_ptr<bwargs> external_args_p;
 };
 
-class bwGeneratorLua : public bwInterface::bwIGenerator {
-  public:
-    bwGeneratorLua();
+class bwGeneratorIntegral : public bwGenerator {
+    friend bwGenerator *bwGenerator::createGeneratorInt(
+        commands (*)(const var::struct_sb::target_out &, bwqueue_templates &,
+                     const std::vector<var::struct_sb::call_component> &, const bwargs &));
+
+  private:
+    bwGeneratorIntegral(commands (*)(const var::struct_sb::target_out &, bwqueue_templates &,
+                                     const std::vector<var::struct_sb::call_component> &, const bwargs &));
+    ~bwGeneratorIntegral() = default;
 
   public:
-    void load_lua(std::string src_lua);
-
     void init() override final;
-    command gen_commands(const var::struct_sb::target_out &, bwqueue_templates &) override final;
+    void deleteGenerator() override final;
+    commands gen_commands(const var::struct_sb::target_out &, bwqueue_templates &) override final;
+
+  private:
+    commands (*func_p)(const var::struct_sb::target_out &, bwqueue_templates &,
+                       const std::vector<var::struct_sb::call_component> &, const bwargs &);
+    static inline bool init_glob_gnint{0};
+};
+
+class bwGeneratorLua : public bwGenerator {
+    friend bwGenerator *bwGenerator::createGeneratorLua(std::string);
+
+  private:
+    bwGeneratorLua(std::string);
+    ~bwGeneratorLua() = default;
+
+  public:
+    void init() override final;
+    void deleteGenerator() override final;
+    commands gen_commands(const var::struct_sb::target_out &, bwqueue_templates &) override final;
 
   private:
     bwlua::lua lua;
-    static inline bool init_glob{0};
+    static inline bool init_glob_gnlua{0};
 };
+
+bwGenerator *bwGenerator::createGeneratorInt(commands (*func)(const var::struct_sb::target_out &, bwqueue_templates &,
+                                                              const std::vector<var::struct_sb::call_component> &,
+                                                              const bwargs &)) {
+    return (bwGenerator *)new bwGeneratorIntegral(func);
+}
+bwGenerator *bwGenerator::createGeneratorLua(std::string src_lua) {
+    return (bwGenerator *)new bwGeneratorLua(src_lua);
+}
+
+extern commands bwign0_1v(const var::struct_sb::target_out &trg, bwqueue_templates &templates,
+                          const std::vector<var::struct_sb::call_component> &ccmp_p, const bwargs &global_extern_args);
+
 } // namespace bweas
 
 #endif

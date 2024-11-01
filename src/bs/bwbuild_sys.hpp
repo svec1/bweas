@@ -17,9 +17,6 @@
 #define IMPORT_FILE "import-modules.imp"
 #define CACHE_FILE "bwcache"
 
-#define FEATURE_FIELD_BS_CURRENT_IF "FBS_CURRENT_INPUT_FILE"
-#define FEATURE_FIELD_BS_CURRENT_OF "FBS_CURRENT_OUTPUT_FILE"
-
 namespace bweas {
 
 class bwbuilder {
@@ -34,6 +31,7 @@ class bwbuilder {
     ~bwbuilder() = default;
 
   public:
+    // all possible bweas operating modes
     enum mode_working {
         collect_cfg = 0,
         build,
@@ -42,6 +40,7 @@ class bwbuilder {
         undef
     };
 
+    // returns the current operating mode of bweas
     mode_working get_current_mode();
 
     void start();
@@ -64,7 +63,7 @@ class bwbuilder {
     // Creates a bweas package based on the provided package configuration json file
     u32t create_package(std::string path_json_config_package, std::string path_lua_source_generator);
     // loads the bweas json config
-    void load_json_config(std::string current_name_bweas_prg);
+    void init(std::string current_name_bweas_prg);
     // running the interpreter with the configuration
     void run_interpreter();
     // generates a cache file of all targets that were created by the interpreter
@@ -94,11 +93,10 @@ class bwbuilder {
                              bwqueue_templates &target_queue_templates);
 
   private:
-    std::string get_file_w_index(std::string pattern_file, u32t index);
-
-  private:
     interpreter::interpreter_exec _interpreter;
     bwpackage loaded_package;
+
+    bwGenerator *generator;
 
     std::vector<var::struct_sb::target_out> out_targets;
     std::vector<var::struct_sb::template_command> templates;

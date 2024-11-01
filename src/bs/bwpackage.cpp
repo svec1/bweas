@@ -66,3 +66,7 @@ void bwpackage::load(std::string raw_data_package) {
                                                 BW_PACKAGE_SEPARATE_JSON_BYTES_LENGHT);
     init(data_package);
 }
+
+bool bwpackage::is_init() {
+    return data.cfg_package.name_package.size();
+}
