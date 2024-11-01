@@ -78,12 +78,12 @@ if(WIN32)
     include_directories("external/detours/include")
 
     file(COPY ${LuaJIT_SRC_DIR}/${LuaJIT_NAME_LIBRARIES}.dll DESTINATION ${CMAKE_BINARY_DIR}/Debug)
+    file(COPY ${CMAKE_SOURCE_DIR}/bweas-config.json DESTINATION ${CMAKE_BINARY_DIR}/Debug)
 else()
     message(STATUS "Internal enabled interception library for securely connecting modules and plugins on a UNIX system")
     add_subdirectory(src/kernel/high_level/hook_linux_lib)
     target_link_libraries(${BW_NAME_PRJ} PUBLIC bwhook_safe)
 
     file(COPY ${LuaJIT_LIBRARIES} DESTINATION ${CMAKE_BINARY_DIR})
+    file(COPY ${CMAKE_SOURCE_DIR}/bweas-config.json DESTINATION ${CMAKE_BINARY_DIR})
 endif()
-
-file(COPY ${CMAKE_SOURCE_DIR}/bweas-config.json DESTINATION ${CMAKE_BINARY_DIR}/Debug)
