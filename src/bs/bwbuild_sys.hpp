@@ -12,13 +12,23 @@
 
 #include <stack>
 
+// bweas configuration file, defines all packages that should be loaded by the builder
 #define JSON_CONFIG_FILE "bweas-config.json"
+
+// The current file of a project. It defines all target information
 #define MAIN_FILE "bweasconf.txt"
+
+// Markup file and definitions of modules that will be loaded
 #define IMPORT_FILE "import-modules.imp"
+
+// Cache file, all information about all targets is saved there for quick access, which makes it possible not to
+// reinterpret bweasconf.txt
 #define CACHE_FILE "bwcache"
 
 namespace bweas {
 
+// Builder class. It is a holistic program. It has operating modes (mode_working), which itself determines by passing
+// parameters to it when launching programs
 class bwbuilder {
   public:
     bwbuilder() = delete;
@@ -28,7 +38,7 @@ class bwbuilder {
     bwbuilder(const bwbuilder &) = delete;
     bwbuilder &operator=(bwbuilder &&) = delete;
 
-    ~bwbuilder() = default;
+    ~bwbuilder();
 
   public:
     // all possible bweas operating modes
@@ -43,6 +53,16 @@ class bwbuilder {
     // returns the current operating mode of bweas
     mode_working get_current_mode();
 
+    // Depending on the existence of the cache file and its parameters that were transferred when the program was
+    // launched, the build begins.
+    // ----
+    // - If the option: --build was passed to the builder, the builder (if a cache file exists) will begin building the
+    // targets by deselecting the bwcache file.
+    // However, the parameter: --cfg will force the build system to interpret bweasconf.txt, creating a cache file
+    // (bwcache) based on it and also building targets.
+    // - If the parameter is specified: --package. The builder will generate a bweas package based on two files passed
+    // to it (package_config.json - the name can be anything, lua_generator.lua - the name can be anything). Details:
+    // after specifying --package you must list two files: package configuration and lua generator, respectively
     void start();
 
   protected:
@@ -69,26 +89,39 @@ class bwbuilder {
     // generates a cache file of all targets that were created by the interpreter
     u32t gen_cache_target();
 
+    // Generates a dll that will call, based on the current bweasconf.txt, functions for configuration and creation of
+    // targets. The build will be much faster if the project is large. (No implementation yet)
     void gen_DPCM();
 
   public:
+    // Sets logging to a file, 1 - yes, log, 0 - no
     void switch_log(u32t value);
+
+    // Sets output to the console, 1 - yes, output all information, 0 - no
     void switch_output_log(u32t value);
 
   private:
+    // Collects projects(out_targets) by initializing the generator and calling(bwIGenerator::gen_commands)
     void build_targets();
 
+    // Deserializes the bweas cache file
     u32t deserl_cache();
 
+    // Loads all targets from the interpreter's global scope, converting them to target_out
     void load_target();
 
+    // Imports all call templates and components declared in bweasconf.txt, which the interpreter also created
     void imp_data_interpreter_for_bs();
 
   private:
+    // Creates a stack of templates for the correct sequential generation of commands(for every targets)
     std::stack<std::string> create_stack_target_templates(const var::struct_sb::target_out &target);
+
+    // recursive function, for create_stack_target_templates
     u32t recovery_stack_templates(std::vector<var::struct_sb::template_command> &vec_templates,
                                   const std::string &name_internal_param, std::stack<std::string> &stack_templates);
 
+    // converts the stack into an ordered pattern vector
     void set_queue_templates(std::stack<std::string> &&stack_target_templates,
                              bwqueue_templates &target_queue_templates);
 
@@ -96,7 +129,7 @@ class bwbuilder {
     interpreter::interpreter_exec _interpreter;
     bwpackage loaded_package;
 
-    bwGenerator *generator;
+    bwGenerator *generator{nullptr};
 
     std::vector<var::struct_sb::target_out> out_targets;
     std::vector<var::struct_sb::template_command> templates;
@@ -110,7 +143,7 @@ class bwbuilder {
     std::string path_bweas_config, path_bweas_to_build;
     mode_working mode_bweas{mode_working::undef};
 
-    var::struct_sb::version bwbuilde_ver{"0.0.1"};
+    var::struct_sb::version bwbuilde_ver{BWEAS_VERSION_STR};
     bool log{1}, output_log{1};
 };
 } // namespace bweas

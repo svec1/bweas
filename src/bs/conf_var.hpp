@@ -3,7 +3,7 @@
 
 #define DEFAULT_BWEAS_JSON_CONFIG                                                                                      \
     "{ \
-    \"package\": \"default\" \
+        \"use genlua\": 0 \
     }"
 
 #if defined(WIN)

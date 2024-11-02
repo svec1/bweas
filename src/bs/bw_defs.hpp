@@ -1,6 +1,8 @@
 #ifndef BWDEFS__H
 #define BWDEFS__H
 
+// bweas main header file
+
 #include "lang/interpreter.hpp"
 #include "tools/exception.hpp"
 
@@ -33,6 +35,7 @@ using commands = std::vector<command>;
 
 namespace exception {
 
+// Exception class for builder only.
 class bwbuilder_excp : public bw_excp::bweas_exception {
   public:
     bwbuilder_excp(std::string _what_hp, std::string number_err, std::string prefix_err = "")
@@ -49,6 +52,7 @@ class bwbuilder_excp : public bw_excp::bweas_exception {
     std::string what_hp;
 };
 
+// Exception class for bweas-package only.
 class bwpackage_excp : public bwbuilder_excp {
   public:
     bwpackage_excp(std::string _what_hp, std::string number_err) : bwbuilder_excp(_what_hp, number_err, "-PCKG") {
@@ -56,6 +60,7 @@ class bwpackage_excp : public bwbuilder_excp {
     ~bwpackage_excp() noexcept override final = default;
 };
 
+// Exception class for bweas-generator only.
 class bwgenerator_excp : public bwbuilder_excp {
   public:
     bwgenerator_excp(std::string _what_hp, std::string number_err) : bwbuilder_excp(_what_hp, number_err, "-GNRT") {

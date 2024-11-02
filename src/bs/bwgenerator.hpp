@@ -9,6 +9,7 @@ namespace bweas {
 
 namespace bwInterface {
 
+// Interface class that defines the structure of generator classes
 class bwIGenerator {
   public:
     bwIGenerator &operator=(const bwIGenerator &) = delete;
@@ -25,9 +26,13 @@ class bwIGenerator {
 } // namespace bwInterface
 
 namespace tools_generator {
-extern std::string get_file_w_index(std::string pattern_file, u32t index);
-}
 
+// Generates a file name based on the pattern and the passed index of the given file
+extern std::string get_file_w_index(std::string pattern_file, u32t index);
+
+} // namespace tools_generator
+
+// An abstract class that defines the creation of generator classes and is also a generalization
 class bwGenerator : public bwInterface::bwIGenerator {
   protected:
     ~bwGenerator() = default;
@@ -46,11 +51,19 @@ class bwGenerator : public bwInterface::bwIGenerator {
                                                                const bwargs &));
     static inline bwGenerator *createGeneratorLua(std::string);
 
+  public:
+    static bool is_exist(bwGenerator *generator) {
+        if (!generator)
+            return 0;
+        return 1;
+    }
+
   protected:
     std::shared_ptr<std::vector<var::struct_sb::call_component>> ccmp_p;
     std::shared_ptr<bwargs> external_args_p;
 };
 
+// The class defines the API for internal generators, i.e. built into bweas as basic
 class bwGeneratorIntegral : public bwGenerator {
     friend bwGenerator *bwGenerator::createGeneratorInt(
         commands (*)(const var::struct_sb::target_out &, bwqueue_templates &,
@@ -72,6 +85,7 @@ class bwGeneratorIntegral : public bwGenerator {
     static inline bool init_glob_gnint{0};
 };
 
+// The class defines the API for generators written in lua and presented in bweas packages
 class bwGeneratorLua : public bwGenerator {
     friend bwGenerator *bwGenerator::createGeneratorLua(std::string);
 
@@ -98,6 +112,7 @@ bwGenerator *bwGenerator::createGeneratorLua(std::string src_lua) {
     return (bwGenerator *)new bwGeneratorLua(src_lua);
 }
 
+// First and basic template-based command generator
 extern commands bwign0_1v(const var::struct_sb::target_out &trg, bwqueue_templates &templates,
                           const std::vector<var::struct_sb::call_component> &ccmp_p, const bwargs &global_extern_args);
 

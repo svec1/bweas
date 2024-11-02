@@ -1,4 +1,8 @@
 #ifndef BWLUA__H
+
+// Header-library bwlua - svec
+// This library is a wrapper around luajit
+// **************************************
 #define BWLUA__H
 
 #include <any>
@@ -6,7 +10,6 @@
 #include <mutex>
 #include <string>
 #include <tuple>
-#include <type_traits>
 #include <vector>
 
 extern "C"
@@ -23,6 +26,8 @@ extern "C"
         lua_pop(L, 1);                                                                                                 \
         throw std::runtime_error(_err);                                                                                \
     }
+
+// All error lines
 #define LUA_FUNCTION_NFOUND "Function not found! "
 #define LUA_FUNCTION_NRET_NUM "The function does not return a number! "
 #define LUA_FUNCTION_NRET_STR "The function does not return a string! "
@@ -36,6 +41,12 @@ extern "C"
 #define LUA_VARIABLE_UNK "Unknown type for variable! "
 
 namespace bwlua {
+
+// A wrapper class for luajit.
+// It contains basic functions for interacting with lua scripts.
+// The class is thread safe provided that you do not use __mutex functions.
+// All functions without the __nmutex prefix block the RAII-style mutex.
+// If an error occurs in any function, an exception is thrown, which at best should be handled!
 class lua {
   public:
     lua() = default;
@@ -48,37 +59,52 @@ class lua {
     }
 
   public:
+    // Used to call a function that does not take parameters, however you can also use it to indicate its return type
+    // (i.e. it does not return anything)
     struct nil {
         // nothing
     };
 
   public:
+    // Safely initializes Lua state
     void create(std::string src) {
         std::lock_guard<std::mutex> guard(lmutex);
         create__nmutex(src);
     }
+
+    // Safely resets Lua state
     void close() {
         std::lock_guard<std::mutex> guard(lmutex);
         lua_close(L);
     }
 
+    // Safely calls a function, provided that it exists and all parameters match.
+    // The first parameter of the template is the return type of the function. The remaining parameters are the types of
+    // function parameters accepted
     template <typename T, typename... Types> T call_function(std::string name_func, Types... param) {
         std::lock_guard<std::mutex> guard(lmutex);
         return call_function__nmutex<T, Types...>(name_func, param...);
     }
+
+    // Safely returns the value of a variable from the passed type in the template, if it exists.
     template <typename T> T get_var(std::string name_var) {
         std::lock_guard<std::mutex> guard(lmutex);
         return get_var__nmutex<T>(name_var);
     }
+
+    // Safely interprets (executes) the code presented in str_code.
     void execute_str(std::string str_code) {
         std::lock_guard<std::mutex> guard(lmutex);
         execute_str__nmutex(str_code);
     }
+
+    // Safely interprets (executes) the code that was provided when initializing the lua state
     void run_script() {
         std::lock_guard<std::mutex> guard(lmutex);
         run_script__nmutex();
     }
 
+    // Returns true if lua state is initialized
     bool is_created() {
         std::lock_guard<std::mutex> guard(lmutex);
         if (!L)
