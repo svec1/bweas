@@ -45,6 +45,11 @@ bwbuilder::bwbuilder(int argv, char **args) {
     }
 }
 
+bwbuilder::~bwbuilder() {
+    if (bwGenerator::is_exist(generator))
+        generator->deleteGenerator();
+}
+
 void bwbuilder::handle_args(std::vector<std::string> args) {
     args[0].erase(0, args[0].find_last_of("/\\") + 1);
     name_bweas_prg = args[0];
@@ -152,6 +157,55 @@ u32t bwbuilder::create_package(std::string path_json_config_package, std::string
     return pckg.size();
 }
 
+void bwbuilder::init(std::string current_name_bweas_prg) {
+    std::string bweas_path = assist.get_path_program() + "/" + JSON_CONFIG_FILE;
+
+    nlohmann::json config_json;
+    std::string name_package;
+    file_it file_json_config = assist.open_file(bweas_path, mf::open::r);
+    if (!assist.exist_file(file_json_config)) {
+        assist.get_ref_file(file_json_config).open(mf::open::w);
+        assist.write_file(assist.get_ref_file(file_json_config), DEFAULT_BWEAS_JSON_CONFIG);
+        assist.close_file(file_json_config);
+
+        config_json = nlohmann::json::parse(DEFAULT_BWEAS_JSON_CONFIG);
+    }
+    else {
+        config_json =
+            nlohmann::json::parse(assist.read_file(assist.get_ref_file(file_json_config), mf::input::read_default));
+        assist.close_file(file_json_config);
+    }
+
+    if (config_json.contains("package")) {
+        if (config_json["package"].is_null())
+            throw bwbuilder_excp("At least one package must be defined", "005");
+
+        name_package = config_json["package"];
+        std::string path_to_package = assist.get_path_program() + "/packages/" + name_package + BW_FORMAT_PACKAGE;
+        std::string raw_data_package;
+        file_it package = assist.open_file(path_to_package, mf::open::rb);
+        if (!assist.exist_file(package))
+            throw bwbuilder_excp(path_to_package, "008");
+        raw_data_package = assist.read_file(assist.get_ref_file(package), mf::input::read_binary);
+        assist.close_file(package);
+
+        loaded_package.load(raw_data_package);
+        assist.next_output_success();
+        assist << " - [BWEAS]: The package was loaded successfully(" + std::to_string(raw_data_package.size()) +
+                      " bytes)";
+    }
+    if (!config_json.contains("use genlua") || !config_json["use genlua"].is_number_integer())
+        throw bwbuilder_excp("The use of the lua generator is not defined", "005");
+    else if (config_json["use genlua"] == 0) {
+        generator = bwGenerator::createGeneratorInt(bwign0_1v);
+    }
+    else {
+        if (!loaded_package.is_init())
+            throw bwbuilder_excp("At least one package must be defined", "005");
+        generator = bwGenerator::createGeneratorLua(loaded_package.data.src_lua_generator);
+    }
+}
+
 bwbuilder::mode_working bwbuilder::get_current_mode() {
     return mode_bweas;
 }
@@ -206,55 +260,6 @@ void bwbuilder::switch_log(u32t value) {
 void bwbuilder::switch_output_log(u32t value) {
     output_log = value;
     assist.switch_otp(output_log);
-}
-
-void bwbuilder::init(std::string current_name_bweas_prg) {
-    std::string bweas_path = assist.get_path_program() + "/" + JSON_CONFIG_FILE;
-
-    nlohmann::json config_json;
-    std::string name_package;
-    file_it file_json_config = assist.open_file(bweas_path, mf::open::r);
-    if (!assist.exist_file(file_json_config)) {
-        assist.get_ref_file(file_json_config).open(mf::open::w);
-        assist.write_file(assist.get_ref_file(file_json_config), DEFAULT_BWEAS_JSON_CONFIG);
-        assist.close_file(file_json_config);
-
-        config_json = nlohmann::json::parse(DEFAULT_BWEAS_JSON_CONFIG);
-    }
-    else {
-        config_json =
-            nlohmann::json::parse(assist.read_file(assist.get_ref_file(file_json_config), mf::input::read_default));
-        assist.close_file(file_json_config);
-    }
-
-    if (config_json.contains("package")) {
-        if (config_json["package"].is_null())
-            throw bwbuilder_excp("At least one package must be defined", "005");
-
-        name_package = config_json["package"];
-        std::string path_to_package = assist.get_path_program() + "/packages/" + name_package + BW_FORMAT_PACKAGE;
-        std::string raw_data_package;
-        file_it package = assist.open_file(path_to_package, mf::open::rb);
-        if (!assist.exist_file(package))
-            throw bwbuilder_excp(path_to_package, "008");
-        raw_data_package = assist.read_file(assist.get_ref_file(package), mf::input::read_binary);
-        assist.close_file(package);
-
-        loaded_package.load(raw_data_package);
-        assist.next_output_success();
-        assist << " - [BWEAS]: The package was loaded successfully(" + std::to_string(raw_data_package.size()) +
-                      " bytes)";
-    }
-    if (!config_json.contains("use genlua") || !config_json["use genlua"].is_number_integer())
-        throw bwbuilder_excp("The use of the lua generator is not defined", "005");
-    else if (config_json["use genlua"] == 0) {
-        generator = bwGenerator::createGeneratorInt(bwign0_1v);
-    }
-    else {
-        if (!loaded_package.is_init())
-            throw bwbuilder_excp("At least one package must be defined", "005");
-        generator = bwGenerator::createGeneratorLua(loaded_package.data.src_lua_generator);
-    }
 }
 
 void bwbuilder::run_interpreter() {

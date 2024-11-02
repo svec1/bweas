@@ -6,7 +6,7 @@
 #if !defined(_WIN32) && (defined(__unix__) || defined(__unix) || (defined(__APPLE__) && defined(__MACH__)))
 #define UNIX
 #if defined(__linux__)
-#define linux
+#define _linux
 #elif defined(__APPLE__) && defined(__MACH__)
 #define APPLE_OS
 #endif

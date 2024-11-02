@@ -10,6 +10,7 @@
 
 namespace bwlz4 {
 
+// Compresses data based on lz4. If unsuccessful, returns an empty string
 static inline std::string compress_data(std::string data) {
     if (data.size() >= LZ4_MAX_INPUT_SIZE || data.size() == 0)
         return "";
@@ -27,6 +28,8 @@ static inline std::string compress_data(std::string data) {
     return comp_data_str;
 }
 
+// Decompresses data based on lz4. In case of failure, expected_size = 0 or >= LZ4_MAX_INPUT_SIZE, an empty string is
+// returned.
 static inline std::string decompress_data(std::string compress_data, u32t expected_size = 2 MB) {
     if (compress_data.size() >= LZ4_MAX_INPUT_SIZE || compress_data.size() == 0)
         return "";
