@@ -2,10 +2,10 @@
 .vs/
 build/
 build_linux/
+result/
 external/luajit/
 external/json/
 external/lz4/
-result/
 
 folder-alias.json
 
