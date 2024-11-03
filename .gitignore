@@ -5,6 +5,7 @@ build_linux/
 external/luajit/
 external/json/
 external/lz4/
+result/
 
 folder-alias.json
 
