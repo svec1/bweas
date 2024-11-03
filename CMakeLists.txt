@@ -84,6 +84,11 @@ else()
     add_subdirectory(src/kernel/high_level/hook_linux_lib)
     target_link_libraries(${BW_NAME_PRJ} PUBLIC bwhook_safe)
 
-    file(COPY ${LuaJIT_LIBRARIES} DESTINATION ${CMAKE_BINARY_DIR})
     file(COPY ${CMAKE_SOURCE_DIR}/bweas-config.json DESTINATION ${CMAKE_BINARY_DIR})
+
+	install(TARGETS bweas DESTINATION bin)
+	install(TARGETS bwhook_safe DESTINATION bin)
+	install(FILES ${CMAKE_SOURCE_DIR}/bweas-config.json DESTINATION bin)
+
+	set_target_properties(bweas PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/bin")
 endif()
