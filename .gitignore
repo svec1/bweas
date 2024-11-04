@@ -2,12 +2,13 @@
 .vs/
 build/
 build_linux/
-result/
 external/luajit/
 external/json/
 external/lz4/
 
 folder-alias.json
+
+result
 
 # Prerequisites
 *.d
