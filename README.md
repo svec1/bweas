@@ -84,3 +84,32 @@ cmake --build .
 <br>
 
 <img alt="Static Badge" src="https://img.shields.io/badge/build-passing-brightgree"> <img alt="Static Badge" src="https://img.shields.io/badge/release-pending-red">
+
+## Examples
+Simple configurations for assembly will be described here. These examples are for informational purposes only and do not include complex structures and new features.
+
+```
+# For example(how create variable)
+set(TRUE, 1)
+set(RELEASE, 1)
+
+# We create a call component - what will be called
+# This also stores the name pattern of files that the current calling component may create.
+create_call_component(CC, "clang++", "program.exe")
+
+# Create a command template. You can use the capabilities that the current generator
+# provides (in this case, a file will be substituted for FBS_CURRENT_OUTPUT_FILE - because filter 1 was selected)
+create_templates(template, "CC(NULL) -> EXECUTABLE: <[T_PROJECT_SRC_FILES]>, <'-o'>, FBS_CURRENT_OUTPUT_FILE:1")
+
+# Creating a project (there can be as many of them as you like)
+# The number 1 as the second parameter indicates the programming language number
+project(test, 1, "main.cpp")
+
+# We indicate that the project will use template command generation
+use_it_template(test, TRUE)
+use_templates(test, "template")
+
+# create a target in the form of an executable file (there can be as many of them as you like)
+executable(test_program, RELEASE, test)
+```
+
