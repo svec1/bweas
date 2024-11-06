@@ -2,7 +2,7 @@
 .vs/
 build/
 build_linux/
-external/luajit/
+external/LuaJIT/
 external/json/
 external/lz4/
 

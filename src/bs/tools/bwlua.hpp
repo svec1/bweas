@@ -32,13 +32,18 @@ extern "C"
 #define LUA_FUNCTION_NRET_NUM "The function does not return a number! "
 #define LUA_FUNCTION_NRET_STR "The function does not return a string! "
 #define LUA_FUNCTION_NRET_BOOL "The function does not return a boolean! "
-#define LUA_FUNCTION_PARAM_VOID "Function cannot accept void"
-#define LUA_FUNCTION_PARAM_UNK "Unknown type for parameter"
+#define LUA_FUNCTION_NRET_TABLE "The function does not return a table! "
+#define LUA_FUNCTION_NRET_TABLE_NUM "The function does not return a table of numbers! "
+#define LUA_FUNCTION_NRET_TABLE_STR "The function does not return a table of strings! "
+#define LUA_FUNCTION_NRET_TABLE_UNK "The function returns a table with unexpected type! "
+#define LUA_FUNCTION_PARAM_VOID "Function cannot accept void "
+#define LUA_FUNCTION_PARAM_UNK "Unknown type for parameter "
 
 #define LUA_VARIABLE_NFOUND_STR "String variable not found! "
 #define LUA_VARIABLE_NFOUND_NUM "Number variable not found! "
 #define LUA_VARIABLE_NFOUND_BOOL "Boolean variable not found! "
 #define LUA_VARIABLE_UNK "Unknown type for variable! "
+
 
 namespace bwlua {
 
@@ -47,6 +52,7 @@ namespace bwlua {
 // The class is thread safe provided that you do not use __mutex functions.
 // All functions without the __nmutex prefix block the RAII-style mutex.
 // If an error occurs in any function, an exception is thrown, which at best should be handled!
+// If a function (any) sees that lua_state is not defined, it will not do anything.
 class lua {
   public:
     lua() = default;
@@ -75,7 +81,7 @@ class lua {
     // Safely resets Lua state
     void close() {
         std::lock_guard<std::mutex> guard(lmutex);
-        lua_close(L);
+        close__nmutex();
     }
 
     // Safely calls a function, provided that it exists and all parameters match.
@@ -104,12 +110,34 @@ class lua {
         run_script__nmutex();
     }
 
-    // Returns true if lua state is initialized
-    bool is_created() {
+    // Safely creates gloabal table
+    void create_global_table(){
         std::lock_guard<std::mutex> guard(lmutex);
-        if (!L)
-            return 0;
-        return 1;
+        create_global_table__nmutex();
+    }
+
+    // Safely delete last table
+    void delete_last_table(){
+        std::lock_guard<std::mutex> guard(lmutex);
+        delete_last_table__nmutex();
+    }
+
+    // Returns true if lua state is initialized
+    inline bool is_created() {
+        std::lock_guard<std::mutex> guard(lmutex);
+        is_created__nmutex();
+    }
+
+    // Returns true if exists function(global) in lua state
+    inline bool is_function(std::string name_func){
+        std::lock_guard<std::mutex> guard(lmutex);
+        is_function__nmutex(name_func);
+    }
+
+    // Returns true if exists variable(global) in lua state
+    inline bool is_var(std::string name_var){
+        std::lock_guard<std::mutex> guard(lmutex);
+        is_var__nmutex(name_var);
     }
 
   public:
@@ -122,13 +150,18 @@ class lua {
             LUA_EXCEPTION()
     }
     void close__nmutex() {
-        lua_close(L);
+        if(L)
+            lua_close(L);
     }
     void run_script__nmutex() {
-        if (lua_pcall(L, 0, 0, 0) != LUA_OK)
+        if(!is_created__nmutex())
+            return;
+        else if (lua_pcall(L, 0, 0, 0) != LUA_OK)
             LUA_EXCEPTION()
     }
     template <typename T, typename... Types> T call_function__nmutex(std::string name_func, Types... param) {
+        if(!is_created__nmutex())
+            return std::any_cast<T>(std::any{});
         lua_getglobal(L, name_func.c_str());
 
         std::tuple<Types...> params(param...);
@@ -165,17 +198,92 @@ class lua {
 
             res = lua_toboolean(L, 1);
         }
+        else if constexpr (std::is_same_v<T, std::vector<std::string>>) {
+            if (lua_type(L, 1) != LUA_TTABLE)
+                throw std::runtime_error(LUA_FUNCTION_NRET_TABLE + name_func);
+
+            std::vector<std::string> tmp_list;
+
+            lua_pushnil(L);
+            while(lua_next(L, -2) != 0){
+                if(lua_type(L, 1) != LUA_TSTRING)
+                    throw std::runtime_error(LUA_FUNCTION_NRET_TABLE_STR + name_func);
+                tmp_list.push_back(lua_tostring(L, -1));
+                lua_pop(L, 1);
+            }
+
+            res = tmp_list;
+        }
+        else if constexpr (std::is_same_v<T, std::vector<int>> || std::is_same_v<T, std::vector<bool>>) {
+            if (lua_type(L, 1) != LUA_TTABLE)
+                throw std::runtime_error(LUA_FUNCTION_NRET_TABLE + name_func);
+
+            std::vector<int> tmp_list;
+
+            lua_pushnil(L);
+            while(lua_next(L, -2) != 0){
+                if(lua_type(L, 1) != LUA_TNUMBER)
+                    throw std::runtime_error(LUA_FUNCTION_NRET_TABLE_NUM + name_func);
+                tmp_list.push_back(lua_tonumber(L, -1));
+                lua_pop(L, 1);
+            }
+
+            res = tmp_list;
+        }
+        else if constexpr (std::is_same_v<T, std::vector<std::any>>) {
+            if (lua_type(L, 1) != LUA_TTABLE)
+                throw std::runtime_error(LUA_FUNCTION_NRET_TABLE + name_func);
+
+            std::vector<std::any> tmp_list;
+
+            lua_pushnil(L);
+            while(lua_next(L, -2) != 0){
+                if(lua_type(L, 1) == LUA_TNUMBER)
+                    tmp_list.push_back(lua_tonumber(L, -1));
+                else if(lua_type(L, 1) == LUA_TSTRING)
+                    tmp_list.push_back(lua_tostring(L, -1));
+                else if(lua_type(L, 1) == LUA_TBOOLEAN)
+                    tmp_list.push_back(lua_toboolean(L, -1));
+                else if(lua_type(L, 1) != LUA_TNIL)
+                    throw std::runtime_error(LUA_FUNCTION_NRET_TABLE_UNK + name_func);
+                lua_pop(L, 1);
+            }
+
+            res = tmp_list;
+        }
+
+        lua_pop(L, 1);
 
         if constexpr (std::is_same_v<T, void> || std::is_same_v<T, nil>)
             return;
         else
-            return res;
+            return std::any_cast<T>(res);
     }
 
     // execute lua code as a string
     void execute_str__nmutex(std::string str_code) {
+        if(!is_created__nmutex())
+            return;
         if (luaL_dostring(L, str_code.c_str()) != LUA_OK)
             LUA_EXCEPTION()
+    }
+
+    // creates a new global table(mainly for isolate subsequent code)
+    void create_global_table__nmutex(){
+        if(!is_created__nmutex())
+            return;
+        lua_newtable(L);
+
+        lua_pushvalue(L, -1);
+        lua_setfield(L, LUA_REGISTRYINDEX, "_G");
+    }
+
+    // deletes the last table (mainly used to delete an isolation(env) table)
+    void delete_last_table__nmutex(){
+        if(!is_created__nmutex())
+            return;
+        else if(lua_istable(L, -1))
+            lua_pop(L, 1);
     }
 
     // gets the value of a variable of the given type
@@ -202,6 +310,36 @@ class lua {
         }
         else
             throw std::runtime_error(LUA_VARIABLE_UNK + name_var);
+    }
+
+    inline bool is_created__nmutex() {
+        if (!L)
+            return 0;
+        return 1;
+    }
+
+    inline bool is_function__nmutex(std::string name_func){
+        if(!is_created__nmutex())
+            return 0;
+        else{
+            lua_getglobal(L, name_func.c_str());
+
+            if(!lua_isfunction(L, 1))
+                return 0;
+        }
+        return 1;
+    }
+
+    inline bool is_var__nmutex(std::string name_var){
+        if(!is_created__nmutex())
+            return 0;
+        else{
+            lua_getglobal(L, name_var.c_str());
+
+            if(lua_isnil(L, 1))
+                return 0;
+        }
+        return 1;
     }
 
   private:

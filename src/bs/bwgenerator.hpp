@@ -5,6 +5,9 @@
 #include "bwpackage.hpp"
 #include "tools/bwlua.hpp"
 
+#define NAME_FUNCTION_GENLUA "generate"
+#define DEFINITION_FUNCTION_GENLUA <std::vector<std::string>, bwlua::lua::nil>
+
 namespace bweas {
 
 namespace bwInterface {
