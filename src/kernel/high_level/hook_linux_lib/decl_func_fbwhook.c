@@ -109,5 +109,5 @@ ssize_t sendmsg(int s, const struct msghdr *msg, int flags) {
 
 void init_hook() {
     HOOK_STATUS = 0;
-    return 1;
+    return;
 }
