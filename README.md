@@ -62,7 +62,7 @@ cd external
 git clone https://github.com/LuaJIT/LuaJIT
 git clone https://github.com/nlohmann/json
 git clone https://github.com/lz4/lz4
-cmd /E:ON /K ""C:\Program Files (x86)\Intel\oneAPI\setvars.bat" --force"
+VsDevCmd.bat
 cd LuaJIT/src
 msvcbuild.bat
 exit
