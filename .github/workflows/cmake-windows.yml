@@ -28,8 +28,9 @@ jobs:
           git clone https://github.com/LuaJIT/LuaJIT
           git clone https://github.com/nlohmann/json
           git clone https://github.com/lz4/lz4
-          vsdevcmd_path=$(where vsdevcmd.bat)
-          & "$vsdevcmd_path" && (cd LuaJIT\src .\msvcbuild.bat)
+          $vsdev_fn = "vsdevcmd.bat"
+          $vsdev_path = Get-ChildItem -Path "D:\" -Filter $vsdev_fn -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+          & "$vsdev_path.FullName" && (cd LuaJIT\src .\msvcbuild.bat)
           cd ..
 
     - name: Configure CMake
