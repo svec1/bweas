@@ -34,7 +34,7 @@ else()
         message(FATAL_ERROR "LuaJIT not found!")
     endif()
 
-    set(LuaJIT_SRC_DIR = "/usr/include/luajit-2.1")
+    set(LuaJIT_SRC_DIR "/usr/include/luajit-2.1" "/usr/local/include/luajit-2.1")
 endif()
 target_link_libraries(${BW_NAME_PRJ} PRIVATE ${LuaJIT_LIBRARIES})
 include_directories(${LuaJIT_SRC_DIR})
@@ -42,14 +42,13 @@ include_directories(${LuaJIT_SRC_DIR})
 # nlohmann_json
 if(USER_BUILD_JSON)
     add_subdirectory(external/json)
-    target_link_libraries(${BW_NAME_PRJ} PRIVATE nlohmann_json::nlohmann_json)
 
     message(STATUS "Selected nlohmann_json in folder - external")
 else()
     find_package(nlohmann_json REQUIRED)
-    target_link_libraries(${BW_NAME_PRJ} PRIVATE nlohmann_json::nlohmann_json)
     include_directories(${NLOHMANN_JSON_INCLUDE_INSTALL_DIR})
-endif()
+    endif()
+target_link_libraries(${BW_NAME_PRJ} PRIVATE nlohmann_json::nlohmann_json)
 
 # LZ4
 if(USER_BUILD_LZ4)

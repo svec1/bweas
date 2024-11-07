@@ -34,8 +34,8 @@ You can also clone the LuaJit or nlohmann/json repositories and follow these ste
 ```
 cd external
 git clone https://github.com/LuaJIT/LuaJIT
-cd luajit
-make
+cd LuaJIT
+sudo make install
 ```
 **For lz4 and nlohmann-json**
 ```
@@ -63,7 +63,7 @@ git clone https://github.com/LuaJIT/LuaJIT
 git clone https://github.com/nlohmann/json
 git clone https://github.com/lz4/lz4
 cmd /E:ON /K ""C:\Program Files (x86)\Intel\oneAPI\setvars.bat" --force"
-cd luajit/src
+cd LuaJIT/src
 msvcbuild.bat
 exit
 ```
