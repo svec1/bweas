@@ -5,6 +5,8 @@ build_linux/
 external/LuaJIT/
 external/json/
 external/lz4/
+vcpkg_installed/
+vcpkg/
 
 folder-alias.json
 

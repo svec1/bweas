@@ -1,0 +1,9 @@
+{
+    "name": "bweas",
+    "version-string": "3",
+    "dependencies": [
+      "luajit",
+      "nlohmann-json",
+      "lz4"
+    ]
+  }
