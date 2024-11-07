@@ -24,12 +24,12 @@ jobs:
 
     - name: build dependencies
       run: |
-          where vsdevcmd.bat
           cd external
           git clone https://github.com/LuaJIT/LuaJIT
           git clone https://github.com/nlohmann/json
           git clone https://github.com/lz4/lz4
-          & "C:\Program Files\Microsoft Visual Studio\2019\Community\Common7\Tools\VsDevCmd.bat" && (cd LuaJIT\src .\msvcbuild.bat)
+          vsdevcmd_path=$(where vsdevcmd.bat)
+          & "$vsdevcmd_path" && (cd LuaJIT\src .\msvcbuild.bat)
           cd ..
 
     - name: Configure CMake
