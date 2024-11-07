@@ -55,29 +55,16 @@ cmake --build .
 ***
 
 ### Build on Windows
-> [!NOTE]
-> Required: Visual Studio 2019+
-```
-cd external
-git clone https://github.com/LuaJIT/LuaJIT
-git clone https://github.com/nlohmann/json
-git clone https://github.com/lz4/lz4
-VsDevCmd.bat
-cd LuaJIT/src
-msvcbuild.bat
-exit
-```
-> [!TIP]
-> To build LuaJit library, you need to run msvcbuild.bat in the LuaJit source folder.
-> Although you can build it using mingw-make, the library will be implicit.
->
-> *You don't need to build nlohmann-json and lz4*
-
 *starting from the source folder*
+> [!NOTE]
+> Required: CMake, VCPKG
 ```
+git clone https://github.com/microsoft/vcpkg.git
+vcpkg\bootstrap-vcpkg.bat
+vcpkg\vcpkg integrate install
 mkdir build
 cd build
-cmake -DUSER_BUILD_LUA=ON -DUSER_BUILD_JSON=ON -DUSER_BUILD_LZ4=ON ..
+cmake -DBWEAS_BUILD_VCPKG=ON ..
 cmake --build .
 ```
 
