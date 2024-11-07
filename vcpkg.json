@@ -1,6 +1,6 @@
 {
     "name": "bweas",
-    "version-string": "3",
+    "version-string": "0.1.0",
     "dependencies": [
       "luajit",
       "nlohmann-json",
