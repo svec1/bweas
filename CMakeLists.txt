@@ -57,6 +57,7 @@ else()
         set(LuaJIT_SRC_DIR "/usr/include/luajit-2.1" "/usr/local/include/luajit-2.1")
     endif()
     target_link_libraries(${BW_NAME_PRJ} PRIVATE ${LuaJIT_LIBRARIES})
+    include_directories(${LuaJIT_SRC_DIR})
 
     # nlohmann_json
     if(USER_BUILD_JSON)
