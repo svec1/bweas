@@ -24,18 +24,14 @@ jobs:
 
     - name: build dependencies
       run: |
-          cd external
-          git clone https://github.com/LuaJIT/LuaJIT
-          git clone https://github.com/nlohmann/json
-          git clone https://github.com/lz4/lz4
-          & "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall.bat"
-          cd LuaJIT\src .\msvcbuild.bat
-          cd ..
+          git clone https://github.com/microsoft/vcpkg.git
+          vcpkg\bootstrap-vcpkg.bat
+          vcpkg\vcpkg integrate install
 
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
-      run: cmake -DUSER_BUILD_LUA=ON -DUSER_BUILD_JSON=ON -DUSER_BUILD_LZ4=ON -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+      run: cmake -DBWEAS_BUILD_VCPKG=ON -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
 
     - name: Build
       # Build your program with the given configuration
