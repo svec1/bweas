@@ -30,8 +30,7 @@ jobs:
           git clone https://github.com/lz4/lz4
           & "C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\Tools\.\vsdevcmd.bat" && (
             cd LuaJIT\src
-            .\msvcbuild.bat
-          )
+            .\msvcbuild.bat)
           cd ..\..\..
 
     - name: Configure CMake
