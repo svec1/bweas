@@ -38,9 +38,10 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt update
-        sudo apt install luajit nlohmann-json3-dev liblz4-dev
-        sudo ln -s /usr/lib/x86_64-linux-gnu/libluajit-5.1.so libluajit-5.1.so
-        sudo ln -s /usr/include/luajit-2.1 /usr/include/lua
+        sudo apt install nlohmann-json3-dev liblz4-dev
+        git clone https://github.com/LuaJIT/LuaJIT
+        cd LuaJIT
+        sudo make install
         
     - name: git_build_set
       id: strings
