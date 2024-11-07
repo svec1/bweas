@@ -28,7 +28,7 @@ jobs:
           git clone https://github.com/LuaJIT/LuaJIT
           git clone https://github.com/nlohmann/json
           git clone https://github.com/lz4/lz4
-          & vsdevcmd.bat && (cd LuaJIT\src .\msvcbuild.bat)
+          & "C:\Program Files\Microsoft Visual Studio\2019\Community\Common7\Tools\VsDevCmd.bat" && (cd LuaJIT\src .\msvcbuild.bat)
           cd ..
 
     - name: Configure CMake
