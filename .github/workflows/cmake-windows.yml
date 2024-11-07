@@ -28,10 +28,7 @@ jobs:
           git clone https://github.com/LuaJIT/LuaJIT
           git clone https://github.com/nlohmann/json
           git clone https://github.com/lz4/lz4
-          $vsdev_fn = "vsdevcmd.bat"
-          $vsdev_path = Get-ChildItem -Path "С:\" -Filter $vsdev_fn -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
-          echo "Path: $($vsdev_path.FullName)"
-          & $vsdev_path.FullName
+          & "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall.bat"
           cd LuaJIT\src .\msvcbuild.bat
           cd ..
 
