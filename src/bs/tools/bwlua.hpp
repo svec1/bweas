@@ -44,6 +44,9 @@ extern "C"
 #define LUA_VARIABLE_NFOUND_BOOL "Boolean variable not found! "
 #define LUA_VARIABLE_UNK "Unknown type for variable! "
 
+#define LUA_TABLE_FIELD_UNK "Unknown type for field of table! "
+#define LUA_PUSH_TYPE_UNK "Unknown type for pushing on stack! "
+
 
 namespace bwlua {
 
@@ -71,6 +74,12 @@ class lua {
         // nothing
     };
 
+    template <typename T>
+    struct is_vector : std::false_type {};
+
+    template <typename U, typename A>
+    struct is_vector<std::vector<U, A>> : std::true_type {};
+
   public:
     // Safely initializes Lua state
     void create(std::string src) {
@@ -96,6 +105,18 @@ class lua {
     template <typename T> T get_var(std::string name_var) {
         std::lock_guard<std::mutex> guard(lmutex);
         return get_var__nmutex<T>(name_var);
+    }
+
+    // Safely creates a variable with the specified name and value
+    template<typename T> void create_var(std::string name_var, T &&value = {}){
+        std::lock_guard<std::mutex> guard(lmutex);
+        create_var__nmutex(name_var, value);
+    }
+
+    // Safely creates a table with the specified name and list of key-values
+    template<typename Key, typename Value> void create_table(std::string name_struct, std::vector<std::pair<Key, Value>> &&struct_fields = {}){
+        std::lock_guard<std::mutex> guard(lmutex);
+        create_table__nmutex(name_struct, std::move(struct_fields));
     }
 
     // Safely interprets (executes) the code presented in str_code.
@@ -167,7 +188,7 @@ class lua {
         std::tuple<Types...> params(param...);
         size_t count_params = std::tuple_size<decltype(params)>::value;
 
-        pre_init_stack(params, std::index_sequence_for<Types...>{}, name_func);
+        pre_init_stack(params, std::index_sequence_for<Types...>{});
 
         if (!lua_isfunction(L, 1))
             throw std::runtime_error(LUA_FUNCTION_NFOUND + name_func);
@@ -186,8 +207,8 @@ class lua {
 
             res = lua_tonumber(L, 1);
         }
-        else if constexpr (std::is_same_v<T, int>) {
-            if (lua_type(L, 1) != LUA_TSTRING)
+        else if constexpr (std::is_same_v<T, int> || std::is_same_v<T, double>) {
+            if (lua_type(L, 1) != LUA_TNUMBER)
                 throw std::runtime_error(LUA_FUNCTION_NRET_NUM + name_func);
 
             res = lua_tostring(L, 1);
@@ -214,7 +235,7 @@ class lua {
 
             res = tmp_list;
         }
-        else if constexpr (std::is_same_v<T, std::vector<int>> || std::is_same_v<T, std::vector<bool>>) {
+        else if constexpr (std::is_same_v<T, std::vector<int>> || std::is_same_v<T, std::vector<bool>> || std::is_same_v<T, std::vector<double>>) {
             if (lua_type(L, 1) != LUA_TTABLE)
                 throw std::runtime_error(LUA_FUNCTION_NRET_TABLE + name_func);
 
@@ -296,7 +317,7 @@ class lua {
 
             return lua_tostring(L, 1);
         }
-        else if constexpr (std::is_same_v<T, int>) {
+        else if constexpr (std::is_same_v<T, int> || std::is_same_v<T, double>) {
             if (!lua_isnumber(L, 1))
                 throw std::runtime_error(LUA_VARIABLE_NFOUND_NUM + name_var);
 
@@ -310,6 +331,21 @@ class lua {
         }
         else
             throw std::runtime_error(LUA_VARIABLE_UNK + name_var);
+    }
+
+    template<typename T> void create_var__nmutex(std::string name_var, T &&value = {}){
+        push_stack_param(value);
+        lua_setglobal(L, name_var.c_str());
+    }
+
+    template<typename Key, typename Value> void create_table__nmutex(std::string name_struct, std::vector<std::pair<Key, Value>> &&struct_fields = {}){
+        lua_newtable(L);
+
+        for(size_t i = 0; i < struct_fields.size(); ++i){
+            push_stack_param(struct_fields[i].first);
+            push_stack_param(struct_fields[i].second);
+            lua_rawseti(L, -3, i+1);
+        }
     }
 
     inline bool is_created__nmutex() {
@@ -344,20 +380,41 @@ class lua {
 
   private:
     template <typename Tuple, size_t... ind>
-    void pre_init_stack(const Tuple &tp, std::index_sequence<ind...>, const std::string &name_func) {
-        ((push_stack_param<std::tuple_element_t<ind, Tuple>>(std::get<ind>(tp), name_func)), ...);
+    void pre_init_stack(const Tuple &tp, std::index_sequence<ind...>) {
+        ((push_stack_param<std::tuple_element_t<ind, Tuple>>(std::get<ind>(tp))), ...);
     }
-    template <typename T> void push_stack_param(T param, const std::string &name_func) {
+    template <typename T> void push_stack_param(T param) {
         if constexpr (std::is_same_v<T, const char *>)
             lua_pushstring(L, param);
-        else if constexpr (std::is_same_v<T, int>)
+        else if constexpr (std::is_same_v<T, int> || std::is_same_v<T, double>)
             lua_pushnumber(L, param);
         else if constexpr (std::is_same_v<T, bool>)
             lua_pushboolean(L, param);
+        else if constexpr (std::is_same_v<T, std::string>)
+            lua_pushstring(L, param.c_str());
+        else if constexpr (is_vector<T>::value){
+            lua_newtable(L);
+            for(u32t i = 0; i < param.size(); ++i){
+                push_stack_param(param[i]);
+                lua_rawseti(L, -2, i+1);
+            }
+        }
+        else if constexpr (std::is_same_v<T, std::any>){
+            if (param.type() == typeid(const char*))
+                lua_pushstring(L, std::any_cast<const char*>(param));
+            else if (param.type() == typeid(int) || param.type() == typeid(double))
+                lua_pushnumber(L, std::any_cast<double>(param));
+            else if (param.type() == typeid(bool))
+                lua_pushboolean(L, std::any_cast<bool>(param));
+            else if (param.type() == typeid(std::string))
+                lua_pushstring(L, std::any_cast<std::string>(param).c_str());
+            else
+                throw std::runtime_error(LUA_PUSH_TYPE_UNK);
+        }
+        else if constexpr (std::is_same_v<T, nil>)
+            lua_pushnil(L);
         else if constexpr (std::is_same_v<T, void>)
-            throw std::runtime_error(LUA_FUNCTION_PARAM_VOID + name_func);
-        else if constexpr (!std::is_same_v<T, nil>)
-            throw std::runtime_error(LUA_FUNCTION_PARAM_UNK + name_func);
+            throw std::runtime_error(LUA_PUSH_TYPE_UNK);
     }
 
   private:

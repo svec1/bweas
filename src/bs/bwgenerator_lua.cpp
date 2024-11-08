@@ -25,9 +25,13 @@ void bwGeneratorLua::init() {
     else if(!lua.is_function__nmutex(NAME_FUNCTION_GENLUA))
         throw exception::bwgenerator_excp("", "002");
     
+    std::vector<std::pair<int, std::vector<std::any>>> table_ccmps;
+    for(u32t i = 0; i < ccmp_p->size(); ++i)
+        table_ccmps.emplace_back(std::pair<int, std::vector<std::any>>(i, {(*ccmp_p)[i].name, (*ccmp_p)[i].name_program, (*ccmp_p)[i].pattern_ret_files}));
+
     // creation isolated env
     lua.create_global_table__nmutex();
-    lua.execute_str__nmutex("");
+    lua.create_table__nmutex<int, std::vector<std::any>>("CCMPS", std::move(table_ccmps));
 
 
 }
