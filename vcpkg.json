@@ -4,6 +4,7 @@
     "dependencies": [
       "luajit",
       "nlohmann-json",
-      "lz4"
+      "lz4",
+      "gtest"
     ]
   }

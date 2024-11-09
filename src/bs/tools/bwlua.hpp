@@ -171,8 +171,10 @@ class lua {
             LUA_EXCEPTION()
     }
     void close__nmutex() {
-        if(L)
+        if(L){
             lua_close(L);
+            L = NULL;
+        }
     }
     void run_script__nmutex() {
         if(!is_created__nmutex())
@@ -201,17 +203,23 @@ class lua {
         else if (lua_pcall(L, count_params, 0, 0) != LUA_OK)
             LUA_EXCEPTION()
 
-        if constexpr (std::is_same_v<T, std::string>) {
-            if (lua_type(L, 1) != LUA_TNUMBER)
+        if constexpr (std::is_same_v<T, std::string> || std::is_same_v<T, const char*>) {
+            if (lua_type(L, 1) != LUA_TSTRING)
                 throw std::runtime_error(LUA_FUNCTION_NRET_STR + name_func);
 
-            res = lua_tonumber(L, 1);
+            res = std::string(lua_tostring(L, 1));
         }
-        else if constexpr (std::is_same_v<T, int> || std::is_same_v<T, double>) {
+        else if constexpr (std::is_same_v<T, int>) {
             if (lua_type(L, 1) != LUA_TNUMBER)
                 throw std::runtime_error(LUA_FUNCTION_NRET_NUM + name_func);
 
-            res = lua_tostring(L, 1);
+            res = (int)lua_tointeger(L, 1);
+        }
+        else if(std::is_same_v<T, double>){
+            if (lua_type(L, 1) != LUA_TNUMBER)
+                throw std::runtime_error(LUA_FUNCTION_NRET_NUM + name_func);
+
+            res = lua_tonumber(L, 1);
         }
         else if constexpr (std::is_same_v<T, bool>) {
             if (lua_type(L, 1) != LUA_TBOOLEAN)
@@ -394,7 +402,7 @@ class lua {
             lua_pushstring(L, param.c_str());
         else if constexpr (is_vector<T>::value){
             lua_newtable(L);
-            for(u32t i = 0; i < param.size(); ++i){
+            for(size_t i = 0; i < param.size(); ++i){
                 push_stack_param(param[i]);
                 lua_rawseti(L, -2, i+1);
             }

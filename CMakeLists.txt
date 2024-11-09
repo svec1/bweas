@@ -10,6 +10,7 @@ set(BW_NAME_PRJ bweas)
 option(USER_BUILD_LZ4 "Rep LZ4 on external" OFF)
 option(USER_BUILD_JSON "Rep JSON_C on external" OFF)
 option(USER_BUILD_LUA "Rep LuaJit on external" OFF)
+option(BWEAS_TEST "Build of bweas test" OFF)
 
 set(CMAKE_CXX_STANDARD 17)
 project(${BW_NAME_PRJ} LANGUAGES CXX C)
@@ -38,8 +39,8 @@ if(WIN32 AND BWEAS_BUILD_VCPKG AND EXISTS "${CMAKE_SOURCE_DIR}/vcpkg/scripts/bui
   find_package(nlohmann_json CONFIG REQUIRED)
   find_package(lz4 CONFIG REQUIRED)
 
-  target_link_libraries(${BW_NAME_PRJ} PRIVATE ${LuaJIT_LIBRARIES} nlohmann_json::nlohmann_json lz4::lz4)
-  include_directories(${LuaJIT_INCLUDE_DIRS} ${nlohmann_json_INCLUDE_DIRS} ${lz4_INCLUDE_DIRS})
+  set(BWEAS_LIBS ${LuaJIT_LIBRARIES} nlohmann_json::nlohmann_json lz4::lz4)
+  set(BWEAS_INCLUDE ${LuaJIT_INCLUDE_DIRS} ${nlohmann_json_INCLUDE_DIRS} ${lz4_INCLUDE_DIRS})
 
   message(STATUS "Install package with vcpkg")
 else()
@@ -56,8 +57,6 @@ else()
 
         set(LuaJIT_SRC_DIR "/usr/include/luajit-2.1" "/usr/local/include/luajit-2.1")
     endif()
-    target_link_libraries(${BW_NAME_PRJ} PRIVATE ${LuaJIT_LIBRARIES})
-    include_directories(${LuaJIT_SRC_DIR})
 
     # nlohmann_json
     if(USER_BUILD_JSON)
@@ -66,9 +65,7 @@ else()
         message(STATUS "Selected nlohmann_json in folder - external")
     else()
         find_package(nlohmann_json REQUIRED)
-        include_directories(${NLOHMANN_JSON_INCLUDE_INSTALL_DIR})
     endif()
-    target_link_libraries(${BW_NAME_PRJ} PRIVATE nlohmann_json::nlohmann_json)
 
     # LZ4
     if(USER_BUILD_LZ4)
@@ -78,9 +75,13 @@ else()
     else()
         find_library(LZ4_LIBRARY NAMES lz4)
     endif()
-    target_link_libraries(${BW_NAME_PRJ} PRIVATE lz4)
 
+    set(BWEAS_LIBS ${LuaJIT_LIBRARIES} nlohmann_json::nlohmann_json lz4)
+    set(BWEAS_INCLUDE ${NLOHMANN_JSON_INCLUDE_INSTALL_DIR} ${LuaJIT_SRC_DIR})
 endif()
+
+target_link_libraries(${BW_NAME_PRJ} PRIVATE ${BWEAS_LIBS})
+include_directories(${BWEAS_INCLUDE})
 
 if(WIN32)
     if(NOT CMAKE_BUILD_TYPE)
@@ -111,4 +112,9 @@ else()
     install(FILES ${CMAKE_SOURCE_DIR}/bweas-config.json DESTINATION bin)
 
     set_target_properties(bweas PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/bin")
+endif()
+
+if(BWEAS_TEST)
+    enable_testing()
+    add_subdirectory(test/)
 endif()

@@ -46,7 +46,7 @@ int main(int argv, char **args) {
     // assist << bwlz4::decompress_data(comp_data, data.size());
 
     // assist.set_file_log_name("log.txt");
-    // bwlua::lua l("function _f(n, b, y, h) io.write(n*y+h) io.write(b) end");
+    bwlua::lua l("function _f(n, b, y, h) io.write(n*y+h) io.write(b) end");
 
     // for (u32t i = 0; i < 233333; ++i)
     //     l.call_function<void, int, const char *, int, int>("_f", i + 1, "lox", i, i - 1);
