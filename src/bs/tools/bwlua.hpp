@@ -44,6 +44,8 @@ extern "C"
 #define LUA_VARIABLE_NFOUND_BOOL "Boolean variable not found! "
 #define LUA_VARIABLE_UNK "Unknown type for variable! "
 
+#define LUA_NFOUND_TABLE "Table not found!"
+
 #define LUA_TABLE_FIELD_UNK "Unknown type for field of table! "
 #define LUA_PUSH_TYPE_UNK "Unknown type for pushing on stack! "
 
@@ -319,26 +321,31 @@ class lua {
     // Possible types: string, number, boolean
     template <typename T> T get_var__nmutex(std::string name_var) {
         lua_getglobal(L, name_var.c_str());
+        std::any value;
         if constexpr (std::is_same_v<T, std::string>) {
-            if (!lua_isstring(L, 1))
+            if (!lua_isstring(L, -1))
                 throw std::runtime_error(LUA_VARIABLE_NFOUND_STR + name_var);
 
-            return lua_tostring(L, 1);
+            value = std::string(lua_tostring(L, -1));
         }
         else if constexpr (std::is_same_v<T, int> || std::is_same_v<T, double>) {
-            if (!lua_isnumber(L, 1))
+            if (!lua_isnumber(L, -1))
                 throw std::runtime_error(LUA_VARIABLE_NFOUND_NUM + name_var);
 
-            return lua_tonumber(L, 1);
+            value = lua_tonumber(L, -1);
         }
         else if constexpr (std::is_same_v<T, bool>) {
-            if (!lua_isboolean(L, 1))
+            if (!lua_isboolean(L, -1))
                 throw std::runtime_error(LUA_VARIABLE_NFOUND_BOOL + name_var);
 
-            return lua_toboolean(L, 1);
+            value = lua_toboolean(L, -1);
         }
         else
             throw std::runtime_error(LUA_VARIABLE_UNK + name_var);
+
+        lua_pop(L, 1);
+
+        return std::any_cast<T>(value);
     }
 
     template<typename T> void create_var__nmutex(std::string name_var, T &&value = {}){

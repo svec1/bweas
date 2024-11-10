@@ -1,6 +1,8 @@
 #include <gtest/gtest.h>
 #include <bs/tools/bwlua.hpp>
 
+#include <ctype.h>
+
 #define TEST1_SOURCE_LUA \
 "\
 str_g = \"\"\n\
@@ -21,10 +23,6 @@ end \
 test_func1_welcome() \
 "
 
-#define call_test_func1 ltest.call_function__nmutex<std::string, bwlua::lua::nil>("test_func1_welcome", bwlua::lua::nil{})
-#define call_test_func2(num1, str1, num2, str2) ltest.call_function__nmutex<int, int, std::string, int, std::string>("test_func2", num1, str1, num2, str2)
-#define call_test_func3(list) ltest.call_function__nmutex<int, std::vector<int>>("test_func3", list)
-
 TEST(BWWRAP_LUA, WorkClassBwLua){
     bwlua::lua ltest;
     ASSERT_NO_THROW(ltest.create__nmutex(TEST1_SOURCE_LUA));
@@ -38,14 +36,33 @@ TEST(BWWRAP_LUA, NoThrowClassBwLuaCallFuncion){
     int num_tmp;
 
     // test_func1_welcome()
-    ASSERT_NO_THROW(str_tmp = call_test_func1);
+    ASSERT_NO_THROW({
+        str_tmp = ltest.call_function__nmutex<std::string>("test_func1_welcome", bwlua::lua::nil{});
+    });
     ASSERT_EQ(str_tmp, "Hello, World!");
 
     // test_func2()
-    ASSERT_NO_THROW(num_tmp = call_test_func2(4, "Hello, ", 5, "World!"));
+    ASSERT_NO_THROW({
+        num_tmp = ltest.call_function__nmutex<int>("test_func2", 4, "Hello, ", 5, "World!");
+    });
     ASSERT_EQ(num_tmp, 9);
-    ASSERT_EQ(ltest.get_var__nmutex<std::string>("str_g"), "Hello, World!");
 
-    ASSERT_NO_THROW(num_tmp = call_test_func3(nums));
+    // test_func3()
+    ASSERT_NO_THROW({
+        num_tmp = ltest.call_function__nmutex<int>("test_func3", nums);
+    });
     ASSERT_EQ(num_tmp, 15);
+}
+
+TEST(BWWRAP_LUA, NoThrowClassBwLuaVariable){
+    bwlua::lua ltest(TEST1_SOURCE_LUA);
+    int num_tmp;
+
+    for(int i = 0; i < 100; ++i){
+        ASSERT_NO_THROW({
+            num_tmp = ltest.call_function__nmutex<int>("test_func2", i, "Hello, ", i*10, "World!");
+        });
+        ASSERT_EQ(num_tmp, i + i*10);
+        ASSERT_EQ(ltest.get_var__nmutex<std::string>("str_g"), "Hello, World!");
+    }
 }
