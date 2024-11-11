@@ -38,6 +38,7 @@ struct token {
         : token_t(tk_t), token_val(tk_val), pos_defined_line(pos_def_line), pos_beg_defined_sym(pos_beg_def_sym) {
     }
 
+
     token_type token_t;
     std::string token_val;
 
@@ -47,6 +48,12 @@ struct token {
     // token position in the line (symbol number)
     u32t pos_beg_defined_sym{0};
 };
+static inline bool operator==(const token& tk1, const token& tk2){
+    if(tk1.token_t == tk2.token_t && tk1.token_val == tk2.token_val && 
+       tk1.pos_defined_line == tk2.pos_defined_line && tk1.pos_beg_defined_sym == tk2.pos_beg_defined_sym)
+        return 1;
+    return 0;
+}
 } // namespace token_expr
 
 #endif

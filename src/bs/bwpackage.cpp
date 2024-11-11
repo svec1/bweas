@@ -1,4 +1,6 @@
 #include "bwpackage.hpp"
+
+#include "tools/bwlz4.hpp"
 #include <nlohmann/json.hpp>
 
 using namespace bweas;

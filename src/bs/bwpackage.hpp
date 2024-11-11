@@ -2,7 +2,6 @@
 #define BWPACKAGE__H
 
 #include "bw_defs.hpp"
-#include "tools/bwlz4.hpp"
 
 // Package expansion
 #define BW_FORMAT_PACKAGE ".bweas-package"

@@ -5,8 +5,6 @@
 #include "scope.hpp"
 #include "static_linking_func.hpp"
 
-#include "../tools/exception.hpp"
-
 #include <unordered_map>
 
 namespace semantic_an {
@@ -22,6 +20,22 @@ namespace semantic_an {
 using table_func = std::unordered_map<std::string, aef_expr::notion_func>;
 
 extern var::scope global_scope;
+
+class semantic_excp : public bw_excp::bweas_exception {
+  public:
+    semantic_excp(std::string _what_hp, std::string number_err)
+        : what_hp(_what_hp), bweas_exception("SMT" + number_err) {
+    }
+    ~semantic_excp() noexcept override final = default;
+
+  public:
+    const char *what() const noexcept override final {
+        return what_hp.c_str();
+    }
+
+  private:
+    std::string what_hp;
+};
 
 class rt_semantic_excp : public bw_excp::bweas_exception {
   public:

@@ -23,7 +23,7 @@ end \
 test_func1_welcome() \
 "
 
-TEST(BWWRAP_LUA, WorkClassBwLua){
+TEST(BWWRAP_LUA, NoThrowInitClassBwLua){
     bwlua::lua ltest;
     ASSERT_NO_THROW(ltest.create__nmutex(TEST1_SOURCE_LUA));
     ASSERT_NO_THROW(ltest.close__nmutex());
@@ -54,7 +54,7 @@ TEST(BWWRAP_LUA, NoThrowClassBwLuaCallFuncion){
     ASSERT_EQ(num_tmp, 15);
 }
 
-TEST(BWWRAP_LUA, NoThrowClassBwLuaVariable){
+TEST(BWWRAP_LUA, NoThrowClassBwLuaVariableAStackNBad){
     bwlua::lua ltest(TEST1_SOURCE_LUA);
     int num_tmp;
 

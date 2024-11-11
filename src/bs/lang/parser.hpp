@@ -23,6 +23,22 @@ extern std::string tree_build_visually_str(const abstract_expr_func &aef);
 
 extern aef_expr::params type_param_in_str(std::string str);
 
+class parser_excp : public bw_excp::bweas_exception {
+  public:
+    parser_excp(std::string _what_hp, std::string number_err)
+        : what_hp(_what_hp), bweas_exception("PARS" + number_err) {
+    }
+    ~parser_excp() noexcept override final = default;
+
+  public:
+    const char *what() const noexcept override final {
+        return what_hp.c_str();
+    }
+
+  private:
+    std::string what_hp;
+};
+
 class pars_an {
   public:
     pars_an();

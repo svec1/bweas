@@ -2,6 +2,7 @@
 #define _LEXER__H
 
 #include "token.hpp"
+#include "../tools/exception.hpp"
 
 #include <string>
 #include <vector>
@@ -11,6 +12,22 @@ namespace lexer {
 #define STR_KEYWORD_IF "if"
 #define STR_KEYWORD_ELSE "else"
 #define STR_KEYWORD_ENDIF "endif"
+
+class lexer_excp : public bw_excp::bweas_exception {
+  public:
+    lexer_excp(std::string _what_hp, std::string number_err)
+        : what_hp(_what_hp), bweas_exception("LEX" + number_err) {
+    }
+    ~lexer_excp() noexcept override final = default;
+
+  public:
+    const char *what() const noexcept override final {
+        return what_hp.c_str();
+    }
+
+  private:
+    std::string what_hp;
+};
 
 class lex_an {
   public:

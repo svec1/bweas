@@ -5,8 +5,8 @@ add_executable(${PROJECT_NAME} mtest.cpp)
 
 find_package(GTest CONFIG REQUIRED)
 
-target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_SOURCE_DIR}/src ${BWEAS_INCLUDE})
-target_link_libraries(${PROJECT_NAME} PUBLIC GTest::gtest_main ${BWEAS_LIBS})
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries(${PROJECT_NAME} PRIVATE slbweas GTest::gtest_main)
 
 include(GoogleTest)
 gtest_discover_tests(${PROJECT_NAME})
