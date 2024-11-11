@@ -70,6 +70,9 @@ cmake --build .
 
 <br>
 
+> [!TIP]
+> To build tests, pass -DBWEAS_TEST=ON as an option to cmake
+
 <img alt="Static Badge" src="https://img.shields.io/badge/build-passing-brightgree"> <img alt="Static Badge" src="https://img.shields.io/badge/release-pending-red">
 
 ## Examples
