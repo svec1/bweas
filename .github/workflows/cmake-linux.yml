@@ -38,7 +38,7 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt update
-        sudo apt install nlohmann-json3-dev liblz4-dev
+        sudo apt install nlohmann-json3-dev liblz4-dev libgtest-dev
         git clone https://github.com/LuaJIT/LuaJIT
         cd LuaJIT
         sudo make install
@@ -57,6 +57,7 @@ jobs:
         -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
         -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
         -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+        -DBWEAS_TEST=ON
         -S ${{ github.workspace }}
 
     - name: Build

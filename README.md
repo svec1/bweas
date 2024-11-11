@@ -67,6 +67,8 @@ cd build
 cmake -DBWEAS_BUILD_VCPKG=ON ..
 cmake --build .
 ```
+> [!TIP]
+> To build tests, pass -DBWEAS_TEST=ON as an option to cmake
 
 <br>
 
