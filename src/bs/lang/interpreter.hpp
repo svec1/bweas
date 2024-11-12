@@ -10,8 +10,8 @@ namespace interpreter {
     try {                                                                                                              \
         action                                                                                                         \
     }                                                                                                                  \
-    catch (std::exception & excp) {                                                                                    \
-        assist.call_err("RTT000", excp.what());                                                                        \
+    catch (bw_excp::bweas_exception & excp) {                                                                          \
+        assist.call_err(excp.get_assist_err(), excp.what());                                                           \
     }
 
 #define wrap_callf_interpreter(action, debug)                                                                          \

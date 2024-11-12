@@ -147,8 +147,7 @@ void semantic_analyzer::smt_zero_pass(const abstract_expr_func &expr_s) {
                 notion_all_func.insert(n_link_func_spec);
                 continue;
             }
-
-            assist.call_err("SMT000", build_pos_tokenb_str(expr_s[i].expr_func.func_t));
+            throw semantic_excp(build_pos_tokenb_str(expr_s[i].expr_func.func_t), "000");
         }
     }
 }
@@ -163,7 +162,7 @@ void semantic_analyzer::smt_first_pass(abstract_expr_func &expr_s) {
                 (expr_s[i].expr_func.func_n.expected_args.size() - 1 == expr_s[i].sub_expr_s.size() ||
                  expr_s[i].expr_func.func_n.expected_args.size() < expr_s[i].sub_expr_s.size()))
                 goto check_valid_exp_type;
-            assist.call_err("SMT001", build_pos_tokenb_str(expr_s[i].expr_func.func_t));
+            throw semantic_excp(build_pos_tokenb_str(expr_s[i].expr_func.func_t), "001");
         }
         else if (expr_s[i].sub_expr_s.size() == 0)
             continue;
@@ -175,45 +174,46 @@ void semantic_analyzer::smt_first_pass(abstract_expr_func &expr_s) {
                  expr_s[i].expr_func.func_n.expected_args[j] == params::NCHECK_VAR_ID ||
                  expr_s[i].expr_func.func_n.expected_args[j] == params::VAR_STRUCT_ID) &&
                 expr_s[i].sub_expr_s[j].subexpr_t != subexpressions::type_subexpr::ID)
-                assist.call_err("SMT001", build_pos_subexpr_str(expr_s[i].sub_expr_s[j]) + " Expected: [VAR ID]\n");
+                throw semantic_excp(build_pos_subexpr_str(expr_s[i].sub_expr_s[j]) + " Expected: [VAR ID]\n", "001");
             else if (expr_s[i].expr_func.func_n.expected_args[j] == params::ANY_VALUE_WITHOUT_FUTUREID_NEXT &&
                      expr_s[i].sub_expr_s[j].subexpr_t != subexpressions::type_subexpr::STRING &&
                      expr_s[i].sub_expr_s[j].subexpr_t != subexpressions::type_subexpr::STRING_ADD &&
                      expr_s[i].sub_expr_s[j].subexpr_t != subexpressions::type_subexpr::INT &&
                      expr_s[i].sub_expr_s[j].subexpr_t != subexpressions::type_subexpr::INT_COMPARE &&
                      expr_s[i].sub_expr_s[j].subexpr_t != subexpressions::type_subexpr::ID)
-                assist.call_err("SMT001", build_pos_subexpr_str(expr_s[i].sub_expr_s[j]) +
-                                              " Expected: [STRING] OR [NUMBER] OR [VAR ID]\n");
+                throw semantic_excp(build_pos_subexpr_str(expr_s[i].sub_expr_s[j]) +
+                                        " Expected: [STRING] OR [NUMBER] OR [VAR ID]\n",
+                                    "001");
             else if (expr_s[i].expr_func.func_n.expected_args[j] == params::LIT_STR &&
                      expr_s[i].sub_expr_s[j].subexpr_t != subexpressions::type_subexpr::STRING &&
                      expr_s[i].sub_expr_s[j].subexpr_t != subexpressions::type_subexpr::STRING_ADD)
-                assist.call_err("SMT001", build_pos_subexpr_str(expr_s[i].sub_expr_s[j]) + " Expected: [STRING]\n");
+                throw semantic_excp(build_pos_subexpr_str(expr_s[i].sub_expr_s[j]) + " Expected: [STRING]\n", "001");
             else if (expr_s[i].expr_func.func_n.expected_args[j] == params::LIT_NUM &&
                      expr_s[i].sub_expr_s[j].subexpr_t != subexpressions::type_subexpr::INT &&
                      expr_s[i].sub_expr_s[j].subexpr_t != subexpressions::type_subexpr::INT_COMPARE)
-                assist.call_err("SMT001", build_pos_subexpr_str(expr_s[i].sub_expr_s[j]) + " Expected: [NUMBER]\n");
+                throw semantic_excp(build_pos_subexpr_str(expr_s[i].sub_expr_s[j]) + " Expected: [NUMBER]\n", "001");
             else if (expr_s[i].expr_func.func_n.expected_args[j] == params::LSTR_OR_ID_VAR &&
                      expr_s[i].sub_expr_s[j].subexpr_t != subexpressions::type_subexpr::STRING &&
                      expr_s[i].sub_expr_s[j].subexpr_t != subexpressions::type_subexpr::STRING_ADD &&
                      expr_s[i].sub_expr_s[j].subexpr_t != subexpressions::type_subexpr::ID)
-                assist.call_err("SMT001",
-                                build_pos_subexpr_str(expr_s[i].sub_expr_s[j]) + " Expected: [STRING] OR [VAR ID]\n");
+                throw semantic_excp(
+                    build_pos_subexpr_str(expr_s[i].sub_expr_s[j]) + " Expected: [STRING] OR [VAR ID]\n", "001");
             else if (expr_s[i].expr_func.func_n.expected_args[j] == params::LNUM_OR_ID_VAR &&
                      expr_s[i].sub_expr_s[j].subexpr_t != subexpressions::type_subexpr::INT &&
                      expr_s[i].sub_expr_s[j].subexpr_t != subexpressions::type_subexpr::INT_COMPARE &&
                      expr_s[i].sub_expr_s[j].subexpr_t != subexpressions::type_subexpr::ID)
-                assist.call_err("SMT001",
-                                build_pos_subexpr_str(expr_s[i].sub_expr_s[j]) + " Expected: [NUMBER] OR [VAR ID]\n");
+                throw semantic_excp(
+                    build_pos_subexpr_str(expr_s[i].sub_expr_s[j]) + " Expected: [NUMBER] OR [VAR ID]\n", "001");
             else if (expr_s[i].expr_func.func_n.expected_args[j] == params::NEXT_TOO) {
                 if (j == 0 || j != expr_s[i].expr_func.func_n.expected_args.size() - 1)
-                    assist.call_err("SMT002", build_pos_tokenb_str(expr_s[i].expr_func.func_t));
+                    throw semantic_excp(build_pos_tokenb_str(expr_s[i].expr_func.func_t), "002");
                 for (u32t b = j; b < expr_s[i].sub_expr_s.size(); ++b) {
                     if ((expr_s[i].expr_func.func_n.expected_args[j - 1] == params::FUTURE_VAR_ID ||
                          expr_s[i].expr_func.func_n.expected_args[j - 1] == params::VAR_ID ||
                          expr_s[i].expr_func.func_n.expected_args[j - 1] == params::VAR_STRUCT_ID) &&
                         expr_s[i].sub_expr_s[b].subexpr_t != subexpressions::type_subexpr::ID)
-                        assist.call_err("SMT001",
-                                        build_pos_subexpr_str(expr_s[i].sub_expr_s[b]) + " Expected: [VAR ID]\n");
+                        throw semantic_excp(build_pos_subexpr_str(expr_s[i].sub_expr_s[b]) + " Expected: [VAR ID]\n",
+                                            "001");
                     else if (expr_s[i].expr_func.func_n.expected_args[j - 1] ==
                              params::ANY_VALUE_WITHOUT_FUTUREID_NEXT) {
                         if (expr_s[i].sub_expr_s[j - 1].token_of_subexpr[0].token_t ==
@@ -221,38 +221,42 @@ void semantic_analyzer::smt_first_pass(abstract_expr_func &expr_s) {
                             expr_s[i].sub_expr_s[b].subexpr_t != subexpressions::type_subexpr::INT &&
                             expr_s[i].sub_expr_s[b].subexpr_t != subexpressions::type_subexpr::INT_COMPARE &&
                             expr_s[i].sub_expr_s[b].subexpr_t != subexpressions::type_subexpr::ID)
-                            assist.call_err("SMT001", build_pos_subexpr_str(expr_s[i].sub_expr_s[b]) +
-                                                          " Expected: [NUMBER] or VAR ID->[NUMBER]\n");
+                            throw semantic_excp(build_pos_subexpr_str(expr_s[i].sub_expr_s[b]) +
+                                                    " Expected: [NUMBER] or VAR ID->[NUMBER]\n",
+                                                "001");
                         else if (expr_s[i].sub_expr_s[j - 1].token_of_subexpr[0].token_t ==
                                      token_expr::token_type::LITERALS &&
                                  expr_s[i].sub_expr_s[b].subexpr_t != subexpressions::type_subexpr::STRING &&
                                  expr_s[i].sub_expr_s[b].subexpr_t != subexpressions::type_subexpr::STRING_ADD &&
                                  expr_s[i].sub_expr_s[b].subexpr_t != subexpressions::type_subexpr::ID)
-                            assist.call_err("SMT001", build_pos_subexpr_str(expr_s[i].sub_expr_s[b]) +
-                                                          " Expected: [STRING] or [VAR ID->[STRING]]\n");
+                            throw semantic_excp(build_pos_subexpr_str(expr_s[i].sub_expr_s[b]) +
+                                                    " Expected: [STRING] or [VAR ID->[STRING]]\n",
+                                                "001");
                     }
                     else if (expr_s[i].expr_func.func_n.expected_args[j - 1] == params::LIT_STR &&
                              expr_s[i].sub_expr_s[b].subexpr_t != subexpressions::type_subexpr::STRING &&
                              expr_s[i].sub_expr_s[b].subexpr_t != subexpressions::type_subexpr::STRING_ADD)
-                        assist.call_err("SMT001",
-                                        build_pos_subexpr_str(expr_s[i].sub_expr_s[b]) + " Expected: [STRING]\n");
+                        throw semantic_excp(build_pos_subexpr_str(expr_s[i].sub_expr_s[b]) + " Expected: [STRING]\n",
+                                            "001");
                     else if (expr_s[i].expr_func.func_n.expected_args[j - 1] == params::LIT_NUM &&
                              expr_s[i].sub_expr_s[b].subexpr_t != subexpressions::type_subexpr::INT &&
                              expr_s[i].sub_expr_s[b].subexpr_t != subexpressions::type_subexpr::INT_COMPARE)
-                        assist.call_err("SMT001",
-                                        build_pos_subexpr_str(expr_s[i].sub_expr_s[b]) + " Expected: [NUMBER]\n");
+                        throw semantic_excp(build_pos_subexpr_str(expr_s[i].sub_expr_s[b]) + " Expected: [NUMBER]\n",
+                                            "001");
                     else if (expr_s[i].expr_func.func_n.expected_args[j - 1] == params::LSTR_OR_ID_VAR &&
                              expr_s[i].sub_expr_s[b].subexpr_t != subexpressions::type_subexpr::STRING &&
                              expr_s[i].sub_expr_s[b].subexpr_t != subexpressions::type_subexpr::STRING_ADD &&
                              expr_s[i].sub_expr_s[b].subexpr_t != subexpressions::type_subexpr::ID)
-                        assist.call_err("SMT001", build_pos_subexpr_str(expr_s[i].sub_expr_s[b]) +
-                                                      " Expected: [STRING] OR [VAR ID]\n");
+                        throw semantic_excp(build_pos_subexpr_str(expr_s[i].sub_expr_s[b]) +
+                                                " Expected: [STRING] OR [VAR ID]\n",
+                                            "001");
                     else if (expr_s[i].expr_func.func_n.expected_args[j - 1] == params::LNUM_OR_ID_VAR &&
                              expr_s[i].sub_expr_s[b].subexpr_t != subexpressions::type_subexpr::INT &&
                              expr_s[i].sub_expr_s[b].subexpr_t != subexpressions::type_subexpr::INT_COMPARE &&
                              expr_s[i].sub_expr_s[b].subexpr_t != subexpressions::type_subexpr::ID)
-                        assist.call_err("SMT001", build_pos_subexpr_str(expr_s[i].sub_expr_s[b]) +
-                                                      " Expected: [NUMBER] OR [VAR ID]\n");
+                        throw semantic_excp(build_pos_subexpr_str(expr_s[i].sub_expr_s[b]) +
+                                                " Expected: [NUMBER] OR [VAR ID]\n",
+                                            "001");
                 }
                 break;
             }
@@ -285,18 +289,18 @@ void semantic_analyzer::smt_second_pass(abstract_expr_func &expr_s, var::scope &
                     if (before_nextt_param == params::FUTURE_VAR_ID) {
                         u32t index_type = curr_scope.what_type(expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_val);
                         if (index_type != 0)
-                            assist.call_err("SMT010",
-                                            build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]) +
-                                                " Expected: NEW [VAR ID]\n");
+                            throw semantic_excp(build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]) +
+                                                    " Expected: NEW [VAR ID]\n",
+                                                "010");
                     }
                     else if (before_nextt_param == params::NCHECK_VAR_ID)
                         continue;
                     else if (before_nextt_param == params::VAR_STRUCT_ID) {
                         u32t index_type = curr_scope.what_type(expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_val);
                         if (index_type != 5 && index_type != 6)
-                            assist.call_err("SMT011",
-                                            build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]) +
-                                                " Expected: [VAR STRUCT ID]\n");
+                            throw semantic_excp(build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]) +
+                                                    " Expected: [VAR STRUCT ID]\n",
+                                                "011");
                     }
                     else if (before_nextt_param == params::ANY_VALUE_WITHOUT_FUTUREID_NEXT) {
                         if (expr_s[i].sub_expr_s[index_before_nextt_param].returned_type_subexpr() ==
@@ -309,10 +313,9 @@ void semantic_analyzer::smt_second_pass(abstract_expr_func &expr_s, var::scope &
                                 if (index_type == 1 || index_type == 3)
                                     continue;
                             }
-
-                            assist.call_err("SMT012",
-                                            build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]) +
-                                                " Expected: Expression with return type of INT\n");
+                            throw semantic_excp(build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]) +
+                                                    " Expected: Expression with return type of INT\n",
+                                                "012");
                         }
                         else if (expr_s[i].sub_expr_s[index_before_nextt_param].returned_type_subexpr() ==
                                      subexpressions::ret_type_subexpr::STRING &&
@@ -325,10 +328,9 @@ void semantic_analyzer::smt_second_pass(abstract_expr_func &expr_s, var::scope &
                                 if (index_type == 2 || index_type == 4)
                                     continue;
                             }
-
-                            assist.call_err("SMT012",
-                                            build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]) +
-                                                " Expected: Expression with return type of STRING\n");
+                            throw semantic_excp(build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]) +
+                                                    " Expected: Expression with return type of STRING\n",
+                                                "012");
                         }
                         else if (expr_s[i].sub_expr_s[index_before_nextt_param].returned_type_subexpr() ==
                                  subexpressions::ret_type_subexpr::ID) {
@@ -344,9 +346,9 @@ void semantic_analyzer::smt_second_pass(abstract_expr_func &expr_s, var::scope &
                                     if (index_type == 1 || index_type == 3)
                                         continue;
                                 }
-                                assist.call_err("SMT012",
-                                                build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]) +
-                                                    " Expected: Expression with return type of INT\n");
+                                throw semantic_excp(build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]) +
+                                                        " Expected: Expression with return type of INT\n",
+                                                    "012");
                             }
                             else if ((index_type == 2 || index_type == 4) &&
                                      expr_s[i].sub_expr_s[j].returned_type_subexpr() !=
@@ -358,35 +360,36 @@ void semantic_analyzer::smt_second_pass(abstract_expr_func &expr_s, var::scope &
                                     if (index_type == 2 || index_type == 4)
                                         continue;
                                 }
-                                assist.call_err("SMT012",
-                                                build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]) +
-                                                    " Expected: Expression with return type of STRING\n");
+                                throw semantic_excp(build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]) +
+                                                        " Expected: Expression with return type of STRING\n",
+                                                    "012");
                             }
                         }
                     }
                     else if (expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_t == token_expr::token_type::ID) {
                         u32t index_type = curr_scope.what_type(expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_val);
                         if (before_nextt_param == params::VAR_ID && index_type == 0)
-                            assist.call_err("SMT008",
-                                            build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]) +
-                                                " Expected: exist variable with any type\n");
+                            throw semantic_excp(build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]) +
+                                                    " Expected: exist variable with any type\n",
+                                                "008");
                         else if (index_type == 3 || index_type == 4)
                             continue;
                         else if (before_nextt_param == params::LNUM_OR_ID_VAR && index_type != 1)
-                            assist.call_err("SMT004",
-                                            build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]) +
-                                                " Expected: [VAR ID->[NUMBER]]\n");
+                            throw semantic_excp(build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]) +
+                                                " Expected: [VAR ID->[NUMBER]]\n",
+                                                "004");
                         else if (before_nextt_param == params::LSTR_OR_ID_VAR && index_type != 2)
-                            assist.call_err("SMT004",
-                                            build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]) +
-                                                " Expected: [VAR ID->[STRING]]\n");
+                            throw semantic_excp(build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]) +
+                                                " Expected: [VAR ID->[STRING]]\n",
+                                                "004");
                     }
                 }
                 else if (expr_s[i].expr_func.func_n.expected_args[j] == params::FUTURE_VAR_ID) {
                     u32t index_type = curr_scope.what_type(expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_val);
                     if (index_type != 0)
-                        assist.call_err("SMT010", build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]) +
-                                                      " Expected: NEW [VAR ID]\n");
+                        throw semantic_excp(build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]) +
+                                                      " Expected: NEW [VAR ID]\n",
+                                                "010");
                 }
                 else if (expr_s[i].expr_func.func_n.expected_args[j] == params::NCHECK_VAR_ID) {
                     continue;
@@ -394,35 +397,40 @@ void semantic_analyzer::smt_second_pass(abstract_expr_func &expr_s, var::scope &
                 else if (expr_s[i].expr_func.func_n.expected_args[j] == params::VAR_STRUCT_ID) {
                     u32t index_type = curr_scope.what_type(expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_val);
                     if (index_type != 5 && index_type != 6)
-                        assist.call_err("SMT011", build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]) +
-                                                      " Expected: [VAR STRUCT ID]\n");
+                        throw semantic_excp(build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]) +
+                                                      " Expected: [VAR STRUCT ID]\n",
+                                                "011");
                 }
                 else if (expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_t == token_expr::token_type::ID) {
                     u32t index_type = curr_scope.what_type(expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_val);
                     if (expr_s[i].expr_func.func_n.expected_args[j] == params::VAR_ID && index_type == 0)
-                        assist.call_err("SMT008", build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]) +
-                                                      " Expected: exist variable with any type\n");
+                        throw semantic_excp(build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]) +
+                                                      " Expected: exist variable with any type\n",
+                                                "008");
                     else if ((index_type == 3 || index_type == 4) &&
                              j < expr_s[i].expr_func.func_n.expected_args.size() - 1) {
                         if (expr_s[i].expr_func.func_n.expected_args[j + 1] != params::NEXT_TOO)
                             if (expr_s[i].expr_func.func_n.expected_args[j] == params::LNUM_OR_ID_VAR)
-                                assist.call_err("SMT004",
-                                                build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]) +
-                                                    " Expected: [VAR ID->[NUMBER]]\n");
+                                throw semantic_excp(build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]) +
+                                                    " Expected: [VAR ID->[NUMBER]]\n",
+                                                "004");
                             else
-                                assist.call_err("SMT004",
-                                                build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]) +
-                                                    " Expected: [VAR ID->[STRING]]\n");
+                                throw semantic_excp(build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]) +
+                                                    " Expected: [VAR ID->[STRING]]\n",
+                                                "004");
                     }
                     else if (expr_s[i].expr_func.func_n.expected_args[j] == params::LNUM_OR_ID_VAR && index_type != 1)
-                        assist.call_err("SMT004", build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]) +
-                                                      " Expected: [VAR ID->[NUMBER]]\n");
+                        throw semantic_excp(build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]) +
+                                                      " Expected: [VAR ID->[NUMBER]]\n",
+                                                "004");
                     else if (expr_s[i].expr_func.func_n.expected_args[j] == params::LSTR_OR_ID_VAR && index_type != 2)
-                        assist.call_err("SMT004", build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]) +
-                                                      " Expected: [VAR ID->[STRING]]\n");
+                        throw semantic_excp(build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]) +
+                                                      " Expected: [VAR ID->[STRING]]\n",
+                                                "004");
                     else if (index_type == 5 || index_type == 6)
-                        assist.call_err("SMT004", build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]) +
-                                                      " Expected: [VAR ID->([NUMBER] or [STRING])]\n");
+                        throw semantic_excp(build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]) +
+                                                      " Expected: [VAR ID->([NUMBER] or [STRING])]\n",
+                                                "004");
                 }
             }
         }
@@ -468,7 +476,7 @@ void semantic_analyzer::smt_second_pass(abstract_expr_func &expr_s, var::scope &
             }
             else if (expr_s[i].expr_func.func_t.token_val == STR_KEYWORD_ELSE) {
                 if (!branch_s.size() || branch_s[branch_s.size() - 1].second)
-                    assist.call_err("SMT015", build_pos_tokenb_str(expr_s[i].expr_func.func_t));
+                    throw semantic_excp(build_pos_tokenb_str(expr_s[i].expr_func.func_t), "015");
 
                 if (branch_s[branch_s.size() - 1].first)
                     skip = 1;
@@ -476,7 +484,7 @@ void semantic_analyzer::smt_second_pass(abstract_expr_func &expr_s, var::scope &
             else if (expr_s[i].expr_func.func_t.token_val == STR_KEYWORD_ENDIF) {
             endif_end:
                 if (!branch_s.size())
-                    assist.call_err("SMT014", build_pos_tokenb_str(expr_s[i].expr_func.func_t));
+                    throw semantic_excp(build_pos_tokenb_str(expr_s[i].expr_func.func_t), "014");
 
                 skip = 0;
                 if (branch_s[branch_s.size() - 1].second ||
@@ -484,7 +492,7 @@ void semantic_analyzer::smt_second_pass(abstract_expr_func &expr_s, var::scope &
                     branch_s.pop_back();
             }
             else
-                assist.call_err("SMT016", build_pos_tokenb_str(expr_s[i].expr_func.func_t));
+                throw semantic_excp(build_pos_tokenb_str(expr_s[i].expr_func.func_t), "016");
             expr_s.erase(expr_s.begin() + i);
             --i;
         }
@@ -499,7 +507,7 @@ void semantic_analyzer::smt_second_pass(abstract_expr_func &expr_s, var::scope &
     }
 
     if (branch_s.size())
-        assist.call_err("SMT013", "End Of AEF");
+        throw semantic_excp("End Of AEF", "013");
 }
 void semantic_analyzer::parse_subexpr_param(subexpressions &sub_expr, std::vector<subexpressions> &sub_exprs,
                                             u32t &pos_sub_expr_in_vec, var::scope &curr_scope, params expected_param) {

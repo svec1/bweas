@@ -160,6 +160,8 @@ class assistant {
     // detects and handles the error
     void call_err(std::string name_err);
     void call_err(std::string name_err, std::string addit);
+    // returns description of specified error
+    std::string get_desc_err(std::string name_err);
 
     file_it open_file(std::string name_file, file::mode_file::open mode = file::mode_file::open::r);
     void close_file(file_it file);

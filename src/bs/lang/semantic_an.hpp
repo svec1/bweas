@@ -14,7 +14,7 @@ namespace semantic_an {
         func_decl;                                                                                                     \
     }                                                                                                                  \
     catch (rt_semantic_excp & excp) {                                                                                  \
-        assist.call_err(excp.get_assist_err(), excp.what());                                                           \
+        throw semantic_excp("SEMANTIC RT HANDLE: " + std::string(excp.what()), excp.get_assist_err());                 \
     }
 
 using table_func = std::unordered_map<std::string, aef_expr::notion_func>;

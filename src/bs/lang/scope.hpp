@@ -4,6 +4,7 @@
 #include "../../kernel/high_level/bwtype.h"
 
 #include "../tools/call_cmd.hpp"
+#include "../tools/exception.hpp"
 #include "static_struct.hpp"
 #include "var.hpp"
 
@@ -32,6 +33,22 @@ inline std::string type_var_to_str(u32t ind) {
     return "undef";
 }
 
+class scope_excp : public bw_excp::bweas_exception {
+  public:
+    scope_excp(std::string _what_hp, std::string number_err)
+        : what_hp(_what_hp), bweas_exception("SCOP" + number_err) {
+    }
+    ~scope_excp() noexcept override final = default;
+
+  public:
+    const char *what() const noexcept override final {
+        return what_hp.c_str();
+    }
+
+  private:
+    std::string what_hp;
+};
+
 class scope {
   public:
     inline scope();
@@ -46,10 +63,8 @@ class scope {
     template <typename T> inline bool try_create_var(std::string name_var, T val = T{});
 
     template <typename T> inline void delete_var(std::string name_var);
-    template <typename T>
 
-    inline T &get_var_value(std::string name_var);
-
+    template <typename T> inline T &get_var_value(std::string name_var);
     template <typename T> inline std::vector<std::pair<std::string, T>> &get_vector_variables_t();
 
     inline bool is_exist(std::string name_var);
@@ -93,196 +108,166 @@ inline scope::scope() {
     }
 }
 
-template <> inline int &scope::create_var<int>(std::string name_var, int val) {
-    if (int_v.create_var(name_var, val))
-        assist.call_err("SCOP001", "int(" + std::to_string(val) + ") <- " + name_var);
-    return int_v.get_val_ref(name_var);
-}
-template <> inline std::string &scope::create_var<std::string>(std::string name_var, std::string val) {
-    if (str_v.create_var(name_var, val))
-        assist.call_err("SCOP001", "string(" + val + ") <- " + name_var);
-    return str_v.get_val_ref(name_var);
-}
-template <>
-inline struct_sb::project &scope::create_var<struct_sb::project>(std::string name_var, struct_sb::project val) {
-    if (prj_v.create_var(name_var, val))
-        assist.call_err("SCOP001", "project(" + val.name_project + ") <- " + name_var);
-    return prj_v.get_val_ref(name_var);
-}
-template <>
-inline struct_sb::target &scope::create_var<struct_sb::target>(std::string name_var, struct_sb::target val) {
-    if (trg_v.create_var(name_var, val))
-        assist.call_err("SCOP001", "target(" + val.name_target + ") <- " + name_var);
-    return trg_v.get_val_ref(name_var);
-}
-template <> inline std::vector<int> &scope::create_var<std::vector<int>>(std::string name_var, std::vector<int> val) {
-    if (vec_int_v.create_var(name_var, val))
-        assist.call_err("SCOP001", "vector<int>(" + std::to_string(val[0]) + ", ..." + ") <- " + name_var);
-    return vec_int_v.get_val_ref(name_var);
-}
-template <>
-inline std::vector<std::string> &scope::create_var<std::vector<std::string>>(std::string name_var,
-                                                                             std::vector<std::string> val) {
-    if (vec_str_v.create_var(name_var, val))
-        assist.call_err("SCOP001", "vector<string>(" + val[0] + ", ..." + ") <- " + name_var);
-    return vec_str_v.get_val_ref(name_var);
-}
-template <>
-inline struct_sb::template_command &scope::create_var<struct_sb::template_command>(std::string name_var,
-                                                                                   struct_sb::template_command val) {
-    if (tcmd_v.create_var(name_var, val))
-        assist.call_err("SCOP001", "template_command(" + val.name + ", ..." + ") <- " + name_var);
-    return tcmd_v.get_val_ref(name_var);
-}
-template <>
-inline struct_sb::call_component &scope::create_var<struct_sb::call_component>(std::string name_var,
-                                                                               struct_sb::call_component val) {
-    if (ccmp_v.create_var(name_var, val))
-        assist.call_err("SCOP001", "call_component(" + val.name + ", ..." + ") <- " + name_var);
-    return ccmp_v.get_val_ref(name_var);
-}
-template <> inline bool scope::try_create_var<int>(std::string name_var, int val) {
-    if (int_v.create_var(name_var, val))
-        return 0;
-    return 1;
-}
-template <> inline bool scope::try_create_var<std::string>(std::string name_var, std::string val) {
-    if (str_v.create_var(name_var, val))
-        return 0;
-    return 1;
-}
-template <> inline bool scope::try_create_var<struct_sb::project>(std::string name_var, struct_sb::project val) {
-    if (prj_v.create_var(name_var, val))
-        return 0;
-    return 1;
-}
-template <> inline bool scope::try_create_var<struct_sb::target>(std::string name_var, struct_sb::target val) {
-    if (trg_v.create_var(name_var, val))
-        return 0;
-    return 1;
-}
-template <> inline bool scope::try_create_var<std::vector<int>>(std::string name_var, std::vector<int> val) {
-    if (vec_int_v.create_var(name_var, val))
-        return 0;
-    return 1;
-}
-template <>
-inline bool scope::try_create_var<std::vector<std::string>>(std::string name_var, std::vector<std::string> val) {
-    if (vec_str_v.create_var(name_var, val))
-        return 0;
-    return 1;
-}
-template <>
-inline bool scope::try_create_var<struct_sb::template_command>(std::string name_var, struct_sb::template_command val) {
-    if (tcmd_v.create_var(name_var, val))
-        return 0;
-    return 1;
-}
-template <>
-inline bool scope::try_create_var<struct_sb::call_component>(std::string name_var, struct_sb::call_component val) {
-    if (ccmp_v.create_var(name_var, val))
-        return 0;
-    return 1;
+template <typename T> inline T &scope::create_var(std::string name_var, T val) {
+    if constexpr (std::is_same_v<T, int>) {
+        if (int_v.create_var(name_var, val))
+            throw scope_excp("int(" + std::to_string(val) + ") <- " + name_var, "001");
+        return int_v.get_val_ref(name_var);
+    }
+    else if constexpr (std::is_same_v<T, std::string>) {
+        if (str_v.create_var(name_var, val))
+            throw scope_excp("string(" + val + ") <- " + name_var, "001");
+        return str_v.get_val_ref(name_var);
+    }
+    else if constexpr (std::is_same_v<T, struct_sb::project>) {
+        if (prj_v.create_var(name_var, val))
+            throw scope_excp("project(" + val.name_project + ") <- " + name_var, "001");
+        return prj_v.get_val_ref(name_var);
+    }
+    else if constexpr (std::is_same_v<T, struct_sb::target>) {
+        if (trg_v.create_var(name_var, val))
+            throw scope_excp("target(" + val.name_target + ") <- " + name_var, "001");
+        return trg_v.get_val_ref(name_var);
+    }
+    else if constexpr (std::is_same_v<T, std::vector<int>>) {
+        if (vec_int_v.create_var(name_var, val))
+            throw scope_excp("vector<int>(" + std::to_string(val[0]) + ", ..." + ") <- " + name_var, "001");
+        return vec_int_v.get_val_ref(name_var);
+    }
+    else if constexpr (std::is_same_v<T, std::vector<std::string>>) {
+        if (vec_str_v.create_var(name_var, val))
+            throw scope_excp("vector<string>(" + val[0] + ", ..." + ") <- " + name_var, "001");
+        return vec_str_v.get_val_ref(name_var);
+    }
+    else if constexpr (std::is_same_v<T, struct_sb::template_command>) {
+        if (tcmd_v.create_var(name_var, val))
+            throw scope_excp("template_command(" + val.name + ", ..." + ") <- " + name_var, "001");
+        return tcmd_v.get_val_ref(name_var);
+    }
+    else if constexpr (std::is_same_v<T, struct_sb::call_component>) {
+        if (ccmp_v.create_var(name_var, val))
+            throw scope_excp("call_component(" + val.name + ", ..." + ") <- " + name_var, "001");
+        return ccmp_v.get_val_ref(name_var);
+    }
 }
 
-template <> inline void scope::delete_var<int>(std::string name_var) {
-    if (int_v.delete_var(name_var))
-        assist.call_err("SCOP000", "int() <- " + name_var);
-}
-template <> inline void scope::delete_var<std::string>(std::string name_var) {
-    if (str_v.delete_var(name_var))
-        assist.call_err("SCOP000", "string() <- " + name_var);
-}
-template <> inline void scope::delete_var<struct_sb::project>(std::string name_var) {
-    if (prj_v.delete_var(name_var))
-        assist.call_err("SCOP000", "project() <- " + name_var);
-}
-template <> inline void scope::delete_var<struct_sb::target>(std::string name_var) {
-    if (trg_v.delete_var(name_var))
-        assist.call_err("SCOP000", "target() <- " + name_var);
-}
-template <> inline void scope::delete_var<std::vector<int>>(std::string name_var) {
-    if (vec_int_v.delete_var(name_var))
-        assist.call_err("SCOP000", "vector<int>() <- " + name_var);
-}
-template <> inline void scope::delete_var<std::vector<std::string>>(std::string name_var) {
-    if (vec_str_v.delete_var(name_var))
-        assist.call_err("SCOP000", "vector<std::string>() <- " + name_var);
-}
-template <> inline void scope::delete_var<struct_sb::template_command>(std::string name_var) {
-    if (tcmd_v.delete_var(name_var))
-        assist.call_err("SCOP000", "template_command() <- " + name_var);
-}
-template <> inline void scope::delete_var<struct_sb::call_component>(std::string name_var) {
-    if (ccmp_v.delete_var(name_var))
-        assist.call_err("SCOP000", "call_component() <- " + name_var);
+template <typename T> inline bool scope::try_create_var(std::string name_var, T val) {
+    bool creates = 0;
+    if constexpr (std::is_same_v<T, int>)
+        creates = int_v.create_var(name_var, val);
+    else if constexpr (std::is_same_v<T, std::string>)
+        creates = str_v.create_var(name_var, val);
+    else if constexpr (std::is_same_v<T, struct_sb::project>)
+        creates = prj_v.create_var(name_var, val);
+    else if constexpr (std::is_same_v<T, struct_sb::target>)
+        creates = trg_v.create_var(name_var, val);
+    else if constexpr (std::is_same_v<T, std::vector<int>>)
+        creates = vec_int_v.create_var(name_var, val);
+    else if constexpr (std::is_same_v<T, std::vector<std::string>>)
+        creates = vec_str_v.create_var(name_var, val);
+    else if constexpr (std::is_same_v<T, struct_sb::template_command>)
+        creates = tcmd_v.create_var(name_var, val);
+    else if constexpr (std::is_same_v<T, struct_sb::call_component>)
+        creates = ccmp_v.create_var(name_var, val);
+
+    return !creates;
 }
 
-template <> inline int &scope::get_var_value<int>(std::string name_var) {
-    if (!int_v.is_exist_var(name_var))
-        assist.call_err("SCOP000", "int() <- " + name_var);
-    return int_v.get_val_ref(name_var);
-}
-template <> inline std::string &scope::get_var_value<std::string>(std::string name_var) {
-    if (!str_v.is_exist_var(name_var))
-        assist.call_err("SCOP000", "string() <- " + name_var);
-    return str_v.get_val_ref(name_var);
-}
-template <> inline struct_sb::project &scope::get_var_value<struct_sb::project>(std::string name_var) {
-    if (!prj_v.is_exist_var(name_var))
-        assist.call_err("SCOP000", "project() <- " + name_var);
-    return prj_v.get_val_ref(name_var);
-}
-template <> inline struct_sb::target &scope::get_var_value<struct_sb::target>(std::string name_var) {
-    if (!trg_v.is_exist_var(name_var))
-        assist.call_err("SCOP000", "target() <- " + name_var);
-    return trg_v.get_val_ref(name_var);
-}
-template <> inline std::vector<int> &scope::get_var_value<std::vector<int>>(std::string name_var) {
-    if (!vec_int_v.is_exist_var(name_var))
-        assist.call_err("SCOP000", "vector<int>() <- " + name_var);
-    return vec_int_v.get_val_ref(name_var);
-}
-template <> inline std::vector<std::string> &scope::get_var_value<std::vector<std::string>>(std::string name_var) {
-    if (!vec_str_v.is_exist_var(name_var))
-        assist.call_err("SCOP000", "vector<string>() <- " + name_var);
-    return vec_str_v.get_val_ref(name_var);
-}
-template <>
-inline struct_sb::template_command &scope::get_var_value<struct_sb::template_command>(std::string name_var) {
-    if (!tcmd_v.is_exist_var(name_var))
-        assist.call_err("SCOP000", "template_command() <- " + name_var);
-    return tcmd_v.get_val_ref(name_var);
-}
-template <> inline struct_sb::call_component &scope::get_var_value<struct_sb::call_component>(std::string name_var) {
-    if (!ccmp_v.is_exist_var(name_var))
-        assist.call_err("SCOP000", "template_command() <- " + name_var);
-    return ccmp_v.get_val_ref(name_var);
+template <typename T> inline void scope::delete_var(std::string name_var) {
+    if constexpr (std::is_same_v<T, int>) {
+        if (int_v.delete_var(name_var))
+            throw scope_excp("int() <- " + name_var, "000");
+    }
+    else if constexpr (std::is_same_v<T, std::string>) {
+        if (str_v.delete_var(name_var))
+            throw scope_excp("string() <- " + name_var, "000");
+    }
+    else if constexpr (std::is_same_v<T, struct_sb::project>) {
+        if (prj_v.delete_var(name_var))
+            throw scope_excp("project() <- " + name_var, "000");
+    }
+    else if constexpr (std::is_same_v<T, struct_sb::target>) {
+        if (trg_v.delete_var(name_var))
+            throw scope_excp("target() <- " + name_var, "000");
+    }
+    else if constexpr (std::is_same_v<T, std::vector<int>>) {
+        if (vec_int_v.delete_var(name_var))
+            throw scope_excp("vector<int>() <- " + name_var, "000");
+    }
+    else if constexpr (std::is_same_v<T, std::vector<std::string>>) {
+        if (vec_str_v.delete_var(name_var))
+            throw scope_excp("vector<string>() <- " + name_var, "000");
+    }
+    else if constexpr (std::is_same_v<T, struct_sb::template_command>) {
+        if (tcmd_v.delete_var(name_var))
+            throw scope_excp("template_command() <- " + name_var, "000");
+    }
+    else if constexpr (std::is_same_v<T, struct_sb::call_component>) {
+        if (ccmp_v.delete_var(name_var))
+            throw scope_excp("call_component() <- " + name_var, "000");
+    }
 }
 
-template <> inline std::vector<std::pair<std::string, int>> &scope::get_vector_variables_t() {
-    return int_v.get_vector_variables();
+template <typename T> inline T &scope::get_var_value(std::string name_var) {
+    if constexpr (std::is_same_v<T, int>) {
+        if (!int_v.is_exist_var(name_var))
+            throw scope_excp("int() <- " + name_var, "000");
+        return int_v.get_val_ref(name_var);
+    }
+    else if constexpr (std::is_same_v<T, std::string>) {
+        if (!str_v.is_exist_var(name_var))
+            throw scope_excp("string() <- " + name_var, "000");
+        return str_v.get_val_ref(name_var);
+    }
+    else if constexpr (std::is_same_v<T, struct_sb::project>) {
+        if (!prj_v.is_exist_var(name_var))
+            throw scope_excp("project() <- " + name_var, "000");
+        return prj_v.get_val_ref(name_var);
+    }
+    else if constexpr (std::is_same_v<T, struct_sb::target>) {
+        if (!trg_v.is_exist_var(name_var))
+            throw scope_excp("target() <- " + name_var, "000");
+        return trg_v.get_val_ref(name_var);
+    }
+    else if constexpr (std::is_same_v<T, std::vector<int>>) {
+        if (!vec_int_v.is_exist_var(name_var))
+            throw scope_excp("vector<int>() <- " + name_var, "000");
+        return vec_int_v.get_val_ref(name_var);
+    }
+    else if constexpr (std::is_same_v<T, std::vector<std::string>>) {
+        if (!vec_str_v.is_exist_var(name_var))
+            throw scope_excp("vector<string>() <- " + name_var, "000");
+        return vec_str_v.get_val_ref(name_var);
+    }
+    else if constexpr (std::is_same_v<T, struct_sb::template_command>) {
+        if (!tcmd_v.is_exist_var(name_var))
+            throw scope_excp("template_command() <- " + name_var, "000");
+        return tcmd_v.get_val_ref(name_var);
+    }
+    else if constexpr (std::is_same_v<T, struct_sb::call_component>) {
+        if (!ccmp_v.is_exist_var(name_var))
+            throw scope_excp("call_component() <- " + name_var, "000");
+        return ccmp_v.get_val_ref(name_var);
+    }
 }
-template <> inline std::vector<std::pair<std::string, std::string>> &scope::get_vector_variables_t() {
-    return str_v.get_vector_variables();
-}
-template <> inline std::vector<std::pair<std::string, std::vector<int>>> &scope::get_vector_variables_t() {
-    return vec_int_v.get_vector_variables();
-}
-template <> inline std::vector<std::pair<std::string, std::vector<std::string>>> &scope::get_vector_variables_t() {
-    return vec_str_v.get_vector_variables();
-}
-template <> inline std::vector<std::pair<std::string, struct_sb::project>> &scope::get_vector_variables_t() {
-    return prj_v.get_vector_variables();
-}
-template <> inline std::vector<std::pair<std::string, struct_sb::target>> &scope::get_vector_variables_t() {
-    return trg_v.get_vector_variables();
-}
-template <> inline std::vector<std::pair<std::string, struct_sb::template_command>> &scope::get_vector_variables_t() {
-    return tcmd_v.get_vector_variables();
-}
-template <> inline std::vector<std::pair<std::string, struct_sb::call_component>> &scope::get_vector_variables_t() {
-    return ccmp_v.get_vector_variables();
+
+template <typename T> inline std::vector<std::pair<std::string, T>> &scope::get_vector_variables_t(){
+    if constexpr (std::is_same_v<T, int>)
+        return int_v.get_vector_variables();
+    else if constexpr (std::is_same_v<T, std::string>)
+        return str_v.get_vector_variables();
+    else if constexpr (std::is_same_v<T, struct_sb::project>)
+        return prj_v.get_vector_variables();
+    else if constexpr (std::is_same_v<T, struct_sb::target>)
+        return trg_v.get_vector_variables();
+    else if constexpr (std::is_same_v<T, std::vector<int>>)
+        return vec_int_v.get_vector_variables();
+    else if constexpr (std::is_same_v<T, std::vector<std::string>>)
+        return vec_str_v.get_vector_variables();
+    else if constexpr (std::is_same_v<T, struct_sb::template_command>)
+        return tcmd_v.get_vector_variables();
+    else if constexpr (std::is_same_v<T, struct_sb::call_component>)
+        return ccmp_v.get_vector_variables();
 }
 
 inline bool scope::is_exist(std::string name_var) {

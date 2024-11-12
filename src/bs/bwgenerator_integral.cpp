@@ -242,27 +242,27 @@ commands bweas::bwign0_1v(const var::struct_sb::target_out &trg, bwqueue_templat
                     else if (current_arg == NAME_FIELD_TARGET_VER)
                         current_arg = trg.version_target.get_str_version();
                     else if (current_arg == NAME_FIELD_PROJECT_NAME)
-                        current_arg += trg.prj.name_project;
+                        current_arg = trg.prj.name_project;
                     else if (current_arg == NAME_FIELD_PROJECT_VER)
-                        current_arg += trg.prj.version_project.get_str_version();
+                        current_arg = trg.prj.version_project.get_str_version();
                     else if (current_arg == NAME_FIELD_PROJECT_LANG)
-                        current_arg += var::struct_sb::lang_str(trg.prj.lang);
+                        current_arg = var::struct_sb::lang_str(trg.prj.lang);
                     else if (current_arg == NAME_FIELD_PROJECT_PCOMPILER)
-                        current_arg += trg.prj.path_compiler;
+                        current_arg = trg.prj.path_compiler;
                     else if (current_arg == NAME_FIELD_PROJECT_PLINKER)
-                        current_arg += trg.prj.path_linker;
+                        current_arg = trg.prj.path_linker;
                     else if (current_arg == NAME_FIELD_PROJECT_RFCOMPILER)
-                        current_arg += trg.prj.rflags_compiler;
+                        current_arg = trg.prj.rflags_compiler;
                     else if (current_arg == NAME_FIELD_PROJECT_RFLINKER)
-                        current_arg += trg.prj.rflags_linker;
+                        current_arg = trg.prj.rflags_linker;
                     else if (current_arg == NAME_FIELD_PROJECT_DFCOMPILER)
-                        current_arg += trg.prj.dflags_compiler;
+                        current_arg = trg.prj.dflags_compiler;
                     else if (current_arg == NAME_FIELD_PROJECT_DFLINKER)
-                        current_arg += trg.prj.dflags_linker;
+                        current_arg = trg.prj.dflags_linker;
                     else if (current_arg == NAME_FIELD_PROJECT_STD_C)
-                        current_arg += std::to_string(trg.prj.standart_c);
+                        current_arg = std::to_string(trg.prj.standart_c);
                     else if (current_arg == NAME_FIELD_PROJECT_STD_CPP)
-                        current_arg += std::to_string(trg.prj.standart_cpp);
+                        current_arg = std::to_string(trg.prj.standart_cpp);
                     else if (current_arg.find(NAME_FIELD_PROJECT_SRC_FILES) == 0) {
                         const auto &it_str = current_arg.find(":");
                         if (it_str != current_arg.npos) {

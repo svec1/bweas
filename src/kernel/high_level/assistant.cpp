@@ -82,6 +82,12 @@ void assistant::call_err(std::string name_err, std::string addit) {
 #endif
     exit(EXIT_FAILURE);
 }
+std::string assistant::get_desc_err(std::string name_err){
+    const auto &it = find_if(err_s.begin(), err_s.end(), [name_err](const err& err_c){ return err_c.name_e == name_err; });
+    if(it != err_s.end())
+        return it->desc_e;
+    return "";
+}
 
 assistant::file_it assistant::open_file(std::string name_file, file::mode_file::open mode) {
     try {

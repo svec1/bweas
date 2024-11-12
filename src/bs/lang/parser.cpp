@@ -163,7 +163,7 @@ void pars_an::check_valid_subexpr_first_pass(const subexpressions &sub_expr) {
             sub_expr.token_of_subexpr[i].token_t == token_type::LITERAL ||
             sub_expr.token_of_subexpr[i].token_t == token_type::LITERALS) {
             if (expected_op)
-                assist.call_err("PARS003", build_pos_tokenb_str(sub_expr.token_of_subexpr[i]));
+                throw parser_excp(build_pos_tokenb_str(sub_expr.token_of_subexpr[i]), "003");
             expected_op = 1;
         }
         else if (sub_expr.token_of_subexpr[i].token_t == token_type::OPERATOR) {
@@ -171,12 +171,11 @@ void pars_an::check_valid_subexpr_first_pass(const subexpressions &sub_expr) {
                 expected_op = 0;
                 continue;
             }
-            assist.call_err("PARS004", build_pos_tokenb_str(sub_expr.token_of_subexpr[i]));
+            throw parser_excp(build_pos_tokenb_str(sub_expr.token_of_subexpr[i]), "004");
         }
     }
     if (!expected_op)
-        assist.call_err("PARS005",
-                        build_pos_tokenb_str(sub_expr.token_of_subexpr[sub_expr.token_of_subexpr.size() - 1]));
+        throw parser_excp(build_pos_tokenb_str(sub_expr.token_of_subexpr[sub_expr.token_of_subexpr.size() - 1]), "005");
 }
 void pars_an::check_valid_subexpr_second_pass(subexpressions &sub_expr) {
     if (sub_expr.token_of_subexpr.empty())
@@ -189,18 +188,18 @@ void pars_an::check_valid_subexpr_second_pass(subexpressions &sub_expr) {
         if (sub_expr.token_of_subexpr[i].token_t == token_type::LITERALS) {
             if (num_type_expr) {
                 if (operator_plus)
-                    assist.call_err("PARS006", build_pos_tokenb_str(sub_expr.token_of_subexpr[i]));
+                    throw parser_excp(build_pos_tokenb_str(sub_expr.token_of_subexpr[i]), "006");
                 else if (operator_compare)
-                    assist.call_err("PARS007", build_pos_tokenb_str(sub_expr.token_of_subexpr[i]));
+                    throw parser_excp(build_pos_tokenb_str(sub_expr.token_of_subexpr[i]), "007");
             }
             str_type_expr = 1;
         }
         else if (sub_expr.token_of_subexpr[i].token_t == token_type::LITERAL) {
             if (str_type_expr) {
                 if (operator_plus)
-                    assist.call_err("PARS006", build_pos_tokenb_str(sub_expr.token_of_subexpr[i]));
+                    throw parser_excp(build_pos_tokenb_str(sub_expr.token_of_subexpr[i]), "006");
                 else if (operator_compare)
-                    assist.call_err("PARS007", build_pos_tokenb_str(sub_expr.token_of_subexpr[i]));
+                    throw parser_excp(build_pos_tokenb_str(sub_expr.token_of_subexpr[i]), "007");
             }
             num_type_expr = 1;
         }
@@ -210,9 +209,9 @@ void pars_an::check_valid_subexpr_second_pass(subexpressions &sub_expr) {
                  sub_expr.token_of_subexpr[i].token_val == "+") {
             if (operator_compare)
                 if (str_type_expr)
-                    assist.call_err("PARS008", build_pos_tokenb_str(sub_expr.token_of_subexpr[i]));
+                    throw parser_excp(build_pos_tokenb_str(sub_expr.token_of_subexpr[i]), "008");
                 else if (num_type_expr)
-                    assist.call_err("PARS009", build_pos_tokenb_str(sub_expr.token_of_subexpr[i]));
+                    throw parser_excp(build_pos_tokenb_str(sub_expr.token_of_subexpr[i]), "009");
             operator_plus = 1;
         }
         else if (sub_expr.token_of_subexpr[i].token_t == token_type::OPERATOR &&
@@ -220,9 +219,9 @@ void pars_an::check_valid_subexpr_second_pass(subexpressions &sub_expr) {
                  sub_expr.token_of_subexpr[i].token_val == "<" || sub_expr.token_of_subexpr[i].token_val == "=") {
             if (operator_plus)
                 if (str_type_expr)
-                    assist.call_err("PARS010", build_pos_tokenb_str(sub_expr.token_of_subexpr[i]));
+                    throw parser_excp(build_pos_tokenb_str(sub_expr.token_of_subexpr[i]), "010");
                 else if (num_type_expr)
-                    assist.call_err("PARS009", build_pos_tokenb_str(sub_expr.token_of_subexpr[i]));
+                    throw parser_excp(build_pos_tokenb_str(sub_expr.token_of_subexpr[i]), "009");
             operator_compare = 1;
         }
     }
@@ -256,7 +255,7 @@ void pars_an::try_parse_subexpr(subexpressions &sub_expr) {
                 continue;
             }
             else if (sub_expr.token_of_subexpr[i].token_t == token_type::LITERALS)
-                assist.call_err("PARS010", build_pos_tokenb_str(sub_expr.token_of_subexpr[i]));
+                throw parser_excp(build_pos_tokenb_str(sub_expr.token_of_subexpr[i]), "010");
             if (const_parse_subexpr.token_of_subexpr.size() == 0 &&
                 (sub_expr.token_of_subexpr[i].token_t == token_type::OPERATOR ||
                  (i == sub_expr.token_of_subexpr.size() - 1)))
@@ -306,7 +305,7 @@ void pars_an::try_parse_subexpr(subexpressions &sub_expr) {
                 continue;
             }
             else if (sub_expr.token_of_subexpr[i].token_t == token_type::LITERAL)
-                assist.call_err("PARS009", build_pos_tokenb_str(sub_expr.token_of_subexpr[i]));
+                throw parser_excp(build_pos_tokenb_str(sub_expr.token_of_subexpr[i]), "009");
             if (const_parse_subexpr.token_of_subexpr.size() == 0 &&
                 (sub_expr.token_of_subexpr[i].token_t == token_type::OPERATOR ||
                  (i == sub_expr.token_of_subexpr.size() - 1)))
@@ -350,7 +349,7 @@ abstract_expr_func &pars_an::analysis() {
     for (u32t i = 0; i < tokens.size(); ++i) {
         if (start_expr) {
             if (tokens[i].token_t != token_type::ID && tokens[i].token_t != token_type::KEYWORD)
-                assist.call_err("PARS000", build_pos_tokenb_str(tokens[i]));
+                throw parser_excp(build_pos_tokenb_str(tokens[i]), "000");
             curr_expr.expr_func.func_t = tokens[i];
             start_expr = 0;
         }
@@ -360,11 +359,11 @@ abstract_expr_func &pars_an::analysis() {
                     func_param_curr = 1;
                     continue;
                 }
-                assist.call_err("PARS001", build_pos_tokenb_str(tokens[i]));
+                throw parser_excp(build_pos_tokenb_str(tokens[i]), "001");
             }
             else if (func_param_curr && tokens[i].token_t == token_type::COMMA) {
                 if (!is_param(tokens[i - 1]))
-                    assist.call_err("PARS004", build_pos_tokenb_str(tokens[i]));
+                    throw parser_excp(build_pos_tokenb_str(tokens[i]), "004");
                 check_valid_subexpr_first_pass(curr_sub_expr);
                 check_valid_subexpr_second_pass(curr_sub_expr);
                 curr_expr.sub_expr_s.push_back(curr_sub_expr);
@@ -374,7 +373,7 @@ abstract_expr_func &pars_an::analysis() {
             else if (func_param_curr && tokens[i].token_t == token_type::CLOSE_BR) {
                 if (!is_param(tokens[i - 1])) {
                     if (tokens[i - 1].token_t != token_type::OPEN_BR)
-                        assist.call_err("PARS004", build_pos_tokenb_str(tokens[i]));
+                        throw parser_excp(build_pos_tokenb_str(tokens[i]), "004");
                     goto start_expr_func;
                 }
                 check_valid_subexpr_first_pass(curr_sub_expr);
@@ -394,7 +393,7 @@ abstract_expr_func &pars_an::analysis() {
             else if (func_param_curr && tokens[i].token_t != token_type::ID &&
                      tokens[i].token_t != token_type::LITERAL && tokens[i].token_t != token_type::LITERALS &&
                      tokens[i].token_t != token_type::OPERATOR)
-                assist.call_err("PARS002", build_pos_tokenb_str(tokens[i]));
+                throw parser_excp(build_pos_tokenb_str(tokens[i]), "002");
             curr_sub_expr.token_of_subexpr.push_back(tokens[i]);
         }
     }
