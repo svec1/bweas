@@ -13,6 +13,8 @@ namespace lexer {
 #define STR_KEYWORD_ELSE "else"
 #define STR_KEYWORD_ENDIF "endif"
 
+#define STR_KEYWORD
+
 class lexer_excp : public bw_excp::bweas_exception {
   public:
     lexer_excp(std::string _what_hp, std::string number_err)
@@ -62,6 +64,7 @@ class lex_an {
 
   private:
     char get();
+    char peek();
 
     // Prohibits characters
     bool check_sym_valid_grammar(char ch);

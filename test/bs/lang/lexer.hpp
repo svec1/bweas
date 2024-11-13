@@ -27,7 +27,19 @@ TEST(BW_LEXER, CorrectOutputTokensClassBwLexer){
     });
 }
 
-
 TEST(BW_LEXER, CorrectInvalidSyntaxTokensClassBwLexer){
+    ASSERT_THROW({
+        lexer::lex_an _lexer("set(1var)");
+        _lexer.analysis();
+    }, lexer::lexer_excp);
+
+    ASSERT_THROW({
+        lexer::lex_an _lexer("set(text\")");
+        _lexer.analysis();
+    }, lexer::lexer_excp);
     
+    ASSERT_THROW({
+        lexer::lex_an _lexer("set(var, 2147483648)");
+        _lexer.analysis();
+    }, lexer::lexer_excp);
 }

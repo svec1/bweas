@@ -23,6 +23,12 @@ char lex_an::get() {
     return symbols[pos++];
 }
 
+char lex_an::peek() {
+    if (pos >= symbols.size())
+        return '\0';
+    return symbols[pos + 1];
+}
+
 bool lex_an::check_sym_valid_grammar(char ch) {
     if (ch == '*' || ch == '/' || ch == '!' || ch == '-' || ch == '\'' || ch == '[' || ch == ']')
         return 0;
@@ -52,6 +58,8 @@ std::vector<token> lex_an::analysis() {
     bool lexer_option = 0;
     bool comment = 0;
 
+    bool separate_tk = 0;
+
     u32t count_line = 1;
     u32t count_sym = 0;
 
@@ -63,15 +71,15 @@ std::vector<token> lex_an::analysis() {
         if ((ch == ' ' || ch == '\n' || ch == '\r' | ch == '\t') && !br) {
             if (lexer_option && (ch == '\r' || ch == '\n')) {
                 if (lexem.empty())
-                    throw lexer_excp("\n(Line: " + std::to_string(count_line) +
-                                                  "; Symbols start pos: " + std::to_string(count_sym - lexem.size()) +
-                                                  "): Lexem - \"" + lexem + "\"\n", "000");
+                    throw lexer_excp("\n(Line: " + std::to_string(count_line) + "; Symbols start pos: " +
+                                         std::to_string(count_sym - lexem.size()) + "): Lexem - \"" + lexem + "\"\n",
+                                     "000");
                 if (lexem == "lexer_stop")
                     break;
                 else
-                    throw lexer_excp("\n(Line: " + std::to_string(count_line) +
-                                                  "; Symbols start pos: " + std::to_string(count_sym - lexem.size()) +
-                                                  "): Lexem - \"" + lexem + "\"\n", "000");
+                    throw lexer_excp("\n(Line: " + std::to_string(count_line) + "; Symbols start pos: " +
+                                         std::to_string(count_sym - lexem.size()) + "): Lexem - \"" + lexem + "\"\n",
+                                     "000");
             }
             while (ch == ' ' || ch == '\n' || ch == '\r' || ch == '\t') {
                 if (ch == '\n') {
@@ -84,14 +92,14 @@ std::vector<token> lex_an::analysis() {
                 ch = get();
             }
             if (!lexem.empty())
-                expected_separate = 1;
+                separate_tk = 1;
         }
 
         if (ch == '#') {
             if (!lexem.empty())
-                throw lexer_excp("\n(Line: " + std::to_string(count_line) +
-                                                  "; Symbols start pos: " + std::to_string(count_sym - lexem.size()) +
-                                                  "): Lexem - \"" + lexem + "\"\n", "000");
+                throw lexer_excp("\n(Line: " + std::to_string(count_line) + "; Symbols start pos: " +
+                                     std::to_string(count_sym - lexem.size()) + "): Lexem - \"" + lexem + "\"\n",
+                                 "000");
             if (comment)
                 comment = 0;
             else
@@ -111,18 +119,23 @@ std::vector<token> lex_an::analysis() {
         }
         else if (ch == '@') {
             if (!lexem.empty() || lexer_option)
-                throw lexer_excp("\n(Line: " + std::to_string(count_line) +
-                                                  "; Symbols start pos: " + std::to_string(count_sym - lexem.size()) +
-                                                  "): Lexem - \"" + lexem + "\"\n", "000");
+                throw lexer_excp("\n(Line: " + std::to_string(count_line) + "; Symbols start pos: " +
+                                     std::to_string(count_sym - lexem.size()) + "): Lexem - \"" + lexem + "\"\n",
+                                 "000");
 
             lexer_option = 1;
             continue;
         }
-        else if ((ch == '(' || ch == ')' || ch == ',' || ch == '>' || ch == '<' || ch == '=' || ch == '+') && !br) {
+        else if ((ch == '(' || ch == ')' || ch == ',' || ch == '>' || ch == '<' || ch == '=' || ch == '+') && !br ||
+                 separate_tk) {
             if (err_lexem)
-                throw lexer_excp("\n(Line: " + std::to_string(count_line) +
-                                                  "; Symbols start pos: " + std::to_string(count_sym - lexem.size()) +
-                                                  "): Lexem - \"" + lexem + "\"\n", "000");
+                throw lexer_excp("\n(Line: " + std::to_string(count_line) + "; Symbols start pos: " +
+                                     std::to_string(count_sym - lexem.size()) + "): Lexem - \"" + lexem + "\"\n",
+                                 "000");
+            else if(separate_tk){
+                if(ch == '(' || ch == ')' || ch == ',' || ch == '>' || ch == '<' || ch == '=' || ch == '+')
+                    separate_tk = 0;
+            }
 
             tmp_curr_token.pos_beg_defined_sym = count_sym - lexem.size();
             tmp_curr_token.pos_defined_line = count_line;
@@ -141,8 +154,9 @@ std::vector<token> lex_an::analysis() {
                     else {
                         if (std::atoll(tmp_curr_token.token_val.c_str()) > INT32_MAX)
                             throw lexer_excp("\n(Line: " + std::to_string(count_line) +
-                                                  "; Symbols start pos: " + std::to_string(count_sym - lexem.size()) +
-                                                  "): Lexem - \"" + lexem + "\"\n", "000");
+                                                 "; Symbols start pos: " + std::to_string(count_sym - lexem.size()) +
+                                                 "): Lexem - \"" + lexem + "\"\n",
+                                             "000");
                         tmp_curr_token.token_t = token_type::LITERAL;
                         tokens.push_back(tmp_curr_token);
                     }
@@ -171,24 +185,31 @@ std::vector<token> lex_an::analysis() {
                 tokens.push_back(tmp_curr_token);
             }
             num = 0, literal = 0;
-            expected_separate = 0;
-
-            continue;
+            if (separate_tk)
+                separate_tk = 0;
+            else
+                continue;
         }
         else if (ch == '\\' && br) {
             if (pos == symbols.size())
-                throw lexer_excp("\n(Line: " + std::to_string(count_line) +
-                                                  "; Symbols start pos: " + std::to_string(count_sym - lexem.size()) +
-                                                  "): Lexem - \"" + lexem + "\"\n", "000");
+                throw lexer_excp("\n(Line: " + std::to_string(count_line) + "; Symbols start pos: " +
+                                     std::to_string(count_sym - lexem.size()) + "): Lexem - \"" + lexem + "\"\n",
+                                 "000");
             ch = get();
         }
         if (lexem.empty() && (isdigit(ch) || br)) {
             literal = 1;
             num = 1;
         }
-        if ((num && !isdigit(ch) && !br) || (!check_sym_valid_grammar(ch) && !br) || was_br || expected_separate)
+        if ((num && !isdigit(ch) && !br) || (!check_sym_valid_grammar(ch) && !br) || was_br)
             err_lexem = 1;
         lexem += ch;
     }
+
+    if (br)
+        throw lexer_excp("\n(Line: " + std::to_string(count_line) + "; Symbols start pos: " +
+                             std::to_string(count_sym - lexem.size()) + "): Lexem - \"" + lexem + "\"\n",
+                         "000");
+
     return tokens;
 }

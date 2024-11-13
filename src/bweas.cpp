@@ -4,7 +4,6 @@ extern "C++"{
     #include "bs/bwbuild_sys.hpp"
 }
 int main(int argv, char **args) {
-
     try {
         clock_t beg = clock();
         bweas::bwbuilder bw(argv, args);

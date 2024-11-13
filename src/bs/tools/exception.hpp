@@ -15,7 +15,7 @@ class bweas_exception : std::exception {
     ~bweas_exception() noexcept = default;
 
   public:
-    virtual const char *what() {
+    const char *what() const noexcept{
         return "";
     }
 
