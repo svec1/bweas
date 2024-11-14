@@ -4,6 +4,20 @@
 #include "../../kernel/high_level/bwtype.h"
 #include <string>
 
+#define STR_KEYWORD_IF "if"
+#define STR_KEYWORD_ELSE "else"
+#define STR_KEYWORD_ENDIF "endif"
+
+#define STR_KEYWORD_OP_EQUAL "EQUAL"
+#define STR_KEYWORD_OP_TSTR  "TO_STR"
+
+#define RET_INT_KW_OP(STR) (STR == STR_KEYWORD_OP_EQUAL)
+#define RET_STR_KW_OP(STR) (STR == STR_KEYWORD_OP_TSTR)
+
+#define IS_BIBARY_KW_OP(STR) (STR == STR_KEYWORD_OP_EQUAL)
+#define IS_UNARY_KW_OP(STR) (STR == STR_KEYWORD_OP_TSTR)
+#define IS_CONSTANT(STR) (STR != "")
+
 namespace token_expr {
 
 // listing all possible token types
@@ -28,6 +42,9 @@ enum class token_type {
     // -----------------------------------------------------------
     // Also, strings cannot be compared (for now)
     OPERATOR,
+
+    // Special operators as keywords
+    KW_OPERATOR,
     SIZE_ENUM_TOKEN_TYPE
 };
 

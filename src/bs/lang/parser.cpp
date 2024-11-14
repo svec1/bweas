@@ -135,6 +135,7 @@ pars_an::pars_an() {
         assist.add_err("PARS008", "It is impossible to add strings when comparing");
         assist.add_err("PARS009", "Arithmetic operations are prohibited");
         assist.add_err("PARS010", "Impossible to compare strings");
+        assist.add_err("PARS011", "You cannot use operators together with operator keywords");
     }
 }
 
@@ -156,8 +157,8 @@ void pars_an::check_valid_subexpr_first_pass(const subexpressions &sub_expr) {
     if (sub_expr.token_of_subexpr.empty())
         return;
 
-    bool expected_op = 0;
-    bool expected_kw_param = 0;
+    bool expected_op = 0, expr_with_op = 0;
+    bool expected_param_kw_op = 0;
 
     for (u32t i = 0; i < sub_expr.token_of_subexpr.size(); ++i) {
         if (sub_expr.token_of_subexpr[i].token_t == token_type::ID ||
@@ -165,18 +166,22 @@ void pars_an::check_valid_subexpr_first_pass(const subexpressions &sub_expr) {
             sub_expr.token_of_subexpr[i].token_t == token_type::LITERALS) {
             if (expected_op)
                 throw parser_excp(build_pos_tokenb_str(sub_expr.token_of_subexpr[i]), "003");
-            else if (expected_kw_param)
-                expected_kw_param = 0;
+            else if (expected_param_kw_op)
+                expected_param_kw_op = 0;
             expected_op = 1;
         }
-        else if (sub_expr.token_of_subexpr[i].token_t == token_type::KEYWORD) {
-            expected_kw_param = 1;
-            expected_op = 0;
+        else if (sub_expr.token_of_subexpr[i].token_t == token_type::KW_OPERATOR) {
+            if(expr_with_op)
+                throw parser_excp(build_pos_tokenb_str(sub_expr.token_of_subexpr[i]), "011");
+            if (expected_op)
+                expected_op = 0;
+            expected_param_kw_op = 1;
         }
         else if (sub_expr.token_of_subexpr[i].token_t == token_type::OPERATOR) {
-            if (!expected_op || expected_kw_param)
+            if (!expected_op || expected_param_kw_op)
                 throw parser_excp(build_pos_tokenb_str(sub_expr.token_of_subexpr[i]), "004");
             expected_op = 0;
+            expr_with_op = 1;
             continue;
         }
     }
@@ -188,7 +193,7 @@ void pars_an::check_valid_subexpr_second_pass(subexpressions &sub_expr) {
         return;
 
     bool str_type_expr = 0, num_type_expr = 0, id_type_expr = 0;
-    bool operator_plus = 0, operator_compare = 0;
+    bool operator_plus = 0, operator_compare = 0, keyword_op = 0;
 
     for (u32t i = 0; i < sub_expr.token_of_subexpr.size(); ++i) {
         if (sub_expr.token_of_subexpr[i].token_t == token_type::LITERALS) {
@@ -221,8 +226,8 @@ void pars_an::check_valid_subexpr_second_pass(subexpressions &sub_expr) {
             operator_plus = 1;
         }
         else if (sub_expr.token_of_subexpr[i].token_t == token_type::OPERATOR &&
-                     sub_expr.token_of_subexpr[i].token_val == ">" ||
-                 sub_expr.token_of_subexpr[i].token_val == "<" || sub_expr.token_of_subexpr[i].token_val == "=") {
+                 (sub_expr.token_of_subexpr[i].token_val == ">" || sub_expr.token_of_subexpr[i].token_val == "<" ||
+                  sub_expr.token_of_subexpr[i].token_val == "=")) {
             if (operator_plus)
                 if (str_type_expr)
                     throw parser_excp(build_pos_tokenb_str(sub_expr.token_of_subexpr[i]), "010");
@@ -230,14 +235,21 @@ void pars_an::check_valid_subexpr_second_pass(subexpressions &sub_expr) {
                     throw parser_excp(build_pos_tokenb_str(sub_expr.token_of_subexpr[i]), "009");
             operator_compare = 1;
         }
+        else if (sub_expr.token_of_subexpr[i].token_t == token_type::KW_OPERATOR)
+            keyword_op = 1;
     }
     if (operator_compare) {
         sub_expr.subexpr_t = subexpressions::type_subexpr::INT_COMPARE;
-        try_parse_subexpr(sub_expr);
+        if (!keyword_op)
+            try_parse_subexpr(sub_expr);
     }
     else if (operator_plus) {
         sub_expr.subexpr_t = subexpressions::type_subexpr::STRING_ADD;
-        try_parse_subexpr(sub_expr);
+        if (!keyword_op)
+            try_parse_subexpr(sub_expr);
+    }
+    else if (keyword_op){
+        sub_expr.subexpr_t = subexpressions::type_subexpr::KEYWORD_OP;
     }
     else if (num_type_expr)
         sub_expr.subexpr_t = subexpressions::type_subexpr::INT;
@@ -398,7 +410,7 @@ abstract_expr_func &pars_an::analysis() {
             }
             else if (func_param_curr && tokens[i].token_t != token_type::ID &&
                      tokens[i].token_t != token_type::LITERAL && tokens[i].token_t != token_type::LITERALS &&
-                     tokens[i].token_t != token_type::OPERATOR && tokens[i].token_t != token_type::KEYWORD)
+                     tokens[i].token_t != token_type::OPERATOR && tokens[i].token_t != token_type::KW_OPERATOR)
                 throw parser_excp(build_pos_tokenb_str(tokens[i]), "002");
             curr_sub_expr.token_of_subexpr.push_back(tokens[i]);
         }

@@ -9,12 +9,6 @@
 
 namespace lexer {
 
-#define STR_KEYWORD_IF "if"
-#define STR_KEYWORD_ELSE "else"
-#define STR_KEYWORD_ENDIF "endif"
-
-#define STR_KEYWORD
-
 class lexer_excp : public bw_excp::bweas_exception {
   public:
     lexer_excp(std::string _what_hp, std::string number_err)

@@ -145,6 +145,10 @@ std::vector<token> lex_an::analysis() {
                     tmp_curr_token.token_t = token_type::KEYWORD;
                     tokens.push_back(tmp_curr_token);
                 }
+                else if(lexem == STR_KEYWORD_OP_EQUAL || lexem == STR_KEYWORD_OP_TSTR){
+                    tmp_curr_token.token_t = token_type::KW_OPERATOR;
+                    tokens.push_back(tmp_curr_token);
+                }
                 else if (literal) {
                     if (was_br) {
                         tmp_curr_token.token_t = token_type::LITERALS;
