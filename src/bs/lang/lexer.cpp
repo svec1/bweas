@@ -2,6 +2,11 @@
 
 #include "lexer.hpp"
 
+#include <array>
+
+extern std::array<std::string, 4> token_expr::keywords_op = {
+    STR_KEYWORD_OP_EQUAL, STR_KEYWORD_OP_TSTR, STR_KEYWORD_OP_CONST_RELEASE, STR_KEYWORD_OP_CONST_RELEASE};
+
 using namespace lexer;
 using namespace token_expr;
 
@@ -132,8 +137,8 @@ std::vector<token> lex_an::analysis() {
                 throw lexer_excp("\n(Line: " + std::to_string(count_line) + "; Symbols start pos: " +
                                      std::to_string(count_sym - lexem.size()) + "): Lexem - \"" + lexem + "\"\n",
                                  "000");
-            else if(separate_tk){
-                if(ch == '(' || ch == ')' || ch == ',' || ch == '>' || ch == '<' || ch == '=' || ch == '+')
+            else if (separate_tk) {
+                if (ch == '(' || ch == ')' || ch == ',' || ch == '>' || ch == '<' || ch == '=' || ch == '+')
                     separate_tk = 0;
             }
 
@@ -145,7 +150,7 @@ std::vector<token> lex_an::analysis() {
                     tmp_curr_token.token_t = token_type::KEYWORD;
                     tokens.push_back(tmp_curr_token);
                 }
-                else if(lexem == STR_KEYWORD_OP_EQUAL || lexem == STR_KEYWORD_OP_TSTR){
+                else if (std::find(keywords_op.begin(), keywords_op.end(), lexem) != keywords_op.end()) {
                     tmp_curr_token.token_t = token_type::KW_OPERATOR;
                     tokens.push_back(tmp_curr_token);
                 }

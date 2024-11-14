@@ -6,7 +6,8 @@ using namespace aef_expr;
 using namespace token_expr;
 
 #define is_param(token)                                                                                                \
-    (token.token_t == token_type::ID || token.token_t == token_type::LITERAL || token.token_t == token_type::LITERALS)
+    (token.token_t == token_type::ID || token.token_t == token_type::LITERAL ||                                        \
+     token.token_t == token_type::LITERALS || token.token_t == token_type::KW_OPERATOR)
 
 std::string parser::type_token_str(token_type token_t) {
     switch (token_t) {
@@ -26,6 +27,8 @@ std::string parser::type_token_str(token_type token_t) {
         return "CLOSE_BR";
     case token_type::COMMA:
         return "COMMA";
+    case token_type::KW_OPERATOR:
+        return "KW_OPERATOR";
     default:
         return "UNDEF";
     }
@@ -129,7 +132,7 @@ pars_an::pars_an() {
         assist.add_err("PARS003", "A token of type \"OPERATOR\" is expected");
         assist.add_err("PARS004", "A token of type \"ID\", \"LITERAL\" or \"LITERALS\" is expected");
         assist.add_err("PARS005", "A token with the type \"ID\", \"LITERAL\" or \"LITERALS\" is expected after a token "
-                                  "with the type \"OPERATOR\"");
+                                  "with the type \"OPERATOR\" or \"KW_OPERATOR\"");
         assist.add_err("PARS006", "It is impossible to add two different tokens by type");
         assist.add_err("PARS007", "It is impossible to compare two different tokens by type");
         assist.add_err("PARS008", "It is impossible to add strings when comparing");
@@ -171,7 +174,7 @@ void pars_an::check_valid_subexpr_first_pass(const subexpressions &sub_expr) {
             expected_op = 1;
         }
         else if (sub_expr.token_of_subexpr[i].token_t == token_type::KW_OPERATOR) {
-            if(expr_with_op)
+            if (expr_with_op)
                 throw parser_excp(build_pos_tokenb_str(sub_expr.token_of_subexpr[i]), "011");
             if (expected_op)
                 expected_op = 0;
@@ -185,7 +188,10 @@ void pars_an::check_valid_subexpr_first_pass(const subexpressions &sub_expr) {
             continue;
         }
     }
-    if (!expected_op)
+    if ((!expected_op &&
+         sub_expr.token_of_subexpr[sub_expr.token_of_subexpr.size() - 1].token_t == token_type::OPERATOR) ||
+        (expected_param_kw_op &&
+         !IS_CONSTANT_KW_OP(sub_expr.token_of_subexpr[sub_expr.token_of_subexpr.size() - 1].token_val)))
         throw parser_excp(build_pos_tokenb_str(sub_expr.token_of_subexpr[sub_expr.token_of_subexpr.size() - 1]), "005");
 }
 void pars_an::check_valid_subexpr_second_pass(subexpressions &sub_expr) {
@@ -248,7 +254,7 @@ void pars_an::check_valid_subexpr_second_pass(subexpressions &sub_expr) {
         if (!keyword_op)
             try_parse_subexpr(sub_expr);
     }
-    else if (keyword_op){
+    else if (keyword_op) {
         sub_expr.subexpr_t = subexpressions::type_subexpr::KEYWORD_OP;
     }
     else if (num_type_expr)

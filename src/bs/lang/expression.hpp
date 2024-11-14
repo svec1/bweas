@@ -130,14 +130,13 @@ inline subexpressions::ret_type_subexpr subexpressions::returned_type_subexpr() 
     else if (subexpr_t == type_subexpr::ID)
         return ret_type_subexpr::ID;
     else if (subexpr_t == type_subexpr::KEYWORD_OP) {
-        if (RET_INT_KW_OP(std::find_if(
-                this->token_of_subexpr.begin(), this->token_of_subexpr.end(),
-                [](const token_expr::token &tk) { return tk.token_t == token_expr::token_type::KW_OPERATOR; })->token_val))
-                return ret_type_subexpr::INT;
-        else if(RET_STR_KW_OP(std::find_if(
-                this->token_of_subexpr.begin(), this->token_of_subexpr.end(),
-                [](const token_expr::token &tk) { return tk.token_t == token_expr::token_type::KW_OPERATOR; })->token_val))
-                return ret_type_subexpr::STRING;
+        const auto &it =
+            std::find_if(this->token_of_subexpr.begin(), this->token_of_subexpr.end(),
+                         [](const token_expr::token &tk) { return tk.token_t == token_expr::token_type::KW_OPERATOR; });
+        if (RET_INT_KW_OP(it->token_val) || IS_CONSTANT_RET_INT(it->token_val))
+            return ret_type_subexpr::INT;
+        else if (RET_STR_KW_OP(it->token_val))
+            return ret_type_subexpr::STRING;
     }
     else
         return ret_type_subexpr::SIZE_ENUM_RET_TYPE_SUBEXPR;

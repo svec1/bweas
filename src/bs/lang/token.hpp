@@ -11,14 +11,21 @@
 #define STR_KEYWORD_OP_EQUAL "EQUAL"
 #define STR_KEYWORD_OP_TSTR  "TO_STR"
 
+#define STR_KEYWORD_OP_CONST_RELEASE "RELEASE"
+#define STR_KEYWORD_OP_CONST_DEBUG "DEBUG"
+
 #define RET_INT_KW_OP(STR) (STR == STR_KEYWORD_OP_EQUAL)
 #define RET_STR_KW_OP(STR) (STR == STR_KEYWORD_OP_TSTR)
 
 #define IS_BIBARY_KW_OP(STR) (STR == STR_KEYWORD_OP_EQUAL)
 #define IS_UNARY_KW_OP(STR) (STR == STR_KEYWORD_OP_TSTR)
-#define IS_CONSTANT(STR) (STR != "")
+#define IS_CONSTANT_KW_OP(STR) (STR == STR_KEYWORD_OP_CONST_RELEASE || STR == STR_KEYWORD_OP_CONST_DEBUG)
+
+#define IS_CONSTANT_RET_INT(STR) (STR == STR_KEYWORD_OP_CONST_RELEASE || STR == STR_KEYWORD_OP_CONST_DEBUG)
 
 namespace token_expr {
+
+extern std::array<std::string, 4> keywords_op;
 
 // listing all possible token types
 enum class token_type {

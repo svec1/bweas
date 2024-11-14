@@ -715,7 +715,7 @@ void semantic_analyzer::parse_keyword_op_param(aef_expr::subexpressions &sub_exp
                                 "017");
 
         if (sub_expr.token_of_subexpr[pos_token_kw_in_subexpr - 1].token_t == token_expr::token_type::KW_OPERATOR) {
-            if (!IS_CONSTANT(sub_expr.token_of_subexpr[pos_token_kw_in_subexpr - 1].token_val))
+            if (!IS_CONSTANT_KW_OP(sub_expr.token_of_subexpr[pos_token_kw_in_subexpr - 1].token_val))
                 throw semantic_excp(build_pos_tokenb_str(sub_expr.token_of_subexpr[pos_token_kw_in_subexpr]) +
                                         " Expected kw-op constant",
                                     "018");
@@ -766,6 +766,13 @@ void semantic_analyzer::parse_keyword_op_param(aef_expr::subexpressions &sub_exp
                 sub_expr.token_of_subexpr[pos_token_kw_in_subexpr + 1].token_val;
         }
         sub_expr.token_of_subexpr.erase(sub_expr.token_of_subexpr.begin() + pos_token_kw_in_subexpr + 1);
+    }
+    else if(IS_CONSTANT_KW_OP(sub_expr.token_of_subexpr[pos_token_kw_in_subexpr].token_val)){
+        if(sub_expr.token_of_subexpr[pos_token_kw_in_subexpr].token_val == STR_KEYWORD_OP_CONST_RELEASE)
+            sub_expr.token_of_subexpr[pos_token_kw_in_subexpr].token_val = "1";
+        else if(sub_expr.token_of_subexpr[pos_token_kw_in_subexpr].token_val == STR_KEYWORD_OP_CONST_DEBUG)
+            sub_expr.token_of_subexpr[pos_token_kw_in_subexpr].token_val = "0";
+        sub_expr.token_of_subexpr[pos_token_kw_in_subexpr].token_t = token_expr::token_type::LITERAL;
     }
 }
 
