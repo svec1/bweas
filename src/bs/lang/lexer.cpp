@@ -2,6 +2,11 @@
 
 #include "lexer.hpp"
 
+#include <array>
+
+extern std::array<std::string, 4> token_expr::keywords_op = {STR_KEYWORD_OP_EQUAL, STR_KEYWORD_OP_TSTR,
+                                                             STR_KEYWORD_OP_CONST_RELEASE, STR_KEYWORD_OP_CONST_DEBUG};
+
 using namespace lexer;
 using namespace token_expr;
 
@@ -132,8 +137,8 @@ std::vector<token> lex_an::analysis() {
                 throw lexer_excp("\n(Line: " + std::to_string(count_line) + "; Symbols start pos: " +
                                      std::to_string(count_sym - lexem.size()) + "): Lexem - \"" + lexem + "\"\n",
                                  "000");
-            else if(separate_tk){
-                if(ch == '(' || ch == ')' || ch == ',' || ch == '>' || ch == '<' || ch == '=' || ch == '+')
+            else if (separate_tk) {
+                if (ch == '(' || ch == ')' || ch == ',' || ch == '>' || ch == '<' || ch == '=' || ch == '+')
                     separate_tk = 0;
             }
 
@@ -141,14 +146,11 @@ std::vector<token> lex_an::analysis() {
             tmp_curr_token.pos_defined_line = count_line;
             if (!lexem.empty()) {
                 tmp_curr_token.token_val = lexem;
-                if (lexem == STR_KEYWORD_IF || lexem == STR_KEYWORD_ELSE || lexem == STR_KEYWORD_ENDIF) {
-                    tmp_curr_token.token_t = token_type::KEYWORD;
-                    tokens.push_back(tmp_curr_token);
-                }
-                else if (literal) {
+                if (literal) {
                     if (was_br) {
                         tmp_curr_token.token_t = token_type::LITERALS;
                         tokens.push_back(tmp_curr_token);
+
                         was_br = 0;
                     }
                     else {
@@ -160,6 +162,14 @@ std::vector<token> lex_an::analysis() {
                         tmp_curr_token.token_t = token_type::LITERAL;
                         tokens.push_back(tmp_curr_token);
                     }
+                }
+                else if (lexem == STR_KEYWORD_IF || lexem == STR_KEYWORD_ELSE || lexem == STR_KEYWORD_ENDIF) {
+                    tmp_curr_token.token_t = token_type::KEYWORD;
+                    tokens.push_back(tmp_curr_token);
+                }
+                else if (std::find(keywords_op.begin(), keywords_op.end(), lexem) != keywords_op.end()) {
+                    tmp_curr_token.token_t = token_type::KW_OPERATOR;
+                    tokens.push_back(tmp_curr_token);
                 }
                 else {
                     tmp_curr_token.token_t = token_type::ID;
@@ -185,6 +195,7 @@ std::vector<token> lex_an::analysis() {
                 tokens.push_back(tmp_curr_token);
             }
             num = 0, literal = 0;
+
             if (separate_tk)
                 separate_tk = 0;
             else

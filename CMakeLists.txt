@@ -6,10 +6,11 @@ if(WIN32 AND BWEAS_BUILD_VCPKG AND EXISTS "${CMAKE_SOURCE_DIR}/vcpkg/scripts/bui
     set(BWEAS_BUILD_VCPKG_N TRUE)
 endif()
 
+set(BW_NAME_PRJ bweas)
+
 cmake_minimum_required(VERSION 3.20)
 project(${BW_NAME_PRJ} LANGUAGES CXX C)
 
-set(BW_NAME_PRJ bweas)
 
 option(USER_BUILD_LZ4 "Rep LZ4 on external" OFF)
 option(USER_BUILD_JSON "Rep JSON_C on external" OFF)

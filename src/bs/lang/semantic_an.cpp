@@ -29,6 +29,8 @@ semantic_analyzer::semantic_analyzer() {
         assist.add_err("SMT014", "The endif keyword is only expected after the if or else keyword");
         assist.add_err("SMT015", "The expected keyword was if");
         assist.add_err("SMT016", "Keyword cannot be called");
+        assist.add_err("SMT017", "The specified keyword operator is binary");
+        assist.add_err("SMT018", "Undefined operands for the keyword operator");
 
         assist.add_err("SMT-RT001", "An existing character was expected when "
                                     "accessed during semantic analysis");
@@ -175,35 +177,6 @@ void semantic_analyzer::smt_first_pass(abstract_expr_func &expr_s) {
                  expr_s[i].expr_func.func_n.expected_args[j] == params::VAR_STRUCT_ID) &&
                 expr_s[i].sub_expr_s[j].subexpr_t != subexpressions::type_subexpr::ID)
                 throw semantic_excp(build_pos_subexpr_str(expr_s[i].sub_expr_s[j]) + " Expected: [VAR ID]\n", "001");
-            else if (expr_s[i].expr_func.func_n.expected_args[j] == params::ANY_VALUE_WITHOUT_FUTUREID_NEXT &&
-                     expr_s[i].sub_expr_s[j].subexpr_t != subexpressions::type_subexpr::STRING &&
-                     expr_s[i].sub_expr_s[j].subexpr_t != subexpressions::type_subexpr::STRING_ADD &&
-                     expr_s[i].sub_expr_s[j].subexpr_t != subexpressions::type_subexpr::INT &&
-                     expr_s[i].sub_expr_s[j].subexpr_t != subexpressions::type_subexpr::INT_COMPARE &&
-                     expr_s[i].sub_expr_s[j].subexpr_t != subexpressions::type_subexpr::ID)
-                throw semantic_excp(build_pos_subexpr_str(expr_s[i].sub_expr_s[j]) +
-                                        " Expected: [STRING] OR [NUMBER] OR [VAR ID]\n",
-                                    "001");
-            else if (expr_s[i].expr_func.func_n.expected_args[j] == params::LIT_STR &&
-                     expr_s[i].sub_expr_s[j].subexpr_t != subexpressions::type_subexpr::STRING &&
-                     expr_s[i].sub_expr_s[j].subexpr_t != subexpressions::type_subexpr::STRING_ADD)
-                throw semantic_excp(build_pos_subexpr_str(expr_s[i].sub_expr_s[j]) + " Expected: [STRING]\n", "001");
-            else if (expr_s[i].expr_func.func_n.expected_args[j] == params::LIT_NUM &&
-                     expr_s[i].sub_expr_s[j].subexpr_t != subexpressions::type_subexpr::INT &&
-                     expr_s[i].sub_expr_s[j].subexpr_t != subexpressions::type_subexpr::INT_COMPARE)
-                throw semantic_excp(build_pos_subexpr_str(expr_s[i].sub_expr_s[j]) + " Expected: [NUMBER]\n", "001");
-            else if (expr_s[i].expr_func.func_n.expected_args[j] == params::LSTR_OR_ID_VAR &&
-                     expr_s[i].sub_expr_s[j].subexpr_t != subexpressions::type_subexpr::STRING &&
-                     expr_s[i].sub_expr_s[j].subexpr_t != subexpressions::type_subexpr::STRING_ADD &&
-                     expr_s[i].sub_expr_s[j].subexpr_t != subexpressions::type_subexpr::ID)
-                throw semantic_excp(
-                    build_pos_subexpr_str(expr_s[i].sub_expr_s[j]) + " Expected: [STRING] OR [VAR ID]\n", "001");
-            else if (expr_s[i].expr_func.func_n.expected_args[j] == params::LNUM_OR_ID_VAR &&
-                     expr_s[i].sub_expr_s[j].subexpr_t != subexpressions::type_subexpr::INT &&
-                     expr_s[i].sub_expr_s[j].subexpr_t != subexpressions::type_subexpr::INT_COMPARE &&
-                     expr_s[i].sub_expr_s[j].subexpr_t != subexpressions::type_subexpr::ID)
-                throw semantic_excp(
-                    build_pos_subexpr_str(expr_s[i].sub_expr_s[j]) + " Expected: [NUMBER] OR [VAR ID]\n", "001");
             else if (expr_s[i].expr_func.func_n.expected_args[j] == params::NEXT_TOO) {
                 if (j == 0 || j != expr_s[i].expr_func.func_n.expected_args.size() - 1)
                     throw semantic_excp(build_pos_tokenb_str(expr_s[i].expr_func.func_t), "002");
@@ -218,41 +191,38 @@ void semantic_analyzer::smt_first_pass(abstract_expr_func &expr_s) {
                              params::ANY_VALUE_WITHOUT_FUTUREID_NEXT) {
                         if (expr_s[i].sub_expr_s[j - 1].token_of_subexpr[0].token_t ==
                                 token_expr::token_type::LITERAL &&
-                            expr_s[i].sub_expr_s[b].subexpr_t != subexpressions::type_subexpr::INT &&
-                            expr_s[i].sub_expr_s[b].subexpr_t != subexpressions::type_subexpr::INT_COMPARE &&
+                            expr_s[i].sub_expr_s[b].returned_type_subexpr() != subexpressions::ret_type_subexpr::INT &&
                             expr_s[i].sub_expr_s[b].subexpr_t != subexpressions::type_subexpr::ID)
                             throw semantic_excp(build_pos_subexpr_str(expr_s[i].sub_expr_s[b]) +
                                                     " Expected: [NUMBER] or VAR ID->[NUMBER]\n",
                                                 "001");
                         else if (expr_s[i].sub_expr_s[j - 1].token_of_subexpr[0].token_t ==
                                      token_expr::token_type::LITERALS &&
-                                 expr_s[i].sub_expr_s[b].subexpr_t != subexpressions::type_subexpr::STRING &&
-                                 expr_s[i].sub_expr_s[b].subexpr_t != subexpressions::type_subexpr::STRING_ADD &&
+                                 expr_s[i].sub_expr_s[b].returned_type_subexpr() !=
+                                     subexpressions::ret_type_subexpr::STRING &&
                                  expr_s[i].sub_expr_s[b].subexpr_t != subexpressions::type_subexpr::ID)
                             throw semantic_excp(build_pos_subexpr_str(expr_s[i].sub_expr_s[b]) +
                                                     " Expected: [STRING] or [VAR ID->[STRING]]\n",
                                                 "001");
                     }
                     else if (expr_s[i].expr_func.func_n.expected_args[j - 1] == params::LIT_STR &&
-                             expr_s[i].sub_expr_s[b].subexpr_t != subexpressions::type_subexpr::STRING &&
-                             expr_s[i].sub_expr_s[b].subexpr_t != subexpressions::type_subexpr::STRING_ADD)
+                             expr_s[i].sub_expr_s[b].returned_type_subexpr() !=
+                                 subexpressions::ret_type_subexpr::STRING)
                         throw semantic_excp(build_pos_subexpr_str(expr_s[i].sub_expr_s[b]) + " Expected: [STRING]\n",
                                             "001");
                     else if (expr_s[i].expr_func.func_n.expected_args[j - 1] == params::LIT_NUM &&
-                             expr_s[i].sub_expr_s[b].subexpr_t != subexpressions::type_subexpr::INT &&
-                             expr_s[i].sub_expr_s[b].subexpr_t != subexpressions::type_subexpr::INT_COMPARE)
+                             expr_s[i].sub_expr_s[b].returned_type_subexpr() != subexpressions::ret_type_subexpr::INT)
                         throw semantic_excp(build_pos_subexpr_str(expr_s[i].sub_expr_s[b]) + " Expected: [NUMBER]\n",
                                             "001");
                     else if (expr_s[i].expr_func.func_n.expected_args[j - 1] == params::LSTR_OR_ID_VAR &&
-                             expr_s[i].sub_expr_s[b].subexpr_t != subexpressions::type_subexpr::STRING &&
-                             expr_s[i].sub_expr_s[b].subexpr_t != subexpressions::type_subexpr::STRING_ADD &&
+                             expr_s[i].sub_expr_s[b].returned_type_subexpr() !=
+                                 subexpressions::ret_type_subexpr::STRING &&
                              expr_s[i].sub_expr_s[b].subexpr_t != subexpressions::type_subexpr::ID)
                         throw semantic_excp(build_pos_subexpr_str(expr_s[i].sub_expr_s[b]) +
                                                 " Expected: [STRING] OR [VAR ID]\n",
                                             "001");
                     else if (expr_s[i].expr_func.func_n.expected_args[j - 1] == params::LNUM_OR_ID_VAR &&
-                             expr_s[i].sub_expr_s[b].subexpr_t != subexpressions::type_subexpr::INT &&
-                             expr_s[i].sub_expr_s[b].subexpr_t != subexpressions::type_subexpr::INT_COMPARE &&
+                             expr_s[i].sub_expr_s[b].returned_type_subexpr() != subexpressions::ret_type_subexpr::INT &&
                              expr_s[i].sub_expr_s[b].subexpr_t != subexpressions::type_subexpr::ID)
                         throw semantic_excp(build_pos_subexpr_str(expr_s[i].sub_expr_s[b]) +
                                                 " Expected: [NUMBER] OR [VAR ID]\n",
@@ -260,6 +230,29 @@ void semantic_analyzer::smt_first_pass(abstract_expr_func &expr_s) {
                 }
                 break;
             }
+            else if (expr_s[i].expr_func.func_n.expected_args[j] == params::ANY_VALUE_WITHOUT_FUTUREID_NEXT &&
+                     expr_s[i].sub_expr_s[j].returned_type_subexpr() != subexpressions::ret_type_subexpr::STRING &&
+                     expr_s[i].sub_expr_s[j].returned_type_subexpr() != subexpressions::ret_type_subexpr::INT &&
+                     expr_s[i].sub_expr_s[j].subexpr_t != subexpressions::type_subexpr::ID)
+                throw semantic_excp(build_pos_subexpr_str(expr_s[i].sub_expr_s[j]) +
+                                        " Expected: [STRING] OR [NUMBER] OR [VAR ID]\n",
+                                    "001");
+            else if (expr_s[i].expr_func.func_n.expected_args[j] == params::LIT_STR &&
+                     expr_s[i].sub_expr_s[j].returned_type_subexpr() != subexpressions::ret_type_subexpr::STRING)
+                throw semantic_excp(build_pos_subexpr_str(expr_s[i].sub_expr_s[j]) + " Expected: [STRING]\n", "001");
+            else if (expr_s[i].expr_func.func_n.expected_args[j] == params::LIT_NUM &&
+                     expr_s[i].sub_expr_s[j].returned_type_subexpr() != subexpressions::ret_type_subexpr::INT)
+                throw semantic_excp(build_pos_subexpr_str(expr_s[i].sub_expr_s[j]) + " Expected: [NUMBER]\n", "001");
+            else if (expr_s[i].expr_func.func_n.expected_args[j] == params::LSTR_OR_ID_VAR &&
+                     expr_s[i].sub_expr_s[j].returned_type_subexpr() != subexpressions::ret_type_subexpr::STRING &&
+                     expr_s[i].sub_expr_s[j].subexpr_t != subexpressions::type_subexpr::ID)
+                throw semantic_excp(
+                    build_pos_subexpr_str(expr_s[i].sub_expr_s[j]) + " Expected: [STRING] OR [VAR ID]\n", "001");
+            else if (expr_s[i].expr_func.func_n.expected_args[j] == params::LNUM_OR_ID_VAR &&
+                     expr_s[i].sub_expr_s[j].returned_type_subexpr() != subexpressions::ret_type_subexpr::INT &&
+                     expr_s[i].sub_expr_s[j].subexpr_t != subexpressions::type_subexpr::ID)
+                throw semantic_excp(
+                    build_pos_subexpr_str(expr_s[i].sub_expr_s[j]) + " Expected: [NUMBER] OR [VAR ID]\n", "001");
         }
     }
 }
@@ -374,13 +367,17 @@ void semantic_analyzer::smt_second_pass(abstract_expr_func &expr_s, var::scope &
                                                 "008");
                         else if (index_type == 3 || index_type == 4)
                             continue;
-                        else if (before_nextt_param == params::LNUM_OR_ID_VAR && index_type != 1)
+                        else if (before_nextt_param == params::LNUM_OR_ID_VAR && index_type != 1 &&
+                                 expr_s[i].sub_expr_s[j].returned_type_subexpr() !=
+                                     subexpressions::ret_type_subexpr::INT)
                             throw semantic_excp(build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]) +
-                                                " Expected: [VAR ID->[NUMBER]]\n",
+                                                    " Expected: [VAR ID->[NUMBER]]\n",
                                                 "004");
-                        else if (before_nextt_param == params::LSTR_OR_ID_VAR && index_type != 2)
+                        else if (before_nextt_param == params::LSTR_OR_ID_VAR && index_type != 2 &&
+                                 expr_s[i].sub_expr_s[j].returned_type_subexpr() !=
+                                     subexpressions::ret_type_subexpr::STRING)
                             throw semantic_excp(build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]) +
-                                                " Expected: [VAR ID->[STRING]]\n",
+                                                    " Expected: [VAR ID->[STRING]]\n",
                                                 "004");
                     }
                 }
@@ -388,8 +385,8 @@ void semantic_analyzer::smt_second_pass(abstract_expr_func &expr_s, var::scope &
                     u32t index_type = curr_scope.what_type(expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_val);
                     if (index_type != 0)
                         throw semantic_excp(build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]) +
-                                                      " Expected: NEW [VAR ID]\n",
-                                                "010");
+                                                " Expected: NEW [VAR ID]\n",
+                                            "010");
                 }
                 else if (expr_s[i].expr_func.func_n.expected_args[j] == params::NCHECK_VAR_ID) {
                     continue;
@@ -398,39 +395,42 @@ void semantic_analyzer::smt_second_pass(abstract_expr_func &expr_s, var::scope &
                     u32t index_type = curr_scope.what_type(expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_val);
                     if (index_type != 5 && index_type != 6)
                         throw semantic_excp(build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]) +
-                                                      " Expected: [VAR STRUCT ID]\n",
-                                                "011");
+                                                " Expected: [VAR STRUCT ID]\n",
+                                            "011");
                 }
                 else if (expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_t == token_expr::token_type::ID) {
                     u32t index_type = curr_scope.what_type(expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_val);
-                    if (expr_s[i].expr_func.func_n.expected_args[j] == params::VAR_ID && index_type == 0)
+                    if (index_type == 0)
                         throw semantic_excp(build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]) +
-                                                      " Expected: exist variable with any type\n",
-                                                "008");
+                                                " Expected: exist variable with any type\n",
+                                            "008");
                     else if ((index_type == 3 || index_type == 4) &&
                              j < expr_s[i].expr_func.func_n.expected_args.size() - 1) {
                         if (expr_s[i].expr_func.func_n.expected_args[j + 1] != params::NEXT_TOO)
                             if (expr_s[i].expr_func.func_n.expected_args[j] == params::LNUM_OR_ID_VAR)
                                 throw semantic_excp(build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]) +
-                                                    " Expected: [VAR ID->[NUMBER]]\n",
-                                                "004");
+                                                        " Expected: [VAR ID->[NUMBER]]\n",
+                                                    "004");
                             else
                                 throw semantic_excp(build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]) +
-                                                    " Expected: [VAR ID->[STRING]]\n",
-                                                "004");
+                                                        " Expected: [VAR ID->[STRING]]\n",
+                                                    "004");
                     }
-                    else if (expr_s[i].expr_func.func_n.expected_args[j] == params::LNUM_OR_ID_VAR && index_type != 1)
+                    else if (expr_s[i].expr_func.func_n.expected_args[j] == params::LNUM_OR_ID_VAR && index_type != 1 &&
+                             expr_s[i].sub_expr_s[j].returned_type_subexpr() != subexpressions::ret_type_subexpr::INT)
                         throw semantic_excp(build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]) +
-                                                      " Expected: [VAR ID->[NUMBER]]\n",
-                                                "004");
-                    else if (expr_s[i].expr_func.func_n.expected_args[j] == params::LSTR_OR_ID_VAR && index_type != 2)
+                                                " Expected: [VAR ID->[NUMBER]]\n",
+                                            "004");
+                    else if (expr_s[i].expr_func.func_n.expected_args[j] == params::LSTR_OR_ID_VAR && index_type != 2 &&
+                             expr_s[i].sub_expr_s[j].returned_type_subexpr() !=
+                                 subexpressions::ret_type_subexpr::STRING)
                         throw semantic_excp(build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]) +
-                                                      " Expected: [VAR ID->[STRING]]\n",
-                                                "004");
+                                                " Expected: [VAR ID->[STRING]]\n",
+                                            "004");
                     else if (index_type == 5 || index_type == 6)
                         throw semantic_excp(build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]) +
-                                                      " Expected: [VAR ID->([NUMBER] or [STRING])]\n",
-                                                "004");
+                                                " Expected: [VAR ID->([NUMBER] or [STRING])]\n",
+                                            "004");
                 }
             }
         }
@@ -509,6 +509,42 @@ void semantic_analyzer::smt_second_pass(abstract_expr_func &expr_s, var::scope &
     if (branch_s.size())
         throw semantic_excp("End Of AEF", "013");
 }
+
+void semantic_analyzer::convert_id_to_literal(aef_expr::subexpressions &sub_expr, var::scope &curr_scope,
+                                              aef_expr::params expected_param) {
+    for (u32t i = 0; i < sub_expr.token_of_subexpr.size(); ++i) {
+        if (sub_expr.token_of_subexpr[i].token_t == token_expr::token_type::ID &&
+            (expected_param != params::VAR_ID && expected_param != params::FUTURE_VAR_ID &&
+             expected_param != params::NCHECK_VAR_ID)) {
+            u32t index_var = curr_scope.what_type(sub_expr.token_of_subexpr[i].token_val);
+            if (index_var == 1) {
+                sub_expr.token_of_subexpr[i] = token_expr::token(
+                    token_expr::token_type::LITERAL,
+                    std::to_string(curr_scope.get_var_value<int>(sub_expr.token_of_subexpr[i].token_val.c_str())),
+                    sub_expr.token_of_subexpr[i].pos_defined_line, sub_expr.token_of_subexpr[i].pos_beg_defined_sym);
+            }
+            else if (index_var == 2) {
+                sub_expr.token_of_subexpr[i] = token_expr::token(
+                    token_expr::token_type::LITERALS,
+                    curr_scope.get_var_value<std::string>(sub_expr.token_of_subexpr[i].token_val),
+                    sub_expr.token_of_subexpr[i].pos_defined_line, sub_expr.token_of_subexpr[i].pos_beg_defined_sym);
+            }
+        }
+        else if (sub_expr.token_of_subexpr[i].token_t == token_expr::token_type::KW_OPERATOR &&
+                 IS_CONSTANT_KW_OP(sub_expr.token_of_subexpr[i].token_val))
+            parse_keywords_op_param(sub_expr, i, curr_scope, expected_param, 1);
+    }
+}
+
+void semantic_analyzer::convert_kwop_uc_to_literal(aef_expr::subexpressions &sub_expr, var::scope &curr_scope,
+                                                   aef_expr::params expected_param) {
+    for (u32t i = 0; i < sub_expr.token_of_subexpr.size(); ++i) {
+        if (sub_expr.token_of_subexpr[i].token_t == token_expr::token_type::KW_OPERATOR &&
+            IS_UNARY_KW_OP(sub_expr.token_of_subexpr[i].token_val))
+            parse_keywords_op_param(sub_expr, i, curr_scope, expected_param, 1);
+    }
+}
+
 void semantic_analyzer::parse_subexpr_param(subexpressions &sub_expr, std::vector<subexpressions> &sub_exprs,
                                             u32t &pos_sub_expr_in_vec, var::scope &curr_scope, params expected_param) {
     subexpressions parse_subexpr, tmp_parse_subexpr;
@@ -643,6 +679,16 @@ void semantic_analyzer::parse_subexpr_param(subexpressions &sub_expr, std::vecto
             sub_expr = parse_subexpr;
         return;
     }
+    else if (sub_expr.subexpr_t == subexpressions::type_subexpr::KEYWORD_OP) {
+        convert_id_to_literal(sub_expr, curr_scope, expected_param);
+        convert_kwop_uc_to_literal(sub_expr, curr_scope, expected_param);
+        parse_keywords_op_param(sub_expr, UINT32_MAX, curr_scope, expected_param);
+        if (sub_expr.token_of_subexpr[0].token_t == token_expr::token_type::LITERAL)
+            sub_expr.subexpr_t = subexpressions::type_subexpr::INT;
+        else if (sub_expr.token_of_subexpr[0].token_t == token_expr::token_type::LITERALS)
+            sub_expr.subexpr_t = subexpressions::type_subexpr::STRING;
+        return;
+    }
     else
         return;
 
@@ -652,6 +698,88 @@ void semantic_analyzer::parse_subexpr_param(subexpressions &sub_expr, std::vecto
         parse_subexpr.subexpr_t = subexpressions::type_subexpr::STRING;
     sub_expr = parse_subexpr;
 }
+void semantic_analyzer::parse_keywords_op_param(aef_expr::subexpressions &sub_expr, u32t pos_token_kw_in_subexpr,
+                                                var::scope &curr_scope, aef_expr::params expected_param,
+                                                u32t parse_okeyword) {
+    if (pos_token_kw_in_subexpr == UINT32_MAX) {
+        for (u32t i = 0; i < sub_expr.token_of_subexpr.size(); ++i)
+            if (sub_expr.token_of_subexpr[i].token_t == token_expr::token_type::KW_OPERATOR) {
+                pos_token_kw_in_subexpr = i;
+                break;
+            }
+        if (pos_token_kw_in_subexpr == UINT32_MAX)
+            return;
+    }
+
+    if (sub_expr.token_of_subexpr[pos_token_kw_in_subexpr].token_val == STR_KEYWORD_OP_EQUAL) {
+        if (expected_param != params::LNUM_OR_ID_VAR && expected_param != params::ANY_VALUE_WITHOUT_FUTUREID_NEXT ||
+            pos_token_kw_in_subexpr == 0 || pos_token_kw_in_subexpr == sub_expr.token_of_subexpr.size() - 1)
+            throw semantic_excp(build_pos_tokenb_str(sub_expr.token_of_subexpr[pos_token_kw_in_subexpr]) +
+                                    " Two operands are expected",
+                                "017");
+
+        if (sub_expr.token_of_subexpr[pos_token_kw_in_subexpr - 1].token_t == token_expr::token_type::LITERAL) {
+            if (sub_expr.token_of_subexpr[pos_token_kw_in_subexpr + 1].token_t != token_expr::token_type::LITERAL)
+                throw semantic_excp(
+                    build_pos_tokenb_str(sub_expr.token_of_subexpr[pos_token_kw_in_subexpr]) +
+                        " Expected literal(int): " + sub_expr.token_of_subexpr[pos_token_kw_in_subexpr + 1].token_val,
+                    "018");
+        }
+        else if (sub_expr.token_of_subexpr[pos_token_kw_in_subexpr - 1].token_t == token_expr::token_type::LITERALS) {
+            if (sub_expr.token_of_subexpr[pos_token_kw_in_subexpr + 1].token_t != token_expr::token_type::LITERALS)
+                throw semantic_excp(build_pos_tokenb_str(sub_expr.token_of_subexpr[pos_token_kw_in_subexpr]) +
+                                        " Expected literal(string): " +
+                                        sub_expr.token_of_subexpr[pos_token_kw_in_subexpr - 1].token_val,
+                                    "018");
+        }
+        else
+            throw semantic_excp(build_pos_tokenb_str(sub_expr.token_of_subexpr[pos_token_kw_in_subexpr]) +
+                                    " Inappropriate parameter for keyword operator: " +
+                                    sub_expr.token_of_subexpr[pos_token_kw_in_subexpr + 1].token_val,
+                                "018");
+
+        if (sub_expr.token_of_subexpr[pos_token_kw_in_subexpr - 1].token_val ==
+            sub_expr.token_of_subexpr[pos_token_kw_in_subexpr + 1].token_val) {
+            sub_expr.token_of_subexpr[pos_token_kw_in_subexpr - 1].token_t = token_expr::token_type::LITERAL;
+            sub_expr.token_of_subexpr[pos_token_kw_in_subexpr - 1].token_val = "1";
+        }
+        else {
+            sub_expr.token_of_subexpr[pos_token_kw_in_subexpr - 1].token_t = token_expr::token_type::LITERAL;
+            sub_expr.token_of_subexpr[pos_token_kw_in_subexpr - 1].token_val = "0";
+        }
+        sub_expr.token_of_subexpr.erase(sub_expr.token_of_subexpr.begin() + pos_token_kw_in_subexpr + 1);
+        sub_expr.token_of_subexpr.erase(sub_expr.token_of_subexpr.begin() + pos_token_kw_in_subexpr);
+    }
+    else if (sub_expr.token_of_subexpr[pos_token_kw_in_subexpr].token_val == STR_KEYWORD_OP_TSTR) {
+        if (pos_token_kw_in_subexpr == sub_expr.token_of_subexpr.size() - 1)
+            throw semantic_excp(build_pos_tokenb_str(sub_expr.token_of_subexpr[pos_token_kw_in_subexpr]) +
+                                    " One operands are expected",
+                                "017");
+
+        if (sub_expr.token_of_subexpr[pos_token_kw_in_subexpr + 1].token_t == token_expr::token_type::LITERAL) {
+            sub_expr.token_of_subexpr[pos_token_kw_in_subexpr].token_t = token_expr::token_type::LITERALS;
+            sub_expr.token_of_subexpr[pos_token_kw_in_subexpr].token_val =
+                sub_expr.token_of_subexpr[pos_token_kw_in_subexpr + 1].token_val;
+        }
+        else
+            throw semantic_excp(build_pos_tokenb_str(sub_expr.token_of_subexpr[pos_token_kw_in_subexpr]) +
+                                    " Inappropriate parameter for keyword operator: " +
+                                    sub_expr.token_of_subexpr[pos_token_kw_in_subexpr + 1].token_val,
+                                "018");
+        sub_expr.token_of_subexpr.erase(sub_expr.token_of_subexpr.begin() + pos_token_kw_in_subexpr + 1);
+    }
+    else if (IS_CONSTANT_KW_OP(sub_expr.token_of_subexpr[pos_token_kw_in_subexpr].token_val)) {
+        if (sub_expr.token_of_subexpr[pos_token_kw_in_subexpr].token_val == STR_KEYWORD_OP_CONST_RELEASE)
+            sub_expr.token_of_subexpr[pos_token_kw_in_subexpr].token_val = "1";
+        else if (sub_expr.token_of_subexpr[pos_token_kw_in_subexpr].token_val == STR_KEYWORD_OP_CONST_DEBUG)
+            sub_expr.token_of_subexpr[pos_token_kw_in_subexpr].token_val = "0";
+        sub_expr.token_of_subexpr[pos_token_kw_in_subexpr].token_t = token_expr::token_type::LITERAL;
+    }
+
+    if (sub_expr.token_of_subexpr.size() != 1 && !parse_okeyword)
+        parse_keywords_op_param(sub_expr, UINT32_MAX, curr_scope, expected_param);
+}
+
 void semantic_analyzer::defining_call_func(const std::string &name, notion_func &nfunc) {
     if (std::find(nfunc.expected_args.begin(), nfunc.expected_args.end(), params::FUTURE_VAR_ID) !=
             nfunc.expected_args.end() ||

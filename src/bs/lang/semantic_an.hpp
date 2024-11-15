@@ -106,11 +106,21 @@ class semantic_analyzer {
     void smt_second_pass(parser::abstract_expr_func &expr_s, var::scope &curr_scope);
 
   private:
+    // Converts all variable identifiers to their values and also keyword operators to literal ​​(for subsequent processing of keyword operators)
+    void convert_id_to_literal(aef_expr::subexpressions &sub_expr, var::scope &curr_scope,
+                               aef_expr::params expected_param);
+
+    // Converts all keyword operators that are unary
+    void convert_kwop_uc_to_literal(aef_expr::subexpressions &sub_expr, var::scope &curr_scope,
+                                    aef_expr::params expected_param);
     // Parses a subexpression if it has not token the type
     // INT, STRING, or VAR_STRUCT_ID after parsing at the AEF construction
-    // stage
     void parse_subexpr_param(aef_expr::subexpressions &sub_expr, std::vector<aef_expr::subexpressions> &sub_exprs,
                              u32t &pos_sub_expr_in_vec, var::scope &curr_scope, aef_expr::params expected_param);
+
+    // Auxiliary function for parse_subexpr_param. Processes all keyword operators
+    void parse_keywords_op_param(aef_expr::subexpressions &sub_expr, u32t pos_token_kw_in_subexpr,
+                                 var::scope &curr_scope, aef_expr::params expected_param, u32t parse_okeyword = 0);
     void defining_call_func(const std::string &name, aef_expr::notion_func &nfunc);
 
   private:
