@@ -148,19 +148,19 @@ class lua {
     // Returns true if lua state is initialized
     inline bool is_created() {
         std::lock_guard<std::mutex> guard(lmutex);
-        is_created__nmutex();
+        return is_created__nmutex();
     }
 
     // Returns true if exists function(global) in lua state
     inline bool is_function(std::string name_func){
         std::lock_guard<std::mutex> guard(lmutex);
-        is_function__nmutex(name_func);
+        return is_function__nmutex(name_func);
     }
 
     // Returns true if exists variable(global) in lua state
     inline bool is_var(std::string name_var){
         std::lock_guard<std::mutex> guard(lmutex);
-        is_var__nmutex(name_var);
+        return is_var__nmutex(name_var);
     }
 
   public:

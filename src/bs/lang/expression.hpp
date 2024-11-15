@@ -130,14 +130,18 @@ inline subexpressions::ret_type_subexpr subexpressions::returned_type_subexpr() 
     else if (subexpr_t == type_subexpr::ID)
         return ret_type_subexpr::ID;
     else if (subexpr_t == type_subexpr::KEYWORD_OP) {
-        auto &it =
+        const auto &it =
             std::find_if(this->token_of_subexpr.begin(), this->token_of_subexpr.end(), [](const token_expr::token &tk) {
                 return tk.token_t == token_expr::token_type::KW_OPERATOR && IS_BIBARY_KW_OP(tk.token_val);
             });
-        if (it == this->token_of_subexpr.end())
-            it = this->token_of_subexpr.begin();
-
-        if (RET_INT_KW_OP(it->token_val) || IS_CONSTANT_RET_INT(it->token_val))
+        if (it == this->token_of_subexpr.end()) {
+            if (RET_INT_KW_OP(this->token_of_subexpr[0].token_val) ||
+                IS_CONSTANT_RET_INT(this->token_of_subexpr[0].token_val))
+                return ret_type_subexpr::INT;
+            else if (RET_STR_KW_OP(this->token_of_subexpr[0].token_val))
+                return ret_type_subexpr::STRING;
+        }
+        else if (RET_INT_KW_OP(it->token_val) || IS_CONSTANT_RET_INT(it->token_val))
             return ret_type_subexpr::INT;
         else if (RET_STR_KW_OP(it->token_val))
             return ret_type_subexpr::STRING;
