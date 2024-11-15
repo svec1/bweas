@@ -79,8 +79,7 @@ Simple configurations for assembly will be described here. These examples are fo
 
 ```
 # For example(how create variable)
-set(TRUE, 1)
-set(RELEASE, 1)
+set(VAR, 1)
 
 # We create a call component - what will be called
 # This also stores the name pattern of files that the current calling component may create.
