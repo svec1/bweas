@@ -177,8 +177,8 @@ void pars_an::check_valid_subexpr_first_pass(const subexpressions &sub_expr) {
         else if (sub_expr.token_of_subexpr[i].token_t == token_type::KW_OPERATOR) {
             if (expr_with_op)
                 throw parser_excp(build_pos_tokenb_str(sub_expr.token_of_subexpr[i]), "011");
-            else if (expected_op){
-                if(!IS_BIBARY_KW_OP(sub_expr.token_of_subexpr[i].token_val))
+            else if (expected_op) {
+                if (!IS_BIBARY_KW_OP(sub_expr.token_of_subexpr[i].token_val))
                     throw parser_excp(build_pos_tokenb_str(sub_expr.token_of_subexpr[i]), "012");
                 expected_op = 0;
             }
@@ -250,17 +250,14 @@ void pars_an::check_valid_subexpr_second_pass(subexpressions &sub_expr) {
     }
     if (operator_compare) {
         sub_expr.subexpr_t = subexpressions::type_subexpr::INT_COMPARE;
-        if (!keyword_op)
-            try_parse_subexpr(sub_expr);
+        try_parse_subexpr(sub_expr);
     }
     else if (operator_plus) {
         sub_expr.subexpr_t = subexpressions::type_subexpr::STRING_ADD;
-        if (!keyword_op)
-            try_parse_subexpr(sub_expr);
+        try_parse_subexpr(sub_expr);
     }
-    else if (keyword_op) {
+    else if (keyword_op)
         sub_expr.subexpr_t = subexpressions::type_subexpr::KEYWORD_OP;
-    }
     else if (num_type_expr)
         sub_expr.subexpr_t = subexpressions::type_subexpr::INT;
     else if (str_type_expr)

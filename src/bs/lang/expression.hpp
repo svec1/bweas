@@ -142,8 +142,7 @@ inline subexpressions::ret_type_subexpr subexpressions::returned_type_subexpr() 
         else if (RET_STR_KW_OP(it->token_val))
             return ret_type_subexpr::STRING;
     }
-    else
-        return ret_type_subexpr::SIZE_ENUM_RET_TYPE_SUBEXPR;
+    return ret_type_subexpr::SIZE_ENUM_RET_TYPE_SUBEXPR;
 }
 } // namespace aef_expr
 #endif
