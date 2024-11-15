@@ -400,7 +400,7 @@ void semantic_analyzer::smt_second_pass(abstract_expr_func &expr_s, var::scope &
                 }
                 else if (expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_t == token_expr::token_type::ID) {
                     u32t index_type = curr_scope.what_type(expr_s[i].sub_expr_s[j].token_of_subexpr[b].token_val);
-                    if (expr_s[i].expr_func.func_n.expected_args[j] == params::VAR_ID && index_type == 0)
+                    if (index_type == 0)
                         throw semantic_excp(build_pos_tokenb_str(expr_s[i].sub_expr_s[j].token_of_subexpr[b]) +
                                                 " Expected: exist variable with any type\n",
                                             "008");
@@ -510,8 +510,8 @@ void semantic_analyzer::smt_second_pass(abstract_expr_func &expr_s, var::scope &
         throw semantic_excp("End Of AEF", "013");
 }
 
-u32t semantic_analyzer::convert_id_literal(aef_expr::subexpressions &sub_expr, var::scope &curr_scope,
-                                           aef_expr::params expected_param) {
+void semantic_analyzer::convert_id_to_literal(aef_expr::subexpressions &sub_expr, var::scope &curr_scope,
+                                              aef_expr::params expected_param) {
     for (u32t i = 0; i < sub_expr.token_of_subexpr.size(); ++i) {
         if (sub_expr.token_of_subexpr[i].token_t == token_expr::token_type::ID &&
             (expected_param != params::VAR_ID && expected_param != params::FUTURE_VAR_ID &&
@@ -529,12 +529,20 @@ u32t semantic_analyzer::convert_id_literal(aef_expr::subexpressions &sub_expr, v
                     curr_scope.get_var_value<std::string>(sub_expr.token_of_subexpr[i].token_val),
                     sub_expr.token_of_subexpr[i].pos_defined_line, sub_expr.token_of_subexpr[i].pos_beg_defined_sym);
             }
-            else
-                return 1;
         }
+        else if (sub_expr.token_of_subexpr[i].token_t == token_expr::token_type::KW_OPERATOR &&
+                 IS_CONSTANT_KW_OP(sub_expr.token_of_subexpr[i].token_val))
+            parse_keywords_op_param(sub_expr, i, curr_scope, expected_param, 1);
     }
+}
 
-    return 0;
+void semantic_analyzer::convert_kwop_uc_to_literal(aef_expr::subexpressions &sub_expr, var::scope &curr_scope,
+                                                   aef_expr::params expected_param) {
+    for (u32t i = 0; i < sub_expr.token_of_subexpr.size(); ++i) {
+        if (sub_expr.token_of_subexpr[i].token_t == token_expr::token_type::KW_OPERATOR &&
+            IS_UNARY_KW_OP(sub_expr.token_of_subexpr[i].token_val))
+            parse_keywords_op_param(sub_expr, i, curr_scope, expected_param, 1);
+    }
 }
 
 void semantic_analyzer::parse_subexpr_param(subexpressions &sub_expr, std::vector<subexpressions> &sub_exprs,
@@ -672,7 +680,9 @@ void semantic_analyzer::parse_subexpr_param(subexpressions &sub_expr, std::vecto
         return;
     }
     else if (sub_expr.subexpr_t == subexpressions::type_subexpr::KEYWORD_OP) {
-        parse_keyword_op_param(sub_expr, UINT32_MAX, curr_scope, expected_param);
+        convert_id_to_literal(sub_expr, curr_scope, expected_param);
+        convert_kwop_uc_to_literal(sub_expr, curr_scope, expected_param);
+        parse_keywords_op_param(sub_expr, UINT32_MAX, curr_scope, expected_param);
         if (sub_expr.token_of_subexpr[0].token_t == token_expr::token_type::LITERAL)
             sub_expr.subexpr_t = subexpressions::type_subexpr::INT;
         else if (sub_expr.token_of_subexpr[0].token_t == token_expr::token_type::LITERALS)
@@ -688,8 +698,9 @@ void semantic_analyzer::parse_subexpr_param(subexpressions &sub_expr, std::vecto
         parse_subexpr.subexpr_t = subexpressions::type_subexpr::STRING;
     sub_expr = parse_subexpr;
 }
-void semantic_analyzer::parse_keyword_op_param(aef_expr::subexpressions &sub_expr, u32t pos_token_kw_in_subexpr,
-                                               var::scope &curr_scope, aef_expr::params expected_param) {
+void semantic_analyzer::parse_keywords_op_param(aef_expr::subexpressions &sub_expr, u32t pos_token_kw_in_subexpr,
+                                                var::scope &curr_scope, aef_expr::params expected_param,
+                                                u32t parse_okeyword) {
     if (pos_token_kw_in_subexpr == UINT32_MAX) {
         for (u32t i = 0; i < sub_expr.token_of_subexpr.size(); ++i)
             if (sub_expr.token_of_subexpr[i].token_t == token_expr::token_type::KW_OPERATOR) {
@@ -700,47 +711,32 @@ void semantic_analyzer::parse_keyword_op_param(aef_expr::subexpressions &sub_exp
             return;
     }
 
-    if (convert_id_literal(sub_expr, curr_scope, expected_param))
-        throw semantic_excp(
-            build_pos_tokenb_str(sub_expr.token_of_subexpr[pos_token_kw_in_subexpr]) + " Expected literal", "018");
-
     if (sub_expr.token_of_subexpr[pos_token_kw_in_subexpr].token_val == STR_KEYWORD_OP_EQUAL) {
-        if (expected_param != params::LNUM_OR_ID_VAR && expected_param != params::ANY_VALUE_WITHOUT_FUTUREID_NEXT)
+        if (expected_param != params::LNUM_OR_ID_VAR && expected_param != params::ANY_VALUE_WITHOUT_FUTUREID_NEXT ||
+            pos_token_kw_in_subexpr == 0 || pos_token_kw_in_subexpr == sub_expr.token_of_subexpr.size() - 1)
             throw semantic_excp(build_pos_tokenb_str(sub_expr.token_of_subexpr[pos_token_kw_in_subexpr]) +
                                     " Two operands are expected",
                                 "017");
-        if (pos_token_kw_in_subexpr == 0 || pos_token_kw_in_subexpr == sub_expr.token_of_subexpr.size() - 1)
-            throw semantic_excp(build_pos_tokenb_str(sub_expr.token_of_subexpr[pos_token_kw_in_subexpr]) +
-                                    " Two operands are expected",
-                                "017");
-
-        if (sub_expr.token_of_subexpr[pos_token_kw_in_subexpr - 1].token_t == token_expr::token_type::KW_OPERATOR) {
-            if (!IS_CONSTANT_KW_OP(sub_expr.token_of_subexpr[pos_token_kw_in_subexpr - 1].token_val))
-                throw semantic_excp(build_pos_tokenb_str(sub_expr.token_of_subexpr[pos_token_kw_in_subexpr]) +
-                                        " Expected kw-op constant",
-                                    "018");
-            parse_keyword_op_param(sub_expr, pos_token_kw_in_subexpr, curr_scope, expected_param);
-        }
-        if (sub_expr.token_of_subexpr[pos_token_kw_in_subexpr + 1].token_t == token_expr::token_type::KW_OPERATOR) {
-            if (!IS_UNARY_KW_OP(sub_expr.token_of_subexpr[pos_token_kw_in_subexpr + 1].token_val))
-                throw semantic_excp(build_pos_tokenb_str(sub_expr.token_of_subexpr[pos_token_kw_in_subexpr]) +
-                                        " Expected kw-op constant",
-                                    "018");
-            parse_keyword_op_param(sub_expr, pos_token_kw_in_subexpr, curr_scope, expected_param);
-        }
 
         if (sub_expr.token_of_subexpr[pos_token_kw_in_subexpr - 1].token_t == token_expr::token_type::LITERAL) {
             if (sub_expr.token_of_subexpr[pos_token_kw_in_subexpr + 1].token_t != token_expr::token_type::LITERAL)
-                throw semantic_excp(build_pos_tokenb_str(sub_expr.token_of_subexpr[pos_token_kw_in_subexpr]) +
-                                        " Expected literal(int)",
-                                    "018");
+                throw semantic_excp(
+                    build_pos_tokenb_str(sub_expr.token_of_subexpr[pos_token_kw_in_subexpr]) +
+                        " Expected literal(int): " + sub_expr.token_of_subexpr[pos_token_kw_in_subexpr + 1].token_val,
+                    "018");
         }
         else if (sub_expr.token_of_subexpr[pos_token_kw_in_subexpr - 1].token_t == token_expr::token_type::LITERALS) {
             if (sub_expr.token_of_subexpr[pos_token_kw_in_subexpr + 1].token_t != token_expr::token_type::LITERALS)
                 throw semantic_excp(build_pos_tokenb_str(sub_expr.token_of_subexpr[pos_token_kw_in_subexpr]) +
-                                        " Expected literal(string)",
+                                        " Expected literal(string): " +
+                                        sub_expr.token_of_subexpr[pos_token_kw_in_subexpr - 1].token_val,
                                     "018");
         }
+        else
+            throw semantic_excp(build_pos_tokenb_str(sub_expr.token_of_subexpr[pos_token_kw_in_subexpr]) +
+                                    " Inappropriate parameter for keyword operator: " +
+                                    sub_expr.token_of_subexpr[pos_token_kw_in_subexpr + 1].token_val,
+                                "018");
 
         if (sub_expr.token_of_subexpr[pos_token_kw_in_subexpr - 1].token_val ==
             sub_expr.token_of_subexpr[pos_token_kw_in_subexpr + 1].token_val) {
@@ -765,22 +761,23 @@ void semantic_analyzer::parse_keyword_op_param(aef_expr::subexpressions &sub_exp
             sub_expr.token_of_subexpr[pos_token_kw_in_subexpr].token_val =
                 sub_expr.token_of_subexpr[pos_token_kw_in_subexpr + 1].token_val;
         }
-        else if(sub_expr.token_of_subexpr[pos_token_kw_in_subexpr + 1].token_t == token_expr::token_type::KW_OPERATOR){
-            if(!IS_CONSTANT_KW_OP(sub_expr.token_of_subexpr[pos_token_kw_in_subexpr + 1].token_val))
-                throw semantic_excp(build_pos_tokenb_str(sub_expr.token_of_subexpr[pos_token_kw_in_subexpr]) +
-                                    " Expected kw-op constant or literal",
+        else
+            throw semantic_excp(build_pos_tokenb_str(sub_expr.token_of_subexpr[pos_token_kw_in_subexpr]) +
+                                    " Inappropriate parameter for keyword operator: " +
+                                    sub_expr.token_of_subexpr[pos_token_kw_in_subexpr + 1].token_val,
                                 "018");
-            parse_keyword_op_param(sub_expr, pos_token_kw_in_subexpr + 1, curr_scope, expected_param);
-        }
-        sub_expr.token_of_subexpr.erase(sub_expr.token_of_subexpr.begin() + pos_token_kw_in_subexpr);
+        sub_expr.token_of_subexpr.erase(sub_expr.token_of_subexpr.begin() + pos_token_kw_in_subexpr + 1);
     }
-    else if(IS_CONSTANT_KW_OP(sub_expr.token_of_subexpr[pos_token_kw_in_subexpr].token_val)){
-        if(sub_expr.token_of_subexpr[pos_token_kw_in_subexpr].token_val == STR_KEYWORD_OP_CONST_RELEASE)
+    else if (IS_CONSTANT_KW_OP(sub_expr.token_of_subexpr[pos_token_kw_in_subexpr].token_val)) {
+        if (sub_expr.token_of_subexpr[pos_token_kw_in_subexpr].token_val == STR_KEYWORD_OP_CONST_RELEASE)
             sub_expr.token_of_subexpr[pos_token_kw_in_subexpr].token_val = "1";
-        else if(sub_expr.token_of_subexpr[pos_token_kw_in_subexpr].token_val == STR_KEYWORD_OP_CONST_DEBUG)
+        else if (sub_expr.token_of_subexpr[pos_token_kw_in_subexpr].token_val == STR_KEYWORD_OP_CONST_DEBUG)
             sub_expr.token_of_subexpr[pos_token_kw_in_subexpr].token_val = "0";
         sub_expr.token_of_subexpr[pos_token_kw_in_subexpr].token_t = token_expr::token_type::LITERAL;
     }
+
+    if (sub_expr.token_of_subexpr.size() != 1 && !parse_okeyword)
+        parse_keywords_op_param(sub_expr, UINT32_MAX, curr_scope, expected_param);
 }
 
 void semantic_analyzer::defining_call_func(const std::string &name, notion_func &nfunc) {

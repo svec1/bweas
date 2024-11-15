@@ -139,6 +139,7 @@ pars_an::pars_an() {
         assist.add_err("PARS009", "Arithmetic operations are prohibited");
         assist.add_err("PARS010", "Impossible to compare strings");
         assist.add_err("PARS011", "You cannot use operators together with operator keywords");
+        assist.add_err("PARS012", "Keyword operator is nonbinary");
     }
 }
 
@@ -176,8 +177,11 @@ void pars_an::check_valid_subexpr_first_pass(const subexpressions &sub_expr) {
         else if (sub_expr.token_of_subexpr[i].token_t == token_type::KW_OPERATOR) {
             if (expr_with_op)
                 throw parser_excp(build_pos_tokenb_str(sub_expr.token_of_subexpr[i]), "011");
-            if (expected_op)
+            else if (expected_op){
+                if(!IS_BIBARY_KW_OP(sub_expr.token_of_subexpr[i].token_val))
+                    throw parser_excp(build_pos_tokenb_str(sub_expr.token_of_subexpr[i]), "012");
                 expected_op = 0;
+            }
             expected_param_kw_op = 1;
         }
         else if (sub_expr.token_of_subexpr[i].token_t == token_type::OPERATOR) {
