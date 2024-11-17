@@ -4,8 +4,9 @@
 
 #include <array>
 
-extern std::array<std::string, 4> token_expr::keywords_op = {STR_KEYWORD_OP_EQUAL, STR_KEYWORD_OP_TSTR,
-                                                             STR_KEYWORD_OP_CONST_RELEASE, STR_KEYWORD_OP_CONST_DEBUG};
+const std::array<std::string, 6> token_expr::keywords_op = {STR_KEYWORD_OP_EQUAL,         STR_KEYWORD_OP_TSTR,
+                                                            STR_KEYWORD_OP_CONST_RELEASE, STR_KEYWORD_OP_CONST_DEBUG,
+                                                            STR_KEYWORD_OP_CONST_TRUE,    STR_KEYWORD_OP_CONST_FALSE};
 
 using namespace lexer;
 using namespace token_expr;
