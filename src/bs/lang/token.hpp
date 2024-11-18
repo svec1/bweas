@@ -9,23 +9,34 @@
 #define STR_KEYWORD_ENDIF "endif"
 
 #define STR_KEYWORD_OP_EQUAL "EQUAL"
-#define STR_KEYWORD_OP_TSTR  "TO_STR"
+#define STR_KEYWORD_OP_AND "AND"
+#define STR_KEYWORD_OP_OR "OR"
+#define STR_KEYWORD_OP_NOT "NOT"
+#define STR_KEYWORD_OP_TSTR "TO_STR"
 
+#define STR_KEYWORD_OP_CONST_TRUE "TRUE"
+#define STR_KEYWORD_OP_CONST_FALSE "FALSE"
 #define STR_KEYWORD_OP_CONST_RELEASE "RELEASE"
 #define STR_KEYWORD_OP_CONST_DEBUG "DEBUG"
 
-#define RET_INT_KW_OP(STR) (STR == STR_KEYWORD_OP_EQUAL)
+#define IS_BIBARY_KW_OP(STR) (STR == STR_KEYWORD_OP_EQUAL || STR == STR_KEYWORD_OP_AND || STR == STR_KEYWORD_OP_OR)
+#define IS_UNARY_KW_OP(STR) (STR == STR_KEYWORD_OP_TSTR || STR == STR_KEYWORD_OP_NOT)
+#define IS_CONSTANT_KW_OP(STR)                                                                                         \
+    (STR == STR_KEYWORD_OP_CONST_RELEASE || STR == STR_KEYWORD_OP_CONST_DEBUG || STR == STR_KEYWORD_OP_CONST_TRUE ||   \
+     STR == STR_KEYWORD_OP_CONST_FALSE)
+
+#define IS_CONSTANT_RET_INT(STR)                                                                                       \
+    (STR == STR_KEYWORD_OP_CONST_RELEASE || STR == STR_KEYWORD_OP_CONST_DEBUG || STR == STR_KEYWORD_OP_CONST_TRUE ||   \
+     STR == STR_KEYWORD_OP_CONST_FALSE)
+
+#define RET_INT_KW_OP(STR)                                                                                             \
+    (STR == STR_KEYWORD_OP_EQUAL || STR == STR_KEYWORD_OP_AND || STR == STR_KEYWORD_OP_NOT ||                          \
+     STR == STR_KEYWORD_OP_OR || IS_CONSTANT_RET_INT(STR))
 #define RET_STR_KW_OP(STR) (STR == STR_KEYWORD_OP_TSTR)
-
-#define IS_BIBARY_KW_OP(STR) (STR == STR_KEYWORD_OP_EQUAL)
-#define IS_UNARY_KW_OP(STR) (STR == STR_KEYWORD_OP_TSTR)
-#define IS_CONSTANT_KW_OP(STR) (STR == STR_KEYWORD_OP_CONST_RELEASE || STR == STR_KEYWORD_OP_CONST_DEBUG)
-
-#define IS_CONSTANT_RET_INT(STR) (STR == STR_KEYWORD_OP_CONST_RELEASE || STR == STR_KEYWORD_OP_CONST_DEBUG)
 
 namespace token_expr {
 
-extern std::array<std::string, 4> keywords_op;
+extern const std::array<std::string, 9> keywords_op;
 
 // listing all possible token types
 enum class token_type {
@@ -62,7 +73,6 @@ struct token {
         : token_t(tk_t), token_val(tk_val), pos_defined_line(pos_def_line), pos_beg_defined_sym(pos_beg_def_sym) {
     }
 
-
     token_type token_t;
     std::string token_val;
 
@@ -72,9 +82,9 @@ struct token {
     // token position in the line (symbol number)
     u32t pos_beg_defined_sym{0};
 };
-static inline bool operator==(const token& tk1, const token& tk2){
-    if(tk1.token_t == tk2.token_t && tk1.token_val == tk2.token_val && 
-       tk1.pos_defined_line == tk2.pos_defined_line && tk1.pos_beg_defined_sym == tk2.pos_beg_defined_sym)
+static inline bool operator==(const token &tk1, const token &tk2) {
+    if (tk1.token_t == tk2.token_t && tk1.token_val == tk2.token_val && tk1.pos_defined_line == tk2.pos_defined_line &&
+        tk1.pos_beg_defined_sym == tk2.pos_beg_defined_sym)
         return 1;
     return 0;
 }

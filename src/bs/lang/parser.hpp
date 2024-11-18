@@ -16,6 +16,7 @@ using abstract_expr_func = std::vector<aef_expr::expression>;
 // auxiliary functions for translating some structural types into an info string
 
 extern std::string type_token_str(token_expr::token_type token_t);
+extern std::string type_ret_subexpr(aef_expr::subexpressions::ret_type_subexpr subexpr_ret_t);
 extern std::string build_pos_tokenb_str(const token_expr::token &tk);
 extern std::string build_pos_subexpr_str(const aef_expr::subexpressions &sub_expr);
 extern std::string type_sybexpr_str(aef_expr::subexpressions::type_subexpr sub_expr_t);

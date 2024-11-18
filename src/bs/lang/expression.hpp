@@ -109,7 +109,7 @@ struct subexpressions {
         SIZE_ENUM_RET_TYPE_SUBEXPR
     };
 
-    inline ret_type_subexpr returned_type_subexpr();
+    inline ret_type_subexpr returned_type_subexpr() const;
 
     // tokens of single parameter
     std::vector<token_expr::token> token_of_subexpr;
@@ -122,7 +122,7 @@ inline bool expression::execute_with_semantic_an() {
 }
 
 // Defines the return type (expected after semantic analysis)
-inline subexpressions::ret_type_subexpr subexpressions::returned_type_subexpr() {
+inline subexpressions::ret_type_subexpr subexpressions::returned_type_subexpr() const{
     if (subexpr_t == type_subexpr::INT || subexpr_t == type_subexpr::INT_COMPARE)
         return ret_type_subexpr::INT;
     else if (subexpr_t == type_subexpr::STRING || subexpr_t == type_subexpr::STRING_ADD)
@@ -135,13 +135,12 @@ inline subexpressions::ret_type_subexpr subexpressions::returned_type_subexpr() 
                 return tk.token_t == token_expr::token_type::KW_OPERATOR && IS_BIBARY_KW_OP(tk.token_val);
             });
         if (it == this->token_of_subexpr.end()) {
-            if (RET_INT_KW_OP(this->token_of_subexpr[0].token_val) ||
-                IS_CONSTANT_RET_INT(this->token_of_subexpr[0].token_val))
+            if (RET_INT_KW_OP(this->token_of_subexpr[0].token_val))
                 return ret_type_subexpr::INT;
             else if (RET_STR_KW_OP(this->token_of_subexpr[0].token_val))
                 return ret_type_subexpr::STRING;
         }
-        else if (RET_INT_KW_OP(it->token_val) || IS_CONSTANT_RET_INT(it->token_val))
+        else if (RET_INT_KW_OP(it->token_val))
             return ret_type_subexpr::INT;
         else if (RET_STR_KW_OP(it->token_val))
             return ret_type_subexpr::STRING;

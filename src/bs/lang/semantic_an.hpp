@@ -106,12 +106,12 @@ class semantic_analyzer {
     void smt_second_pass(parser::abstract_expr_func &expr_s, var::scope &curr_scope);
 
   private:
-    // Converts all variable identifiers to their values and also keyword operators to literal ​​(for subsequent processing of keyword operators)
+    // Converts all variable identifiers to their values and also keyword operators(constant) to literal ​​(for subsequent processing of keyword operators)
     void convert_id_to_literal(aef_expr::subexpressions &sub_expr, var::scope &curr_scope,
                                aef_expr::params expected_param);
 
     // Converts all keyword operators that are unary
-    void convert_kwop_uc_to_literal(aef_expr::subexpressions &sub_expr, var::scope &curr_scope,
+    void convert_kwop_u_to_literal(aef_expr::subexpressions &sub_expr, var::scope &curr_scope,
                                     aef_expr::params expected_param);
     // Parses a subexpression if it has not token the type
     // INT, STRING, or VAR_STRUCT_ID after parsing at the AEF construction

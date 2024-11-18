@@ -536,7 +536,7 @@ void semantic_analyzer::convert_id_to_literal(aef_expr::subexpressions &sub_expr
     }
 }
 
-void semantic_analyzer::convert_kwop_uc_to_literal(aef_expr::subexpressions &sub_expr, var::scope &curr_scope,
+void semantic_analyzer::convert_kwop_u_to_literal(aef_expr::subexpressions &sub_expr, var::scope &curr_scope,
                                                    aef_expr::params expected_param) {
     for (u32t i = 0; i < sub_expr.token_of_subexpr.size(); ++i) {
         if (sub_expr.token_of_subexpr[i].token_t == token_expr::token_type::KW_OPERATOR &&
@@ -681,7 +681,7 @@ void semantic_analyzer::parse_subexpr_param(subexpressions &sub_expr, std::vecto
     }
     else if (sub_expr.subexpr_t == subexpressions::type_subexpr::KEYWORD_OP) {
         convert_id_to_literal(sub_expr, curr_scope, expected_param);
-        convert_kwop_uc_to_literal(sub_expr, curr_scope, expected_param);
+        convert_kwop_u_to_literal(sub_expr, curr_scope, expected_param);
         parse_keywords_op_param(sub_expr, UINT32_MAX, curr_scope, expected_param);
         if (sub_expr.token_of_subexpr[0].token_t == token_expr::token_type::LITERAL)
             sub_expr.subexpr_t = subexpressions::type_subexpr::INT;
@@ -711,67 +711,114 @@ void semantic_analyzer::parse_keywords_op_param(aef_expr::subexpressions &sub_ex
             return;
     }
 
-    if (sub_expr.token_of_subexpr[pos_token_kw_in_subexpr].token_val == STR_KEYWORD_OP_EQUAL) {
-        if (expected_param != params::LNUM_OR_ID_VAR && expected_param != params::ANY_VALUE_WITHOUT_FUTUREID_NEXT ||
-            pos_token_kw_in_subexpr == 0 || pos_token_kw_in_subexpr == sub_expr.token_of_subexpr.size() - 1)
-            throw semantic_excp(build_pos_tokenb_str(sub_expr.token_of_subexpr[pos_token_kw_in_subexpr]) +
-                                    " Two operands are expected",
-                                "017");
-
-        if (sub_expr.token_of_subexpr[pos_token_kw_in_subexpr - 1].token_t == token_expr::token_type::LITERAL) {
-            if (sub_expr.token_of_subexpr[pos_token_kw_in_subexpr + 1].token_t != token_expr::token_type::LITERAL)
-                throw semantic_excp(
-                    build_pos_tokenb_str(sub_expr.token_of_subexpr[pos_token_kw_in_subexpr]) +
-                        " Expected literal(int): " + sub_expr.token_of_subexpr[pos_token_kw_in_subexpr + 1].token_val,
-                    "018");
-        }
-        else if (sub_expr.token_of_subexpr[pos_token_kw_in_subexpr - 1].token_t == token_expr::token_type::LITERALS) {
-            if (sub_expr.token_of_subexpr[pos_token_kw_in_subexpr + 1].token_t != token_expr::token_type::LITERALS)
+    if (IS_BIBARY_KW_OP(sub_expr.token_of_subexpr[pos_token_kw_in_subexpr].token_val)) {
+        if (RET_INT_KW_OP(sub_expr.token_of_subexpr[pos_token_kw_in_subexpr].token_val)) {
+            if (expected_param != params::LNUM_OR_ID_VAR && expected_param != params::ANY_VALUE_WITHOUT_FUTUREID_NEXT ||
+                pos_token_kw_in_subexpr == 0 || pos_token_kw_in_subexpr == sub_expr.token_of_subexpr.size() - 1)
                 throw semantic_excp(build_pos_tokenb_str(sub_expr.token_of_subexpr[pos_token_kw_in_subexpr]) +
-                                        " Expected literal(string): " +
-                                        sub_expr.token_of_subexpr[pos_token_kw_in_subexpr - 1].token_val,
-                                    "018");
-        }
-        else
-            throw semantic_excp(build_pos_tokenb_str(sub_expr.token_of_subexpr[pos_token_kw_in_subexpr]) +
-                                    " Inappropriate parameter for keyword operator: " +
-                                    sub_expr.token_of_subexpr[pos_token_kw_in_subexpr + 1].token_val,
-                                "018");
+                                        " Two operands are expected",
+                                    "017");
+            if (sub_expr.token_of_subexpr[pos_token_kw_in_subexpr].token_val == STR_KEYWORD_OP_EQUAL) {
+                if (sub_expr.token_of_subexpr[pos_token_kw_in_subexpr - 1].token_t == token_expr::token_type::LITERAL) {
+                    if (sub_expr.token_of_subexpr[pos_token_kw_in_subexpr + 1].token_t !=
+                        token_expr::token_type::LITERAL)
+                        throw semantic_excp(build_pos_tokenb_str(sub_expr.token_of_subexpr[pos_token_kw_in_subexpr]) +
+                                                " Expected literal(int): " +
+                                                sub_expr.token_of_subexpr[pos_token_kw_in_subexpr - 1].token_val,
+                                            "018");
+                }
+                else if (sub_expr.token_of_subexpr[pos_token_kw_in_subexpr - 1].token_t ==
+                         token_expr::token_type::LITERALS) {
+                    if (sub_expr.token_of_subexpr[pos_token_kw_in_subexpr + 1].token_t !=
+                        token_expr::token_type::LITERALS)
+                        throw semantic_excp(build_pos_tokenb_str(sub_expr.token_of_subexpr[pos_token_kw_in_subexpr]) +
+                                                " Expected literal(string): " +
+                                                sub_expr.token_of_subexpr[pos_token_kw_in_subexpr - 1].token_val,
+                                            "018");
+                }
+                else
+                    throw semantic_excp(build_pos_tokenb_str(sub_expr.token_of_subexpr[pos_token_kw_in_subexpr]) +
+                                            " Inappropriate parameter for keyword operator: " +
+                                            sub_expr.token_of_subexpr[pos_token_kw_in_subexpr + 1].token_val,
+                                        "018");
 
-        if (sub_expr.token_of_subexpr[pos_token_kw_in_subexpr - 1].token_val ==
-            sub_expr.token_of_subexpr[pos_token_kw_in_subexpr + 1].token_val) {
-            sub_expr.token_of_subexpr[pos_token_kw_in_subexpr - 1].token_t = token_expr::token_type::LITERAL;
-            sub_expr.token_of_subexpr[pos_token_kw_in_subexpr - 1].token_val = "1";
-        }
-        else {
-            sub_expr.token_of_subexpr[pos_token_kw_in_subexpr - 1].token_t = token_expr::token_type::LITERAL;
-            sub_expr.token_of_subexpr[pos_token_kw_in_subexpr - 1].token_val = "0";
+                if (sub_expr.token_of_subexpr[pos_token_kw_in_subexpr - 1].token_val ==
+                    sub_expr.token_of_subexpr[pos_token_kw_in_subexpr + 1].token_val) {
+                    sub_expr.token_of_subexpr[pos_token_kw_in_subexpr - 1].token_t = token_expr::token_type::LITERAL;
+                    sub_expr.token_of_subexpr[pos_token_kw_in_subexpr - 1].token_val = "1";
+                }
+                else {
+                    sub_expr.token_of_subexpr[pos_token_kw_in_subexpr - 1].token_t = token_expr::token_type::LITERAL;
+                    sub_expr.token_of_subexpr[pos_token_kw_in_subexpr - 1].token_val = "0";
+                }
+            }
+            else if (sub_expr.token_of_subexpr[pos_token_kw_in_subexpr].token_val == STR_KEYWORD_OP_AND) {
+                if (sub_expr.token_of_subexpr[pos_token_kw_in_subexpr - 1].token_t != token_expr::token_type::LITERAL ||
+                    sub_expr.token_of_subexpr[pos_token_kw_in_subexpr + 1].token_t != token_expr::token_type::LITERAL)
+                    throw semantic_excp(build_pos_tokenb_str(sub_expr.token_of_subexpr[pos_token_kw_in_subexpr]) +
+                                            " Expected literal(int): " +
+                                            sub_expr.token_of_subexpr[pos_token_kw_in_subexpr - 1].token_val,
+                                        "018");
+                if (sub_expr.token_of_subexpr[pos_token_kw_in_subexpr - 1].token_val == "1" &&
+                    sub_expr.token_of_subexpr[pos_token_kw_in_subexpr + 1].token_val == "1")
+                    sub_expr.token_of_subexpr[pos_token_kw_in_subexpr - 1].token_val = "1";
+                else
+                    sub_expr.token_of_subexpr[pos_token_kw_in_subexpr - 1].token_val = "0";
+            }
+            else if (sub_expr.token_of_subexpr[pos_token_kw_in_subexpr].token_val == STR_KEYWORD_OP_OR) {
+                if (sub_expr.token_of_subexpr[pos_token_kw_in_subexpr - 1].token_t != token_expr::token_type::LITERAL ||
+                    sub_expr.token_of_subexpr[pos_token_kw_in_subexpr + 1].token_t != token_expr::token_type::LITERAL)
+                    throw semantic_excp(build_pos_tokenb_str(sub_expr.token_of_subexpr[pos_token_kw_in_subexpr]) +
+                                            " Expected literal(int): " +
+                                            sub_expr.token_of_subexpr[pos_token_kw_in_subexpr - 1].token_val,
+                                        "018");
+                if (sub_expr.token_of_subexpr[pos_token_kw_in_subexpr - 1].token_val == "1" ||
+                    sub_expr.token_of_subexpr[pos_token_kw_in_subexpr + 1].token_val == "1")
+                    sub_expr.token_of_subexpr[pos_token_kw_in_subexpr - 1].token_val = "1";
+                else
+                    sub_expr.token_of_subexpr[pos_token_kw_in_subexpr - 1].token_val = "0";
+            }
         }
         sub_expr.token_of_subexpr.erase(sub_expr.token_of_subexpr.begin() + pos_token_kw_in_subexpr + 1);
         sub_expr.token_of_subexpr.erase(sub_expr.token_of_subexpr.begin() + pos_token_kw_in_subexpr);
     }
-    else if (sub_expr.token_of_subexpr[pos_token_kw_in_subexpr].token_val == STR_KEYWORD_OP_TSTR) {
+    else if (IS_UNARY_KW_OP(sub_expr.token_of_subexpr[pos_token_kw_in_subexpr].token_val)) {
         if (pos_token_kw_in_subexpr == sub_expr.token_of_subexpr.size() - 1)
             throw semantic_excp(build_pos_tokenb_str(sub_expr.token_of_subexpr[pos_token_kw_in_subexpr]) +
                                     " One operands are expected",
                                 "017");
-
-        if (sub_expr.token_of_subexpr[pos_token_kw_in_subexpr + 1].token_t == token_expr::token_type::LITERAL) {
-            sub_expr.token_of_subexpr[pos_token_kw_in_subexpr].token_t = token_expr::token_type::LITERALS;
-            sub_expr.token_of_subexpr[pos_token_kw_in_subexpr].token_val =
-                sub_expr.token_of_subexpr[pos_token_kw_in_subexpr + 1].token_val;
+        if (sub_expr.token_of_subexpr[pos_token_kw_in_subexpr + 1].token_t == token_expr::token_type::KW_OPERATOR)
+            parse_keywords_op_param(sub_expr, pos_token_kw_in_subexpr + 1, curr_scope, expected_param, 1);
+        if (sub_expr.token_of_subexpr[pos_token_kw_in_subexpr].token_val == STR_KEYWORD_OP_TSTR) {
+            if (sub_expr.token_of_subexpr[pos_token_kw_in_subexpr + 1].token_t == token_expr::token_type::LITERAL) {
+                sub_expr.token_of_subexpr[pos_token_kw_in_subexpr].token_t = token_expr::token_type::LITERALS;
+                sub_expr.token_of_subexpr[pos_token_kw_in_subexpr].token_val =
+                    sub_expr.token_of_subexpr[pos_token_kw_in_subexpr + 1].token_val;
+            }
+            else 
+                throw semantic_excp(build_pos_tokenb_str(sub_expr.token_of_subexpr[pos_token_kw_in_subexpr]) +
+                                        " Inappropriate parameter for keyword operator: " +
+                                        sub_expr.token_of_subexpr[pos_token_kw_in_subexpr + 1].token_val,
+                                    "018");
         }
-        else
-            throw semantic_excp(build_pos_tokenb_str(sub_expr.token_of_subexpr[pos_token_kw_in_subexpr]) +
-                                    " Inappropriate parameter for keyword operator: " +
-                                    sub_expr.token_of_subexpr[pos_token_kw_in_subexpr + 1].token_val,
-                                "018");
+        else if (sub_expr.token_of_subexpr[pos_token_kw_in_subexpr].token_val == STR_KEYWORD_OP_NOT) {
+            if (sub_expr.token_of_subexpr[pos_token_kw_in_subexpr + 1].token_t != token_expr::token_type::LITERAL)
+                throw semantic_excp(build_pos_tokenb_str(sub_expr.token_of_subexpr[pos_token_kw_in_subexpr]) +
+                                        " Inappropriate parameter for keyword operator: " +
+                                        sub_expr.token_of_subexpr[pos_token_kw_in_subexpr + 1].token_val,
+                                    "018");
+            sub_expr.token_of_subexpr[pos_token_kw_in_subexpr].token_t = token_expr::token_type::LITERAL;
+            sub_expr.token_of_subexpr[pos_token_kw_in_subexpr].token_val =
+                std::atoll(sub_expr.token_of_subexpr[pos_token_kw_in_subexpr + 1].token_val.c_str()) != 0 ? "0" : "1";
+        }
         sub_expr.token_of_subexpr.erase(sub_expr.token_of_subexpr.begin() + pos_token_kw_in_subexpr + 1);
     }
     else if (IS_CONSTANT_KW_OP(sub_expr.token_of_subexpr[pos_token_kw_in_subexpr].token_val)) {
-        if (sub_expr.token_of_subexpr[pos_token_kw_in_subexpr].token_val == STR_KEYWORD_OP_CONST_RELEASE)
+        if (sub_expr.token_of_subexpr[pos_token_kw_in_subexpr].token_val == STR_KEYWORD_OP_CONST_TRUE ||
+            sub_expr.token_of_subexpr[pos_token_kw_in_subexpr].token_val == STR_KEYWORD_OP_CONST_RELEASE)
             sub_expr.token_of_subexpr[pos_token_kw_in_subexpr].token_val = "1";
-        else if (sub_expr.token_of_subexpr[pos_token_kw_in_subexpr].token_val == STR_KEYWORD_OP_CONST_DEBUG)
+        else if (sub_expr.token_of_subexpr[pos_token_kw_in_subexpr].token_val == STR_KEYWORD_OP_CONST_FALSE ||
+                 sub_expr.token_of_subexpr[pos_token_kw_in_subexpr].token_val == STR_KEYWORD_OP_CONST_DEBUG)
             sub_expr.token_of_subexpr[pos_token_kw_in_subexpr].token_val = "0";
         sub_expr.token_of_subexpr[pos_token_kw_in_subexpr].token_t = token_expr::token_type::LITERAL;
     }
