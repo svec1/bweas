@@ -9,6 +9,9 @@
 #define STR_KEYWORD_ENDIF "endif"
 
 #define STR_KEYWORD_OP_EQUAL "EQUAL"
+#define STR_KEYWORD_OP_AND "AND"
+#define STR_KEYWORD_OP_OR "OR"
+#define STR_KEYWORD_OP_NOT "NOT"
 #define STR_KEYWORD_OP_TSTR "TO_STR"
 
 #define STR_KEYWORD_OP_CONST_TRUE "TRUE"
@@ -16,11 +19,8 @@
 #define STR_KEYWORD_OP_CONST_RELEASE "RELEASE"
 #define STR_KEYWORD_OP_CONST_DEBUG "DEBUG"
 
-#define RET_INT_KW_OP(STR) (STR == STR_KEYWORD_OP_EQUAL)
-#define RET_STR_KW_OP(STR) (STR == STR_KEYWORD_OP_TSTR)
-
-#define IS_BIBARY_KW_OP(STR) (STR == STR_KEYWORD_OP_EQUAL)
-#define IS_UNARY_KW_OP(STR) (STR == STR_KEYWORD_OP_TSTR)
+#define IS_BIBARY_KW_OP(STR) (STR == STR_KEYWORD_OP_EQUAL || STR == STR_KEYWORD_OP_AND || STR == STR_KEYWORD_OP_OR)
+#define IS_UNARY_KW_OP(STR) (STR == STR_KEYWORD_OP_TSTR || STR == STR_KEYWORD_OP_NOT)
 #define IS_CONSTANT_KW_OP(STR)                                                                                         \
     (STR == STR_KEYWORD_OP_CONST_RELEASE || STR == STR_KEYWORD_OP_CONST_DEBUG || STR == STR_KEYWORD_OP_CONST_TRUE ||   \
      STR == STR_KEYWORD_OP_CONST_FALSE)
@@ -29,9 +29,14 @@
     (STR == STR_KEYWORD_OP_CONST_RELEASE || STR == STR_KEYWORD_OP_CONST_DEBUG || STR == STR_KEYWORD_OP_CONST_TRUE ||   \
      STR == STR_KEYWORD_OP_CONST_FALSE)
 
+#define RET_INT_KW_OP(STR)                                                                                             \
+    (STR == STR_KEYWORD_OP_EQUAL || STR == STR_KEYWORD_OP_AND || STR == STR_KEYWORD_OP_NOT ||                          \
+     STR == STR_KEYWORD_OP_OR || IS_CONSTANT_RET_INT(STR))
+#define RET_STR_KW_OP(STR) (STR == STR_KEYWORD_OP_TSTR)
+
 namespace token_expr {
 
-extern const std::array<std::string, 6> keywords_op;
+extern const std::array<std::string, 9> keywords_op;
 
 // listing all possible token types
 enum class token_type {

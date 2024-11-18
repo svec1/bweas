@@ -33,6 +33,21 @@ std::string parser::type_token_str(token_type token_t) {
         return "UNDEF";
     }
 }
+
+std::string parser::type_ret_subexpr(aef_expr::subexpressions::ret_type_subexpr subexpr_ret_t) {
+    switch (subexpr_ret_t) {
+    case subexpressions::ret_type_subexpr::INT:
+        return "NUMBER";
+    case subexpressions::ret_type_subexpr::STRING:
+        return "STRING";
+    case subexpressions::ret_type_subexpr::ID:
+        return "VAR ID";
+        break;
+    default:
+        break;
+    }
+}
+
 std::string parser::build_pos_tokenb_str(const token &tk) {
     if (!tk.token_val.empty())
         return "\n(Line: " + std::to_string(tk.pos_defined_line) +
@@ -44,17 +59,15 @@ std::string parser::build_pos_tokenb_str(const token &tk) {
 }
 std::string parser::build_pos_subexpr_str(const subexpressions &sub_expr) {
     std::string str;
-    if (sub_expr.subexpr_t == subexpressions::type_subexpr::INT_COMPARE ||
-        sub_expr.subexpr_t == subexpressions::type_subexpr::STRING_ADD) {
-        str = "\n(Line: " + std::to_string(sub_expr.token_of_subexpr[0].pos_defined_line) +
-              "; Symbols start pos: " + std::to_string(sub_expr.token_of_subexpr[0].pos_beg_defined_sym) + "): ";
-        for (u32t i = 0; i < sub_expr.token_of_subexpr.size(); ++i) {
-            str += sub_expr.token_of_subexpr[i].token_val + " ";
-        }
-        str += " \n";
+    str = "\n(Line: " + std::to_string(sub_expr.token_of_subexpr[0].pos_defined_line) +
+          "; Symbols start pos: " + std::to_string(sub_expr.token_of_subexpr[0].pos_beg_defined_sym) +
+          "): Expression(" + type_ret_subexpr(sub_expr.returned_type_subexpr()) + ") <";
+    for (u32t i = 0; i < sub_expr.token_of_subexpr.size(); ++i) {
+        str += sub_expr.token_of_subexpr[i].token_val;
+        if (i < sub_expr.token_of_subexpr.size() - 1)
+            str += " ";
     }
-    else
-        str = build_pos_tokenb_str(sub_expr.token_of_subexpr[0]);
+    str += ">\n";
     return str;
 }
 std::string parser::type_sybexpr_str(subexpressions::type_subexpr sub_expr_t) {
