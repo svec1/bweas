@@ -537,7 +537,7 @@ void semantic_analyzer::convert_id_to_literal(aef_expr::subexpressions &sub_expr
 }
 
 void semantic_analyzer::convert_kwop_u_to_literal(aef_expr::subexpressions &sub_expr, var::scope &curr_scope,
-                                                   aef_expr::params expected_param) {
+                                                  aef_expr::params expected_param) {
     for (u32t i = 0; i < sub_expr.token_of_subexpr.size(); ++i) {
         if (sub_expr.token_of_subexpr[i].token_t == token_expr::token_type::KW_OPERATOR &&
             IS_UNARY_KW_OP(sub_expr.token_of_subexpr[i].token_val))
@@ -795,7 +795,7 @@ void semantic_analyzer::parse_keywords_op_param(aef_expr::subexpressions &sub_ex
                 sub_expr.token_of_subexpr[pos_token_kw_in_subexpr].token_val =
                     sub_expr.token_of_subexpr[pos_token_kw_in_subexpr + 1].token_val;
             }
-            else 
+            else
                 throw semantic_excp(build_pos_tokenb_str(sub_expr.token_of_subexpr[pos_token_kw_in_subexpr]) +
                                         " Inappropriate parameter for keyword operator: " +
                                         sub_expr.token_of_subexpr[pos_token_kw_in_subexpr + 1].token_val,

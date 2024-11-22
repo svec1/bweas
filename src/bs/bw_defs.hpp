@@ -28,7 +28,7 @@ using bwarg = std::pair<std::string, std::string>;
 using bwargs = std::vector<bwarg>;
 using bwarg_files = std::pair<std::string, std::vector<std::string>>;
 using bwargs_files = std::vector<bwarg_files>;
-using bwqueue_templates = std::vector<std::shared_ptr<var::struct_sb::template_command>>;
+using bwqueue_templates = std::vector<var::struct_sb::template_command>;
 
 using command = std::string;
 using commands = std::vector<command>;
