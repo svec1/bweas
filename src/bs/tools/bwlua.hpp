@@ -85,6 +85,12 @@ class lua {
     template <typename A, typename K, typename V>
     struct is_vec_pairs<std::vector<std::pair<K, V>, A>> : std::true_type {};
 
+    template <typename T> using array = std::vector<T>;
+    template <typename Key, typename Value> using table = std::vector<std::pair<Key, Value>>;
+
+    typedef ptrdiff_t integer;
+    typedef double number;
+
   public:
     // Safely initializes Lua state
     void create(std::string src) {
@@ -161,6 +167,26 @@ class lua {
     }
 
   public:
+    std::string get_stack__nmutex() {
+        std::string str;
+        for (size_t i = 1; i < lua_gettop(L); ++i) {
+            if (lua_isboolean(L, -i) || lua_isnumber(L, -i))
+                str += "[NUMBER]: " + std::to_string(lua_tonumber(L, -i));
+            else if (lua_isstring(L, -i))
+                str += "[STRING]: " + std::string(lua_tostring(L, -i));
+            else if (lua_istable(L, -i))
+                str += "[TABLE]";
+            else if (lua_isfunction(L, -i))
+                str += "[FUNCTION]";
+            else
+                str += "???";
+            str += "\n";
+        }
+
+        return str;
+    }
+
+  public:
     void create__nmutex(std::string src) {
         if (L)
             lua_close(L);
@@ -202,19 +228,25 @@ class lua {
         else if (lua_pcall(L, count_params, 0, 0) != LUA_OK)
             LUA_EXCEPTION()
 
-        if constexpr (std::is_same_v<T, std::string> || std::is_same_v<T, const char *>) {
+        if constexpr (std::is_same_v<T, std::string>) {
             if (lua_type(L, 1) != LUA_TSTRING)
                 throw std::runtime_error(LUA_FUNCTION_NRET_STR + name_func);
 
             res = std::string(lua_tostring(L, 1));
         }
-        else if constexpr (std::is_same_v<T, int>) {
+        else if constexpr (std::is_same_v<T, const char *>) {
+            if (lua_type(L, 1) != LUA_TSTRING)
+                throw std::runtime_error(LUA_FUNCTION_NRET_STR + name_func);
+
+            res = lua_tostring(L, 1);
+        }
+        else if constexpr (std::is_same_v<T, integer>) {
             if (lua_type(L, 1) != LUA_TNUMBER)
                 throw std::runtime_error(LUA_FUNCTION_NRET_NUM + name_func);
 
-            res = (int)lua_tointeger(L, 1);
+            res = lua_tointeger(L, 1);
         }
-        else if (std::is_same_v<T, double>) {
+        else if (std::is_same_v<T, number>) {
             if (lua_type(L, 1) != LUA_TNUMBER)
                 throw std::runtime_error(LUA_FUNCTION_NRET_NUM + name_func);
 
@@ -224,7 +256,7 @@ class lua {
             if (lua_type(L, 1) != LUA_TBOOLEAN)
                 throw std::runtime_error(LUA_FUNCTION_NRET_BOOL + name_func);
 
-            res = lua_toboolean(L, 1);
+            res = (bool)lua_toboolean(L, 1);
         }
         else if constexpr (std::is_same_v<T, std::vector<std::string>>) {
             if (lua_type(L, 1) != LUA_TTABLE)
@@ -242,8 +274,8 @@ class lua {
 
             res = tmp_list;
         }
-        else if constexpr (std::is_same_v<T, std::vector<int>> || std::is_same_v<T, std::vector<bool>> ||
-                           std::is_same_v<T, std::vector<double>>) {
+        else if constexpr (std::is_same_v<T, std::vector<integer>> || std::is_same_v<T, std::vector<bool>> ||
+                           std::is_same_v<T, std::vector<number>>) {
             if (lua_type(L, 1) != LUA_TTABLE)
                 throw std::runtime_error(LUA_FUNCTION_NRET_TABLE + name_func);
 
@@ -323,7 +355,12 @@ class lua {
     }
 
     template <typename T> void create_var__nmutex(std::string name_var, T &&value = {}) {
-        push_stack_param(value);
+        try {
+            push_stack_param(value);
+        }
+        catch (std::runtime_error &what) {
+            throw std::runtime_error((what.what() + name_var).c_str());
+        }
         lua_setglobal(L, name_var.c_str());
     }
 
@@ -361,39 +398,37 @@ class lua {
     template <typename Tuple, size_t... ind> void pre_init_stack(const Tuple &tp, std::index_sequence<ind...>) {
         (((void)push_stack_param<std::tuple_element_t<ind, Tuple>>(std::get<ind>(tp))), ...);
     }
-    template <typename T> size_t push_stack_param(T param) {
-        size_t count_push_stack = 1;
+    template <typename T> void push_stack_param(T param) {
         if constexpr (std::is_same_v<T, const char *>)
             lua_pushstring(L, param);
-        else if constexpr (std::is_same_v<T, int>)
+        else if constexpr (std::is_same_v<T, integer>)
             lua_pushinteger(L, param);
-        else if constexpr (std::is_same_v<T, double>)
+        else if constexpr (std::is_same_v<T, number>)
             lua_pushnumber(L, param);
         else if constexpr (std::is_same_v<T, bool>)
             lua_pushboolean(L, param);
         else if constexpr (std::is_same_v<T, std::string>)
             lua_pushstring(L, param.c_str());
         else if constexpr (is_pair<T>::value) {
+            lua_createtable(L, 0, 2);
             push_stack_param(param.first);
             push_stack_param(param.second);
-            ++count_push_stack;
+            lua_settable(L, -3);
         }
         else if constexpr (is_vector<T>::value) {
-            lua_newtable(L);
+            lua_createtable(L, 0, param.size());
             for (size_t i = 0; i < param.size(); ++i) {
-                if constexpr (is_vec_pairs<T>::value)
-                    lua_settable(L, -push_stack_param(param[i]) - 1);
-                else
-                    lua_rawseti(L, -push_stack_param(param[i]) - 1, i + 1);
+                push_stack_param(param[i]);
+                lua_rawseti(L, -2, i + 1);
             }
         }
         else if constexpr (std::is_same_v<T, std::any>) {
             if (param.type() == typeid(const char *))
                 lua_pushstring(L, std::any_cast<const char *>(param));
-            else if (param.type() == typeid(int))
-                lua_pushinteger(L, std::any_cast<int>(param));
-            else if (param.type() == typeid(double))
-                lua_pushnumber(L, std::any_cast<double>(param));
+            else if (param.type() == typeid(integer))
+                lua_pushinteger(L, std::any_cast<integer>(param));
+            else if (param.type() == typeid(number))
+                lua_pushnumber(L, std::any_cast<number>(param));
             else if (param.type() == typeid(bool))
                 lua_pushboolean(L, std::any_cast<bool>(param));
             else if (param.type() == typeid(std::string))
@@ -403,14 +438,12 @@ class lua {
         }
         else if constexpr (std::is_same_v<T, nil>)
             lua_pushnil(L);
-        else if constexpr (std::is_same_v<T, void>)
+        else
             throw std::runtime_error(LUA_PUSH_TYPE_UNK);
-        return count_push_stack;
     }
 
     template <typename T> T get_symbol(int idx = -1) {
         std::any value;
-
         if constexpr (std::is_same_v<T, const char *>) {
             if (!lua_isstring(L, idx))
                 throw std::runtime_error(LUA_VARIABLE_NFOUND_STR);
@@ -423,13 +456,13 @@ class lua {
 
             value = std::string(lua_tostring(L, idx));
         }
-        else if constexpr (std::is_same_v<T, int>) {
+        else if constexpr (std::is_same_v<T, integer>) {
             if (!lua_isnumber(L, idx))
                 throw std::runtime_error(LUA_VARIABLE_NFOUND_NUM);
 
             value = lua_tointeger(L, idx);
         }
-        else if constexpr (std::is_same_v<T, double>) {
+        else if constexpr (std::is_same_v<T, number>) {
             if (!lua_isnumber(L, idx))
                 throw std::runtime_error(LUA_VARIABLE_NFOUND_NUM);
 
@@ -439,33 +472,52 @@ class lua {
             if (!lua_isboolean(L, idx))
                 throw std::runtime_error(LUA_VARIABLE_NFOUND_BOOL);
 
-            value = lua_toboolean(L, idx);
+            value = (bool)lua_toboolean(L, idx);
         }
         else if constexpr (std::is_same_v<T, std::any>) {
             if (lua_isnumber(L, idx))
                 value = lua_tonumber(L, idx);
             else if (lua_isstring(L, idx))
-                value = lua_tostring(L, idx);
+                value = std::string(lua_tostring(L, idx));
             else if (lua_isboolean(L, idx))
                 value = lua_toboolean(L, idx);
             else
                 throw std::runtime_error(LUA_VARIABLE_UNK);
         }
+        else if constexpr (is_pair<T>::value) {
+            if (!lua_istable(L, idx))
+                throw std::runtime_error(LUA_NFOUND_TABLE);
+
+            lua_pushnil(L);
+            if (lua_next(L, -2) == 0)
+                return T();
+            std::tuple_element<0, T>::type key = get_symbol<std::tuple_element<0, T>::type>(-2);
+            value = std::make_pair<std::tuple_element<0, T>::type, std::tuple_element<1, T>::type>(
+                std::move(key), get_symbol<std::tuple_element<1, T>::type>());
+        }
         else if constexpr (is_vector<T>::value) {
-            if constexpr (is_vec_pairs<T>::value) {
-                std::vector<std::pair<std::any, std::any>> vec;
+            if (!lua_istable(L, idx))
+                throw std::runtime_error(LUA_NFOUND_TABLE);
+
+            T vec;
+            if constexpr (is_pair<T::value_type>::value) {
                 lua_pushnil(L);
-                while (lua_next(L, -2) != 0)
-                    vec.push_back({get_symbol<std::any>(-2), get_symbol<std::any>()});
-                value = vec;
+                while (lua_next(L, -2)) {
+                    vec.push_back(get_symbol<T::value_type>());
+                    lua_pop(L, 1);
+                }
             }
             else {
-                std::vector<int> vec;
-                lua_pushnil(L);
-                while (lua_next(L, -2) != 0)
-                    vec.emplace_back(get_symbol<T>());
-                value = vec;
+                size_t i = 1;
+                while (1) {
+                    lua_rawgeti(L, idx, i);
+                    if (lua_isnil(L, idx))
+                        break;
+                    vec.push_back(get_symbol<T::value_type>());
+                    ++i;
+                }
             }
+            value = vec;
         }
         else
             throw std::runtime_error(LUA_VARIABLE_UNK);

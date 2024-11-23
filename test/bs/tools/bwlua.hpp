@@ -23,8 +23,8 @@ function test_func3(nums) \
     return sum \
 end \
 function test_func4(struct) \
-    str_g = struct['test2'] \
-    return struct['test'] \
+    str_g = struct[2]['test2'] \
+    return struct[1]['test'] \
 end \
 test_func1_welcome() \
 "
@@ -37,8 +37,8 @@ TEST(BWWRAP_LUA, NoThrowInitClassBwLua) {
 
 TEST(BWWRAP_LUA, NoThrowClassBwLuaVariablePerformance) {
     bwlua::lua ltest(TEST1_SOURCE_LUA);
-    std::vector<std::pair<const char *, std::any>> test_var_vec{{"test", "HELLO WORLD!"}, {"test2", 2}};
-    std::vector<int> nums = {1, 2, 3, 4, 5};
+    bwlua::lua::table<const char *, std::any> test_var_vec{{"test", "HELLO WORLD!"}, {"test2", (bwlua::lua::integer)2}};
+    bwlua::lua::array<bwlua::lua::integer> nums = {1, 2, 3, 4, 5};
     std::string str_tmp;
 
     ASSERT_NO_THROW({
@@ -46,14 +46,16 @@ TEST(BWWRAP_LUA, NoThrowClassBwLuaVariablePerformance) {
         ltest.create_var__nmutex("test2", std::move(nums));
     });
 
-    ASSERT_TRUE(
-        (std::any_cast<int>(ltest.get_var__nmutex<std::vector<std::pair<std::any, std::any>>>("test")[1].second)), 2);
+    ASSERT_EQ(std::any_cast<bwlua::lua::number>(
+                  ltest.get_var__nmutex<bwlua::lua::table<const char *, std::any>>("test")[0].second),
+              2);
+    ASSERT_EQ(ltest.get_var__nmutex<bwlua::lua::array<bwlua::lua::integer>>("test2")[2], 3);
 }
 
 TEST(BWWRAP_LUA, NoThrowClassBwLuaCallFunction) {
     bwlua::lua ltest(TEST1_SOURCE_LUA);
-    std::vector<std::pair<std::string, std::any>> test_var_vec{{"test", "HELLO WORLD!"}, {"test2", "HELLO WORLD!"}};
-    std::vector<int> nums = {1, 2, 3, 4, 5};
+    bwlua::lua::table<std::string, std::any> test_var_vec{{"test", "HELLO WORLD!"}, {"test2", "HELLO WORLD!"}};
+    bwlua::lua::array<bwlua::lua::integer> nums = {1, 2, 3, 4, 5};
     std::string str_tmp;
     int num_tmp;
 
@@ -62,11 +64,14 @@ TEST(BWWRAP_LUA, NoThrowClassBwLuaCallFunction) {
     ASSERT_EQ(str_tmp, "Hello, World!");
 
     // test_func2()
-    ASSERT_NO_THROW({ num_tmp = ltest.call_function__nmutex<int>("test_func2", 4, "Hello, ", 5, "World!"); });
+    ASSERT_NO_THROW({
+        num_tmp = ltest.call_function__nmutex<bwlua::lua::integer>("test_func2", (bwlua::lua::integer)4, "Hello, ",
+                                                                   (bwlua::lua::integer)5, "World!");
+    });
     ASSERT_EQ(num_tmp, 9);
 
     // test_func3()
-    ASSERT_NO_THROW({ num_tmp = ltest.call_function__nmutex<int>("test_func3", nums); });
+    ASSERT_NO_THROW({ num_tmp = ltest.call_function__nmutex<bwlua::lua::integer>("test_func3", nums); });
     ASSERT_EQ(num_tmp, 15);
 
     // test_func4()
@@ -79,8 +84,10 @@ TEST(BWWRAP_LUA, NoThrowClassBwLuaVariableAStackNBad) {
     bwlua::lua ltest(TEST1_SOURCE_LUA);
     int num_tmp;
 
-    for (int i = 0; i < 1000; ++i) {
-        ASSERT_NO_THROW({ num_tmp = ltest.call_function__nmutex<int>("test_func2", i, "Hello, ", i * 10, "World!"); });
+    for (bwlua::lua::integer i = 0; i < 1000; ++i) {
+        ASSERT_NO_THROW({
+            num_tmp = ltest.call_function__nmutex<bwlua::lua::integer>("test_func2", i, "Hello, ", i * 10, "World!");
+        });
         ASSERT_EQ(num_tmp, i + i * 10);
         ASSERT_EQ(ltest.get_var__nmutex<std::string>("str_g"), "Hello, World!");
     }
