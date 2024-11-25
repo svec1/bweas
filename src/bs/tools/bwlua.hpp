@@ -156,7 +156,7 @@ class lua {
                 throw std::runtime_error(LUA_SYMBOL_WRONG_TYPE_FUNC);
 
             try {
-                return call_symbol<T, Types...>(param...);
+                return L->call_symbol<T, Types...>(param...);
             }
             catch (std::runtime_error &what) {
                 throw std::runtime_error(what.what() + (" " + name_sym));
