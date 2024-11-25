@@ -65,11 +65,11 @@ commands bweas::bwign0_1v(const var::struct_sb::target_out &trg, bwqueue_templat
         const auto &template_tmp = templates[0];
         const auto &call_component_tmp =
             std::find_if(ccmp_p.begin(), ccmp_p.end(), [template_tmp](const var::struct_sb::call_component &ccmp_tmp) {
-                return ccmp_tmp.name == template_tmp->name_call_component;
+                return ccmp_tmp.name == template_tmp.name_call_component;
             });
 
         if (!template_for_ev_files)
-            return_internal_arg.first = template_tmp->returnable;
+            return_internal_arg.first = template_tmp.returnable;
 
         std::string current_arg;
 
@@ -84,8 +84,8 @@ commands bweas::bwign0_1v(const var::struct_sb::target_out &trg, bwqueue_templat
             output_files_curr = tools_generator::get_file_w_index(call_component_tmp->pattern_ret_files,
                                                                   trg.prj.src_files.size() - left_src_files);
 
-        for (u32t j = 0; j < template_tmp->name_args.size(); ++j) {
-            current_arg = template_tmp->name_args[j];
+        for (u32t j = 0; j < template_tmp.name_args.size(); ++j) {
+            current_arg = template_tmp.name_args[j];
             if (current_arg.find("{") == current_arg.npos) {
                 const auto &extern_arg =
                     std::find_if(global_extern_args.begin(), global_extern_args.end(),
@@ -93,7 +93,7 @@ commands bweas::bwign0_1v(const var::struct_sb::target_out &trg, bwqueue_templat
                                      return extern_arg_tmp.first == current_arg;
                                  });
                 if (extern_arg == global_extern_args.end())
-                    throw bwbuilder_excp("[" + template_tmp->name +
+                    throw bwbuilder_excp("[" + template_tmp.name +
                                              "] The specified external parameter does not exist - " + current_arg,
                                          "002");
 
@@ -103,7 +103,7 @@ commands bweas::bwign0_1v(const var::struct_sb::target_out &trg, bwqueue_templat
             else {
                 if (current_arg.find("}") == current_arg.npos)
                     throw bwbuilder_excp(
-                        "[" + template_tmp->name + "] Incorrect use of arguments in template - " + current_arg, "002");
+                        "[" + template_tmp.name + "] Incorrect use of arguments in template - " + current_arg, "002");
                 if (current_arg.find("STR{") == 0) {
                     current_arg.erase(0, 4);
                     current_arg.erase(current_arg.find("}"));
@@ -118,7 +118,7 @@ commands bweas::bwign0_1v(const var::struct_sb::target_out &trg, bwqueue_templat
                                     return current_arg == internal_arg.first;
                                 });
                     if (it == global_internal_args.end())
-                        throw bwbuilder_excp("[" + template_tmp->name +
+                        throw bwbuilder_excp("[" + template_tmp.name +
                                                  "] The specified internal parameter does not exist - " + current_arg,
                                              "002");
                     const auto &it_str = it->first.find(":");
@@ -208,7 +208,7 @@ commands bweas::bwign0_1v(const var::struct_sb::target_out &trg, bwqueue_templat
                             return_internal_arg.second.push_back(output_files_curr);
                         }
                         else
-                            throw bwbuilder_excp("[" + template_tmp->name +
+                            throw bwbuilder_excp("[" + template_tmp.name +
                                                      "] The specified attribute of feature (field) does not "
                                                      "match the possible ones - " +
                                                      current_arg + ": attr[" + attribute + "]",
@@ -217,7 +217,7 @@ commands bweas::bwign0_1v(const var::struct_sb::target_out &trg, bwqueue_templat
                         goto add_current_args_to_cmd;
                     }
                     else
-                        throw bwbuilder_excp("[" + template_tmp->name +
+                        throw bwbuilder_excp("[" + template_tmp.name +
                                                  "] The specified feature (field) does not exist - " + current_arg,
                                              "002");
                     template_for_ev_files = 1;
@@ -308,7 +308,7 @@ commands bweas::bwign0_1v(const var::struct_sb::target_out &trg, bwqueue_templat
                         }
                     }
                     else
-                        throw bwbuilder_excp("[" + template_tmp->name + "] There is no such parameter - " + current_arg,
+                        throw bwbuilder_excp("[" + template_tmp.name + "] There is no such parameter - " + current_arg,
                                              "002");
                 }
             add_current_args_to_cmd:

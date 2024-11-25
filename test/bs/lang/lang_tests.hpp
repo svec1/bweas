@@ -2,5 +2,4 @@
 #define LEXER_TESTS__H_
 #include "lexer.hpp"
 
-
 #endif

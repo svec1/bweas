@@ -678,8 +678,7 @@ void bwbuilder::set_queue_templates(std::stack<std::string> &&stack_target_templ
                                            [stack_target_templates](const var::struct_sb::template_command &tcmd) {
                                                return tcmd.name == stack_target_templates.top();
                                            });
-        target_queue_templates.push_back(std::shared_ptr<var::struct_sb::template_command>(
-            (var::struct_sb::template_command *)(&*it_templates), [](const var::struct_sb::template_command *) {}));
+        target_queue_templates.push_back(*it_templates);
         stack_target_templates.pop();
     }
 }

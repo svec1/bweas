@@ -10,18 +10,18 @@ add_library(${BWEAS_SLIB} STATIC ${FILE_SOURCE})
 
 # Build with vcpkg
 if(BWEAS_BUILD_VCPKG_N)
-  set(LuaJIT_LIBRARIES "${CMAKE_SOURCE_DIR}/vcpkg/packages/luajit_x64-windows/lib/lua51.lib")
-  set(LuaJIT_INCLUDE_DIRS "${CMAKE_SOURCE_DIR}/vcpkg/packages/luajit_x64-windows/include/luajit")
+    set(LuaJIT_LIBRARIES "${CMAKE_SOURCE_DIR}/vcpkg/packages/luajit_x64-windows/lib/lua51.lib")
+    set(LuaJIT_INCLUDE_DIRS "${CMAKE_SOURCE_DIR}/vcpkg/packages/luajit_x64-windows/include/luajit")
 
-  find_package(nlohmann_json CONFIG REQUIRED)
-  find_package(lz4 CONFIG REQUIRED)
+    find_package(nlohmann_json CONFIG REQUIRED)
+    find_package(lz4 CONFIG REQUIRED)
 
-  set(BWEAS_LIBS ${LuaJIT_LIBRARIES} nlohmann_json::nlohmann_json lz4::lz4)
-  set(BWEAS_INCLUDE ${LuaJIT_INCLUDE_DIRS} CACHE STRING "All header-files for bweas")
+    set(BWEAS_LIBS ${LuaJIT_LIBRARIES} nlohmann_json::nlohmann_json lz4::lz4)
+    set(BWEAS_INCLUDE ${LuaJIT_INCLUDE_DIRS} CACHE STRING "All header-files for bweas")
 
-  message(STATUS "Install package with vcpkg")
+    message(STATUS "Install package with vcpkg")
 else()
-# LuaJit
+    # LuaJit
     if(USER_BUILD_LUA)
         set(CMAKE_PREFIX_PATH "${CMAKE_SOURCE_DIR}/external/")
         find_package(LuaJIT REQUIRED)
@@ -37,7 +37,7 @@ else()
 
     # nlohmann_json
     if(USER_BUILD_JSON)
-        add_subdirectory(external/json)
+        add_subdirectory(../external/json)
 
         message(STATUS "Selected nlohmann_json in folder - external")
     else()
@@ -47,7 +47,7 @@ else()
     # LZ4
     if(USER_BUILD_LZ4)
         set(LZ4_BUILD_CLI OFF)
-        add_subdirectory(external/lz4/build/cmake)
+        add_subdirectory(../external/lz4/build/cmake)
         message(STATUS "Selected LZ4 in folder - external")
     else()
         find_library(LZ4_LIBRARY NAMES lz4)
@@ -65,7 +65,7 @@ if(WIN32)
         set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
         message(STATUS "Release build")
     endif()
-    
+
     message(STATUS "Enabling the detours lib(Microsoft)")
     if (${CMAKE_SIZEOF_VOID_P} STREQUAL 4)
         message(STATUS "Selected lib 32 bit build")
