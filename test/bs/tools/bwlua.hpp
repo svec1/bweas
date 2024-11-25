@@ -37,24 +37,24 @@ TEST(BWWRAP_LUA, NoThrowInitClassBwLua) {
 
 TEST(BWWRAP_LUA, NoThrowClassBwLuaVariablePerformance) {
     bwlua::lua ltest(TEST1_SOURCE_LUA);
-    bwlua::lua::table<const char *, std::any> test_var_vec{{"test", "HELLO WORLD!"}, {"test2", (bwlua::lua::integer)2}};
+    bwlua::lua::fastTable<const char *, std::any> test_var_vec{{"test", "HELLO WORLD!"},
+                                                               {"test2", (bwlua::lua::integer)2}};
     bwlua::lua::array<bwlua::lua::integer> nums = {1, 2, 3, 4, 5};
     std::string str_tmp;
 
     ASSERT_NO_THROW({
-        ltest.create_var__nmutex("test", std::move(test_var_vec));
-        ltest.create_var__nmutex("test2", std::move(nums));
+        ltest["test"] = test_var_vec;
+        ltest["test2"] = nums;
     });
-
     ASSERT_EQ(std::any_cast<bwlua::lua::number>(
-                  ltest.get_var__nmutex<bwlua::lua::table<const char *, std::any>>("test")[0].second),
+                  ltest["test"].getval<bwlua::lua::fastTable<const char *, std::any>>()[0].second),
               2);
-    ASSERT_EQ(ltest.get_var__nmutex<bwlua::lua::array<bwlua::lua::integer>>("test2")[2], 3);
+    ASSERT_EQ(ltest["test2"].getval<bwlua::lua::array<bwlua::lua::integer>>()[2], 3);
 }
 
 TEST(BWWRAP_LUA, NoThrowClassBwLuaCallFunction) {
     bwlua::lua ltest(TEST1_SOURCE_LUA);
-    bwlua::lua::table<std::string, std::any> test_var_vec{{"test", "HELLO WORLD!"}, {"test2", "HELLO WORLD!"}};
+    bwlua::lua::fastTable<std::string, std::any> test_var_vec{{"test", "HELLO WORLD!"}, {"test2", "HELLO WORLD!"}};
     bwlua::lua::array<bwlua::lua::integer> nums = {1, 2, 3, 4, 5};
     std::string str_tmp;
     int num_tmp;
