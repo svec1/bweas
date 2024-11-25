@@ -159,7 +159,7 @@ class lua {
                 return call_symbol<T, Types...>(param...);
             }
             catch (std::runtime_error &what) {
-                throw std::runtime_error(what.what() + " " + name_sym);
+                throw std::runtime_error(what.what() + (" " + name_sym));
             }
         }
 
@@ -518,19 +518,19 @@ class lua {
             lua_pushnil(L);
             if (lua_next(L, -2) == 0)
                 return T();
-            std::tuple_element<0, T>::type key = get_valsymbol<std::tuple_element<0, T>::type>(-2);
-            value = std::make_pair<std::tuple_element<0, T>::type, std::tuple_element<1, T>::type>(
-                std::move(key), get_valsymbol<std::tuple_element<1, T>::type>());
+            typename std::tuple_element<0, T>::type key = get_valsymbol<typename std::tuple_element<0, T>::type>(-2);
+            value = std::make_pair<typename std::tuple_element<0, T>::type, typename std::tuple_element<1, T>::type>(
+                std::move(key), get_valsymbol<typename std::tuple_element<1, T>::type>());
         }
         else if constexpr (is_vector<T>::value) {
             if (!lua_istable(L, idx))
                 throw std::runtime_error(LUA_NFOUND_TABLE);
 
             T vec;
-            if constexpr (is_pair<T::value_type>::value) {
+            if constexpr (is_pair<typename T::value_type>::value) {
                 lua_pushnil(L);
                 while (lua_next(L, -2)) {
-                    vec.push_back(get_valsymbol<T::value_type>());
+                    vec.push_back(get_valsymbol<typename T::value_type>());
                     lua_pop(L, 1);
                 }
             }
@@ -540,7 +540,7 @@ class lua {
                     lua_rawgeti(L, idx, i);
                     if (lua_isnil(L, idx))
                         break;
-                    vec.push_back(get_valsymbol<T::value_type>());
+                    vec.push_back(get_valsymbol<typename T::value_type>());
                     ++i;
                 }
             }
