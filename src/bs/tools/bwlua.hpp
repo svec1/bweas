@@ -124,9 +124,7 @@ class lua {
             nil
         };
 
-        ~symbol() {
-            lua_pop(L->L, 1);
-        }
+        ~symbol() = default;
 
       private:
         symbol() = delete;
@@ -137,7 +135,7 @@ class lua {
         }
 
       public:
-        template <typename T> const symbol &operator=(T &&value) const {
+        template <typename T> void operator=(T &&value) const {
             if (!L->is_created__nmutex())
                 throw std::runtime_error(LUA_SYMBOL_NE_LUA_STATE);
             else if (symbol_t == type::function)
@@ -145,8 +143,6 @@ class lua {
 
             lua_pop(L->L, 1);
             L->create_var__nmutex(name_sym, value);
-
-            return *this;
         }
 
         template <typename T, typename... Types> T operator()(Types... param) const {
@@ -276,8 +272,8 @@ class lua {
 
   public:
     std::string get_stack__nmutex() {
-        std::string str;
-        for (size_t i = 1; i < lua_gettop(L); ++i) {
+        std::string str = "STACK(" + std::to_string(lua_gettop(L)) + "):\n";
+        for (ptrdiff_t i = 1; i < lua_gettop(L); ++i) {
             if (i < lua_gettop(L) - 1)
                 str += "| " + std::to_string(lua_gettop(L) - i) + " ";
             else
@@ -460,6 +456,20 @@ class lua {
                 lua_pushboolean(L, std::any_cast<bool>(param));
             else if (param.type() == typeid(std::string))
                 lua_pushstring(L, std::any_cast<std::string>(param).c_str());
+            else if (param.type() == typeid(std::vector<integer>))
+                push_stack_param(std::any_cast<std::vector<integer>>(param));
+            else if (param.type() == typeid(std::vector<number>))
+                push_stack_param(std::any_cast<std::vector<number>>(param));
+            else if (param.type() == typeid(std::vector<bool>))
+                push_stack_param(std::any_cast<std::vector<bool>>(param));
+            else if (param.type() == typeid(std::vector<const char *>))
+                push_stack_param(std::any_cast<std::vector<const char *>>(param));
+            else if (param.type() == typeid(std::vector<std::string>))
+                push_stack_param(std::any_cast<std::vector<std::string>>(param));
+            else if (param.type() == typeid(std::vector<std::any>))
+                push_stack_param(std::any_cast<std::vector<std::any>>(param));
+            else if (param.type() == typeid(std::pair<std::any, std::any>))
+                push_stack_param(std::any_cast<std::pair<std::any, std::any>>(param));
             else
                 throw std::runtime_error(LUA_PUSH_TYPE_UNK);
         }
@@ -536,8 +546,9 @@ class lua {
             }
             else {
                 size_t i = 1;
+                lua_pushnil(L);
                 while (1) {
-                    lua_rawgeti(L, idx, i);
+                    lua_rawgeti(L, idx - 1, i);
                     if (lua_isnil(L, idx))
                         break;
                     vec.push_back(get_valsymbol<typename T::value_type>());
@@ -575,44 +586,44 @@ class lua {
             LUA_EXCEPTION()
 
         if constexpr (std::is_same_v<T, std::string>) {
-            if (lua_type(L, 1) != LUA_TSTRING)
+            if (lua_type(L, -1) != LUA_TSTRING)
                 throw std::runtime_error(LUA_FUNCTION_NRET_STR);
 
-            res = std::string(lua_tostring(L, 1));
+            res = std::string(lua_tostring(L, -1));
         }
         else if constexpr (std::is_same_v<T, const char *>) {
-            if (lua_type(L, 1) != LUA_TSTRING)
+            if (lua_type(L, -1) != LUA_TSTRING)
                 throw std::runtime_error(LUA_FUNCTION_NRET_STR);
 
-            res = lua_tostring(L, 1);
+            res = lua_tostring(L, -1);
         }
         else if constexpr (std::is_same_v<T, integer>) {
-            if (lua_type(L, 1) != LUA_TNUMBER)
+            if (lua_type(L, -1) != LUA_TNUMBER)
                 throw std::runtime_error(LUA_FUNCTION_NRET_NUM);
 
-            res = lua_tointeger(L, 1);
+            res = lua_tointeger(L, -1);
         }
         else if (std::is_same_v<T, number>) {
-            if (lua_type(L, 1) != LUA_TNUMBER)
+            if (lua_type(L, -1) != LUA_TNUMBER)
                 throw std::runtime_error(LUA_FUNCTION_NRET_NUM);
 
-            res = lua_tonumber(L, 1);
+            res = lua_tonumber(L, -1);
         }
         else if constexpr (std::is_same_v<T, bool>) {
-            if (lua_type(L, 1) != LUA_TBOOLEAN)
+            if (lua_type(L, -1) != LUA_TBOOLEAN)
                 throw std::runtime_error(LUA_FUNCTION_NRET_BOOL);
 
-            res = (bool)lua_toboolean(L, 1);
+            res = (bool)lua_toboolean(L, -1);
         }
         else if constexpr (std::is_same_v<T, std::vector<std::string>>) {
-            if (lua_type(L, 1) != LUA_TTABLE)
+            if (lua_type(L, -1) != LUA_TTABLE)
                 throw std::runtime_error(LUA_FUNCTION_NRET_TABLE);
 
             std::vector<std::string> tmp_list;
 
             lua_pushnil(L);
             while (lua_next(L, -2) != 0) {
-                if (lua_type(L, 1) != LUA_TSTRING)
+                if (lua_type(L, -1) != LUA_TSTRING)
                     throw std::runtime_error(LUA_FUNCTION_NRET_TABLE_STR);
                 tmp_list.push_back(lua_tostring(L, -1));
                 lua_pop(L, 1);
@@ -622,14 +633,14 @@ class lua {
         }
         else if constexpr (std::is_same_v<T, std::vector<integer>> || std::is_same_v<T, std::vector<bool>> ||
                            std::is_same_v<T, std::vector<number>>) {
-            if (lua_type(L, 1) != LUA_TTABLE)
+            if (lua_type(L, -1) != LUA_TTABLE)
                 throw std::runtime_error(LUA_FUNCTION_NRET_TABLE);
 
             std::vector<int> tmp_list;
 
             lua_pushnil(L);
             while (lua_next(L, -2) != 0) {
-                if (lua_type(L, 1) != LUA_TNUMBER)
+                if (lua_type(L, -1) != LUA_TNUMBER)
                     throw std::runtime_error(LUA_FUNCTION_NRET_TABLE_NUM);
                 tmp_list.push_back(lua_tonumber(L, -1));
                 lua_pop(L, 1);
@@ -638,20 +649,20 @@ class lua {
             res = tmp_list;
         }
         else if constexpr (std::is_same_v<T, std::vector<std::any>>) {
-            if (lua_type(L, 1) != LUA_TTABLE)
+            if (lua_type(L, -1) != LUA_TTABLE)
                 throw std::runtime_error(LUA_FUNCTION_NRET_TABLE);
 
             std::vector<std::any> tmp_list;
 
             lua_pushnil(L);
             while (lua_next(L, -2) != 0) {
-                if (lua_type(L, 1) == LUA_TNUMBER)
+                if (lua_type(L, -1) == LUA_TNUMBER)
                     tmp_list.push_back(lua_tonumber(L, -1));
-                else if (lua_type(L, 1) == LUA_TSTRING)
+                else if (lua_type(L, -1) == LUA_TSTRING)
                     tmp_list.push_back(lua_tostring(L, -1));
-                else if (lua_type(L, 1) == LUA_TBOOLEAN)
+                else if (lua_type(L, -1) == LUA_TBOOLEAN)
                     tmp_list.push_back(lua_toboolean(L, -1));
-                else if (lua_type(L, 1) != LUA_TNIL)
+                else if (lua_type(L, -1) != LUA_TNIL)
                     throw std::runtime_error(LUA_FUNCTION_NRET_TABLE_UNK);
                 lua_pop(L, 1);
             }

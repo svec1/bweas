@@ -21,7 +21,7 @@ static void update_cfg_struct(const std::string &name_var, var::scope &curr_scop
     if (curr_scope.what_type("DECL_CONFIG_VAR") == 1 && curr_scope.get_var_value<int>(DECL_VAR_STRUCT) > 0) {
         u32t tmp_it = 0;
         for (const auto &it : vec_name_config_var) {
-            if ((tmp_it = name_var.find(it)) != UINT32_MAX) {
+            if ((tmp_it = name_var.find(it)) != SIZE_MAX) {
                 if (name_var.size() - it.size() != tmp_it)
                     return;
                 std::string tmp_str_postfix = name_var;

@@ -23,8 +23,7 @@ bwbuilder::bwbuilder(int argv, char **args) {
         assist.add_err("BWS004", "Failed build, external error while calling command");
         assist.add_err("BWS005", "Incorrect structure of the bweas-json configuration file");
         assist.add_err("BWS006", "The bweas-json configuration for package package file was not found");
-        assist.add_err("BWS007", "The bweas-lua generator for package file was not found");
-        assist.add_err("BWS008", "Bweas package not found");
+        assist.add_err("BWS007", "Bweas package not found");
 
         assist.add_err("BWS-HAX000", "Unknown parameter");
         assist.add_err("BWS-HAX001", "The package command is a separate subroutine");
@@ -61,7 +60,7 @@ void bwbuilder::handle_args(std::vector<std::string> args) {
     std::string path_json_cfg_package;
 
     bool expected_path_bweas_config = 1, expected_path_to_build = 0;
-    bool expected_path_json_cfg_package = 0, expected_path_luad_src_generator = 0;
+    bool expected_path_json_cfg_package = 0;
     for (u32t i = 1; i < args.size(); ++i) {
         if (args[i].find("--") == 0) {
             if (i == 1)
@@ -109,16 +108,12 @@ void bwbuilder::handle_args(std::vector<std::string> args) {
                 path_bweas_to_build = std::filesystem::absolute(args[i]).string();
                 expected_path_to_build = 0;
             }
-            // --package <arg1>
+            // --package <arg>
             else if (expected_path_json_cfg_package) {
                 path_json_cfg_package = args[i];
                 expected_path_json_cfg_package = 0;
-                expected_path_luad_src_generator = 1;
-            }
-            // --package <arg2>
-            else if (expected_path_luad_src_generator) {
-                u32t size_pckg = create_package(path_json_cfg_package, args[i]);
-                expected_path_luad_src_generator = 0;
+
+                u32t size_pckg = create_package(path_json_cfg_package);
 
                 assist.next_output_important();
                 assist << "[Bweas-Package] Created: " + std::to_string(size_pckg) + " bytes";
@@ -128,29 +123,23 @@ void bwbuilder::handle_args(std::vector<std::string> args) {
         }
     }
 
-    if (expected_path_json_cfg_package || expected_path_luad_src_generator)
+    if (expected_path_json_cfg_package)
         throw bwbuilder_excp(BWEAS_HELP, "002", "-HAX");
 }
 
-u32t bwbuilder::create_package(std::string path_json_config_package, std::string path_lua_source_generator) {
+u32t bwbuilder::create_package(std::string path_json_config_package) {
     bwpackage::data_bw_package data_package;
     const file_it &json_config_package = assist.open_file(path_json_config_package, mf::open::r);
-    const file_it &lua_src_generator_package = assist.open_file(path_lua_source_generator, mf::open::r);
     if (!assist.exist_file(json_config_package))
         throw bwbuilder_excp(path_json_config_package, "006");
-    else if (!assist.exist_file(lua_src_generator_package))
-        throw bwbuilder_excp(path_lua_source_generator, "007");
-    data_package.json_config = assist.read_file(assist.get_ref_file(json_config_package), mf::input::read_default);
-    data_package.src_lua_generator =
-        assist.read_file(assist.get_ref_file(lua_src_generator_package), mf::input::read_default);
 
-    assist.close_file(lua_src_generator_package);
+    data_package.json_config = assist.read_file(assist.get_ref_file(json_config_package), mf::input::read_default);
     assist.close_file(json_config_package);
 
-    std::string pckg = loaded_package.init(data_package);
-    file_it package = assist.open_file(std::filesystem::current_path().string() + "/" +
-                                           loaded_package.data.cfg_package.name_package + BW_FORMAT_PACKAGE,
-                                       mf::open::wb);
+    std::string pckg = loaded_package.init(data_package, 1);
+    const file_it &package = assist.open_file(std::filesystem::current_path().string() + "/" +
+                                                  loaded_package.data.cfg_package.name_package + BW_FORMAT_PACKAGE,
+                                              mf::open::wb);
     assist.write_file(assist.get_ref_file(package), pckg, mf::output::write_binary);
     assist.close_file(package);
 
@@ -185,7 +174,7 @@ void bwbuilder::init(std::string current_name_bweas_prg) {
         std::string raw_data_package;
         file_it package = assist.open_file(path_to_package, mf::open::rb);
         if (!assist.exist_file(package))
-            throw bwbuilder_excp(path_to_package, "008");
+            throw bwbuilder_excp(path_to_package, "007");
         raw_data_package = assist.read_file(assist.get_ref_file(package), mf::input::read_binary);
         assist.close_file(package);
 
@@ -302,7 +291,7 @@ u32t bwbuilder::gen_cache_target() {
     const auto &vec_c_components =
         _interpreter.get_current_scope().get_vector_variables_t<var::struct_sb::call_component>();
 
-    for (u32t i = 0; i < out_targets.size(); ++i) {
+    for (i32t i = 0; i < out_targets.size(); ++i) {
         char *prj_v = (char *)&out_targets[i];
         serel_target_tmp += std::to_string(out_targets[i].prj.src_files.size()) + " " +
                             std::to_string(out_targets[i].prj.vec_templates.size()) + " " +
@@ -312,15 +301,16 @@ u32t bwbuilder::gen_cache_target() {
             // version project
             if (j == sizeof(std::string)) {
                 serel_target_tmp += (*(var::struct_sb::version *)(prj_v + j)).get_str_version() + " " +
-                                    std::to_string(*(int *)(prj_v + j + 12)) + " ";
-                j += 16;
+                                    std::to_string(*(unsigned long *)(prj_v + j + sizeof(var::struct_sb::version))) +
+                                    " ";
+                j += sizeof(var::struct_sb::version) + sizeof(size_t);
             }
 
             // standart c
-            else if (j == sizeof(std::string) * 7 + 16) {
-                serel_target_tmp += std::to_string(*(int *)(prj_v + j)) + " " +
-                                    std::to_string(*(int *)(prj_v + j + 4)) + " " +
-                                    std::to_string(*(int *)(prj_v + j + 5)) + " ";
+            else if (j == sizeof(std::string) * 7 + sizeof(var::struct_sb::version) + sizeof(size_t)) {
+                serel_target_tmp += std::to_string(*(i32t *)(prj_v + j)) + " " +
+                                    std::to_string(*(i32t *)(prj_v + j + sizeof(i32t))) + " " +
+                                    std::to_string(*(bool *)(prj_v + j + sizeof(i32t)*2)) + " ";
                 break;
             }
             if ((*(std::string *)(prj_v + j)).find(" ") != serel_target_tmp.npos)
@@ -409,10 +399,10 @@ u32t bwbuilder::deserl_cache() {
 
     std::string str_tmp;
 
-    u32t count_word = 0, offset_byte_prj = 0, offset_byte_ccmp = 0;
-    u32t size_src_files = 0, size_vec_templates = 0, size_vec_libs = 0;
-    u32t size_templates = 0;
-    u32t size_internal_args = 0, size_external_args = 0, size_call_components = 0, size_global_extern_args = 0;
+    i32t count_word = 0, offset_byte_prj = 0, offset_byte_ccmp = 0;
+    i32t size_src_files = 0, size_vec_templates = 0, size_vec_libs = 0;
+    i32t size_templates = 0;
+    i32t size_internal_args = 0, size_external_args = 0, size_call_components = 0, size_global_extern_args = 0;
 
     char *tproj_p = (char *)&trg_tmp.prj;
     char *ccmp_p = (char *)&ccmp_tmp;
@@ -423,7 +413,7 @@ u32t bwbuilder::deserl_cache() {
     bool enum_global_extern_args = 0;
 
     try {
-        for (u32t i = 0; i < serel_str.size(); ++i) {
+        for (i32t i = 0; i < serel_str.size(); ++i) {
             if (serel_str[i] == '\"' && !enum_templates) {
                 if (!open_sk)
                     open_sk = 1;
@@ -506,8 +496,8 @@ u32t bwbuilder::deserl_cache() {
                         size_vec_libs = std::stoi(str_tmp);
                     else if (count_word > 3) {
                         if (count_word == 6 || (count_word >= 13 && count_word <= 15)) {
-                            *(int *)(tproj_p + offset_byte_prj) = std::atoll(str_tmp.c_str());
-                            offset_byte_prj += sizeof(int);
+                            *(i32t *)(tproj_p + offset_byte_prj) = std::atoll(str_tmp.c_str());
+                            offset_byte_prj += sizeof(i32t);
                         }
                         else if (count_word == 5) {
                             trg_tmp.prj.version_project = str_tmp;

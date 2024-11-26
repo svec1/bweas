@@ -65,7 +65,7 @@ class bwpackage {
     static std::string create_data_package(data_bw_package _data);
 
     // Initializes the current package based on data
-    std::string init(data_bw_package _data);
+    std::string init(data_bw_package _data, bool is_create_pckg = 0);
 
     // Decompresses the read bweas packet, and also determines the correctness of its structure
     void load(std::string raw_data_package);

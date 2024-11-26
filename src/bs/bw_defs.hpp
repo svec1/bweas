@@ -21,7 +21,7 @@
     "\n   --build - builds the project (either by executing the configuration file or deserializing the cache file "   \
     "if it exists)"                                                                                                    \
     "\n   --cfg - executes the configuration file if it has been changed and creates a new cache file"                 \
-    "\n   --package - creates a bweas package based on the transferred files (json config, lua - generator script)"
+    "\n   --package - creates a bweas package based on the transferred json file(json config)"
 
 namespace bweas {
 using bwarg = std::pair<std::string, std::string>;
