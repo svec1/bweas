@@ -49,10 +49,20 @@ commands bwGeneratorLua::gen_commands(const var::struct_sb::target_out &trg, bwq
     lua["CURRENT_TARGET"] = trg.to_vec_args();
     lua["CURRENT_QUEUE_TEMPLATES"] = tcmd_s_vec;
 
+    lua["TEST"] = bwlua::lua::table<std::string, std::string>{std::pair<std::string, std::string>(std::string("Hello"), std::string("World!"))};
+    assist << lua["TEST"].getval<bwlua::lua::table<std::string, std::string>>()["Hello"];
+    assist << lua["CCMPS"].getval<bwlua::lua::fastTable<bwlua::lua::integer, std::vector<std::string>>>()[0].second[0];
+
+    assist << std::to_string(std::any_cast<bwlua::lua::number>(
+        std::any_cast<bwlua::lua::keyValue<std::any, std::any>>(
+            std::any_cast<std::vector<std::any>>(
+                lua["CURRENT_TARGET"].getval<bwlua::lua::fastTable<std::string, std::any>>()[3].second)[10])
+            .second));
+
     try {
         return lua.call_function DEFINITION_FUNCTION_GENLUA(NAME_FUNCTION_GENLUA, bwlua::lua::nil{});
     }
     catch (std::exception &what) {
-        throw exception::bwgenerator_excp(what.what(), "002");
+        throw exception::bwgenerator_excp(what.what(), "003");
     }
 }

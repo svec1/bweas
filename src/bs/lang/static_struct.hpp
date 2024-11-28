@@ -277,20 +277,20 @@ struct call_component {
 };
 
 inline std::vector<std::any> project::to_vec_args() const {
-    return {std::pair<std::any, std::any>(std::string(PRJ_VAR_NAME), this->name_project),
-            std::pair<std::any, std::any>(std::string(PRJ_VAR_NAME_VER), this->version_project.get_str_version()),
-            std::pair<std::any, std::any>(std::string(PRJ_VAR_NAME_LANG), lang_str(this->lang)),
-            std::pair<std::any, std::any>(std::string(PRJ_VAR_NAME_PTH_C), this->path_compiler),
-            std::pair<std::any, std::any>(std::string(PRJ_VAR_NAME_PTH_L), this->path_linker),
-            std::pair<std::any, std::any>(std::string(PRJ_VAR_NAME_RFLAGS_C), this->rflags_compiler),
-            std::pair<std::any, std::any>(std::string(PRJ_VAR_NAME_RFLAGS_L), this->rflags_linker),
-            std::pair<std::any, std::any>(std::string(PRJ_VAR_NAME_DFLAGS_C), this->dflags_compiler),
-            std::pair<std::any, std::any>(std::string(PRJ_VAR_NAME_DFLAGS_L), this->dflags_linker),
-            std::pair<std::any, std::any>(std::string(PRJ_VAR_NAME_STD_C), this->standart_c),
-            std::pair<std::any, std::any>(std::string(PRJ_VAR_NAME_STD_CPP), this->standart_cpp),
-            std::pair<std::any, std::any>(std::string(PRJ_VAR_NAME_UITTEMPLATES), this->use_it_templates),
-            std::pair<std::any, std::any>(std::string(PRJ_VAR_NAME_SRC_FILES), this->src_files),
-            std::pair<std::any, std::any>(std::string(PRJ_VAR_NAME_UTEMPLATES), this->vec_templates)};
+    return {std::pair<std::any, std::any>(PRJ_VAR_NAME, this->name_project),
+            std::pair<std::any, std::any>(PRJ_VAR_NAME_VER, this->version_project.get_str_version()),
+            std::pair<std::any, std::any>(PRJ_VAR_NAME_LANG, lang_str(this->lang)),
+            std::pair<std::any, std::any>(PRJ_VAR_NAME_PTH_C, this->path_compiler),
+            std::pair<std::any, std::any>(PRJ_VAR_NAME_PTH_L, this->path_linker),
+            std::pair<std::any, std::any>(PRJ_VAR_NAME_RFLAGS_C, this->rflags_compiler),
+            std::pair<std::any, std::any>(PRJ_VAR_NAME_RFLAGS_L, this->rflags_linker),
+            std::pair<std::any, std::any>(PRJ_VAR_NAME_DFLAGS_C, this->dflags_compiler),
+            std::pair<std::any, std::any>(PRJ_VAR_NAME_DFLAGS_L, this->dflags_linker),
+            std::pair<std::any, std::any>(PRJ_VAR_NAME_STD_C, this->standart_c),
+            std::pair<std::any, std::any>(PRJ_VAR_NAME_STD_CPP, this->standart_cpp),
+            std::pair<std::any, std::any>(PRJ_VAR_NAME_UITTEMPLATES, this->use_it_templates),
+            std::pair<std::any, std::any>(PRJ_VAR_NAME_SRC_FILES, this->src_files),
+            std::pair<std::any, std::any>(PRJ_VAR_NAME_UTEMPLATES, this->vec_templates)};
 }
 
 inline std::vector<std::pair<std::string, std::any>> template_command::to_vec_args() const {
