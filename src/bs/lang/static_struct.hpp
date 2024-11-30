@@ -214,14 +214,12 @@ struct project {
     std::string path_compiler{DEFAULT_COMPILER_C}, path_linker{DEFAULT_COMPILER_C};
     std::string rflags_compiler{RELEASE_FLAGS_COMPILER_CPP}, rflags_linker{RELEASE_FLAGS_LINKER_CXX};
     std::string dflags_compiler{DEBUG_FLAGS_COMPILER_CPP}, dflags_linker{DEBUG_FLAGS_LINKER_CXX};
-    u32t standart_c{98}, standart_cpp{14};
+    i32t standart_c{98}, standart_cpp{14};
 
     bool use_it_templates{0};
 
     std::vector<std::string> src_files;
     std::vector<std::string> vec_templates{"null"};
-
-    inline std::vector<std::pair<std::string, std::any>> to_vec_args() const;
 };
 
 // target structure
@@ -252,8 +250,6 @@ struct target_out {
     version version_target;
 
     std::vector<std::string> target_vec_libs{"null"};
-
-    inline std::vector<std::pair<std::string, std::any>> to_vec_args() const;
 };
 
 struct template_command {
@@ -264,8 +260,6 @@ struct template_command {
     std::string returnable;
 
     std::vector<std::string> name_args;
-
-    inline std::vector<std::pair<std::string, std::any>> to_vec_args() const;
 };
 
 struct call_component {
@@ -275,40 +269,6 @@ struct call_component {
     // file.txt
     std::string pattern_ret_files;
 };
-
-inline std::vector<std::pair<std::string, std::any>> project::to_vec_args() const {
-    return {{PRJ_VAR_NAME, this->name_project},
-            {PRJ_VAR_NAME_VER, this->version_project.get_str_version()},
-            {PRJ_VAR_NAME_LANG, this->lang},
-            {PRJ_VAR_NAME_PTH_C, this->path_compiler},
-            {PRJ_VAR_NAME_PTH_L, this->path_linker},
-            {PRJ_VAR_NAME_RFLAGS_C, this->rflags_compiler},
-            {PRJ_VAR_NAME_RFLAGS_L, this->rflags_linker},
-            {PRJ_VAR_NAME_DFLAGS_C, this->dflags_compiler},
-            {PRJ_VAR_NAME_DFLAGS_L, this->dflags_linker},
-            {PRJ_VAR_NAME_STD_C, this->standart_c},
-            {PRJ_VAR_NAME_STD_CPP, this->standart_cpp},
-            {PRJ_VAR_NAME_UITTEMPLATES, this->use_it_templates},
-            {PRJ_VAR_NAME_SRC_FILES, this->src_files},
-            {PRJ_VAR_NAME_UTEMPLATES, this->vec_templates}};
-}
-
-inline std::vector<std::pair<std::string, std::any>> template_command::to_vec_args() const {
-    return {{NAME_FIELD_TEMPLATE_COMMAND_NAME, this->name},
-            {NAME_FIELD_TEMPLATE_COMMAND_NAME_CCMP, this->name_call_component},
-            {NAME_FIELD_TEMPLATE_COMMAND_NAME_ACCEPTS_ARGS, this->name_accept_params},
-            {NAME_FIELD_TEMPLATE_COMMAND_NAME_ARGS, this->name_args},
-            {NAME_FIELD_TEMPLATE_COMMAND_RET, this->returnable}};
-}
-
-inline std::vector<std::pair<std::string, std::any>> target_out::to_vec_args() const {
-    return {{TRG_NAME_FIELD_PROJECT, this->prj.to_vec_args()},
-            {TRG_VAR_NAME_TYPE_T, target_t_str(this->target_t)},
-            {TRG_VAR_NAME_CFG, cfg_str(this->target_cfg)},
-            {TRG_NAME_FIELD_NTARGET, this->name_target},
-            {TRG_VAR_NAME_VER, this->version_target.get_str_version()},
-            {TRG_VAR_NAME_LLIBS, this->target_vec_libs}};
-}
 
 } // namespace struct_sb
 } // namespace var

@@ -81,7 +81,7 @@ class bwbuilder {
     //
     void handle_args(std::vector<std::string> args);
     // Creates a bweas package based on the provided package configuration json file
-    u32t create_package(std::string path_json_config_package, std::string path_lua_source_generator);
+    u32t create_package(std::string path_json_config_package);
     // loads the bweas json config
     void init(std::string current_name_bweas_prg);
     // running the interpreter with the configuration

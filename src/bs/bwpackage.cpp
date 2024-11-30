@@ -11,6 +11,7 @@ bwpackage::bwpackage() {
         assist.add_err("BWS-PCKG000", "Incorrect bweas package structure");
         assist.add_err("BWS-PCKG001", "The package of this version is not supported by the build system");
         assist.add_err("BWS-PCKG002", "Incorrect json file structure");
+        assist.add_err("BWS-PCKG003", "The bweas-lua generator for package file was not found");
 
         init_glob = 1;
     }
@@ -25,20 +26,34 @@ std::string bwpackage::create_data_package(data_bw_package _data) {
     return bwlz4::compress_data(data_str);
 }
 
-std::string bwpackage::init(data_bw_package _data) {
+std::string bwpackage::init(data_bw_package _data, bool is_create_pckg) {
     nlohmann::json config_json = nlohmann::json::parse(_data.json_config);
-    data.cfg_package.name_package = config_json["name"];
-    data.cfg_package.bw_version = var::struct_sb::version(config_json["bweas version"]);
-    data.cfg_package.name_generator = config_json["name generator"];
-    if (!config_json["features generator"].is_null() && config_json["features generator"] != "")
+    if (config_json.find("features generator") != config_json.end() && config_json["features generator"].is_array())
         for (u32t i = 0; i < config_json["features generator"].size(); ++i)
             data.cfg_package.features_generator.push_back(config_json["features generator"][i]);
-    if (data.cfg_package.name_package == "")
-        throw bwpackage_excp("Build system name field not found", "002");
-    else if (data.cfg_package.bw_version == "0.0.0")
-        throw bwpackage_excp("Build system version field not found", "002");
-    else if (data.cfg_package.name_generator == "")
-        throw bwpackage_excp("Name generator field not found", "002");
+    if (config_json.find("name") == config_json.end() || ((data.cfg_package.name_package = config_json["name"]) == ""))
+        throw bwpackage_excp("Bweas package name field is empty", "002");
+    else if (config_json.find("bweas version") == config_json.end() ||
+             ((data.cfg_package.bw_version = var::struct_sb::version(config_json["bweas version"])) == "0.0.0"))
+        throw bwpackage_excp("Build system version field is empty", "002");
+    else if (config_json.find("name generator") == config_json.end() ||
+             ((data.cfg_package.name_generator = config_json["name generator"]) == ""))
+        throw bwpackage_excp("Name generator field is empty", "002");
+
+    if (is_create_pckg) {
+        // reading lua script file
+        std::string tmp_name_flua_scr;
+        if (config_json.find("file lscript") == config_json.end() ||
+            ((tmp_name_flua_scr = config_json["file lscript"]) == ""))
+            throw bwpackage_excp("Name file with lua script field is empty", "002");
+        const assistant::file_it &lua_src_generator_package =
+            assist.open_file(tmp_name_flua_scr, assistant::file::mode_file::open::r);
+        if (!assist.exist_file(lua_src_generator_package))
+            throw bwpackage_excp(tmp_name_flua_scr, "003");
+        _data.src_lua_generator = assist.read_file(assist.get_ref_file(lua_src_generator_package),
+                                                   assistant::file::mode_file::input::read_default);
+        assist.close_file(lua_src_generator_package);
+    }
     data.src_lua_generator = _data.src_lua_generator;
     return create_data_package(_data);
 }
