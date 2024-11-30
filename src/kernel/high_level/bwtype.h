@@ -1,6 +1,7 @@
 #ifndef TYPE__H_
 #define TYPE__H_
 
+#include <cstddef>
 #include <stdio.h>
 
 typedef ptrdiff_t i32t;

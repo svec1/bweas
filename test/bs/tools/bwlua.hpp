@@ -59,6 +59,8 @@ TEST(BWWRAP_LUA, NoThrowClassBwLuaCallFunction) {
     std::string str_tmp;
     int num_tmp;
 
+    ltest.include_libs__nmutex();
+
     // test_func1_welcome()
     ASSERT_NO_THROW({ str_tmp = ltest.call_function__nmutex<std::string>("test_func1_welcome", bwlua::lua::nil{}); });
     ASSERT_EQ(str_tmp, "Hello, World!");
