@@ -1,7 +1,7 @@
+#include "static_linking_func.hpp"
 #include "interpreter.hpp"
 #include "parser.hpp"
 #include "semantic_an.hpp"
-#include "static_linking_func.hpp"
 
 #include <algorithm>
 #include <array>
@@ -588,6 +588,7 @@ void sl_func::create_templates(const std::vector<aef_expr::subexpressions> &sub_
         NAME_FIELD_PROJECT_STD_CPP,    NAME_FIELD_PROJECT_SRC_FILES};
 
     var::struct_sb::template_command tcmd_tmp;
+    var::struct_sb::template_command::arg arg_tmp;
     tcmd_tmp.name = sub_expr[0].token_of_subexpr[0].token_val;
 
     bool defined_template = 0;
@@ -783,8 +784,7 @@ void sl_func::create_templates(const std::vector<aef_expr::subexpressions> &sub_
                                                         "]" + "\n",
                                                     "004");
             else if (was_close_quote) {
-                tmp_param = "STR{" + tmp_param + "}";
-
+                arg_tmp.arg_t = var::struct_sb::template_command::arg::type::string;
                 was_close_quote = 0;
             }
             else if (was_close_op_target_hand) {
@@ -803,21 +803,21 @@ void sl_func::create_templates(const std::vector<aef_expr::subexpressions> &sub_
                                                         "004");
                 }
             proc_hand_target_field:
-
-                tmp_param = "TRG{" + tmp_param + "}";
-
+                arg_tmp.arg_t = var::struct_sb::template_command::arg::type::trgfield;
                 was_close_op_target_hand = 0;
             }
             else if (was_close_used_internal_param) {
-                tmp_param = "ACP{" + tmp_param + "}";
-
+                arg_tmp.arg_t = var::struct_sb::template_command::arg::type::internal;
                 was_close_used_internal_param = 0;
             }
+            else
+                arg_tmp.arg_t = var::struct_sb::template_command::arg::type::extglobal;
+            arg_tmp.str_arg = tmp_param;
 
             if (tmp_param.empty())
                 continue;
 
-            tcmd_tmp.name_args.push_back(tmp_param);
+            tcmd_tmp.args.push_back(arg_tmp);
 
         next_arg:
             tmp_param.clear();
@@ -910,7 +910,9 @@ void sl_func::create_templates(const std::vector<aef_expr::subexpressions> &sub_
                                                         " The operator is expected - \',\': " + tmp_param + "\n",
                                                     "004");
             else if (sub_expr[1].token_of_subexpr[0].token_val[i] == ',' && is_name_features_bs) {
-                tcmd_tmp.name_args.push_back("FTRS{" + tmp_param + "}");
+                arg_tmp.arg_t = var::struct_sb::template_command::arg::type::features;
+                arg_tmp.str_arg = tmp_param;
+                tcmd_tmp.args.push_back(arg_tmp);
                 tmp_param.clear();
 
                 beg_param = 1;
@@ -965,9 +967,11 @@ void sl_func::create_templates(const std::vector<aef_expr::subexpressions> &sub_
             parser::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
                 " Template argument expected: " + sub_expr[1].token_of_subexpr[0].token_val + "\n",
             "004");
-    else if (is_name_features_bs)
-        tcmd_tmp.name_args.push_back("FTRS{" + tmp_param + "}");
-
+    else if (is_name_features_bs) {
+        arg_tmp.arg_t = var::struct_sb::template_command::arg::type::features;
+        arg_tmp.str_arg = tmp_param;
+        tcmd_tmp.args.push_back(arg_tmp);
+    }
     const auto &vec_templates_cmd = curr_scope.get_vector_variables_t<var::struct_sb::template_command>();
 
     for (const std::string &acp_param : tcmd_tmp.name_accept_params) {

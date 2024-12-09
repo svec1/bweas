@@ -25,6 +25,8 @@
 // reinterpret bweasconf.txt
 #define CACHE_FILE "bwcache"
 
+#define DIRWORK_ENV ".bweas"
+
 namespace bweas {
 
 // Builder class. It is a holistic program. It has operating modes (mode_working), which itself determines by passing
@@ -83,7 +85,7 @@ class bwbuilder {
     // Creates a bweas package based on the provided package configuration json file
     u32t create_package(std::string path_json_config_package);
     // loads the bweas json config
-    void init(std::string current_name_bweas_prg);
+    void init();
     // running the interpreter with the configuration
     void run_interpreter();
     // generates a cache file of all targets that were created by the interpreter
@@ -117,13 +119,19 @@ class bwbuilder {
     // Creates a stack of templates for the correct sequential generation of commands(for every targets)
     std::stack<std::string> create_stack_target_templates(const var::struct_sb::target_out &target);
 
-    // recursive function, for create_stack_target_templates
+    // Recursive function, for create_stack_target_templates
     u32t recovery_stack_templates(std::vector<var::struct_sb::template_command> &vec_templates,
                                   const std::string &name_internal_param, std::stack<std::string> &stack_templates);
 
-    // converts the stack into an ordered pattern vector
+    // Converts the stack into an ordered pattern vector
     void set_queue_templates(std::stack<std::string> &&stack_target_templates,
                              bwqueue_templates &target_queue_templates);
+
+    // Parses all the basic arguments for further template command generation
+    // Types of arguments that will be parsed:
+    //  1. extglobal
+    //  2. trgfield(except T_PROJECT_SRC_FILES)
+    void parse_basic_args(const var::struct_sb::target_out &target, bwqueue_templates &target_queue_templates);
 
   private:
     interpreter::interpreter_exec _interpreter;
