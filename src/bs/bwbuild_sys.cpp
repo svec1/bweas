@@ -9,7 +9,7 @@
 #include <unordered_set>
 
 using namespace bweas;
-using namespace bweas::exception;
+using namespace bwexception;
 
 using mf = assistant::file::mode_file;
 using file_it = assistant::file_it;

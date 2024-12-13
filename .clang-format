@@ -8,7 +8,5 @@ BraceWrapping :
     AfterClass: False
     AfterEnum: False
     BeforeElse: True
-    
-
 
 StatementMacros: [call_err_tk_inf_lex, wrap_interpreter, debug_mark_time_func]

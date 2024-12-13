@@ -4,7 +4,7 @@
 #include <nlohmann/json.hpp>
 
 using namespace bweas;
-using namespace bweas::exception;
+using namespace bwexception;
 
 bwpackage::bwpackage() {
     if (!init_glob) {

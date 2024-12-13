@@ -11,7 +11,6 @@ set(BW_NAME_PRJ bweas)
 cmake_minimum_required(VERSION 3.20)
 project(${BW_NAME_PRJ} LANGUAGES CXX C)
 
-
 option(USER_BUILD_LZ4 "Rep LZ4 on external" OFF)
 option(USER_BUILD_JSON "Rep JSON_C on external" OFF)
 option(USER_BUILD_LUA "Rep LuaJit on external" OFF)

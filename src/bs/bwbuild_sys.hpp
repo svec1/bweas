@@ -1,10 +1,10 @@
-#ifndef _BUILD_SYS__H
-#define _BUILD_SYS__H
+#ifndef BWBUILD_SYS__H
+#define BWBUILD_SYS__H
 
 #include "../mdef.hpp"
 
 #include "bw_defs.hpp"
-#include "bwgenerator.hpp"
+#include "bwgenerator_api.hpp"
 #include "bwpackage.hpp"
 #include "lang/interpreter.hpp"
 #include "tools/bwfile.hpp"
@@ -31,7 +31,7 @@ namespace bweas {
 
 // Builder class. It is a holistic program. It has operating modes (mode_working), which itself determines by passing
 // parameters to it when launching programs
-class bwbuilder {
+class bwbuilder final {
   public:
     bwbuilder() = delete;
     bwbuilder(int argv, char **args);

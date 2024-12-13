@@ -5,10 +5,10 @@
 #include <iomanip>
 #include <stdlib.h>
 
-#ifdef _WIN32
+#if defined(_WIN32)
 #include "hook_winapi.hpp"
 #include <windows.h>
-#elif __unix__
+#elif defined(UNIX)
 #include <dlfcn.h>
 #include <limits.h>
 #include <unistd.h>
@@ -16,11 +16,13 @@
 extern "C" int init_hook();
 #endif
 
+assistant assist;
+
 assistant::assistant() {
     err_s.emplace_back("KNL000", "Unable to open file", 0);
-    err_s.emplace_back("KNL001", "Unable to close file", 0);
-    err_s.emplace_back("KNL002", "File opened for reading", 1);
-    err_s.emplace_back("KNL003", "File opened for writing", 2);
+    err_s.emplace_back("KNL001", "Unable to close file", 1);
+    err_s.emplace_back("KNL002", "File opened for reading", 2);
+    err_s.emplace_back("KNL003", "File opened for writing", 3);
 }
 assistant::assistant(bool _output, bool _log) : output(_output), log(_log) {
 }
@@ -56,7 +58,7 @@ void assistant::call_err(std::string name_err) {
         std::find_if(err_s.begin(), err_s.end(), [name_err](const err &_err) { return _err.name_e == name_err; });
     if (it == err_s.end()) {
         this->operator<<("An error with the name \"" + name_err + "\" was not found");
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 
     this->operator<<(std::string(it->name_e) + "(" + std::to_string(it->ind) + "): " + it->desc_e);
@@ -67,7 +69,7 @@ void assistant::call_err(std::string name_err, std::string addit) {
         std::find_if(err_s.begin(), err_s.end(), [name_err](const err &_err) { return _err.name_e == name_err; });
     if (it == err_s.end()) {
         this->operator<<("An error with the name \"" + name_err + "\" was not found");
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 
 #if defined(WIN)
@@ -82,9 +84,10 @@ void assistant::call_err(std::string name_err, std::string addit) {
 #endif
     exit(EXIT_FAILURE);
 }
-std::string assistant::get_desc_err(std::string name_err){
-    const auto &it = find_if(err_s.begin(), err_s.end(), [name_err](const err& err_c){ return err_c.name_e == name_err; });
-    if(it != err_s.end())
+std::string assistant::get_desc_err(std::string name_err) {
+    const auto &it =
+        find_if(err_s.begin(), err_s.end(), [name_err](const err &err_c) { return err_c.name_e == name_err; });
+    if (it != err_s.end())
         return it->desc_e;
     return "";
 }

@@ -1,5 +1,5 @@
-#ifndef MACROS__H_
-#define MACROS__H_
+#ifndef BWMACROS__H_
+#define BWMACROS__H_
 
 // macro set
 

@@ -48,8 +48,8 @@ extern std::string get_name_output_file(std::string pattern_file, u32t index, st
 } // namespace tools_generator
 
 using func_generator = commands (*)(const var::struct_sb::target_out &, bwqueue_templates &,
-                                    const std::vector<var::struct_sb::call_component> &, std::string,
-                                    std::map<std::string, std::vector<std::string>>);
+                                    const std::vector<var::struct_sb::call_component> &,
+                                    std::map<std::string, std::vector<std::string>>, std::string);
 using func_get_files_input = std::map<std::string, std::vector<std::string>> (*)(
     const var::struct_sb::target_out &, const bwqueue_templates &,
     const std::vector<var::struct_sb::call_component> &ccmp_p, std::string);
@@ -138,8 +138,8 @@ extern std::map<std::string, std::vector<std::string>> bwfile_inputs_internal(
 // First and basic template-based command generator
 extern commands bwgenerator_internal(const var::struct_sb::target_out &trg, bwqueue_templates &templates,
                                      const std::vector<var::struct_sb::call_component> &ccmp_p,
-                                     std::string dir_work_endv,
-                                     std::map<std::string, std::vector<std::string>> files_input);
+                                     std::map<std::string, std::vector<std::string>> files_input,
+                                     std::string dir_work_endv);
 
 } // namespace bweas
 

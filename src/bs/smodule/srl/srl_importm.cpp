@@ -1,5 +1,5 @@
-#include "../../lang/parser.hpp"
 #include "srl_importm.hpp"
+#include "../../lang/parser.hpp"
 
 #define call_err_tk_inf_lex(count_line, count_sym, lexem, expected, err)                                               \
     assist.call_err(err, "\n(Line: " + std::to_string(count_line) +                                                    \
@@ -142,8 +142,8 @@ std::pair<std::vector<srl::token>, std::vector<std::string>> srl::parser(std::st
                 if (!expected_enum_params || lexem.empty())
                     call_err_identify_expected() expected_enum_params = 0;
                 expected_separator = 0;
-                tokens.push_back(
-                    token(lexem, count_line, count_sym, srl::token_type::PARAM, parser::type_param_in_str(lexem)));
+                tokens.push_back(token(lexem, count_line, count_sym, srl::token_type::PARAM,
+                                       parser::utility::type_param_in_str(lexem)));
                 expected_enum_params = 1;
                 lexem.clear();
 
@@ -153,8 +153,8 @@ std::pair<std::vector<srl::token>, std::vector<std::string>> srl::parser(std::st
                 if (!expected_enum_params || lexem.empty())
                     call_err_identify_expected() expected_enum_params = 0;
                 expected_separator = 0;
-                tokens.push_back(
-                    token(lexem, count_line, count_sym, srl::token_type::PARAM, parser::type_param_in_str(lexem)));
+                tokens.push_back(token(lexem, count_line, count_sym, srl::token_type::PARAM,
+                                       parser::utility::type_param_in_str(lexem)));
                 expected_open_br = 1;
                 lexem.clear();
 

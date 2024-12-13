@@ -2,7 +2,7 @@
 #define _STATIC_STRUCT__H
 
 #include "../../kernel/high_level/bwtype.h"
-#include "../conf_var.hpp"
+#include "../bwconf_var.hpp"
 
 #include <memory>
 #include <string>

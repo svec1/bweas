@@ -1,7 +1,8 @@
-#include "bwgenerator.hpp"
+#include "bwgenerator_api.hpp"
 #include "bwluatools.hpp"
 
 using namespace bweas;
+using namespace bwexception;
 
 bwGeneratorLua::bwGeneratorLua(std::string src_lua) {
     if (!init_glob_gnlua) {
@@ -18,17 +19,17 @@ bwGeneratorLua::bwGeneratorLua(std::string src_lua) {
         lua.create__nmutex(src_lua);
     }
     catch (std::exception &excp) {
-        throw exception::bwgenerator_excp(excp.what(), "001");
+        throw bwgenerator_excp(excp.what(), "001");
     }
 }
 
 void bwGeneratorLua::init() {
     if (!lua.is_created__nmutex())
-        throw exception::bwgenerator_excp("", "000");
+        throw bwgenerator_excp("", "000");
     else if (!lua.is_function__nmutex(NAME_FUNCTION_GENLUA))
-        throw exception::bwgenerator_excp("", "002");
+        throw bwgenerator_excp("", "002");
     else if (!lua.is_function__nmutex(NAME_FUNCTION_FILECLUA))
-        throw exception::bwgenerator_excp("", "003");
+        throw bwgenerator_excp("", "003");
 
     bwlua::lua::array<bwlua::lua::array<std::string>> ccmps;
     for (u32t i = 0; i < ccmp_p->size(); ++i)
@@ -53,7 +54,7 @@ std::map<std::string, std::vector<std::string>> bwGeneratorLua::input_files(
             NAME_FUNCTION_FILECLUA, luatools_bwstruct::conv_to_table(target), tcmd_s_vec));
     }
     catch (std::exception &what) {
-        throw exception::bwgenerator_excp(what.what(), "004");
+        throw bwgenerator_excp(what.what(), "004");
     }
 }
 
@@ -72,6 +73,6 @@ commands bwGeneratorLua::gen_commands(const var::struct_sb::target_out &trg, bwq
         return lua.call_function DEFINITION_FUNCTION_GENLUA(NAME_FUNCTION_GENLUA, bwlua::lua::to_table(files_input));
     }
     catch (std::exception &what) {
-        throw exception::bwgenerator_excp(what.what(), "004");
+        throw bwgenerator_excp(what.what(), "004");
     }
 }

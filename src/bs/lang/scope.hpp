@@ -35,8 +35,7 @@ inline std::string type_var_to_str(u32t ind) {
 
 class scope_excp : public bw_excp::bweas_exception {
   public:
-    scope_excp(std::string _what_hp, std::string number_err)
-        : what_hp(_what_hp), bweas_exception("SCOP" + number_err) {
+    scope_excp(std::string _what_hp, std::string number_err) : what_hp(_what_hp), bweas_exception("SCOP" + number_err) {
     }
     ~scope_excp() noexcept override final = default;
 
@@ -251,7 +250,7 @@ template <typename T> inline T &scope::get_var_value(std::string name_var) {
     }
 }
 
-template <typename T> inline std::vector<std::pair<std::string, T>> &scope::get_vector_variables_t(){
+template <typename T> inline std::vector<std::pair<std::string, T>> &scope::get_vector_variables_t() {
     if constexpr (std::is_same_v<T, int>)
         return int_v.get_vector_variables();
     else if constexpr (std::is_same_v<T, std::string>)

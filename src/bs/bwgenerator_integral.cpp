@@ -1,10 +1,10 @@
 #include "bw_defs.hpp"
-#include "bwgenerator.hpp"
+#include "bwgenerator_api.hpp"
 #include "lang/static_struct.hpp"
 #include "tools/bwfile.hpp"
 
 using namespace bweas;
-using namespace exception;
+using namespace bwexception;
 
 std::string tools_generator::get_name_output_file(std::string pattern_file, u32t index, std::string dir_work_endv) {
     if (pattern_file.find(".") == pattern_file.npos)
@@ -41,7 +41,7 @@ std::map<std::string, std::vector<std::string>> bwGeneratorIntegral::input_files
 commands bwGeneratorIntegral::gen_commands(const var::struct_sb::target_out &trg, bwqueue_templates &templates,
                                            std::string dir_work_endv,
                                            std::map<std::string, std::vector<std::string>> files_input) {
-    return generator_p(trg, templates, *ccmp_p, dir_work_endv, files_input);
+    return generator_p(trg, templates, *ccmp_p, files_input, dir_work_endv);
 }
 
 std::map<std::string, std::vector<std::string>> bweas::bwfile_inputs_internal(
@@ -118,8 +118,8 @@ std::map<std::string, std::vector<std::string>> bweas::bwfile_inputs_internal(
 
 commands bweas::bwgenerator_internal(const var::struct_sb::target_out &trg, bwqueue_templates &templates,
                                      const std::vector<var::struct_sb::call_component> &ccmp_p,
-                                     std::string dir_work_endv,
-                                     std::map<std::string, std::vector<std::string>> input_files) {
+                                     std::map<std::string, std::vector<std::string>> input_files,
+                                     std::string dir_work_endv) {
     commands cmd_s;
     command current_cmd;
 
@@ -182,7 +182,7 @@ commands bweas::bwgenerator_internal(const var::struct_sb::target_out &trg, bwqu
                 for (const std::string &file : current_internal_args->second)
                     arg.str_arg += file + " ";
             }
-            else if (arg.arg_t == var::struct_sb::template_command::arg::type::features) {
+            else if (arg.arg_t != var::struct_sb::template_command::arg::type::string) {
                 if (arg.str_arg == FEATURE_FIELD_BS_CURRENT_IF) {
                     arg.str_arg = input_file;
                     ++used_input_files_in_curr_template;
@@ -210,7 +210,7 @@ commands bweas::bwgenerator_internal(const var::struct_sb::target_out &trg, bwqu
                             }
                             else {
                                 arg.str_arg = "";
-                                for (u32t i = 0; i < val_attr; ++i) {
+                                for (u32t i = 0; i < val_attr && i < input_files.size(); ++i) {
                                     std::string name_file = tools_generator::get_name_output_file(
                                         current_ccmp->pattern_ret_files, i, dir_work_endv);
                                     arg.str_arg += name_file + " ";
@@ -223,6 +223,44 @@ commands bweas::bwgenerator_internal(const var::struct_sb::target_out &trg, bwqu
                         else {
                             std::vector<std::string> files =
                                 bwfile::file_slc_mask(attribute, input_files[current_template.name]);
+                            arg.str_arg = "";
+                            for (const auto &file : files) {
+                                arg.str_arg += file + " ";
+                                global_internal_args[current_template.returnable].push_back(file);
+                            }
+                        }
+                    }
+                }
+                else if (arg.str_arg.find(NAME_FIELD_PROJECT_SRC_FILES) == 0) {
+                    size_t attr_it = arg.str_arg.find(":");
+                    if (attr_it == arg.str_arg.npos) {
+                        arg.str_arg = "";
+                        for (u32t i = 0; i < trg.prj.src_files.size(); ++i) {
+                            arg.str_arg += trg.prj.src_files[i] + " ";
+                            global_internal_args[current_template.returnable].push_back(trg.prj.src_files[i]);
+                        }
+                    }
+                    else {
+                        std::string attribute = arg.str_arg;
+                        attribute.erase(0, attr_it + 1);
+                        size_t val_attr = std::atoll(attribute.c_str());
+                        if (val_attr != 0) {
+                            if (val_attr == 1) {
+                                arg.str_arg = trg.prj.src_files[used_input_files];
+                                global_internal_args[current_template.returnable].push_back(arg.str_arg);
+                            }
+                            else {
+                                arg.str_arg = "";
+                                for (u32t i = 0; i < val_attr && i < trg.prj.src_files.size(); ++i) {
+                                    arg.str_arg += trg.prj.src_files[i] + " ";
+                                    global_internal_args[current_template.returnable].push_back(trg.prj.src_files[i]);
+                                }
+                            }
+                        }
+                        else if (attribute == "0")
+                            continue;
+                        else {
+                            std::vector<std::string> files = bwfile::file_slc_mask(attribute, trg.prj.src_files);
                             arg.str_arg = "";
                             for (const auto &file : files) {
                                 arg.str_arg += file + " ";
