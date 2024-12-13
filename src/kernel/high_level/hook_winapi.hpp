@@ -10,7 +10,7 @@
 #define DETECTED_HOOK_N 0x0001
 
 #define HOOK_TEXT_DETECTED                                                                                             \
-    "WARNING!!!A winapi call was detected, most likely the dynamically loaded dll library is hostile.\n"
+    "WARNING!!! A winapi call was detected, most likely the dynamically loaded dll library is hostile.\n"
 #define HOOK_TEXT_WARNING HOOK_TEXT_DETECTED "INFO: "
 
 #define hook_handleExW(info, size_info)                                                                                \

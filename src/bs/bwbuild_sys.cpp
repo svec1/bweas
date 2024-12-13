@@ -9,7 +9,7 @@
 #include <unordered_set>
 
 using namespace bweas;
-using namespace bweas::exception;
+using namespace bwexception;
 
 using mf = assistant::file::mode_file;
 using file_it = assistant::file_it;
@@ -40,7 +40,7 @@ bwbuilder::bwbuilder(int argv, char **args) {
 
     if (mode_bweas != mode_working::build_package) {
         assist << "Initializing system build - bweas " + bwbuilde_ver.get_str_version();
-        init(name_bweas_prg);
+        init();
     }
 }
 
@@ -146,7 +146,7 @@ u32t bwbuilder::create_package(std::string path_json_config_package) {
     return pckg.size();
 }
 
-void bwbuilder::init(std::string current_name_bweas_prg) {
+void bwbuilder::init() {
     std::string bweas_path = assist.get_path_program() + "/" + JSON_CONFIG_FILE;
 
     nlohmann::json config_json;
@@ -186,7 +186,7 @@ void bwbuilder::init(std::string current_name_bweas_prg) {
     if (!config_json.contains("use genlua") || !config_json["use genlua"].is_number_integer())
         throw bwbuilder_excp("The use of the lua generator is not defined", "005");
     else if (config_json["use genlua"] == 0) {
-        generator = bwGenerator::createGeneratorInt(bwign0_1v);
+        generator = bwGenerator::createGeneratorInt(bwgenerator_internal, bwfile_inputs_internal);
     }
     else {
         if (!loaded_package.is_init())
@@ -310,7 +310,7 @@ u32t bwbuilder::gen_cache_target() {
             else if (j == sizeof(std::string) * 7 + sizeof(var::struct_sb::version) + sizeof(size_t)) {
                 serel_target_tmp += std::to_string(*(i32t *)(prj_v + j)) + " " +
                                     std::to_string(*(i32t *)(prj_v + j + sizeof(i32t))) + " " +
-                                    std::to_string(*(bool *)(prj_v + j + sizeof(i32t)*2)) + " ";
+                                    std::to_string(*(bool *)(prj_v + j + sizeof(i32t) * 2)) + " ";
                 break;
             }
             if ((*(std::string *)(prj_v + j)).find(" ") != serel_target_tmp.npos)
@@ -335,20 +335,20 @@ u32t bwbuilder::gen_cache_target() {
     serel_target_tmp += "EOET" + std::to_string(vec_global_template.size()) + " "; // end of enum targets
 
     for (u32t i = 0; i < vec_global_template.size(); ++i) {
-        serel_target_tmp += std::to_string(vec_global_template[i].second.name_accept_params.size()) + " " +
-                            std::to_string(vec_global_template[i].second.name_args.size()) + " " +
-                            vec_global_template[i].second.name + " " +
-                            vec_global_template[i].second.name_call_component + " " +
-                            vec_global_template[i].second.returnable + " ";
+        serel_target_tmp +=
+            std::to_string(vec_global_template[i].second.name_accept_params.size()) + " " +
+            std::to_string(vec_global_template[i].second.args.size()) + " " + vec_global_template[i].second.name + " " +
+            vec_global_template[i].second.name_call_component + " " + vec_global_template[i].second.returnable + " ";
 
         all_used_call_component.emplace(vec_global_template[i].second.name_call_component);
 
         for (u32t j = 0; j < vec_global_template[i].second.name_accept_params.size(); ++j)
             serel_target_tmp += vec_global_template[i].second.name_accept_params[j] + " ";
-        for (u32t j = 0; j < vec_global_template[i].second.name_args.size(); ++j) {
-            if (vec_global_template[i].second.name_args[j].find('{') == vec_global_template[i].second.name_args[j].npos)
-                all_used_globally_args.emplace(vec_global_template[i].second.name_args[j]);
-            serel_target_tmp += vec_global_template[i].second.name_args[j] + " ";
+        for (u32t j = 0; j < vec_global_template[i].second.args.size(); ++j) {
+            if (vec_global_template[i].second.args[j].arg_t == var::struct_sb::template_command::arg::type::extglobal)
+                all_used_globally_args.emplace(vec_global_template[i].second.args[j].str_arg);
+            serel_target_tmp += vec_global_template[i].second.args[j].str_arg + " " +
+                                std::to_string((i32t)vec_global_template[i].second.args[j].arg_t) + " ";
         }
     }
 
@@ -395,6 +395,7 @@ u32t bwbuilder::deserl_cache() {
 
     var::struct_sb::target_out trg_tmp;
     var::struct_sb::template_command tcmd_tmp;
+    var::struct_sb::template_command::arg arg_tmp;
     var::struct_sb::call_component ccmp_tmp;
 
     std::string str_tmp;
@@ -411,6 +412,8 @@ u32t bwbuilder::deserl_cache() {
     bool enum_templates = 0;
     bool enum_call_component = 0;
     bool enum_global_extern_args = 0;
+
+    bool expected_arg_param_str = 1;
 
     try {
         for (i32t i = 0; i < serel_str.size(); ++i) {
@@ -465,15 +468,24 @@ u32t bwbuilder::deserl_cache() {
                     else if (count_word >= 6 && count_word < 6 + size_internal_args)
                         tcmd_tmp.name_accept_params.push_back(str_tmp);
                     else if ((count_word >= 6 + size_internal_args &&
-                              count_word < 6 + size_internal_args + size_external_args) ||
-                             count_word == 6 + size_internal_args)
-                        tcmd_tmp.name_args.push_back(str_tmp);
-                    else if (count_word == 6 + size_internal_args + size_external_args) {
+                              count_word < 6 + size_internal_args + (size_external_args * 2)) ||
+                             count_word == 6 + size_internal_args) {
+                        if (expected_arg_param_str) {
+                            arg_tmp.str_arg = str_tmp;
+                            expected_arg_param_str = 0;
+                        }
+                        else {
+                            arg_tmp.arg_t = (var::struct_sb::template_command::arg::type)std::stoi(str_tmp);
+                            tcmd_tmp.args.push_back(arg_tmp);
+                            expected_arg_param_str = 1;
+                        }
+                    }
+                    else if (count_word == 6 + size_internal_args + (size_external_args * 2)) {
                         templates.push_back(tcmd_tmp);
                         --size_templates;
 
                         tcmd_tmp.name_accept_params = {};
-                        tcmd_tmp.name_args = {};
+                        tcmd_tmp.args = {};
 
                         if (!size_templates) {
                             enum_call_component = 1;
@@ -576,21 +588,25 @@ void bwbuilder::build_targets() {
 
     global_extern_args.push_back(std::pair<std::string, std::string>("", ""));
 
-    generator->set_global_data(call_components, global_extern_args);
+    generator->set_ccomponents(call_components);
     generator->init();
 
     for (u32t i = 0; i < out_targets.size(); ++i) {
         if (out_targets[i].prj.vec_templates.size() == 0)
             throw bwbuilder_excp("There are no templates for the target - " + out_targets[i].name_target, "002");
+        std::string dir_target = std::string(DIRWORK_ENV) + "/" + out_targets[i].name_target;
+        if (!std::filesystem::is_directory(dir_target))
+            std::filesystem::create_directories(dir_target);
 
         assist << "BUILDING A TARGET -" + out_targets[i].name_target;
 
         bwqueue_templates bw_tcmd;
         set_queue_templates(create_stack_target_templates(out_targets[i]), bw_tcmd);
+        parse_basic_args(out_targets[i], bw_tcmd);
+        commands cmd_s = generator->gen_commands(out_targets[i], bw_tcmd, dir_target,
+                                                 generator->input_files(out_targets[i], bw_tcmd, dir_target));
 
-        commands cmd_s = generator->gen_commands(out_targets[i], bw_tcmd);
-
-        for (const std::string &cmd : cmd_s) {
+        for (const command &cmd : cmd_s) {
 #if defined(WIN)
             if (system(cmd.c_str()))
 #elif defined(UNIX)
@@ -673,15 +689,88 @@ void bwbuilder::set_queue_templates(std::stack<std::string> &&stack_target_templ
     }
 }
 
+void bwbuilder::parse_basic_args(const var::struct_sb::target_out &target, bwqueue_templates &target_queue_templates) {
+    for (auto &trg_template : target_queue_templates) {
+        for (u32t i = 0; i < trg_template.args.size(); ++i) {
+            var::struct_sb::template_command::arg &current_arg = trg_template.args[i];
+            if (current_arg.arg_t == var::struct_sb::template_command::arg::type::string ||
+                current_arg.arg_t == var::struct_sb::template_command::arg::type::features ||
+                current_arg.arg_t == var::struct_sb::template_command::arg::type::internal)
+                continue;
+            else if (current_arg.arg_t == var::struct_sb::template_command::arg::type::extglobal) {
+                const auto &extern_arg =
+                    std::find_if(global_extern_args.begin(), global_extern_args.end(),
+                                 [current_arg](const std::pair<std::string, std::string> extern_arg_tmp) {
+                                     return extern_arg_tmp.first == current_arg.str_arg;
+                                 });
+                if (extern_arg == global_extern_args.end())
+                    throw bwbuilder_excp("[" + trg_template.name +
+                                             "] The specified external parameter does not exist - " +
+                                             current_arg.str_arg,
+                                         "002");
+
+                current_arg.str_arg = extern_arg->second;
+            }
+            else if (current_arg.arg_t == var::struct_sb::template_command::arg::type::trgfield) {
+                if (current_arg.str_arg == NAME_FIELD_TARGET_NAME)
+                    current_arg.str_arg = target.name_target;
+                else if (current_arg.str_arg == NAME_FIELD_TARGET_LIBS) {
+                    current_arg.str_arg = "";
+                    for (u32t k = 0; k < target.target_vec_libs.size(); ++k) {
+                        current_arg.str_arg += target.target_vec_libs[k];
+                        if (k < target.target_vec_libs.size() - 1)
+                            current_arg.str_arg += " ";
+                    }
+                }
+                else if (current_arg.str_arg == NAME_FIELD_TARGET_TYPE)
+                    current_arg.str_arg = var::struct_sb::target_t_str(target.target_t);
+                else if (current_arg.str_arg == NAME_FIELD_TARGET_CFG)
+                    current_arg.str_arg = var::struct_sb::cfg_str(target.target_cfg);
+                else if (current_arg.str_arg == NAME_FIELD_TARGET_VER)
+                    current_arg.str_arg = target.version_target.get_str_version();
+                else if (current_arg.str_arg == NAME_FIELD_PROJECT_NAME)
+                    current_arg.str_arg = target.prj.name_project;
+                else if (current_arg.str_arg == NAME_FIELD_PROJECT_VER)
+                    current_arg.str_arg = target.prj.version_project.get_str_version();
+                else if (current_arg.str_arg == NAME_FIELD_PROJECT_LANG)
+                    current_arg.str_arg = var::struct_sb::lang_str(target.prj.lang);
+                else if (current_arg.str_arg == NAME_FIELD_PROJECT_PCOMPILER)
+                    current_arg.str_arg = target.prj.path_compiler;
+                else if (current_arg.str_arg == NAME_FIELD_PROJECT_PLINKER)
+                    current_arg.str_arg = target.prj.path_linker;
+                else if (current_arg.str_arg == NAME_FIELD_PROJECT_RFCOMPILER)
+                    current_arg.str_arg = target.prj.rflags_compiler;
+                else if (current_arg.str_arg == NAME_FIELD_PROJECT_RFLINKER)
+                    current_arg.str_arg = target.prj.rflags_linker;
+                else if (current_arg.str_arg == NAME_FIELD_PROJECT_DFCOMPILER)
+                    current_arg.str_arg = target.prj.dflags_compiler;
+                else if (current_arg.str_arg == NAME_FIELD_PROJECT_DFLINKER)
+                    current_arg.str_arg = target.prj.dflags_linker;
+                else if (current_arg.str_arg == NAME_FIELD_PROJECT_STD_C)
+                    current_arg.str_arg = std::to_string(target.prj.standart_c);
+                else if (current_arg.str_arg == NAME_FIELD_PROJECT_STD_CPP)
+                    current_arg.str_arg = std::to_string(target.prj.standart_cpp);
+                else if (current_arg.str_arg.find(NAME_FIELD_PROJECT_SRC_FILES) == 0)
+                    continue;
+                else
+                    throw bwbuilder_excp(
+                        "[" + trg_template.name + "] There is no such parameter - " + current_arg.str_arg, "002");
+            }
+
+            current_arg.arg_t = var::struct_sb::template_command::arg::type::string;
+        }
+    }
+}
+
 void bwbuilder::imp_data_interpreter_for_bs() {
     const auto &global_templates =
         _interpreter.get_current_scope().get_vector_variables_t<var::struct_sb::template_command>();
     std::unordered_set<std::string> name_global_external_args;
 
     for (const auto &global_template_it : global_templates) {
-        for (const auto &arg : global_template_it.second.name_args)
-            if (arg.find("{") == arg.npos)
-                name_global_external_args.emplace(arg);
+        for (const auto &arg : global_template_it.second.args)
+            if (arg.arg_t == var::struct_sb::template_command::arg::type::extglobal)
+                name_global_external_args.emplace(arg.str_arg);
         templates.push_back(global_template_it.second);
     }
 

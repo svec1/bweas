@@ -1,28 +1,30 @@
 #include "bw_defs.hpp"
-#include "bwgenerator.hpp"
+#include "bwgenerator_api.hpp"
 #include "lang/static_struct.hpp"
 #include "tools/bwfile.hpp"
 
 using namespace bweas;
-using namespace exception;
+using namespace bwexception;
 
-std::string tools_generator::get_file_w_index(std::string pattern_file, u32t index) {
+std::string tools_generator::get_name_output_file(std::string pattern_file, u32t index, std::string dir_work_endv) {
+    if (pattern_file.find(".") == pattern_file.npos)
+        return dir_work_endv + "/" + pattern_file + std::to_string(index);
     std::string name_output_file_curr = pattern_file, extension_output_file_curr = pattern_file;
     name_output_file_curr.erase(name_output_file_curr.find("."), name_output_file_curr.size());
     extension_output_file_curr.erase(0, extension_output_file_curr.find("."));
     if (index != 0)
-        return name_output_file_curr + std::to_string(index) + extension_output_file_curr;
-    return name_output_file_curr + extension_output_file_curr;
+        return dir_work_endv + "/" + name_output_file_curr + std::to_string(index) + extension_output_file_curr;
+    return dir_work_endv + "/" + name_output_file_curr + extension_output_file_curr;
 }
 
-bwGeneratorIntegral::bwGeneratorIntegral(
-    commands (*generator)(const var::struct_sb::target_out &, bwqueue_templates &,
-                          const std::vector<var::struct_sb::call_component> &ccmp_p, const bwargs &)) {
+bwGeneratorIntegral::bwGeneratorIntegral(func_generator _generator_p, func_get_files_input _files_input_p) {
     if (!init_glob_gnint) {
-
+        assist.add_err("BWS-GNRT001", "Internal global argument not found");
+        assist.add_err("BWS-GNRT002", "This generator does not have the specified features");
         init_glob_gnint = 1;
     }
-    func_p = generator;
+    generator_p = _generator_p;
+    files_input_p = _files_input_p;
 }
 
 void bwGeneratorIntegral::init() {
@@ -30,306 +32,267 @@ void bwGeneratorIntegral::init() {
 void bwGeneratorIntegral::deleteGenerator() {
     delete this;
 }
-commands bwGeneratorIntegral::gen_commands(const var::struct_sb::target_out &trg, bwqueue_templates &templates) {
-    return func_p(trg, templates, *ccmp_p, *external_args_p);
+std::map<std::string, std::vector<std::string>> bwGeneratorIntegral::input_files(const var::struct_sb::target_out &trg,
+                                                                                 const bwqueue_templates &templates,
+                                                                                 std::string dir_work_endv) {
+    return files_input_p(trg, templates, *ccmp_p, dir_work_endv);
 }
 
-commands bweas::bwign0_1v(const var::struct_sb::target_out &trg, bwqueue_templates &templates,
-                          const std::vector<var::struct_sb::call_component> &ccmp_p, const bwargs &global_extern_args) {
-    commands cmd_s;
+commands bwGeneratorIntegral::gen_commands(const var::struct_sb::target_out &trg, bwqueue_templates &templates,
+                                           std::string dir_work_endv,
+                                           std::map<std::string, std::vector<std::string>> files_input) {
+    return generator_p(trg, templates, *ccmp_p, files_input, dir_work_endv);
+}
 
-    std::string command;
-    bwargs_files global_internal_args;
+std::map<std::string, std::vector<std::string>> bweas::bwfile_inputs_internal(
+    const var::struct_sb::target_out &target, const bwqueue_templates &target_queue_templates,
+    const std::vector<var::struct_sb::call_component> &ccmp_p, std::string dir_work_endv) {
+    std::map<std::string, std::vector<std::string>> input_files;
+    u32t count_uses_input_files = 0;
 
-    bool template_for_ev_files = 0;
-    u32t left_src_files = trg.prj.src_files.size();
-    u32t count_uses_input_files = 0, count_uses_output_pattern_files = 0;
-    std::string input_file_curr, output_files_curr;
-
-    bwarg_files return_internal_arg;
-
-    // generating command on current a template
-    while (templates.size() || template_for_ev_files) {
-        if (template_for_ev_files && left_src_files == 0) {
-            template_for_ev_files = 0;
-            count_uses_output_pattern_files = 0;
-
-            global_internal_args.push_back(return_internal_arg);
-            return_internal_arg.second.clear();
-
-            templates.erase(templates.begin());
-            if (!ccmp_p.size())
-                break;
-        }
-
-        const auto &template_tmp = templates[0];
+    for (const auto &template_tmp : target_queue_templates) {
         const auto &call_component_tmp =
             std::find_if(ccmp_p.begin(), ccmp_p.end(), [template_tmp](const var::struct_sb::call_component &ccmp_tmp) {
                 return ccmp_tmp.name == template_tmp.name_call_component;
             });
 
-        if (!template_for_ev_files)
-            return_internal_arg.first = template_tmp.returnable;
-
-        std::string current_arg;
-
-        command += call_component_tmp->name_program + " ";
-        if (left_src_files != 0)
-            input_file_curr = trg.prj.src_files[trg.prj.src_files.size() - left_src_files];
-
-        if (call_component_tmp->pattern_ret_files.find(".") == call_component_tmp->pattern_ret_files.npos)
-            output_files_curr =
-                call_component_tmp->pattern_ret_files + std::to_string(trg.prj.src_files.size() - left_src_files);
-        else
-            output_files_curr = tools_generator::get_file_w_index(call_component_tmp->pattern_ret_files,
-                                                                  trg.prj.src_files.size() - left_src_files);
-
-        for (u32t j = 0; j < template_tmp.name_args.size(); ++j) {
-            current_arg = template_tmp.name_args[j];
-            if (current_arg.find("{") == current_arg.npos) {
-                const auto &extern_arg =
-                    std::find_if(global_extern_args.begin(), global_extern_args.end(),
-                                 [current_arg](const std::pair<std::string, std::string> extern_arg_tmp) {
-                                     return extern_arg_tmp.first == current_arg;
-                                 });
-                if (extern_arg == global_extern_args.end())
-                    throw bwbuilder_excp("[" + template_tmp.name +
-                                             "] The specified external parameter does not exist - " + current_arg,
-                                         "002");
-
-                command += extern_arg->second + " ";
-                continue;
-            }
-            else {
-                if (current_arg.find("}") == current_arg.npos)
-                    throw bwbuilder_excp(
-                        "[" + template_tmp.name + "] Incorrect use of arguments in template - " + current_arg, "002");
-                if (current_arg.find("STR{") == 0) {
-                    current_arg.erase(0, 4);
-                    current_arg.erase(current_arg.find("}"));
+        for (const auto &arg : template_tmp.args) {
+            var::struct_sb::template_command::arg current_arg = arg;
+            if (current_arg.arg_t == var::struct_sb::template_command::arg::type::trgfield &&
+                current_arg.str_arg.find(NAME_FIELD_PROJECT_SRC_FILES) == 0) {
+                std::string mask;
+                u32t it_str = current_arg.str_arg.find(":");
+                if (it_str != current_arg.str_arg.npos) {
+                    mask = current_arg.str_arg;
+                    mask.erase(0, it_str + 1);
                 }
-                else if (current_arg.find("ACP{") == 0) {
-                    current_arg.erase(0, 4);
-                    current_arg.erase(current_arg.find("}"));
 
-                    const auto &it =
-                        find_if(global_internal_args.begin(), global_internal_args.end(),
-                                [current_arg](const std::pair<std::string, std::vector<std::string>> internal_arg) {
-                                    return current_arg == internal_arg.first;
-                                });
-                    if (it == global_internal_args.end())
-                        throw bwbuilder_excp("[" + template_tmp.name +
-                                                 "] The specified internal parameter does not exist - " + current_arg,
-                                             "002");
-                    const auto &it_str = it->first.find(":");
-                    if (it_str == it->first.npos) {
-                        current_arg = "";
-                        for (u32t k = 0; k < it->second.size(); ++k) {
-                            current_arg += it->second[k];
-                            if (k < it->second.size() - 1)
-                                current_arg += " ";
+                if (std::atoll(mask.c_str()) != 0) {
+                    if (std::atoll(mask.c_str()) == 1) {
+                        while (count_uses_input_files < target.prj.src_files.size()) {
+                            if (std::filesystem::last_write_time(target.prj.src_files[count_uses_input_files]) >
+                                std::filesystem::last_write_time(tools_generator::get_name_output_file(
+                                    call_component_tmp->pattern_ret_files, count_uses_input_files, dir_work_endv)))
+                                input_files[template_tmp.name].push_back(target.prj.src_files[count_uses_input_files]);
+                            ++count_uses_input_files;
                         }
-
-                        count_uses_input_files = it->second.size();
                     }
                     else {
-                        current_arg.erase(0, it_str + 1);
-                        std::string mask = current_arg;
-
-                        if (std::atoll(mask.c_str()) != 0) {
-                            if (std::atoll(mask.c_str()) == 1) {
-                                current_arg = input_file_curr;
-                                template_for_ev_files = 1;
-                            }
-                            else {
-                                for (u32t k = 0; k < it->second.size() && k < std::atoll(mask.c_str());
-                                     ++k, ++count_uses_input_files) {
-                                    current_arg += it->second[k];
-                                    if (k < it->second.size() - 1)
-                                        current_arg += " ";
-                                }
-                            }
-                            goto add_current_args_to_cmd;
+                        for (u32t k = 0; k < target.prj.src_files.size() && k < std::atoll(mask.c_str());
+                             ++k, ++count_uses_input_files) {
+                            if (std::filesystem::last_write_time(target.prj.src_files[k]) >
+                                std::filesystem::last_write_time(tools_generator::get_name_output_file(
+                                    call_component_tmp->pattern_ret_files, k, dir_work_endv)))
+                                input_files[template_tmp.name].push_back(target.prj.src_files[k]);
                         }
-                        current_arg = "";
-                        std::vector<std::string> slc_files = bwfile::file_slc_mask(mask, it->second);
-                        for (u32t k = 0; k < slc_files.size(); ++k) {
-                            current_arg += slc_files[k];
-                            if (k < slc_files.size() - 1)
-                                current_arg += " ";
-                        }
-
-                        count_uses_input_files += slc_files.size();
                     }
                 }
-                else if (current_arg.find("FTRS{") == 0) {
-                    current_arg.erase(0, 5);
-                    current_arg.erase(current_arg.find("}"));
+                current_arg.str_arg = "";
 
-                    std::string attribute;
-                    size_t it_str = current_arg.find(":");
-                    if (it_str != current_arg.npos) {
-                        attribute = current_arg;
-                        attribute.erase(0, it_str + 1);
-                        current_arg.erase(it_str, attribute.size() + 1);
-                    }
-
-                    if (current_arg == FEATURE_FIELD_BS_CURRENT_IF && left_src_files != 0)
-                        current_arg = input_file_curr;
-                    else if (current_arg == FEATURE_FIELD_BS_CURRENT_OF) {
-                        if (attribute == "all" || attribute.empty()) {
-                            if (left_src_files < trg.prj.src_files.size() && left_src_files > 0) {
-                                current_arg = output_files_curr;
-                                return_internal_arg.second.push_back(output_files_curr);
-                            }
-                            else {
-                                std::string tmp_output_file_index;
-
-                                current_arg = "";
-                                for (; count_uses_output_pattern_files < count_uses_input_files;
-                                     ++count_uses_output_pattern_files) {
-                                    tmp_output_file_index = tools_generator::get_file_w_index(
-                                        call_component_tmp->pattern_ret_files, count_uses_output_pattern_files);
-
-                                    current_arg += tmp_output_file_index;
-                                    return_internal_arg.second.push_back(tmp_output_file_index);
-
-                                    if (count_uses_output_pattern_files < count_uses_input_files - 1)
-                                        current_arg += " ";
-                                }
-                            }
-                        }
-                        else if (attribute == "1") {
-                            if (left_src_files != 0)
-                                current_arg = output_files_curr;
-                            else
-                                current_arg = tools_generator::get_file_w_index(call_component_tmp->pattern_ret_files,
-                                                                                count_uses_output_pattern_files);
-                            return_internal_arg.second.push_back(output_files_curr);
-                        }
-                        else
-                            throw bwbuilder_excp("[" + template_tmp.name +
-                                                     "] The specified attribute of feature (field) does not "
-                                                     "match the possible ones - " +
-                                                     current_arg + ": attr[" + attribute + "]",
-                                                 "002");
-
-                        goto add_current_args_to_cmd;
-                    }
-                    else
-                        throw bwbuilder_excp("[" + template_tmp.name +
-                                                 "] The specified feature (field) does not exist - " + current_arg,
-                                             "002");
-                    template_for_ev_files = 1;
+                std::vector<std::string> slc_files = bwfile::file_slc_mask(mask, target.prj.src_files);
+                for (u32t i = 0; i < slc_files.size(); ++i) {
+                    if (std::filesystem::last_write_time(slc_files[i]) >
+                        std::filesystem::last_write_time(tools_generator::get_name_output_file(
+                            call_component_tmp->pattern_ret_files, i, dir_work_endv)))
+                        input_files[template_tmp.name].push_back(slc_files[i]);
+                    ++count_uses_input_files;
                 }
-                else if (current_arg.find("TRG{") == 0) {
-                    current_arg.erase(0, 4);
-                    current_arg.erase(current_arg.find("}"));
-                    if (current_arg == NAME_FIELD_TARGET_NAME)
-                        current_arg = trg.name_target;
-                    else if (current_arg == NAME_FIELD_TARGET_LIBS) {
-                        current_arg = "";
-                        for (u32t k = 0; k < trg.target_vec_libs.size(); ++k) {
-                            current_arg += trg.target_vec_libs[k];
-                            if (k < trg.target_vec_libs.size() - 1)
-                                current_arg += " ";
-                        }
-                    }
-                    else if (current_arg == NAME_FIELD_TARGET_TYPE)
-                        current_arg = var::struct_sb::target_t_str(trg.target_t);
-                    else if (current_arg == NAME_FIELD_TARGET_CFG)
-                        current_arg = var::struct_sb::cfg_str(trg.target_cfg);
-                    else if (current_arg == NAME_FIELD_TARGET_VER)
-                        current_arg = trg.version_target.get_str_version();
-                    else if (current_arg == NAME_FIELD_PROJECT_NAME)
-                        current_arg = trg.prj.name_project;
-                    else if (current_arg == NAME_FIELD_PROJECT_VER)
-                        current_arg = trg.prj.version_project.get_str_version();
-                    else if (current_arg == NAME_FIELD_PROJECT_LANG)
-                        current_arg = var::struct_sb::lang_str(trg.prj.lang);
-                    else if (current_arg == NAME_FIELD_PROJECT_PCOMPILER)
-                        current_arg = trg.prj.path_compiler;
-                    else if (current_arg == NAME_FIELD_PROJECT_PLINKER)
-                        current_arg = trg.prj.path_linker;
-                    else if (current_arg == NAME_FIELD_PROJECT_RFCOMPILER)
-                        current_arg = trg.prj.rflags_compiler;
-                    else if (current_arg == NAME_FIELD_PROJECT_RFLINKER)
-                        current_arg = trg.prj.rflags_linker;
-                    else if (current_arg == NAME_FIELD_PROJECT_DFCOMPILER)
-                        current_arg = trg.prj.dflags_compiler;
-                    else if (current_arg == NAME_FIELD_PROJECT_DFLINKER)
-                        current_arg = trg.prj.dflags_linker;
-                    else if (current_arg == NAME_FIELD_PROJECT_STD_C)
-                        current_arg = std::to_string(trg.prj.standart_c);
-                    else if (current_arg == NAME_FIELD_PROJECT_STD_CPP)
-                        current_arg = std::to_string(trg.prj.standart_cpp);
-                    else if (current_arg.find(NAME_FIELD_PROJECT_SRC_FILES) == 0) {
-                        const auto &it_str = current_arg.find(":");
-                        if (it_str != current_arg.npos) {
-                            current_arg.erase(0, it_str + 1);
-                            std::string mask = current_arg;
-
-                            if (std::atoll(mask.c_str()) != 0) {
-                                if (std::atoll(mask.c_str()) == 1) {
-                                    current_arg = input_file_curr;
-                                    template_for_ev_files = 1;
-                                    ++count_uses_input_files;
-                                }
-                                else {
-                                    for (u32t k = 0; k < trg.prj.src_files.size() && k < std::atoll(mask.c_str());
-                                         ++k, ++count_uses_input_files) {
-                                        current_arg += trg.prj.src_files[k];
-                                        if (k < trg.prj.src_files.size() - 1)
-                                            current_arg += " ";
-                                    }
-                                }
-                                goto add_current_args_to_cmd;
-                            }
-                            current_arg = "";
-
-                            std::vector<std::string> slc_files = bwfile::file_slc_mask(mask, trg.prj.src_files);
-                            for (u32t k = 0; k < slc_files.size(); ++k) {
-                                current_arg += slc_files[k];
-                                if (k < slc_files.size() - 1)
-                                    current_arg += " ";
-                            }
-
-                            count_uses_input_files += slc_files.size();
-                        }
-                        else {
-                            current_arg = "";
-                            for (u32t k = 0; k < trg.prj.src_files.size(); ++k) {
-                                current_arg += trg.prj.src_files[k];
-                                if (k < trg.prj.src_files.size() - 1)
-                                    current_arg += " ";
-                            }
-
-                            count_uses_input_files = trg.prj.src_files.size();
-                        }
-                    }
-                    else
-                        throw bwbuilder_excp("[" + template_tmp.name + "] There is no such parameter - " + current_arg,
-                                             "002");
+            }
+            else if (arg.arg_t == var::struct_sb::template_command::arg::type::features &&
+                     arg.str_arg.find(FEATURE_FIELD_BS_CURRENT_IF) == 0) {
+                while (count_uses_input_files < target.prj.src_files.size()) {
+                    if (!std::filesystem::exists(tools_generator::get_name_output_file(
+                            call_component_tmp->pattern_ret_files, count_uses_input_files, dir_work_endv)) ||
+                        std::filesystem::last_write_time(target.prj.src_files[count_uses_input_files]) >
+                            std::filesystem::last_write_time(tools_generator::get_name_output_file(
+                                call_component_tmp->pattern_ret_files, count_uses_input_files, dir_work_endv)))
+                        input_files[template_tmp.name].push_back(target.prj.src_files[count_uses_input_files]);
+                    ++count_uses_input_files;
                 }
-            add_current_args_to_cmd:
-                command += current_arg + " ";
             }
         }
+    }
 
-        assist << "WAS GENERATED COMMAND: " + command;
+    return input_files;
+}
 
-        if (template_for_ev_files)
-            --left_src_files;
+commands bweas::bwgenerator_internal(const var::struct_sb::target_out &trg, bwqueue_templates &templates,
+                                     const std::vector<var::struct_sb::call_component> &ccmp_p,
+                                     std::map<std::string, std::vector<std::string>> input_files,
+                                     std::string dir_work_endv) {
+    commands cmd_s;
+    command current_cmd;
+
+    std::map<std::string, std::vector<std::string>> global_internal_args;
+
+    std::string input_file, output_file;
+
+    u32t used_input_files = 0;
+    u32t used_input_files_in_curr_template = 0;
+    u32t used_output_files = 0;
+
+    bool generate_single_input = 0;
+    bool is_ind_template = 0;
+
+    while (templates.size() || generate_single_input) {
+        auto &current_template = templates[0];
+        const auto &current_ccmp = std::find_if(ccmp_p.begin(), ccmp_p.end(),
+                                                [current_template](const var::struct_sb::call_component &ccmp_tmp) {
+                                                    return ccmp_tmp.name == current_template.name_call_component;
+                                                });
+    generate:
+        if (used_input_files < input_files[current_template.name].size()) {
+            u32t ind_file = 0;
+            for (; ind_file < trg.prj.src_files.size(); ++ind_file)
+                if (input_files[current_template.name][used_input_files] == trg.prj.src_files[ind_file])
+                    break;
+            input_file = input_files[current_template.name][used_input_files];
+            output_file =
+                tools_generator::get_name_output_file(current_ccmp->pattern_ret_files, ind_file, dir_work_endv);
+            ++used_input_files;
+            is_ind_template = 1;
+        }
+        else if (current_template.returnable == var::struct_sb::target_t_str(trg.target_t)) {
+            output_file = tools_generator::get_name_output_file(current_ccmp->pattern_ret_files,
+                                                                used_input_files_in_curr_template++, dir_work_endv);
+            is_ind_template = 1;
+        }
         else {
-            if (templates.size())
-                templates.erase(templates.begin());
-            global_internal_args.push_back(return_internal_arg);
-            return_internal_arg.second.clear();
-            count_uses_output_pattern_files = 0;
+            for (; used_output_files < trg.prj.src_files.size(); ++used_output_files) {
+                if (input_files[current_template.name].size() == 0)
+                    goto init_ofile;
+                for (u32t i = 0; i < input_files[current_template.name].size(); ++i)
+                    if (input_files[current_template.name][i] != trg.prj.src_files[used_output_files])
+                        goto init_ofile;
+            }
+        init_ofile:
+            output_file = tools_generator::get_name_output_file(current_ccmp->pattern_ret_files, used_output_files,
+                                                                dir_work_endv);
+            ++used_output_files;
+        }
+        current_cmd = current_ccmp->name_program + " ";
+
+        for (auto arg : current_template.args) {
+            if (arg.arg_t == var::struct_sb::template_command::arg::type::internal) {
+                const auto &current_internal_args = global_internal_args.find(arg.str_arg);
+                if (current_internal_args == global_internal_args.end())
+                    throw bwgenerator_excp("Parameter in the template(" + current_template.name + ") - " + arg.str_arg,
+                                           "001");
+                arg.str_arg = "";
+                for (const std::string &file : current_internal_args->second)
+                    arg.str_arg += file + " ";
+            }
+            else if (arg.arg_t != var::struct_sb::template_command::arg::type::string) {
+                if (arg.str_arg == FEATURE_FIELD_BS_CURRENT_IF) {
+                    arg.str_arg = input_file;
+                    ++used_input_files_in_curr_template;
+                    generate_single_input = 1;
+                }
+                else if (arg.str_arg.find(FEATURE_FIELD_BS_CURRENT_OF) == 0) {
+                    size_t attr_it = arg.str_arg.find(":");
+                    if (attr_it == arg.str_arg.npos) {
+                        arg.str_arg = "";
+                        for (u32t i = 0; i < used_input_files_in_curr_template; ++i) {
+                            std::string name_file = tools_generator::get_name_output_file(
+                                current_ccmp->pattern_ret_files, i, dir_work_endv);
+                            arg.str_arg += name_file + " ";
+                            global_internal_args[current_template.returnable].push_back(name_file);
+                        }
+                    }
+                    else {
+                        std::string attribute = arg.str_arg;
+                        attribute.erase(0, attr_it + 1);
+                        size_t val_attr = std::atoll(attribute.c_str());
+                        if (val_attr != 0) {
+                            if (val_attr == 1) {
+                                arg.str_arg = output_file;
+                                global_internal_args[current_template.returnable].push_back(arg.str_arg);
+                            }
+                            else {
+                                arg.str_arg = "";
+                                for (u32t i = 0; i < val_attr && i < input_files.size(); ++i) {
+                                    std::string name_file = tools_generator::get_name_output_file(
+                                        current_ccmp->pattern_ret_files, i, dir_work_endv);
+                                    arg.str_arg += name_file + " ";
+                                    global_internal_args[current_template.returnable].push_back(name_file);
+                                }
+                            }
+                        }
+                        else if (attribute == "0")
+                            continue;
+                        else {
+                            std::vector<std::string> files =
+                                bwfile::file_slc_mask(attribute, input_files[current_template.name]);
+                            arg.str_arg = "";
+                            for (const auto &file : files) {
+                                arg.str_arg += file + " ";
+                                global_internal_args[current_template.returnable].push_back(file);
+                            }
+                        }
+                    }
+                }
+                else if (arg.str_arg.find(NAME_FIELD_PROJECT_SRC_FILES) == 0) {
+                    size_t attr_it = arg.str_arg.find(":");
+                    if (attr_it == arg.str_arg.npos) {
+                        arg.str_arg = "";
+                        for (u32t i = 0; i < trg.prj.src_files.size(); ++i) {
+                            arg.str_arg += trg.prj.src_files[i] + " ";
+                            global_internal_args[current_template.returnable].push_back(trg.prj.src_files[i]);
+                        }
+                    }
+                    else {
+                        std::string attribute = arg.str_arg;
+                        attribute.erase(0, attr_it + 1);
+                        size_t val_attr = std::atoll(attribute.c_str());
+                        if (val_attr != 0) {
+                            if (val_attr == 1) {
+                                arg.str_arg = trg.prj.src_files[used_input_files];
+                                global_internal_args[current_template.returnable].push_back(arg.str_arg);
+                            }
+                            else {
+                                arg.str_arg = "";
+                                for (u32t i = 0; i < val_attr && i < trg.prj.src_files.size(); ++i) {
+                                    arg.str_arg += trg.prj.src_files[i] + " ";
+                                    global_internal_args[current_template.returnable].push_back(trg.prj.src_files[i]);
+                                }
+                            }
+                        }
+                        else if (attribute == "0")
+                            continue;
+                        else {
+                            std::vector<std::string> files = bwfile::file_slc_mask(attribute, trg.prj.src_files);
+                            arg.str_arg = "";
+                            for (const auto &file : files) {
+                                arg.str_arg += file + " ";
+                                global_internal_args[current_template.returnable].push_back(file);
+                            }
+                        }
+                    }
+                }
+                else
+                    throw bwgenerator_excp("Parameter in the template(" + current_template.name + ") - " + arg.str_arg,
+                                           "002");
+            }
+            current_cmd += arg.str_arg + " ";
         }
 
-        cmd_s.push_back(command);
-        command.clear();
+        assist << "GENERATED COMMAND: " + current_cmd;
+
+        if (is_ind_template)
+            cmd_s.push_back(current_cmd);
+        current_cmd.clear();
+
+        if (!generate_single_input || used_input_files_in_curr_template == trg.prj.src_files.size()) {
+            generate_single_input = 0;
+            used_input_files_in_curr_template = 0;
+            templates.erase(templates.begin());
+        }
+        else {
+            input_file = "";
+            output_file = "";
+            is_ind_template = 0;
+            goto generate;
+        }
     }
 
     return cmd_s;

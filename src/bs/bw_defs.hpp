@@ -33,7 +33,7 @@ using bwqueue_templates = std::vector<var::struct_sb::template_command>;
 using command = std::string;
 using commands = std::vector<command>;
 
-namespace exception {
+namespace bwexception {
 
 // Exception class for builder only.
 class bwbuilder_excp : public bw_excp::bweas_exception {

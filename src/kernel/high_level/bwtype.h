@@ -1,5 +1,5 @@
-#ifndef TYPE__H_
-#define TYPE__H_
+#ifndef BWTYPE__H_
+#define BWTYPE__H_
 
 #include <cstddef>
 #include <stdio.h>

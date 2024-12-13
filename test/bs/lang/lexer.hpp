@@ -17,7 +17,6 @@ TEST(BW_LEXER, CorrectOutputTokensClassBwLexer){
         ASSERT_EQ(_lexer.get_tokens()[0], token_expr::token(token_expr::token_type::KEYWORD, "if", 1, 1));
     });
 
-
     // Expected - OPEN_BR '(' and 12 tokens
     ASSERT_NO_THROW({
         lexer::lex_an _lexer("if(0, 0, 0, 0, 0)");

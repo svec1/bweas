@@ -1,5 +1,5 @@
-#ifndef _CONF_VAR__H
-#define _CONF_VAR__H
+#ifndef BWCONF_VAR__H
+#define BWCONF_VAR__H
 
 #define DEFAULT_BWEAS_JSON_CONFIG                                                                                      \
     "{ \

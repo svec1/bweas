@@ -1,7 +1,7 @@
+#include "static_linking_func.hpp"
 #include "interpreter.hpp"
 #include "parser.hpp"
 #include "semantic_an.hpp"
-#include "static_linking_func.hpp"
 
 #include <algorithm>
 #include <array>
@@ -162,10 +162,10 @@ void sl_func::set(const std::vector<subexpressions> &sub_expr, var::scope &curr_
                 (void)curr_scope.create_var(sub_expr[0].token_of_subexpr[0].token_val,
                                             std::stoi(sub_expr[1].token_of_subexpr[0].token_val.c_str()));
             else
-                throw semantic_an::rt_semantic_excp(parser::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
-                                                        " Var - [" + sub_expr[0].token_of_subexpr[0].token_val +
-                                                        "] is " + var::type_var_to_str(index_var) + "\n",
-                                                    "003");
+                throw semantic_an::rt_semantic_excp(
+                    parser::utility::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) + " Var - [" +
+                        sub_expr[0].token_of_subexpr[0].token_val + "] is " + var::type_var_to_str(index_var) + "\n",
+                    "003");
         }
         else if (sub_expr[1].subexpr_t == subexpressions::type_subexpr::STRING) {
             if (index_var == 2)
@@ -178,10 +178,10 @@ void sl_func::set(const std::vector<subexpressions> &sub_expr, var::scope &curr_
                 (void)curr_scope.create_var(sub_expr[0].token_of_subexpr[0].token_val,
                                             sub_expr[1].token_of_subexpr[0].token_val);
             else
-                throw semantic_an::rt_semantic_excp(parser::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
-                                                        " Var - [" + sub_expr[0].token_of_subexpr[0].token_val +
-                                                        "] is " + var::type_var_to_str(index_var) + "\n",
-                                                    "003");
+                throw semantic_an::rt_semantic_excp(
+                    parser::utility::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) + " Var - [" +
+                        sub_expr[0].token_of_subexpr[0].token_val + "] is " + var::type_var_to_str(index_var) + "\n",
+                    "003");
         }
     }
     else if (sub_expr.size() > 2) {
@@ -198,15 +198,15 @@ void sl_func::set(const std::vector<subexpressions> &sub_expr, var::scope &curr_
             else if (index_var == 3)
                 curr_scope.get_var_value<std::vector<int>>(sub_expr[0].token_of_subexpr[0].token_val) = vec_int_params;
             else if (index_var == 1)
-                throw semantic_an::rt_semantic_excp(parser::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
-                                                        " Var - [" + sub_expr[0].token_of_subexpr[0].token_val +
-                                                        "] is int\n",
-                                                    "002");
+                throw semantic_an::rt_semantic_excp(
+                    parser::utility::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) + " Var - [" +
+                        sub_expr[0].token_of_subexpr[0].token_val + "] is int\n",
+                    "002");
             else
-                throw semantic_an::rt_semantic_excp(parser::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
-                                                        " Var - [" + sub_expr[0].token_of_subexpr[0].token_val +
-                                                        "] is " + var::type_var_to_str(index_var) + "\n",
-                                                    "003");
+                throw semantic_an::rt_semantic_excp(
+                    parser::utility::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) + " Var - [" +
+                        sub_expr[0].token_of_subexpr[0].token_val + "] is " + var::type_var_to_str(index_var) + "\n",
+                    "003");
         }
         else if (sub_expr[1].subexpr_t == subexpressions::type_subexpr::STRING) {
             std::vector<std::string> vec_str_params;
@@ -222,15 +222,15 @@ void sl_func::set(const std::vector<subexpressions> &sub_expr, var::scope &curr_
                 curr_scope.get_var_value<std::vector<std::string>>(sub_expr[0].token_of_subexpr[0].token_val) =
                     vec_str_params;
             else if (index_var == 2)
-                throw semantic_an::rt_semantic_excp(parser::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
-                                                        " Var - [" + sub_expr[0].token_of_subexpr[0].token_val +
-                                                        "] is string\n",
-                                                    "002");
+                throw semantic_an::rt_semantic_excp(
+                    parser::utility::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) + " Var - [" +
+                        sub_expr[0].token_of_subexpr[0].token_val + "] is string\n",
+                    "002");
             else
-                throw semantic_an::rt_semantic_excp(parser::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
-                                                        " Var - [" + sub_expr[0].token_of_subexpr[0].token_val +
-                                                        "] is " + var::type_var_to_str(index_var) + "\n",
-                                                    "003");
+                throw semantic_an::rt_semantic_excp(
+                    parser::utility::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) + " Var - [" +
+                        sub_expr[0].token_of_subexpr[0].token_val + "] is " + var::type_var_to_str(index_var) + "\n",
+                    "003");
         }
     }
 
@@ -294,7 +294,7 @@ void sl_func::project(const std::vector<subexpressions> &sub_expr, var::scope &c
 void sl_func::executable(const std::vector<subexpressions> &sub_expr, var::scope &curr_scope) {
     if (curr_scope.what_type(sub_expr[2].token_of_subexpr[0].token_val) != 5)
         throw semantic_an::rt_semantic_excp(
-            parser::build_pos_tokenb_str(sub_expr[2].token_of_subexpr[0]) +
+            parser::utility::build_pos_tokenb_str(sub_expr[2].token_of_subexpr[0]) +
                 " Var id of struct(expected project): " + sub_expr[2].token_of_subexpr[0].token_val + "\n",
             "001");
     var::struct_sb::target &trg_ref =
@@ -334,7 +334,7 @@ void sl_func::executable(const std::vector<subexpressions> &sub_expr, var::scope
 void sl_func::link_lib(const std::vector<subexpressions> &sub_expr, var::scope &curr_scope) {
     if (curr_scope.what_type(sub_expr[0].token_of_subexpr[0].token_val) != 6)
         throw interpreter::realtime_excp(
-            parser::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
+            parser::utility::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
                 " Var id of struct(expected target): " + sub_expr[0].token_of_subexpr[0].token_val + "\n",
             "003");
     var::struct_sb::target &trg_ref =
@@ -419,7 +419,7 @@ void sl_func::debug_struct(const std::vector<aef_expr::subexpressions> &sub_expr
 void sl_func::flags_compiler(const std::vector<subexpressions> &sub_expr, var::scope &curr_scope) {
     if (curr_scope.what_type(sub_expr[0].token_of_subexpr[0].token_val) != 5)
         throw interpreter::realtime_excp(
-            parser::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
+            parser::utility::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
                 " Var id of struct(expected project): " + sub_expr[0].token_of_subexpr[0].token_val + "\n",
             "003");
     var::struct_sb::project &prj_ref =
@@ -456,7 +456,7 @@ void sl_func::flags_compiler(const std::vector<subexpressions> &sub_expr, var::s
 void sl_func::flags_linker(const std::vector<subexpressions> &sub_expr, var::scope &curr_scope) {
     if (curr_scope.what_type(sub_expr[0].token_of_subexpr[0].token_val) != 5)
         throw interpreter::realtime_excp(
-            parser::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
+            parser::utility::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
                 " Var id of struct(expected project): " + sub_expr[0].token_of_subexpr[0].token_val + "\n",
             "003");
     var::struct_sb::project &prj_ref =
@@ -491,7 +491,7 @@ void sl_func::flags_linker(const std::vector<subexpressions> &sub_expr, var::sco
 void sl_func::path_compiler(const std::vector<subexpressions> &sub_expr, var::scope &curr_scope) {
     if (curr_scope.what_type(sub_expr[0].token_of_subexpr[0].token_val) != 5)
         throw interpreter::realtime_excp(
-            parser::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
+            parser::utility::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
                 " Var id of struct(expected project): " + sub_expr[0].token_of_subexpr[0].token_val + "\n",
             "003");
     var::struct_sb::project &prj_ref =
@@ -508,7 +508,7 @@ void sl_func::path_compiler(const std::vector<subexpressions> &sub_expr, var::sc
 void sl_func::path_linker(const std::vector<subexpressions> &sub_expr, var::scope &curr_scope) {
     if (curr_scope.what_type(sub_expr[0].token_of_subexpr[0].token_val) != 5)
         throw interpreter::realtime_excp(
-            parser::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
+            parser::utility::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
                 " Var id of struct(expected project): " + sub_expr[0].token_of_subexpr[0].token_val + "\n",
             "003");
     var::struct_sb::project &prj_ref =
@@ -525,7 +525,7 @@ void sl_func::path_linker(const std::vector<subexpressions> &sub_expr, var::scop
 void sl_func::standart_c(const std::vector<subexpressions> &sub_expr, var::scope &curr_scope) {
     if (curr_scope.what_type(sub_expr[0].token_of_subexpr[0].token_val) != 5)
         throw interpreter::realtime_excp(
-            parser::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
+            parser::utility::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
                 " Var id of struct(expected project): " + sub_expr[0].token_of_subexpr[0].token_val + "\n",
             "003");
     var::struct_sb::project &prj_ref =
@@ -541,7 +541,7 @@ void sl_func::standart_c(const std::vector<subexpressions> &sub_expr, var::scope
 void sl_func::standart_cpp(const std::vector<subexpressions> &sub_expr, var::scope &curr_scope) {
     if (curr_scope.what_type(sub_expr[0].token_of_subexpr[0].token_val) != 5)
         throw interpreter::realtime_excp(
-            parser::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
+            parser::utility::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
                 " Var id of struct(expected project): " + sub_expr[0].token_of_subexpr[0].token_val + "\n",
             "003");
     var::struct_sb::project &prj_ref =
@@ -557,7 +557,7 @@ void sl_func::standart_cpp(const std::vector<subexpressions> &sub_expr, var::sco
 void sl_func::lang(const std::vector<subexpressions> &sub_expr, var::scope &curr_scope) {
     if (curr_scope.what_type(sub_expr[0].token_of_subexpr[0].token_val) != 5)
         throw interpreter::realtime_excp(
-            parser::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
+            parser::utility::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
                 " Var id of struct(expected project): " + sub_expr[0].token_of_subexpr[0].token_val + "\n",
             "003");
     var::struct_sb::project &prj_ref =
@@ -588,6 +588,7 @@ void sl_func::create_templates(const std::vector<aef_expr::subexpressions> &sub_
         NAME_FIELD_PROJECT_STD_CPP,    NAME_FIELD_PROJECT_SRC_FILES};
 
     var::struct_sb::template_command tcmd_tmp;
+    var::struct_sb::template_command::arg arg_tmp;
     tcmd_tmp.name = sub_expr[0].token_of_subexpr[0].token_val;
 
     bool defined_template = 0;
@@ -642,23 +643,25 @@ void sl_func::create_templates(const std::vector<aef_expr::subexpressions> &sub_
 
         if (sub_expr[1].token_of_subexpr[0].token_val[i] == '(') {
             if (defined_template)
-                throw semantic_an::rt_semantic_excp(parser::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
-                                                        " Unexpected operator of parameter enum of template\n",
-                                                    "004");
+                throw semantic_an::rt_semantic_excp(
+                    parser::utility::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
+                        " Unexpected operator of parameter enum of template\n",
+                    "004");
             else if (tmp_param.empty())
-                throw semantic_an::rt_semantic_excp(parser::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
-                                                        " The name of the call component is empty: " + tmp_param + "\n",
-                                                    "004");
+                throw semantic_an::rt_semantic_excp(
+                    parser::utility::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
+                        " The name of the call component is empty: " + tmp_param + "\n",
+                    "004");
             else if (!tcmd_tmp.name_call_component.empty())
                 throw semantic_an::rt_semantic_excp(
-                    parser::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
+                    parser::utility::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
                         " The name of the call component that already exists: " + tmp_param + "\n",
                     "004");
             else if (curr_scope.what_type(tmp_param) != 8)
-                throw semantic_an::rt_semantic_excp(parser::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
-                                                        " The specified call component does not exist: " + tmp_param +
-                                                        "\n",
-                                                    "004");
+                throw semantic_an::rt_semantic_excp(
+                    parser::utility::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
+                        " The specified call component does not exist: " + tmp_param + "\n",
+                    "004");
             tcmd_tmp.name_call_component = tmp_param;
             tmp_param.clear();
 
@@ -669,12 +672,13 @@ void sl_func::create_templates(const std::vector<aef_expr::subexpressions> &sub_
         }
         else if (sub_expr[1].token_of_subexpr[0].token_val[i] == ')') {
             if (!op_close_acp_param)
-                throw semantic_an::rt_semantic_excp(parser::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
-                                                        " Unexpected operator - \')\': " + tmp_param + "\n",
-                                                    "004");
+                throw semantic_an::rt_semantic_excp(
+                    parser::utility::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
+                        " Unexpected operator - \')\': " + tmp_param + "\n",
+                    "004");
             else if (tmp_param.empty())
                 throw semantic_an::rt_semantic_excp(
-                    parser::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
+                    parser::utility::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
                         " The name of the parameters of call component is empty: " + tmp_param + "\n",
                     "004");
             else if (tmp_param == "NULL")
@@ -682,7 +686,7 @@ void sl_func::create_templates(const std::vector<aef_expr::subexpressions> &sub_
             else if (find(tcmd_tmp.name_accept_params.begin(), tcmd_tmp.name_accept_params.end(), tmp_param) !=
                      tcmd_tmp.name_accept_params.end())
                 throw semantic_an::rt_semantic_excp(
-                    parser::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
+                    parser::utility::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
                         " The parameter was already specified in the internal parameters[" + tmp_param +
                         "]: " + tmp_param + "\n",
                     "004");
@@ -700,14 +704,16 @@ void sl_func::create_templates(const std::vector<aef_expr::subexpressions> &sub_
         }
         else if (sub_expr[1].token_of_subexpr[0].token_val[i] == '-') {
             if (!op_minus_and_next_arrow)
-                throw semantic_an::rt_semantic_excp(parser::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
-                                                        " Unexpected operator - \'-\': " + tmp_param + "\n",
-                                                    "004");
+                throw semantic_an::rt_semantic_excp(
+                    parser::utility::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
+                        " Unexpected operator - \'-\': " + tmp_param + "\n",
+                    "004");
             else if (i == sub_expr[1].token_of_subexpr[0].token_val.size() - 1 ||
                      sub_expr[1].token_of_subexpr[0].token_val[i + 1] != '>')
-                throw semantic_an::rt_semantic_excp(parser::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
-                                                        " Unexpected operator - \'-\': " + tmp_param + "\n",
-                                                    "004");
+                throw semantic_an::rt_semantic_excp(
+                    parser::utility::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
+                        " Unexpected operator - \'-\': " + tmp_param + "\n",
+                    "004");
 
             colon = 1;
             op_minus_and_next_arrow = 0;
@@ -719,12 +725,13 @@ void sl_func::create_templates(const std::vector<aef_expr::subexpressions> &sub_
             if (op_quote || op_target_hand_field)
                 goto curr_sym;
             if (!colon)
-                throw semantic_an::rt_semantic_excp(parser::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
-                                                        " Unexpected operator - \':\': " + tmp_param + "\n",
-                                                    "004");
+                throw semantic_an::rt_semantic_excp(
+                    parser::utility::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
+                        " Unexpected operator - \':\': " + tmp_param + "\n",
+                    "004");
             else if (tmp_param.empty())
                 throw semantic_an::rt_semantic_excp(
-                    parser::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
+                    parser::utility::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
                         " The name of the returned value of call component is empty: " + tmp_param + "\n",
                     "004");
 
@@ -745,10 +752,10 @@ void sl_func::create_templates(const std::vector<aef_expr::subexpressions> &sub_
                 goto curr_sym;
             }
             else if (sub_expr[1].token_of_subexpr[0].token_val[i] != '<')
-                throw semantic_an::rt_semantic_excp(parser::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
-                                                        " The enumeration of parameters is expected: " + tmp_param +
-                                                        "\n",
-                                                    "004");
+                throw semantic_an::rt_semantic_excp(
+                    parser::utility::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
+                        " The enumeration of parameters is expected: " + tmp_param + "\n",
+                    "004");
 
             beg_param = 0;
             end_param = 1;
@@ -763,7 +770,7 @@ void sl_func::create_templates(const std::vector<aef_expr::subexpressions> &sub_
 
             if (used_internal_param || op_quote || op_target_hand_field)
                 throw semantic_an::rt_semantic_excp(
-                    parser::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
+                    parser::utility::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
                         " The construction of using internal arguments, just string and handle to field of target "
                         "must comply with this structure - {OPEN_OPERATOR}SOMETHING{CLOSE_OPERATOR}: " +
                         tmp_param + "\n",
@@ -771,20 +778,19 @@ void sl_func::create_templates(const std::vector<aef_expr::subexpressions> &sub_
             else if ((!was_close_used_internal_param && !was_close_quote && !was_close_op_target_hand) &&
                      (curr_scope.what_type(tmp_param) != 2 ||
                       curr_scope.what_type(curr_scope.get_var_value<std::string>(tmp_param)) != 2))
-                throw semantic_an::rt_semantic_excp(parser::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
-                                                        " Template argument does not exist externally[" + tmp_param +
-                                                        "]" + "\n",
-                                                    "004");
+                throw semantic_an::rt_semantic_excp(
+                    parser::utility::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
+                        " Template argument does not exist externally[" + tmp_param + "]" + "\n",
+                    "004");
             else if (was_close_used_internal_param &&
                      find(tcmd_tmp.name_accept_params.begin(), tcmd_tmp.name_accept_params.end(), tmp_param) ==
                          tcmd_tmp.name_accept_params.end())
-                throw semantic_an::rt_semantic_excp(parser::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
-                                                        " Template argument does not exist internally[" + tmp_param +
-                                                        "]" + "\n",
-                                                    "004");
+                throw semantic_an::rt_semantic_excp(
+                    parser::utility::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
+                        " Template argument does not exist internally[" + tmp_param + "]" + "\n",
+                    "004");
             else if (was_close_quote) {
-                tmp_param = "STR{" + tmp_param + "}";
-
+                arg_tmp.arg_t = var::struct_sb::template_command::arg::type::string;
                 was_close_quote = 0;
             }
             else if (was_close_op_target_hand) {
@@ -797,27 +803,27 @@ void sl_func::create_templates(const std::vector<aef_expr::subexpressions> &sub_
                             name_field_target.end())
                             goto proc_hand_target_field;
                     }
-                    throw semantic_an::rt_semantic_excp(parser::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
-                                                            "Field does not exist in target structure[" + tmp_param +
-                                                            "]" + "\n",
-                                                        "004");
+                    throw semantic_an::rt_semantic_excp(
+                        parser::utility::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
+                            "Field does not exist in target structure[" + tmp_param + "]" + "\n",
+                        "004");
                 }
             proc_hand_target_field:
-
-                tmp_param = "TRG{" + tmp_param + "}";
-
+                arg_tmp.arg_t = var::struct_sb::template_command::arg::type::trgfield;
                 was_close_op_target_hand = 0;
             }
             else if (was_close_used_internal_param) {
-                tmp_param = "ACP{" + tmp_param + "}";
-
+                arg_tmp.arg_t = var::struct_sb::template_command::arg::type::internal;
                 was_close_used_internal_param = 0;
             }
+            else
+                arg_tmp.arg_t = var::struct_sb::template_command::arg::type::extglobal;
+            arg_tmp.str_arg = tmp_param;
 
             if (tmp_param.empty())
                 continue;
 
-            tcmd_tmp.name_args.push_back(tmp_param);
+            tcmd_tmp.args.push_back(arg_tmp);
 
         next_arg:
             tmp_param.clear();
@@ -829,12 +835,12 @@ void sl_func::create_templates(const std::vector<aef_expr::subexpressions> &sub_
         else if (end_param && sub_expr[1].token_of_subexpr[0].token_val[i] == '\'') {
             if ((!tmp_param.empty() || !end_param) && !op_quote)
                 throw semantic_an::rt_semantic_excp(
-                    parser::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
+                    parser::utility::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
                         " The symbol - \' must be after the beginning of the argument: " + tmp_param + "\n",
                     "004");
             else if (!end_param && op_quote)
                 throw semantic_an::rt_semantic_excp(
-                    parser::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
+                    parser::utility::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
                         " The symbol - \' must be at end of the argument: " + tmp_param + "\n",
                     "004");
 
@@ -850,7 +856,7 @@ void sl_func::create_templates(const std::vector<aef_expr::subexpressions> &sub_
         else if (end_param && sub_expr[1].token_of_subexpr[0].token_val[i] == '[') {
             if (!tmp_param.empty() || !end_param || op_target_hand_field)
                 throw semantic_an::rt_semantic_excp(
-                    parser::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
+                    parser::utility::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
                         " The symbol - \'[\' must be after the beginning of the argument: " + tmp_param + "\n",
                     "004");
 
@@ -861,7 +867,7 @@ void sl_func::create_templates(const std::vector<aef_expr::subexpressions> &sub_
         else if (end_param && sub_expr[1].token_of_subexpr[0].token_val[i] == ']') {
             if (!end_param)
                 throw semantic_an::rt_semantic_excp(
-                    parser::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
+                    parser::utility::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
                         " The symbol - \']\' must be at end of the argument: " + tmp_param + "\n",
                     "004");
 
@@ -873,7 +879,7 @@ void sl_func::create_templates(const std::vector<aef_expr::subexpressions> &sub_
         else if (end_param && sub_expr[1].token_of_subexpr[0].token_val[i] == '{') {
             if (!tmp_param.empty() || !end_param)
                 throw semantic_an::rt_semantic_excp(
-                    parser::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
+                    parser::utility::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
                         " The symbol - \'}\' must be after the beginning of the argument: " + tmp_param + "\n",
                     "004");
 
@@ -884,7 +890,7 @@ void sl_func::create_templates(const std::vector<aef_expr::subexpressions> &sub_
         else if (end_param && sub_expr[1].token_of_subexpr[0].token_val[i] == '}') {
             if (!end_param)
                 throw semantic_an::rt_semantic_excp(
-                    parser::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
+                    parser::utility::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
                         " The symbol - \'}\' must be at the end of the argument: " + tmp_param + "\n",
                     "004");
 
@@ -896,7 +902,7 @@ void sl_func::create_templates(const std::vector<aef_expr::subexpressions> &sub_
         else if (op_close_acp_param && sub_expr[1].token_of_subexpr[0].token_val[i] == ',') {
             if (tmp_param == "NULL")
                 throw semantic_an::rt_semantic_excp(
-                    parser::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
+                    parser::utility::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
                         " If the parameter is zero, there should be no other parameters: " + tmp_param + "\n",
                     "004");
 
@@ -906,11 +912,14 @@ void sl_func::create_templates(const std::vector<aef_expr::subexpressions> &sub_
         }
         else if (op_comma) {
             if (sub_expr[1].token_of_subexpr[0].token_val[i] != ',' && !is_name_features_bs)
-                throw semantic_an::rt_semantic_excp(parser::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
-                                                        " The operator is expected - \',\': " + tmp_param + "\n",
-                                                    "004");
+                throw semantic_an::rt_semantic_excp(
+                    parser::utility::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
+                        " The operator is expected - \',\': " + tmp_param + "\n",
+                    "004");
             else if (sub_expr[1].token_of_subexpr[0].token_val[i] == ',' && is_name_features_bs) {
-                tcmd_tmp.name_args.push_back("FTRS{" + tmp_param + "}");
+                arg_tmp.arg_t = var::struct_sb::template_command::arg::type::features;
+                arg_tmp.str_arg = tmp_param;
+                tcmd_tmp.args.push_back(arg_tmp);
                 tmp_param.clear();
 
                 beg_param = 1;
@@ -923,7 +932,7 @@ void sl_func::create_templates(const std::vector<aef_expr::subexpressions> &sub_
                 if (!isalpha(sub_expr[1].token_of_subexpr[0].token_val[i]) &&
                     sub_expr[1].token_of_subexpr[0].token_val[i] != '_')
                     throw semantic_an::rt_semantic_excp(
-                        parser::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) + " The symbol - \'" +
+                        parser::utility::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) + " The symbol - \'" +
                             sub_expr[1].token_of_subexpr[0].token_val[i] + "\' was not expected: " + tmp_param + "\n",
                         "004");
                 goto curr_sym;
@@ -937,37 +946,39 @@ void sl_func::create_templates(const std::vector<aef_expr::subexpressions> &sub_
 
         if (op_minus_and_next_arrow)
             throw semantic_an::rt_semantic_excp(
-                parser::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
+                parser::utility::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
                     " The operator is expected - \'->\': " + sub_expr[1].token_of_subexpr[0].token_val + "\n",
                 "004");
         else if (was_sep) {
             if (beg_param)
-                throw semantic_an::rt_semantic_excp(parser::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
-                                                        " Pattern parameter start operator expected: " + tmp_param +
-                                                        "\n ",
-                                                    "004");
+                throw semantic_an::rt_semantic_excp(
+                    parser::utility::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
+                        " Pattern parameter start operator expected: " + tmp_param + "\n ",
+                    "004");
             else if (end_param)
-                throw semantic_an::rt_semantic_excp(parser::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
-                                                        " Pattern parameter end operator expected: " + tmp_param +
-                                                        "\n ",
-                                                    "004");
+                throw semantic_an::rt_semantic_excp(
+                    parser::utility::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
+                        " Pattern parameter end operator expected: " + tmp_param + "\n ",
+                    "004");
             else if (is_name_features_bs || op_comma)
-                throw semantic_an::rt_semantic_excp(parser::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
-                                                        " Expected end of parameter(comma operator): " + tmp_param +
-                                                        "\n ",
-                                                    "004");
+                throw semantic_an::rt_semantic_excp(
+                    parser::utility::build_pos_tokenb_str(sub_expr[1].token_of_subexpr[0]) +
+                        " Expected end of parameter(comma operator): " + tmp_param + "\n ",
+                    "004");
         }
         tmp_param += sub_expr[1].token_of_subexpr[0].token_val[i];
     }
 
     if (beg_param)
         throw semantic_an::rt_semantic_excp(
-            parser::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
+            parser::utility::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
                 " Template argument expected: " + sub_expr[1].token_of_subexpr[0].token_val + "\n",
             "004");
-    else if (is_name_features_bs)
-        tcmd_tmp.name_args.push_back("FTRS{" + tmp_param + "}");
-
+    else if (is_name_features_bs) {
+        arg_tmp.arg_t = var::struct_sb::template_command::arg::type::features;
+        arg_tmp.str_arg = tmp_param;
+        tcmd_tmp.args.push_back(arg_tmp);
+    }
     const auto &vec_templates_cmd = curr_scope.get_vector_variables_t<var::struct_sb::template_command>();
 
     for (const std::string &acp_param : tcmd_tmp.name_accept_params) {
@@ -981,7 +992,7 @@ void sl_func::create_templates(const std::vector<aef_expr::subexpressions> &sub_
 
         if (!find)
             throw semantic_an::rt_semantic_excp(
-                parser::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
+                parser::utility::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
                     " there is no command template that returns such a value: " + acp_param + "\n",
                 "004");
     }
@@ -1001,7 +1012,7 @@ void sl_func::create_call_component(const std::vector<aef_expr::subexpressions> 
 void sl_func::use_templates(const std::vector<subexpressions> &sub_expr, var::scope &curr_scope) {
     if (curr_scope.what_type(sub_expr[0].token_of_subexpr[0].token_val) != 5)
         throw interpreter::realtime_excp(
-            parser::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
+            parser::utility::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
                 " Var id of struct(expected project): " + sub_expr[0].token_of_subexpr[0].token_val + "\n",
             "003");
     var::struct_sb::project &prj_ref =
@@ -1009,7 +1020,7 @@ void sl_func::use_templates(const std::vector<subexpressions> &sub_expr, var::sc
     for (u32t i = 1; i < sub_expr.size(); ++i) {
         if (curr_scope.what_type(sub_expr[i].token_of_subexpr[0].token_val) != 7)
             throw interpreter::realtime_excp(
-                parser::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
+                parser::utility::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
                     " This template does not exist: " + sub_expr[i].token_of_subexpr[0].token_val + "\n",
                 "003");
         prj_ref.vec_templates.push_back(sub_expr[i].token_of_subexpr[0].token_val);
@@ -1027,7 +1038,7 @@ void sl_func::use_templates(const std::vector<subexpressions> &sub_expr, var::sc
 void sl_func::use_it_template(const std::vector<subexpressions> &sub_expr, var::scope &curr_scope) {
     if (curr_scope.what_type(sub_expr[0].token_of_subexpr[0].token_val) != 5)
         throw interpreter::realtime_excp(
-            parser::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
+            parser::utility::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
                 " Var id of struct(expected project): " + sub_expr[0].token_of_subexpr[0].token_val + "\n",
             "003");
 

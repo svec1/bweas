@@ -224,6 +224,20 @@ class lua {
     friend struct symbol;
 
   public:
+    template <typename Key, typename Value> static std::map<Key, Value> to_map(table<Key, Value> _table) {
+        std::map<Key, Value> _map;
+        for (const auto &it : _table)
+            _map[it.first] = it.second;
+        return _map;
+    }
+    template <typename Key, typename Value> static table<Key, Value> to_table(std::map<Key, Value> _map) {
+        table<Key, Value> _table;
+        for (const auto &it : _map)
+            _table[it.first] = it.second;
+        return _table;
+    }
+
+  public:
     // Safely initializes Lua state
     void create(std::string src) {
         std::lock_guard<std::mutex> guard(lmutex);

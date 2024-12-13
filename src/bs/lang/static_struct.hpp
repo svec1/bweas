@@ -2,9 +2,8 @@
 #define _STATIC_STRUCT__H
 
 #include "../../kernel/high_level/bwtype.h"
-#include "../conf_var.hpp"
+#include "../bwconf_var.hpp"
 
-#include <any>
 #include <memory>
 #include <string>
 #include <vector>
@@ -184,7 +183,8 @@ struct version {
         return 0;
     }
     bool operator<(const version &ver2) {
-        if (major < ver2.major || minor < ver2.minor || patch < ver2.patch)
+        if (major < ver2.major || (major <= ver2.major && minor < ver2.minor) ||
+            (major <= ver2.major && minor <= ver2.minor && patch < ver2.patch))
             return 1;
         return 0;
     }
@@ -253,13 +253,30 @@ struct target_out {
 };
 
 struct template_command {
+    struct arg {
+        enum class type {
+            extglobal = 0,
+            trgfield,
+            string,
+            internal,
+            features
+        };
+
+        arg() = default;
+        arg(const arg&) = default;
+        arg(std::string _arg, type _arg_t) : str_arg(_arg), arg_t(_arg_t) {
+        }
+
+        std::string str_arg;
+        type arg_t;
+    };
     std::string name;
 
     std::string name_call_component;
     std::vector<std::string> name_accept_params;
     std::string returnable;
 
-    std::vector<std::string> name_args;
+    std::vector<arg> args;
 };
 
 struct call_component {

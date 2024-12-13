@@ -21,12 +21,20 @@ static inline bwlua::lua::table<std::string, std::any> conv_to_table(const var::
         {PRJ_VAR_NAME_SRC_FILES, prj.src_files},    {PRJ_VAR_NAME_UTEMPLATES, prj.vec_templates}};
 }
 
+static inline bwlua::lua::array<bwlua::lua::array<std::any>> conv_to_table(
+    const std::vector<var::struct_sb::template_command::arg> &args) {
+    bwlua::lua::array<bwlua::lua::array<std::any>> vec_args;
+    for (const auto &arg : args)
+        vec_args.emplace_back(bwlua::lua::array<std::any>{arg.str_arg, arg.arg_t});
+    return vec_args;
+}
+
 static inline bwlua::lua::table<std::string, std::any> conv_to_table(const var::struct_sb::template_command &tmp_c) {
     return bwlua::lua::table<std::string, std::any>{
         {NAME_FIELD_TEMPLATE_COMMAND_NAME, tmp_c.name},
         {NAME_FIELD_TEMPLATE_COMMAND_NAME_CCMP, tmp_c.name_call_component},
         {NAME_FIELD_TEMPLATE_COMMAND_NAME_ACCEPTS_ARGS, tmp_c.name_accept_params},
-        {NAME_FIELD_TEMPLATE_COMMAND_NAME_ARGS, tmp_c.name_args},
+        {NAME_FIELD_TEMPLATE_COMMAND_NAME_ARGS, conv_to_table(tmp_c.args)},
         {NAME_FIELD_TEMPLATE_COMMAND_RET, tmp_c.returnable}};
 }
 

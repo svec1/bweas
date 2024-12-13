@@ -1,10 +1,10 @@
 #include "hook_winapi.hpp"
 #include <stdlib.h>
 
-#include <detours.h>
+#include <detours/detours.h>
 
-BOOL HOOK_PROCCES{0};
-BOOL WAS_HOOK{0};
+static BOOL HOOK_PROCCES{0};
+static BOOL WAS_HOOK{0};
 
 // List for success hook - real function of WinAPI
 //   - CreateProcessW, CreateProcessA

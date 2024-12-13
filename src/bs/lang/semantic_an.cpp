@@ -5,6 +5,7 @@
 #include <algorithm>
 
 using namespace parser;
+using namespace parser::utility;
 using namespace aef_expr;
 using namespace semantic_an;
 
@@ -37,22 +38,47 @@ semantic_analyzer::semantic_analyzer() {
         assist.add_err("SMT-RT002", "The number of arguments has been exceeded");
         assist.add_err("SMT-RT003", "The type of the identifier does not match the types of parameters");
         assist.add_err("SMT-RT004", "Internal error of the declared function");
+
+        add_standart_function();
     }
 }
 
-void semantic_analyzer::add_func_flink(std::string name_token_func,
-                                       void (*func_ref)(const std::vector<subexpressions> &, var::scope &curr_scope),
-                                       std::vector<params> expected_args) {
+void semantic_analyzer::add_standart_function() {
+    add_func_flink("if", NULL, {params::LNUM_OR_ID_VAR});
+    add_func_flink("else", NULL, {});
+    add_func_flink("endif", NULL, {});
 
-    notion_func nfunc;
-    nfunc.func_ref = func_ref;
-    nfunc.expected_args = expected_args;
+    add_func_flink("set", sl_func::set,
+                   {params::NCHECK_VAR_ID, params::ANY_VALUE_WITHOUT_FUTUREID_NEXT, params::NEXT_TOO});
+    add_func_flink("project", sl_func::project,
+                   {params::FUTURE_VAR_ID, params::LNUM_OR_ID_VAR, params::LSTR_OR_ID_VAR, params::NEXT_TOO});
+    add_func_flink("executable", sl_func::executable,
+                   {params::FUTURE_VAR_ID, params::LNUM_OR_ID_VAR, params::VAR_STRUCT_ID});
 
-    defining_call_func(name_token_func, nfunc);
+    add_func_flink("link_lib", sl_func::link_lib, {params::VAR_STRUCT_ID, params::LSTR_OR_ID_VAR, params::NEXT_TOO});
+    add_func_flink("exp_data", sl_func::exp_data, {params::LSTR_OR_ID_VAR});
+    add_func_flink("cmd", sl_func::cmd, {params::LNUM_OR_ID_VAR, params::LSTR_OR_ID_VAR});
+    add_func_flink("debug", sl_func::debug, {params::LSTR_OR_ID_VAR, params::NEXT_TOO});
+    add_func_flink("debug_struct", sl_func::debug_struct, {params::VAR_STRUCT_ID});
 
-    std::pair<std::string, notion_func> n_link_func_spec = {name_token_func, nfunc};
+    add_func_flink("flags_compiler", sl_func::flags_compiler,
+                   {params::VAR_STRUCT_ID, params::LNUM_OR_ID_VAR, params::LSTR_OR_ID_VAR, params::NEXT_TOO});
+    add_func_flink("flags_linker", sl_func::flags_linker,
+                   {params::VAR_STRUCT_ID, params::LNUM_OR_ID_VAR, params::LSTR_OR_ID_VAR, params::NEXT_TOO});
 
-    notion_all_func.insert(n_link_func_spec);
+    add_func_flink("path_compiler", sl_func::path_compiler, {params::VAR_STRUCT_ID, params::LSTR_OR_ID_VAR});
+    add_func_flink("path_linker", sl_func::path_linker, {params::VAR_STRUCT_ID, params::LSTR_OR_ID_VAR});
+    add_func_flink("standart_c", sl_func::standart_c, {params::VAR_STRUCT_ID, params::LNUM_OR_ID_VAR});
+    add_func_flink("standart_cpp", sl_func::standart_cpp, {params::VAR_STRUCT_ID, params::LNUM_OR_ID_VAR});
+    add_func_flink("lang", sl_func::lang, {params::VAR_STRUCT_ID, params::LNUM_OR_ID_VAR});
+
+    add_func_flink("create_templates", sl_func::create_templates, {params::FUTURE_VAR_ID, params::LSTR_OR_ID_VAR});
+    add_func_flink("create_call_component", sl_func::create_call_component,
+                   {params::FUTURE_VAR_ID, params::LSTR_OR_ID_VAR, params::LSTR_OR_ID_VAR});
+    add_func_flink("add_param_template", sl_func::add_param_template, {params::FUTURE_VAR_ID, params::VAR_ID});
+    add_func_flink("use_templates", sl_func::use_templates,
+                   {params::VAR_STRUCT_ID, params::LSTR_OR_ID_VAR, params::NEXT_TOO});
+    add_func_flink("use_it_template", sl_func::use_it_template, {params::VAR_STRUCT_ID, params::LNUM_OR_ID_VAR});
 }
 
 void semantic_analyzer::analysis(abstract_expr_func &expr_s, var::scope &global_scope) {
@@ -70,87 +96,32 @@ void semantic_analyzer::append_external_name_func_w_smt(const std::vector<std::s
     }
 }
 
-void semantic_analyzer::smt_zero_pass(const abstract_expr_func &expr_s) {
+void semantic_analyzer::add_func_flink(std::string name_token_func,
+                                       void (*func_ref)(const std::vector<subexpressions> &, var::scope &curr_scope),
+                                       std::vector<params> expected_args) {
     notion_func nfunc;
+    nfunc.func_ref = func_ref;
+    nfunc.expected_args = expected_args;
+
+    defining_call_func(name_token_func, nfunc);
+
+    std::pair<std::string, notion_func> n_link_func_spec = {name_token_func, nfunc};
+
+    notion_all_func.insert(n_link_func_spec);
+}
+
+void semantic_analyzer::smt_zero_pass(const abstract_expr_func &expr_s) {
     for (u32t i = 0; i < expr_s.size(); ++i) {
         if (notion_all_func.find(expr_s[i].expr_func.func_t.token_val) != notion_all_func.end())
             continue;
-        if (expr_s[i].expr_func.func_t.token_t == token_expr::token_type::KEYWORD) {
-            if (expr_s[i].expr_func.func_t.token_val == STR_KEYWORD_IF)
-                add_func_flink(expr_s[i].expr_func.func_t.token_val, NULL, {params::LNUM_OR_ID_VAR});
-            else if (expr_s[i].expr_func.func_t.token_val == STR_KEYWORD_ELSE)
-                add_func_flink(expr_s[i].expr_func.func_t.token_val, NULL, {});
-            else if (expr_s[i].expr_func.func_t.token_val == STR_KEYWORD_ENDIF)
-                add_func_flink(expr_s[i].expr_func.func_t.token_val, NULL, {});
+        if (notion_external_func.find(expr_s[i].expr_func.func_t.token_val) != notion_external_func.end()) {
+            std::pair<std::string, notion_func> n_link_func_spec = {
+                expr_s[i].expr_func.func_t.token_val, notion_external_func[expr_s[i].expr_func.func_t.token_val]};
+            defining_call_func(n_link_func_spec.first, n_link_func_spec.second);
+            notion_all_func.insert(n_link_func_spec);
         }
-        else if (expr_s[i].expr_func.func_t.token_val == "set")
-            add_func_flink(expr_s[i].expr_func.func_t.token_val, sl_func::set,
-                           {params::NCHECK_VAR_ID, params::ANY_VALUE_WITHOUT_FUTUREID_NEXT, params::NEXT_TOO});
-        else if (expr_s[i].expr_func.func_t.token_val == "project")
-            add_func_flink(expr_s[i].expr_func.func_t.token_val, sl_func::project,
-                           {params::FUTURE_VAR_ID, params::LNUM_OR_ID_VAR, params::LSTR_OR_ID_VAR, params::NEXT_TOO});
-        else if (expr_s[i].expr_func.func_t.token_val == "executable")
-            add_func_flink(expr_s[i].expr_func.func_t.token_val, sl_func::executable,
-                           {params::FUTURE_VAR_ID, params::LNUM_OR_ID_VAR, params::VAR_STRUCT_ID});
-        else if (expr_s[i].expr_func.func_t.token_val == "link_lib")
-            add_func_flink(expr_s[i].expr_func.func_t.token_val, sl_func::link_lib,
-                           {params::VAR_STRUCT_ID, params::LSTR_OR_ID_VAR, params::NEXT_TOO});
-        else if (expr_s[i].expr_func.func_t.token_val == "exp_data")
-            add_func_flink(expr_s[i].expr_func.func_t.token_val, sl_func::exp_data, {params::LSTR_OR_ID_VAR});
-        else if (expr_s[i].expr_func.func_t.token_val == "cmd")
-            add_func_flink(expr_s[i].expr_func.func_t.token_val, sl_func::cmd,
-                           {params::LNUM_OR_ID_VAR, params::LSTR_OR_ID_VAR});
-        else if (expr_s[i].expr_func.func_t.token_val == "debug")
-            add_func_flink(expr_s[i].expr_func.func_t.token_val, sl_func::debug,
-                           {params::LSTR_OR_ID_VAR, params::NEXT_TOO});
-        else if (expr_s[i].expr_func.func_t.token_val == "debug_struct")
-            add_func_flink(expr_s[i].expr_func.func_t.token_val, sl_func::debug_struct, {params::VAR_STRUCT_ID});
-        else if (expr_s[i].expr_func.func_t.token_val == "flags_compiler")
-            add_func_flink(expr_s[i].expr_func.func_t.token_val, sl_func::flags_compiler,
-                           {params::VAR_STRUCT_ID, params::LNUM_OR_ID_VAR, params::LSTR_OR_ID_VAR, params::NEXT_TOO});
-        else if (expr_s[i].expr_func.func_t.token_val == "flags_linker")
-            add_func_flink(expr_s[i].expr_func.func_t.token_val, sl_func::flags_linker,
-                           {params::VAR_STRUCT_ID, params::LNUM_OR_ID_VAR, params::LSTR_OR_ID_VAR, params::NEXT_TOO});
-        else if (expr_s[i].expr_func.func_t.token_val == "path_compiler")
-            add_func_flink(expr_s[i].expr_func.func_t.token_val, sl_func::path_compiler,
-                           {params::VAR_STRUCT_ID, params::LSTR_OR_ID_VAR});
-        else if (expr_s[i].expr_func.func_t.token_val == "path_linker")
-            add_func_flink(expr_s[i].expr_func.func_t.token_val, sl_func::path_linker,
-                           {params::VAR_STRUCT_ID, params::LSTR_OR_ID_VAR});
-        else if (expr_s[i].expr_func.func_t.token_val == "standart_c")
-            add_func_flink(expr_s[i].expr_func.func_t.token_val, sl_func::standart_c,
-                           {params::VAR_STRUCT_ID, params::LNUM_OR_ID_VAR});
-        else if (expr_s[i].expr_func.func_t.token_val == "standart_cpp")
-            add_func_flink(expr_s[i].expr_func.func_t.token_val, sl_func::standart_cpp,
-                           {params::VAR_STRUCT_ID, params::LNUM_OR_ID_VAR});
-        else if (expr_s[i].expr_func.func_t.token_val == "lang")
-            add_func_flink(expr_s[i].expr_func.func_t.token_val, sl_func::lang,
-                           {params::VAR_STRUCT_ID, params::LNUM_OR_ID_VAR});
-        else if (expr_s[i].expr_func.func_t.token_val == "add_param_template")
-            add_func_flink(expr_s[i].expr_func.func_t.token_val, sl_func::add_param_template,
-                           {params::FUTURE_VAR_ID, params::VAR_ID});
-        else if (expr_s[i].expr_func.func_t.token_val == "create_templates")
-            add_func_flink(expr_s[i].expr_func.func_t.token_val, sl_func::create_templates,
-                           {params::FUTURE_VAR_ID, params::LSTR_OR_ID_VAR});
-        else if (expr_s[i].expr_func.func_t.token_val == "create_call_component")
-            add_func_flink(expr_s[i].expr_func.func_t.token_val, sl_func::create_call_component,
-                           {params::FUTURE_VAR_ID, params::LSTR_OR_ID_VAR, params::LSTR_OR_ID_VAR});
-        else if (expr_s[i].expr_func.func_t.token_val == "use_templates")
-            add_func_flink(expr_s[i].expr_func.func_t.token_val, sl_func::use_templates,
-                           {params::VAR_STRUCT_ID, params::LSTR_OR_ID_VAR, params::NEXT_TOO});
-        else if (expr_s[i].expr_func.func_t.token_val == "use_it_template")
-            add_func_flink(expr_s[i].expr_func.func_t.token_val, sl_func::use_it_template,
-                           {params::VAR_STRUCT_ID, params::LNUM_OR_ID_VAR});
-        else {
-            if (notion_external_func.find(expr_s[i].expr_func.func_t.token_val) != notion_external_func.end()) {
-                std::pair<std::string, notion_func> n_link_func_spec = {
-                    expr_s[i].expr_func.func_t.token_val, notion_external_func[expr_s[i].expr_func.func_t.token_val]};
-                defining_call_func(n_link_func_spec.first, n_link_func_spec.second);
-                notion_all_func.insert(n_link_func_spec);
-                continue;
-            }
+        else
             throw semantic_excp(build_pos_tokenb_str(expr_s[i].expr_func.func_t), "000");
-        }
     }
 }
 
