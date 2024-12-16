@@ -1,16 +1,19 @@
-#ifndef BWFILE__H
-#define BWFILE__H
+#include "bwgntools.hpp"
 
-#include "../../mdef.hpp"
+std::string bweas::generator::tools::get_name_output_file(std::string pattern_file, u32t index,
+                                                          std::string dir_work_endv) {
+    if (pattern_file.find(".") == pattern_file.npos)
+        return dir_work_endv + "/" + pattern_file + std::to_string(index);
+    std::string name_output_file_curr = pattern_file, extension_output_file_curr = pattern_file;
+    name_output_file_curr.erase(name_output_file_curr.find("."), name_output_file_curr.size());
+    extension_output_file_curr.erase(0, extension_output_file_curr.find("."));
+    if (index != 0)
+        return dir_work_endv + "/" + name_output_file_curr + std::to_string(index) + extension_output_file_curr;
+    return dir_work_endv + "/" + name_output_file_curr + extension_output_file_curr;
+}
 
-#include <algorithm>
-
-namespace bwfile {
-
-// Creates an array of file names based on the mask
-// passed to the function and an array of all files.
-// ### The syntax is fully compliant with the glob() standard.
-static std::vector<std::string> file_slc_mask(std::string mask, const std::vector<std::string> &files) {
+std::vector<std::string> bweas::generator::tools::file_slc_mask(std::string mask,
+                                                                const std::vector<std::string> &files) {
     std::vector<std::string> slc_files;
     std::vector<std::string> masks;
 
@@ -82,7 +85,3 @@ static std::vector<std::string> file_slc_mask(std::string mask, const std::vecto
 
     return slc_files;
 }
-
-} // namespace bwfile
-
-#endif
