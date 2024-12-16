@@ -1,4 +1,5 @@
 #include "bwbuild_sys.hpp"
+#include "bwgenerator_integral.hpp"
 #include "lang/static_struct.hpp"
 
 #include <algorithm>
@@ -45,7 +46,7 @@ bwbuilder::bwbuilder(int argv, char **args) {
 }
 
 bwbuilder::~bwbuilder() {
-    if (bwGenerator::is_exist(generator))
+    if (generator_api::base_generator::is_exist(generator))
         generator->deleteGenerator();
 }
 
@@ -185,13 +186,12 @@ void bwbuilder::init() {
     }
     if (!config_json.contains("use genlua") || !config_json["use genlua"].is_number_integer())
         throw bwbuilder_excp("The use of the lua generator is not defined", "005");
-    else if (config_json["use genlua"] == 0) {
-        generator = bwGenerator::createGeneratorInt(bwgenerator_internal, bwfile_inputs_internal);
-    }
+    else if (config_json["use genlua"] == 0)
+        generator = generator_api::base_generator::createGeneratorInt(generator::bwgenerator, generator::bwfile_inputs);
     else {
         if (!loaded_package.is_init())
             throw bwbuilder_excp("At least one package must be defined", "005");
-        generator = bwGenerator::createGeneratorLua(loaded_package.data.src_lua_generator);
+        generator = generator_api::base_generator::createGeneratorLua(loaded_package.data.src_lua_generator);
     }
 }
 

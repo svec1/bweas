@@ -1,15 +1,13 @@
-#ifndef BWLUATOOLS__H
-#define BWLUATOOLS__H
+#ifndef BWLUATOOLSLANG__H
+#define BWLUATOOLSLANG__H
 
 #include "lang/static_struct.hpp"
 #include "tools/bwlua.hpp"
 
-#include <any>
-#include <map>
-#include <string>
-
 namespace bweas {
-namespace luatools_bwstruct {
+
+namespace luatools_lang {
+
 static inline bwlua::lua::table<std::string, std::any> conv_to_table(const var::struct_sb::project &prj) {
     return bwlua::lua::table<std::string, std::any>{
         {PRJ_VAR_NAME, prj.name_project},           {PRJ_VAR_NAME_VER, prj.version_project.get_str_version()},
@@ -46,7 +44,8 @@ static inline bwlua::lua::table<std::string, std::any> conv_to_table(const var::
                                                     {TRG_VAR_NAME_VER, trg_o.version_target.get_str_version()},
                                                     {TRG_VAR_NAME_LLIBS, trg_o.target_vec_libs}};
 }
-} // namespace luatools_bwstruct
+} // namespace luatools_lang
+
 } // namespace bweas
 
 #endif

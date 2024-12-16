@@ -2,7 +2,6 @@
 #define BWGENERATOR__H
 
 #include "bw_defs.hpp"
-#include "bwpackage.hpp"
 #include "tools/bwlua.hpp"
 
 #define NAME_FUNCTION_GENLUA "generate"
@@ -14,12 +13,13 @@
 
 namespace bweas {
 
-namespace bwInterface {
+namespace generator_api {
+namespace gninterface {
 
 // Interface class that defines the structure of generator classes
-class bwIGenerator {
+class interface_generator {
   public:
-    bwIGenerator &operator=(const bwIGenerator &) = delete;
+    interface_generator &operator=(const interface_generator &) = delete;
 
   public:
     virtual void deleteGenerator() = 0;
@@ -35,17 +35,10 @@ class bwIGenerator {
                                   std::map<std::string, std::vector<std::string>>) = 0;
 
   protected:
-    virtual ~bwIGenerator() = default;
+    virtual ~interface_generator() = default;
 };
 
-} // namespace bwInterface
-
-namespace tools_generator {
-
-// Generates a file name based on the pattern and the passed index of the given file
-extern std::string get_name_output_file(std::string pattern_file, u32t index, std::string dir_work_endv);
-
-} // namespace tools_generator
+} // namespace gninterface
 
 using func_generator = commands (*)(const var::struct_sb::target_out &, bwqueue_templates &,
                                     const std::vector<var::struct_sb::call_component> &,
@@ -55,9 +48,9 @@ using func_get_files_input = std::map<std::string, std::vector<std::string>> (*)
     const std::vector<var::struct_sb::call_component> &ccmp_p, std::string);
 
 // An abstract class that defines the creation of generator classes and is also a generalization
-class bwGenerator : public bwInterface::bwIGenerator {
+class base_generator : public gninterface::interface_generator {
   protected:
-    ~bwGenerator() = default;
+    ~base_generator() = default;
 
   public:
     void set_ccomponents(std::vector<var::struct_sb::call_component> &ccmp) {
@@ -67,11 +60,11 @@ class bwGenerator : public bwInterface::bwIGenerator {
     }
 
   public:
-    static inline bwGenerator *createGeneratorInt(func_generator, func_get_files_input);
-    static inline bwGenerator *createGeneratorLua(std::string);
+    static inline base_generator *createGeneratorInt(func_generator, func_get_files_input);
+    static inline base_generator *createGeneratorLua(std::string);
 
   public:
-    static bool is_exist(bwGenerator *generator) {
+    static bool is_exist(base_generator *generator) {
         if (!generator)
             return 0;
         return 1;
@@ -82,12 +75,12 @@ class bwGenerator : public bwInterface::bwIGenerator {
 };
 
 // The class defines the API for internal generators, i.e. built into bweas as basic
-class bwGeneratorIntegral : public bwGenerator {
-    friend bwGenerator *bwGenerator::createGeneratorInt(func_generator, func_get_files_input);
+class integral_generator : public base_generator {
+    friend base_generator *base_generator::createGeneratorInt(func_generator, func_get_files_input);
 
   private:
-    bwGeneratorIntegral(func_generator, func_get_files_input);
-    ~bwGeneratorIntegral() = default;
+    integral_generator(func_generator, func_get_files_input);
+    ~integral_generator() = default;
 
   public:
     void init() override final;
@@ -104,12 +97,12 @@ class bwGeneratorIntegral : public bwGenerator {
 };
 
 // The class defines the API for generators written in lua and presented in bweas packages
-class bwGeneratorLua : public bwGenerator {
-    friend bwGenerator *bwGenerator::createGeneratorLua(std::string);
+class lua_generator : public base_generator {
+    friend base_generator *base_generator::createGeneratorLua(std::string);
 
   private:
-    bwGeneratorLua(std::string);
-    ~bwGeneratorLua() = default;
+    lua_generator(std::string);
+    ~lua_generator() = default;
 
   public:
     void init() override final;
@@ -124,22 +117,13 @@ class bwGeneratorLua : public bwGenerator {
     static inline bool init_glob_gnlua{0};
 };
 
-bwGenerator *bwGenerator::createGeneratorInt(func_generator generator, func_get_files_input files_input) {
-    return (bwGenerator *)new bwGeneratorIntegral(generator, files_input);
+base_generator *base_generator::createGeneratorInt(func_generator generator, func_get_files_input files_input) {
+    return (base_generator *)new integral_generator(generator, files_input);
 }
-bwGenerator *bwGenerator::createGeneratorLua(std::string src_lua) {
-    return (bwGenerator *)new bwGeneratorLua(src_lua);
+base_generator *base_generator::createGeneratorLua(std::string src_lua) {
+    return (base_generator *)new lua_generator(src_lua);
 }
-
-extern std::map<std::string, std::vector<std::string>> bwfile_inputs_internal(
-    const var::struct_sb::target_out &target, const bwqueue_templates &target_queue_templates,
-    const std::vector<var::struct_sb::call_component> &ccmp_p, std::string dir_work_endv);
-
-// First and basic template-based command generator
-extern commands bwgenerator_internal(const var::struct_sb::target_out &trg, bwqueue_templates &templates,
-                                     const std::vector<var::struct_sb::call_component> &ccmp_p,
-                                     std::map<std::string, std::vector<std::string>> files_input,
-                                     std::string dir_work_endv);
+} // namespace generator_api
 
 } // namespace bweas
 

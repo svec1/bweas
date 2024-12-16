@@ -263,7 +263,7 @@ struct template_command {
         };
 
         arg() = default;
-        arg(const arg&) = default;
+        arg(const arg &) = default;
         arg(std::string _arg, type _arg_t) : str_arg(_arg), arg_t(_arg_t) {
         }
 
