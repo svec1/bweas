@@ -46,6 +46,11 @@ bwbuilder::bwbuilder(int argv, char **args) {
     }
 }
 
+bwbuilder::~bwbuilder() {
+    for (const auto &generator : generators)
+        generator.second->deleteGenerator();
+}
+
 void bwbuilder::handle_args(std::vector<std::string> args) {
     args[0].erase(0, args[0].find_last_of("/\\") + 1);
     name_bweas_prg = args[0];

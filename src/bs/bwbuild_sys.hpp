@@ -37,7 +37,7 @@ class bwbuilder final {
     bwbuilder(const bwbuilder &) = delete;
     bwbuilder &operator=(bwbuilder &&) = delete;
 
-    ~bwbuilder() = default;
+    ~bwbuilder();
 
   public:
     // all possible bweas operating modes
