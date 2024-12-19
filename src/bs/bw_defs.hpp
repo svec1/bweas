@@ -4,7 +4,7 @@
 // bweas main header file
 
 #include "lang/interpreter.hpp"
-#include "tools/exception.hpp"
+#include "tools/bwexception.hpp"
 
 #include <memory>
 #include <vector>
@@ -67,7 +67,7 @@ class bwgenerator_excp : public bwbuilder_excp {
     }
     ~bwgenerator_excp() noexcept override final = default;
 };
-} // namespace exception
+} // namespace bwexception
 
 } // namespace bweas
 

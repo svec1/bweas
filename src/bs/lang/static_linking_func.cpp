@@ -107,31 +107,37 @@ static void update_cfg_struct(const std::string &name_var, var::scope &curr_scop
                         curr_scope.get_var_value<int>(name_var);
                 }
                 else if (tmp_str_postfix == TRG_VAR_NAME_NPROJECT) {
-                    if (curr_scope.what_type(tmp_str_prefix) != 5 || curr_scope.what_type(name_var) != 1)
+                    if (curr_scope.what_type(tmp_str_prefix) != 6 || curr_scope.what_type(name_var) != 2)
                         return;
                     curr_scope.get_var_value<var::struct_sb::target>(tmp_str_prefix).prj->name_project =
                         curr_scope.get_var_value<std::string>(name_var);
                 }
                 else if (tmp_str_postfix == TRG_VAR_NAME_VER) {
-                    if (curr_scope.what_type(tmp_str_prefix) != 5 || curr_scope.what_type(name_var) != 1)
+                    if (curr_scope.what_type(tmp_str_prefix) != 6 || curr_scope.what_type(name_var) != 2)
                         return;
                     curr_scope.get_var_value<var::struct_sb::target>(tmp_str_prefix).version_target =
                         var::struct_sb::version(curr_scope.get_var_value<std::string>(name_var));
                 }
                 else if (tmp_str_postfix == TRG_VAR_NAME_CFG) {
-                    if (curr_scope.what_type(tmp_str_prefix) != 5 || curr_scope.what_type(name_var) != 1)
+                    if (curr_scope.what_type(tmp_str_prefix) != 6 || curr_scope.what_type(name_var) != 1)
                         return;
                     curr_scope.get_var_value<var::struct_sb::target>(tmp_str_prefix).target_cfg =
                         (var::struct_sb::configuration)curr_scope.get_var_value<int>(name_var);
                 }
                 else if (tmp_str_postfix == TRG_VAR_NAME_TYPE_T) {
-                    if (curr_scope.what_type(tmp_str_prefix) != 5 || curr_scope.what_type(name_var) != 1)
+                    if (curr_scope.what_type(tmp_str_prefix) != 6 || curr_scope.what_type(name_var) != 1)
                         return;
                     curr_scope.get_var_value<var::struct_sb::target>(tmp_str_prefix).target_t =
                         (var::struct_sb::type_target)curr_scope.get_var_value<int>(name_var);
                 }
+                else if (tmp_str_postfix == TRG_VAR_NAME_NGENERATOR) {
+                    if (curr_scope.what_type(tmp_str_prefix) != 6 || curr_scope.what_type(name_var) != 2)
+                        return;
+                    curr_scope.get_var_value<var::struct_sb::target>(tmp_str_prefix).name_generator =
+                        curr_scope.get_var_value<std::string>(name_var);
+                }
                 else if (tmp_str_postfix == TRG_VAR_NAME_LLIBS) {
-                    if (curr_scope.what_type(tmp_str_prefix) != 5 || curr_scope.what_type(name_var) != 1)
+                    if (curr_scope.what_type(tmp_str_prefix) != 6 || curr_scope.what_type(name_var) != 1)
                         return;
                     curr_scope.get_var_value<var::struct_sb::target>(tmp_str_prefix).target_vec_libs =
                         curr_scope.get_var_value<std::vector<std::string>>(name_var);
@@ -324,6 +330,10 @@ void sl_func::executable(const std::vector<subexpressions> &sub_expr, var::scope
         if (!curr_scope.try_create_var<int>(trg_ref.name_target + TRG_VAR_NAME_TYPE_T, (int)trg_ref.target_t))
             trg_ref.target_t =
                 (var::struct_sb::type_target)curr_scope.get_var_value<int>(trg_ref.name_target + TRG_VAR_NAME_TYPE_T);
+        if (!curr_scope.try_create_var<std::string>(trg_ref.name_target + TRG_VAR_NAME_NGENERATOR,
+                                                    trg_ref.name_generator))
+            trg_ref.name_generator =
+                curr_scope.get_var_value<std::string>(trg_ref.name_target + TRG_VAR_NAME_NGENERATOR);
         if (!curr_scope.try_create_var<std::vector<std::string>>(trg_ref.name_target + TRG_VAR_NAME_LLIBS,
                                                                  trg_ref.target_vec_libs))
             trg_ref.target_vec_libs =
@@ -355,7 +365,6 @@ void sl_func::link_lib(const std::vector<subexpressions> &sub_expr, var::scope &
 void sl_func::exp_data(const std::vector<subexpressions> &sub_expr, var::scope &curr_scope) {
     interpreter::interpreter_exec::config tmp_conf;
     tmp_conf.filename_interp = sub_expr[0].token_of_subexpr[0].token_val.c_str();
-    tmp_conf.import_module = 0;
     tmp_conf.use_external_scope = 1;
     interpreter::interpreter_exec tmp_interpreter(tmp_conf);
     tmp_interpreter.set_external_scope(&curr_scope);
@@ -569,6 +578,17 @@ void sl_func::lang(const std::vector<subexpressions> &sub_expr, var::scope &curr
         }
         else
             curr_scope.create_var<int>(prj_ref.name_project + PRJ_VAR_NAME_LANG, (int)prj_ref.lang);
+}
+
+void sl_func::generator(const std::vector<aef_expr::subexpressions> &sub_expr, var::scope &curr_scope) {
+    if (curr_scope.what_type(sub_expr[0].token_of_subexpr[0].token_val) != 6)
+        throw interpreter::realtime_excp(
+            parser::utility::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
+                " Var id of struct(expected target): " + sub_expr[0].token_of_subexpr[0].token_val + "\n",
+            "003");
+    var::struct_sb::target &trg_ref =
+        curr_scope.get_var_value<var::struct_sb::target>(sub_expr[0].token_of_subexpr[0].token_val);
+    trg_ref.name_generator = sub_expr[1].token_of_subexpr[0].token_val;
 }
 
 void sl_func::add_param_template(const std::vector<subexpressions> &sub_expr, var::scope &curr_scope) {

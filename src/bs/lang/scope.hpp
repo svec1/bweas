@@ -3,10 +3,11 @@
 
 #include "../../kernel/high_level/bwtype.h"
 
+#include "../tools/bwexception.hpp"
 #include "../tools/call_cmd.hpp"
-#include "../tools/exception.hpp"
 #include "static_struct.hpp"
 #include "var.hpp"
+
 
 #include <string>
 #include <vector>

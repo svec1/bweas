@@ -13,12 +13,7 @@
 #include <tuple>
 #include <vector>
 
-extern "C"
-{
-#include <lauxlib.h>
-#include <lua.h>
-#include <lualib.h>
-}
+#include <lua.hpp>
 
 // All error lines
 #define LUA_FUNCTION_NFOUND "Function not found! "
@@ -46,6 +41,7 @@ extern "C"
 #define LUA_SYMBOL_WRONG_TYPE_VAR "Object - symbol must be of type variable or nil for interaction with variables"
 #define LUA_SYMBOL_WRONG_TYPE_FUNC "Object - symbol must be of type function for call of function"
 #define LUA_SYMBOL_WRONG_TYPE_VAR_VALUE "Object - symbol must be of type variable to get the value"
+#define LUA_SYMBOL_NREG_TYPE_CFUNC "When registering a function, a function of type cfunc is expected."
 
 #define LUA_TABLE_KEYCMP "Unexpected key type table with type key - std::any! "
 
@@ -57,34 +53,23 @@ extern "C"
         throw std::runtime_error(_err);                                                                                \
     }
 
-#if defined(LUA_MULTITHREAD)
-#define _create(src) create(src)
-#define _close() close()
-#define _include_libs() include_libs()
-#define _call_function(retType, paramTypes, name_func, ...) call_function<retType, paramTypes>(name_func, __VA_ARGS__)
-#define _get_var(Type, name_var) get_var<Type>(name_var)
-#define _create_var(Type, name_var, value) create_var<Type>(name_var, value)
-#define _execute_str(src_code) execute_str(src_code)
-#define _run_script() run_script()
-#define _is_created() is_created()
-#define _is_function() is_function()
-#define _is_var() is_var()
-#else
-#define _create(src) create__nmutex(src)
-#define _close() close__nmutex()
-#define _include_libs() include_libs__nmutex()
-#define _call_function(retType, paramTypes, name_func, ...)                                                            \
-    call_function__nmutex<retType, paramTypes>(name_func, __VA_ARGS__)
-#define _get_var(Type, name_var) get_var__nmutex<Type>(name_var)
-#define _create_var(Type, name_var, value) create_var__nmutex<Type>(name_var, value)
-#define _execute_str(src_code) execute_str__nmutex(src_code)
-#define _run_script() run_script__nmutex()
-#define _is_created() is_created__nmutex()
-#define _is_function() is_function__nmutex()
-#define _is_var() is_var__nmutex()
-#endif
-
 namespace bwlua {
+
+// Special tools - Wrappers over the lua class,
+// for simple interaction with the lua stack and others.
+namespace tools {
+template <typename T> inline void push_stack(lua_State *L, T param) {
+    lua(L).push_stack_param(param);
+}
+template <typename T> inline T pop_stack(lua_State *L, int idx = -1) {
+    return lua(L).get_valsymbol<T>(idx);
+}
+
+// Calls a function that is on the top of the stack
+template <typename T, typename... Types> inline T call_function(lua_State *L, Types... param) {
+    return lua(L).call_symbol<T>(param);
+}
+} // namespace tools
 
 // A wrapper class for luajit.
 // It contains basic functions for interacting with lua scripts.
@@ -95,6 +80,8 @@ namespace bwlua {
 class lua {
   public:
     lua() = default;
+    explicit lua(lua_State *_L) : L(_L) {
+    }
     lua(std::string src) {
         create(src);
     }
@@ -129,24 +116,38 @@ class lua {
         symbol(symbol &&) = delete;
         symbol &operator=(symbol &&) = delete;
 
-        symbol(type _symbol_t, std::string _name_sym, lua *_L) : symbol_t(_symbol_t), name_sym(_name_sym), L(_L) {
+        explicit symbol(type _symbol_t, std::string _name_sym, lua *_L)
+            : symbol_t(_symbol_t), name_sym(_name_sym), L(_L) {
         }
 
       public:
         // creates or modifies a variable with the specified value pointed to by the symbol object itself
         template <typename T> void operator=(T &&value) const {
-            if (!L->is_created__nmutex())
+            if (!L->is_created())
                 throw std::runtime_error(LUA_SYMBOL_NE_LUA_STATE);
             else if (symbol_t == type::function)
                 throw std::runtime_error(LUA_SYMBOL_WRONG_TYPE_VAR);
 
             lua_pop(L->L, 1);
-            L->create_var__nmutex(name_sym, value);
+            L->create_var(name_sym, value);
+        }
+
+        template <typename T> void operator<<(T value) const {
+            if (!L->is_created())
+                throw std::runtime_error(LUA_SYMBOL_NE_LUA_STATE);
+            else if (symbol_t != type::nil)
+                throw std::runtime_error(LUA_SYMBOL_WRONG_TYPE_VAR);
+
+            if constexpr (!std::is_same_v<T, cfunc>)
+                throw std::runtime_error(LUA_SYMBOL_NREG_TYPE_CFUNC);
+
+            lua_pop(L->L, 1);
+            L->register_function(name_sym, value);
         }
 
         // calls a function with the specified parameters pointed to by the symbol object itself
         template <typename T, typename... Types> T operator()(Types... param) const {
-            if (!L->is_created__nmutex())
+            if (!L->is_created())
                 throw std::runtime_error(LUA_SYMBOL_NE_LUA_STATE);
             else if (symbol_t != type::function)
                 throw std::runtime_error(LUA_SYMBOL_WRONG_TYPE_FUNC);
@@ -161,7 +162,7 @@ class lua {
 
         // returns the value of the variable pointed to by the symbol object
         template <typename T> T getval() const {
-            if (!L->is_created__nmutex())
+            if (!L->is_created())
                 throw std::runtime_error(LUA_SYMBOL_NE_LUA_STATE);
             else if (symbol_t != type::variable)
                 throw std::runtime_error(LUA_SYMBOL_WRONG_TYPE_VAR_VALUE);
@@ -204,6 +205,7 @@ class lua {
     template <typename T> using array = std::vector<T>;
     template <typename Key, typename Value> using fastTable = std::vector<keyValue<Key, Value>>;
     template <typename Key, typename Value> using table = std::map<Key, Value, lcomp_anymap>;
+    using cfunc = int (*)(lua_State *);
 
     template <typename> struct is_map : std::false_type {};
     template <typename K, typename V> struct is_map<table<K, V>> : std::true_type {};
@@ -222,6 +224,9 @@ class lua {
     typedef double number;
 
     friend struct symbol;
+    template <typename T> friend inline void tools::push_stack(lua_State *L, T param);
+    template <typename T> friend inline T tools::pop_stack(lua_State *L, int idx);
+    template <typename T, typename... Types> friend inline T tools::call_function(lua_State *L, Types... param);
 
   public:
     template <typename Key, typename Value> static std::map<Key, Value> to_map(table<Key, Value> _table) {
@@ -235,75 +240,6 @@ class lua {
         for (const auto &it : _map)
             _table[it.first] = it.second;
         return _table;
-    }
-
-  public:
-    // Safely initializes Lua state
-    void create(std::string src) {
-        std::lock_guard<std::mutex> guard(lmutex);
-        create__nmutex(src);
-    }
-
-    // Safely resets Lua state
-    void close() {
-        std::lock_guard<std::mutex> guard(lmutex);
-        close__nmutex();
-    }
-
-    // Safely includes lua libs
-    void include_libs() {
-        std::lock_guard<std::mutex> guard(lmutex);
-        include_libs__nmutex();
-    }
-
-    // Safely calls a function, provided that it exists and all parameters match.
-    // The first parameter of the template is the return type of the function. The remaining parameters are the types of
-    // function parameters accepted
-    template <typename T, typename... Types> T call_function(std::string name_func, Types... param) {
-        std::lock_guard<std::mutex> guard(lmutex);
-        return call_function__nmutex<T, Types...>(name_func, param...);
-    }
-
-    // Safely returns the value of a variable from the passed type in the template, if it exists.
-    template <typename T> T get_var(std::string name_var) {
-        std::lock_guard<std::mutex> guard(lmutex);
-        return get_var__nmutex<T>(name_var);
-    }
-
-    // Safely creates a variable with the specified name and value
-    template <typename T> void create_var(std::string name_var, T &&value = {}) {
-        std::lock_guard<std::mutex> guard(lmutex);
-        create_var__nmutex(name_var, value);
-    }
-
-    // Safely interprets (executes) the code presented in str_code.
-    void execute_str(std::string str_code) {
-        std::lock_guard<std::mutex> guard(lmutex);
-        execute_str__nmutex(str_code);
-    }
-
-    // Safely interprets (executes) the code that was provided when initializing the lua state
-    void run_script() {
-        std::lock_guard<std::mutex> guard(lmutex);
-        run_script__nmutex();
-    }
-
-    // Returns true if lua state is initialized
-    inline bool is_created() {
-        std::lock_guard<std::mutex> guard(lmutex);
-        return is_created__nmutex();
-    }
-
-    // Returns true if exists function(global) in lua state
-    inline bool is_function(std::string name_func) {
-        std::lock_guard<std::mutex> guard(lmutex);
-        return is_function__nmutex(name_func);
-    }
-
-    // Returns true if exists variable(global) in lua state
-    inline bool is_var(std::string name_var) {
-        std::lock_guard<std::mutex> guard(lmutex);
-        return is_var__nmutex(name_var);
     }
 
   public:
@@ -341,30 +277,41 @@ class lua {
     }
 
   public:
-    void create__nmutex(std::string src) {
+    // Initializes Lua state
+    void create(std::string src) {
         if (L)
             lua_close(L);
         L = luaL_newstate();
         if (luaL_loadstring(L, src.c_str()) != LUA_OK || lua_pcall(L, 0, LUA_MULTRET, 0) != LUA_OK)
             LUA_EXCEPTION()
     }
-    void close__nmutex() {
+
+    // Resets Lua state
+    void close() {
         if (L) {
             lua_close(L);
             L = NULL;
         }
     }
-    void include_libs__nmutex() {
+
+    // Includes lua libs
+    void include_libs() {
         luaL_openlibs(L);
     }
-    void run_script__nmutex() {
-        if (!is_created__nmutex())
+
+    // Interprets (executes) the code that was provided when initializing the lua state
+    void run_script() {
+        if (!is_created())
             return;
         else if (lua_pcall(L, 0, 0, 0) != LUA_OK)
             LUA_EXCEPTION()
     }
-    template <typename T, typename... Types> T call_function__nmutex(std::string name_func, Types... param) {
-        if (!is_created__nmutex())
+
+    // Calls a function, provided that it exists and all parameters match.
+    // The first parameter of the template is the return type of the function. The remaining parameters are the types of
+    // function parameters accepted
+    template <typename T, typename... Types> T call_function(std::string name_func, Types... param) {
+        if (!is_created())
             return std::any_cast<T>(std::any{});
         lua_getglobal(L, name_func.c_str());
         try {
@@ -375,9 +322,14 @@ class lua {
         }
     }
 
+    void register_function(std::string name_func, cfunc impl_cfunc) {
+        lua_pushcfunction(L, impl_cfunc);
+        lua_setglobal(L, name_func.c_str());
+    }
+
     // execute lua code as a string
-    void execute_str__nmutex(std::string str_code) {
-        if (!is_created__nmutex())
+    void execute_str(std::string str_code) {
+        if (!is_created())
             return;
         if (luaL_dostring(L, str_code.c_str()) != LUA_OK)
             LUA_EXCEPTION()
@@ -385,7 +337,7 @@ class lua {
 
     // gets the value of a variable of the given type
     // Possible types: string, integer, number, boolean and table
-    template <typename T> T get_var__nmutex(std::string name_var) {
+    template <typename T> T get_var(std::string name_var) {
         lua_getglobal(L, name_var.c_str());
 
         try {
@@ -397,7 +349,7 @@ class lua {
     }
 
     // creates a global variable with the provided name
-    template <typename T> void create_var__nmutex(std::string name_var, T &&value = {}) {
+    template <typename T> void create_var(std::string name_var, T &&value = {}) {
         try {
             push_stack_param(value);
         }
@@ -407,31 +359,37 @@ class lua {
         lua_setglobal(L, name_var.c_str());
     }
 
-    inline bool is_created__nmutex() {
+    // Returns true if lua state is initialized
+    inline bool is_created() {
         if (!L)
             return 0;
         return 1;
     }
 
-    inline bool is_function__nmutex(std::string name_func) {
-        if (!is_created__nmutex())
+    // Returns true if exists function(global) in lua state
+    inline bool is_function(std::string name_func) {
+        if (!is_created())
             return 0;
         else {
             lua_getglobal(L, name_func.c_str());
 
-            if (!lua_isfunction(L, 1))
+            if (!lua_isfunction(L, -1)) {
+                lua_pop(L, 1);
                 return 0;
+            }
+            lua_pop(L, 1);
         }
         return 1;
     }
 
-    inline bool is_var__nmutex(std::string name_var) {
-        if (!is_created__nmutex())
+    // Returns true if exists variable(global) in lua state
+    inline bool is_var(std::string name_var) {
+        if (!is_created())
             return 0;
         else {
             lua_getglobal(L, name_var.c_str());
 
-            if (lua_isnoneornil(L, 1))
+            if (lua_isnoneornil(L, -1))
                 return 0;
         }
         return 1;

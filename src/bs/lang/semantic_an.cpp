@@ -72,6 +72,8 @@ void semantic_analyzer::add_standart_function() {
     add_func_flink("standart_cpp", sl_func::standart_cpp, {params::VAR_STRUCT_ID, params::LNUM_OR_ID_VAR});
     add_func_flink("lang", sl_func::lang, {params::VAR_STRUCT_ID, params::LNUM_OR_ID_VAR});
 
+    add_func_flink("generator", sl_func::generator, {params::VAR_STRUCT_ID, params::LSTR_OR_ID_VAR});
+
     add_func_flink("create_templates", sl_func::create_templates, {params::FUTURE_VAR_ID, params::LSTR_OR_ID_VAR});
     add_func_flink("create_call_component", sl_func::create_call_component,
                    {params::FUTURE_VAR_ID, params::LSTR_OR_ID_VAR, params::LSTR_OR_ID_VAR});

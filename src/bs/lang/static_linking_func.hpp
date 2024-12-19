@@ -66,6 +66,9 @@ extern void standart_cpp(const std::vector<aef_expr::subexpressions> &sub_expr, 
 // Sets the language of the project that was passed
 extern void lang(const std::vector<aef_expr::subexpressions> &sub_expr, var::scope &curr_scope);
 
+// Sets the base generator for the target that was passed.
+extern void generator(const std::vector<aef_expr::subexpressions> &sub_expr, var::scope &curr_scope);
+
 // Creates a parameter declaration for a command template (variable)
 // that refers to another variable. Therefore, the parameter for the template
 // command will depend on the passed variable
@@ -73,8 +76,8 @@ extern void add_param_template(const std::vector<aef_expr::subexpressions> &sub_
 
 // Creates a template that can be used to generate commands
 // ----------
-// #### NAME_CALL_COMPONENT(ACP1, ...) -> return NAME_smt: <param1>,<param2>,<{ACP1}>, <[FIELD_TARGET_OR_PROJECT]>, FEATURES_CURRENT_GENERATOR ...
-// Available components: COMPILER C/C++, LINKER C/C++, ARCHIVER, INTERPRETER, [user]...
+// #### NAME_CALL_COMPONENT(ACP1, ...) -> return NAME_smt: <param1>,<param2>,<{ACP1}>, <[FIELD_TARGET_OR_PROJECT]>,
+// FEATURES_CURRENT_GENERATOR ... Available components: COMPILER C/C++, LINKER C/C++, ARCHIVER, INTERPRETER, [user]...
 // NAME_ret is file or list of files
 extern void create_templates(const std::vector<aef_expr::subexpressions> &sub_expr, var::scope &curr_scope);
 

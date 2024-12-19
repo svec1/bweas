@@ -31,8 +31,8 @@ test_func1_welcome() \
 
 TEST(BWWRAP_LUA, NoThrowInitClassBwLua) {
     bwlua::lua ltest;
-    ASSERT_NO_THROW(ltest.create__nmutex(TEST1_SOURCE_LUA));
-    ASSERT_NO_THROW(ltest.close__nmutex());
+    ASSERT_NO_THROW(ltest.create(TEST1_SOURCE_LUA));
+    ASSERT_NO_THROW(ltest.close());
 }
 
 TEST(BWWRAP_LUA, NoThrowClassBwLuaVariablePerformance) {
@@ -59,26 +59,26 @@ TEST(BWWRAP_LUA, NoThrowClassBwLuaCallFunction) {
     std::string str_tmp;
     int num_tmp;
 
-    ltest.include_libs__nmutex();
+    ltest.include_libs();
 
     // test_func1_welcome()
-    ASSERT_NO_THROW({ str_tmp = ltest.call_function__nmutex<std::string>("test_func1_welcome", bwlua::lua::nil{}); });
+    ASSERT_NO_THROW({ str_tmp = ltest.call_function<std::string>("test_func1_welcome", bwlua::lua::nil{}); });
     ASSERT_EQ(str_tmp, "Hello, World!");
 
     // test_func2()
     ASSERT_NO_THROW({
-        num_tmp = ltest.call_function__nmutex<bwlua::lua::integer>("test_func2", (bwlua::lua::integer)4, "Hello, ",
+        num_tmp = ltest.call_function<bwlua::lua::integer>("test_func2", (bwlua::lua::integer)4, "Hello, ",
                                                                    (bwlua::lua::integer)5, "World!");
     });
     ASSERT_EQ(num_tmp, 9);
 
     // test_func3()
-    ASSERT_NO_THROW({ num_tmp = ltest.call_function__nmutex<bwlua::lua::integer>("test_func3", nums); });
+    ASSERT_NO_THROW({ num_tmp = ltest.call_function<bwlua::lua::integer>("test_func3", nums); });
     ASSERT_EQ(num_tmp, 15);
 
     // test_func4()
-    ASSERT_NO_THROW({ str_tmp = ltest.call_function__nmutex<std::string>("test_func4", test_var_vec); });
-    ASSERT_EQ(ltest.get_var__nmutex<std::string>("str_g"), "HELLO WORLD!");
+    ASSERT_NO_THROW({ str_tmp = ltest.call_function<std::string>("test_func4", test_var_vec); });
+    ASSERT_EQ(ltest.get_var<std::string>("str_g"), "HELLO WORLD!");
     ASSERT_EQ(str_tmp, "HELLO WORLD!");
 }
 
@@ -88,10 +88,10 @@ TEST(BWWRAP_LUA, NoThrowClassBwLuaVariableAStackNBad) {
 
     for (bwlua::lua::integer i = 0; i < 1000; ++i) {
         ASSERT_NO_THROW({
-            num_tmp = ltest.call_function__nmutex<bwlua::lua::integer>("test_func2", i, "Hello, ", i * 10, "World!");
+            num_tmp = ltest.call_function<bwlua::lua::integer>("test_func2", i, "Hello, ", i * 10, "World!");
         });
         ASSERT_EQ(num_tmp, i + i * 10);
-        ASSERT_EQ(ltest.get_var__nmutex<std::string>("str_g"), "Hello, World!");
+        ASSERT_EQ(ltest.get_var<std::string>("str_g"), "Hello, World!");
     }
 }
 

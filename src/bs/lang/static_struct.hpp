@@ -34,6 +34,7 @@
 #define TRG_VAR_NAME_VER "_VERSION"
 #define TRG_VAR_NAME_CFG "_CFG"
 #define TRG_VAR_NAME_TYPE_T "_TYPE_TARGET"
+#define TRG_VAR_NAME_NGENERATOR "_GENERATOR_NAME"
 #define TRG_VAR_NAME_LLIBS "_LIBS"
 
 // name of additional fields, which are also part of structures,
@@ -233,6 +234,7 @@ struct target {
     configuration target_cfg;
 
     std::string name_target;
+    std::string name_generator{DEFAULT_BWEAS_GENERATOR};
     version version_target;
 
     std::vector<std::string> target_vec_libs{"null"};
@@ -247,6 +249,7 @@ struct target_out {
     configuration target_cfg;
 
     std::string name_target;
+    std::string name_generator;
     version version_target;
 
     std::vector<std::string> target_vec_libs{"null"};

@@ -1,8 +1,9 @@
 #ifndef _LEXER__H
 #define _LEXER__H
 
+#include "../tools/bwexception.hpp"
 #include "token.hpp"
-#include "../tools/exception.hpp"
+
 
 #include <string>
 #include <vector>
@@ -11,8 +12,7 @@ namespace lexer {
 
 class lexer_excp : public bw_excp::bweas_exception {
   public:
-    lexer_excp(std::string _what_hp, std::string number_err)
-        : what_hp(_what_hp), bweas_exception("LEX" + number_err) {
+    lexer_excp(std::string _what_hp, std::string number_err) : what_hp(_what_hp), bweas_exception("LEX" + number_err) {
     }
     ~lexer_excp() noexcept override final = default;
 

@@ -37,7 +37,7 @@ class bwbuilder final {
     bwbuilder(const bwbuilder &) = delete;
     bwbuilder &operator=(bwbuilder &&) = delete;
 
-    ~bwbuilder();
+    ~bwbuilder() = default;
 
   public:
     // all possible bweas operating modes
@@ -132,9 +132,9 @@ class bwbuilder final {
 
   private:
     interpreter::interpreter_exec _interpreter;
-    bwpackage loaded_package;
+    std::vector<bwpackage> loaded_packages;
 
-    generator_api::base_generator *generator{nullptr};
+    std::map<std::string, generator_api::base_generator*> generators;
 
     std::vector<var::struct_sb::target_out> out_targets;
     std::vector<var::struct_sb::template_command> templates;

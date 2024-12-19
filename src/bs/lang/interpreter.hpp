@@ -1,7 +1,6 @@
 #ifndef INTERPRETER__H
 #define INTERPRETER__H
 
-#include "../smodule/module.hpp"
 #include "semantic_an.hpp"
 
 namespace interpreter {
@@ -42,19 +41,13 @@ class realtime_excp : public bw_excp::bweas_exception {
     std::string what_hp;
 };
 
-class interpreter_exec : private module::mdl_manager {
+class interpreter_exec {
   public:
     struct config {
         // output:
         // - tree after semanticanalyzer
         // - run time every of components interpreter(lexer, parser...)
         bool debug_output{0};
-
-        // construction of dynamic post-semantic command module(DPCM)
-        bool CDPCM{0};
-
-        // whether to import modules
-        bool import_module{0};
 
         // whether to use external scope
         bool use_external_scope{0};
@@ -92,8 +85,7 @@ class interpreter_exec : private module::mdl_manager {
 
     var::scope &get_current_scope();
 
-  private:
-    void build_external_func_table();
+    void load_external_func(semantic_an::table_func &&tfuncs);
 
   private:
     static inline bool init_glob{0};

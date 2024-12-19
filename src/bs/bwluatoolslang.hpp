@@ -1,6 +1,7 @@
 #ifndef BWLUATOOLSLANG__H
 #define BWLUATOOLSLANG__H
 
+#include "bwgntools.hpp"
 #include "lang/static_struct.hpp"
 #include "tools/bwlua.hpp"
 
@@ -44,6 +45,20 @@ static inline bwlua::lua::table<std::string, std::any> conv_to_table(const var::
                                                     {TRG_VAR_NAME_VER, trg_o.version_target.get_str_version()},
                                                     {TRG_VAR_NAME_LLIBS, trg_o.target_vec_libs}};
 }
+
+static inline int get_name_output_file_lua(lua_State *L) {
+    bwlua::tools::push_stack(
+        L,
+        generator::tools::get_name_output_file(lua_tostring(L, -3), lua_tointeger(L, -2), lua_tostring(L, -1)).c_str());
+    return 1;
+}
+static inline int file_slc_mask_lua(lua_State *L) {
+    commands cmd_s = bwlua::tools::pop_stack<commands>(L);
+    cmd_s = generator::tools::file_slc_mask(lua_tostring(L, -2), cmd_s);
+    bwlua::tools::push_stack(L, cmd_s);
+    return 1;
+}
+
 } // namespace luatools_lang
 
 } // namespace bweas

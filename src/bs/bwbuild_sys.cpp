@@ -25,6 +25,7 @@ bwbuilder::bwbuilder(int argv, char **args) {
         assist.add_err("BWS005", "Incorrect structure of the bweas-json configuration file");
         assist.add_err("BWS006", "The bweas-json configuration for package package file was not found");
         assist.add_err("BWS007", "Bweas package not found");
+        assist.add_err("BWS008", "Failed to generate commands");
 
         assist.add_err("BWS-HAX000", "Unknown parameter");
         assist.add_err("BWS-HAX001", "The package command is a separate subroutine");
@@ -43,11 +44,6 @@ bwbuilder::bwbuilder(int argv, char **args) {
         assist << "Initializing system build - bweas " + bwbuilde_ver.get_str_version();
         init();
     }
-}
-
-bwbuilder::~bwbuilder() {
-    if (generator_api::base_generator::is_exist(generator))
-        generator->deleteGenerator();
 }
 
 void bwbuilder::handle_args(std::vector<std::string> args) {
@@ -137,10 +133,10 @@ u32t bwbuilder::create_package(std::string path_json_config_package) {
     data_package.json_config = assist.read_file(assist.get_ref_file(json_config_package), mf::input::read_default);
     assist.close_file(json_config_package);
 
+    bweas::bwpackage loaded_package;
     std::string pckg = loaded_package.init(data_package, 1);
-    const file_it &package = assist.open_file(std::filesystem::current_path().string() + "/" +
-                                                  loaded_package.data.cfg_package.name_package + BW_FORMAT_PACKAGE,
-                                              mf::open::wb);
+    const file_it &package = assist.open_file(
+        std::filesystem::current_path().string() + "/" + loaded_package.name_package + BW_FORMAT_PACKAGE, mf::open::wb);
     assist.write_file(assist.get_ref_file(package), pckg, mf::output::write_binary);
     assist.close_file(package);
 
@@ -151,7 +147,6 @@ void bwbuilder::init() {
     std::string bweas_path = assist.get_path_program() + "/" + JSON_CONFIG_FILE;
 
     nlohmann::json config_json;
-    std::string name_package;
     file_it file_json_config = assist.open_file(bweas_path, mf::open::r);
     if (!assist.exist_file(file_json_config)) {
         assist.get_ref_file(file_json_config).open(mf::open::w);
@@ -166,33 +161,38 @@ void bwbuilder::init() {
         assist.close_file(file_json_config);
     }
 
-    if (config_json.contains("package")) {
-        if (config_json["package"].is_null())
+    if (config_json.contains("packages")) {
+        if (!config_json["packages"].is_array())
             throw bwbuilder_excp("At least one package must be defined", "005");
+        for (const auto &package : config_json["packages"].items()) {
+            if (!package.value().is_string())
+                throw bwbuilder_excp("Package names are expected", "005");
+            bweas::bwpackage loaded_package;
 
-        name_package = config_json["package"];
-        std::string path_to_package = assist.get_path_program() + "/packages/" + name_package + BW_FORMAT_PACKAGE;
-        std::string raw_data_package;
-        file_it package = assist.open_file(path_to_package, mf::open::rb);
-        if (!assist.exist_file(package))
-            throw bwbuilder_excp(path_to_package, "007");
-        raw_data_package = assist.read_file(assist.get_ref_file(package), mf::input::read_binary);
-        assist.close_file(package);
+            std::string path_to_package =
+                assist.get_path_program() + "/packages/" + (std::string)package.value() + BW_FORMAT_PACKAGE;
+            std::string raw_data_package;
+            file_it package = assist.open_file(path_to_package, mf::open::rb);
+            if (!assist.exist_file(package))
+                throw bwbuilder_excp(path_to_package, "007");
+            raw_data_package = assist.read_file(assist.get_ref_file(package), mf::input::read_binary);
+            assist.close_file(package);
 
-        loaded_package.load(raw_data_package);
-        assist.next_output_success();
-        assist << " - [BWEAS]: The package was loaded successfully(" + std::to_string(raw_data_package.size()) +
-                      " bytes)";
+            loaded_package.load(raw_data_package);
+            loaded_packages.push_back(loaded_package);
+            assist.next_output_success();
+            assist << " - [BWEAS]: The package was loaded successfully(" + std::to_string(raw_data_package.size()) +
+                          " bytes)";
+        }
     }
-    if (!config_json.contains("use genlua") || !config_json["use genlua"].is_number_integer())
-        throw bwbuilder_excp("The use of the lua generator is not defined", "005");
-    else if (config_json["use genlua"] == 0)
-        generator = generator_api::base_generator::createGeneratorInt(generator::bwgenerator, generator::bwfile_inputs);
-    else {
-        if (!loaded_package.is_init())
-            throw bwbuilder_excp("At least one package must be defined", "005");
-        generator = generator_api::base_generator::createGeneratorLua(loaded_package.data.src_lua_generator);
-    }
+
+    generators.emplace("bwgenerator", generator_api::base_generator::createGeneratorInt(generator::bwgenerator,
+                                                                                        generator::bwfile_inputs));
+
+    for (const auto &package : loaded_packages)
+        for (const auto &generator : package.cfg_package.generators)
+            generators.emplace(generator.name_generator,
+                               generator_api::base_generator::createGeneratorLua(generator.src_lua_generator));
 }
 
 bwbuilder::mode_working bwbuilder::get_current_mode() {
@@ -255,7 +255,6 @@ void bwbuilder::run_interpreter() {
     interpreter::interpreter_exec::config new_config;
 
     new_config.debug_output = 0;
-    new_config.import_module = 1;
     new_config.filename_interp = MAIN_FILE;
     new_config.file_import_file_f = IMPORT_FILE;
     new_config.transmit_smt_name_func_with_smt = 1;
@@ -327,7 +326,8 @@ u32t bwbuilder::gen_cache_target() {
 
         serel_target_tmp += var::struct_sb::target_t_str(out_targets[i].target_t) + " " +
                             var::struct_sb::cfg_str(out_targets[i].target_cfg) + " " + out_targets[i].name_target +
-                            " " + out_targets[i].version_target.get_str_version() + " ";
+                            " " + out_targets[i].name_generator + " " +
+                            out_targets[i].version_target.get_str_version() + " ";
         for (u32t j = 0; j < out_targets[i].target_vec_libs.size(); ++j)
             serel_target_tmp += out_targets[i].target_vec_libs[j] + " ";
     }
@@ -531,11 +531,13 @@ u32t bwbuilder::deserl_cache() {
                             else if (count_word == 16 + size_src_files + size_vec_templates + 2)
                                 trg_tmp.name_target = str_tmp;
                             else if (count_word == 16 + size_src_files + size_vec_templates + 3)
+                                trg_tmp.name_generator = str_tmp;
+                            else if (count_word == 16 + size_src_files + size_vec_templates + 4)
                                 trg_tmp.version_target = str_tmp;
-                            else if (count_word >= 16 + size_src_files + size_vec_templates + 4 &&
-                                     count_word < 16 + size_src_files + size_vec_templates + 4 + size_vec_libs)
+                            else if (count_word >= 16 + size_src_files + size_vec_templates + 5 &&
+                                     count_word < 16 + size_src_files + size_vec_templates + 5 + size_vec_libs)
                                 trg_tmp.target_vec_libs.push_back(str_tmp);
-                            else if (count_word == 16 + size_src_files + size_vec_templates + 4 + size_vec_libs) {
+                            else if (count_word == 16 + size_src_files + size_vec_templates + 5 + size_vec_libs) {
                                 out_targets.push_back(trg_tmp);
 
                                 trg_tmp.target_vec_libs = {};
@@ -588,32 +590,43 @@ void bwbuilder::build_targets() {
 
     global_extern_args.push_back(std::pair<std::string, std::string>("", ""));
 
-    generator->set_ccomponents(call_components);
-    generator->init();
+    try {
 
-    for (u32t i = 0; i < out_targets.size(); ++i) {
-        if (out_targets[i].prj.vec_templates.size() == 0)
-            throw bwbuilder_excp("There are no templates for the target - " + out_targets[i].name_target, "002");
-        std::string dir_target = std::string(DIRWORK_ENV) + "/" + out_targets[i].name_target;
-        if (!std::filesystem::is_directory(dir_target))
-            std::filesystem::create_directories(dir_target);
+        for (u32t i = 0; i < out_targets.size(); ++i) {
+            if (generators.find(out_targets[i].name_generator) == generators.end())
+                throw bwbuilder_excp("The provided generator as the primary for the current target was not found - " +
+                                         out_targets[i].name_target + ": " + out_targets[i].name_generator,
+                                     "002");
+            auto &current_generator = generators[out_targets[i].name_generator];
+            current_generator->set_ccomponents(call_components);
+            current_generator->init();
+            if (out_targets[i].prj.vec_templates.size() == 0)
+                throw bwbuilder_excp("There are no templates for the target - " + out_targets[i].name_target, "002");
+            std::string dir_target = std::string(DIRWORK_ENV) + "/" + out_targets[i].name_target;
+            if (!std::filesystem::is_directory(dir_target))
+                std::filesystem::create_directories(dir_target);
 
-        assist << "BUILDING A TARGET -" + out_targets[i].name_target;
+            assist << "BUILDING A TARGET -" + out_targets[i].name_target;
 
-        bwqueue_templates bw_tcmd;
-        set_queue_templates(create_stack_target_templates(out_targets[i]), bw_tcmd);
-        parse_basic_args(out_targets[i], bw_tcmd);
-        commands cmd_s = generator->gen_commands(out_targets[i], bw_tcmd, dir_target,
-                                                 generator->input_files(out_targets[i], bw_tcmd, dir_target));
+            bwqueue_templates bw_tcmd;
+            set_queue_templates(create_stack_target_templates(out_targets[i]), bw_tcmd);
+            parse_basic_args(out_targets[i], bw_tcmd);
+            commands cmd_s =
+                current_generator->gen_commands(out_targets[i], bw_tcmd, dir_target,
+                                                current_generator->input_files(out_targets[i], bw_tcmd, dir_target));
 
-        for (const command &cmd : cmd_s) {
+            for (const command &cmd : cmd_s) {
 #if defined(WIN)
-            if (system(cmd.c_str()))
+                if (system(cmd.c_str()))
 #elif defined(UNIX)
-            if (((int (*)(const char *))assist.get_realsystem_func())(cmd.c_str()))
+                if (((int (*)(const char *))assist.get_realsystem_func())(cmd.c_str()))
 #endif
-                throw bwbuilder_excp("Failed build. Command execution error - " + cmd, "004");
+                    throw bwbuilder_excp("Failed build. Command execution error - " + cmd, "004");
+            }
         }
+    }
+    catch (bwgenerator_excp &_excp) {
+        throw bweas::bwexception::bwbuilder_excp(assist.get_desc_err(_excp.get_assist_err()), "008");
     }
 }
 
@@ -627,6 +640,7 @@ void bwbuilder::load_target() {
         target_tmp.target_t = targets[i].target_t;
         target_tmp.target_cfg = targets[i].target_cfg;
         target_tmp.version_target = targets[i].version_target;
+        target_tmp.name_generator = targets[i].name_generator;
         target_tmp.target_vec_libs = targets[i].target_vec_libs;
         target_tmp.prj = *targets[i].prj;
 
