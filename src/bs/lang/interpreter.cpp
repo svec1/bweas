@@ -67,7 +67,7 @@ void interpreter_exec::build_aef() {
 #endif
 }
 
-void interpreter_exec::interpreter_run() {
+void interpreter_exec::interpret() {
 #if defined(WIN)
     wrap_interpreter(curr_expr = 0; assist.safe_call_dll_func_begin(); for (; curr_expr < aef.size(); ++curr_expr) {
         if (aef[curr_expr].expr_func.func_n.func_ref == sl_func::set || aef[curr_expr].execute_with_semantic_an())

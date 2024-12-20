@@ -74,36 +74,38 @@ std::string bwpackage::init(data_bw_package _data, bool is_create_pckg) {
             throw bwpackage_excp("The \"generators\" field must be of type json structure", "002");
         for (const auto &module : config_json["modules"].items()) {
             nlohmann::json metainf_md = module.value();
-            std::vector<config::module::def_func> funcs_md;
+            semantic_an::table_func funcs_md;
             if (!metainf_md.contains("dll") || !metainf_md["dll"].is_string())
                 throw bwpackage_excp("Module metadata must include the name of the dll file", "002");
             else if (!metainf_md.contains("functions") || !metainf_md["functions"].is_object())
                 throw bwpackage_excp("Module metadata must include the functions they provide for import", "002");
 
-            for (const auto &func : metainf_md["functions"]) {
-                config::module::def_func def_func_tmp;
-                for (const auto &field : func.items()) {
+            for (const auto &func : metainf_md["functions"].items()) {
+                auto it_func = func.value();
+                aef_expr::notion_func def_func_tmp;
+                for (const auto &field : it_func.items()) {
                     if (field.key() == "accepted") {
                         if (!field.value().is_array())
                             throw bwpackage_excp(
                                 "The field for listing the types of function parameters must be an array", "002");
                         for (u32t i = 0; i < field.value().size(); ++i) {
-                            if (field.value().is_string())
-                                def_func_tmp.params.push_back(parser::utility::type_param_in_str(field.value()[i]));
+                            if (field.value()[i].is_string())
+                                def_func_tmp.expected_args.push_back(
+                                    parser::utility::type_param_in_str(field.value()[i]));
                             else
-                                def_func_tmp.params.push_back(field.value()[i]);
+                                def_func_tmp.expected_args.push_back(field.value()[i]);
                         }
                     }
                     else if (field.key() == "csn") {
                         if (!field.value().is_boolean())
                             throw bwpackage_excp(
                                 "Field for selecting the location of the function call, must be an boolean", "002");
-                        def_func_tmp.cst = field.value();
+                        def_func_tmp.only_with_semantic = field.value();
                     }
                 }
-                funcs_md.push_back(def_func_tmp);
+                funcs_md[func.key()] = def_func_tmp;
             }
-            cfg_package.modules.emplace_back(module.key(), metainf_md["dll"], funcs_md);
+            cfg_package.mds.emplace_back(module.key(), metainf_md["dll"], funcs_md);
         }
     }
     return create_data_package(_data);

@@ -76,7 +76,7 @@ class interpreter_exec {
 
     // Interpretation of functions (not declaring, and which are not
     // explicitly marked as called in the semantic analysis)
-    void interpreter_run();
+    void interpret();
 
     void set_config(config conf);
     void set_external_scope(var::scope *_external_scope);

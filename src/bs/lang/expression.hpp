@@ -55,7 +55,10 @@ struct notion_func {
     notion_func(void (*func)(const std::vector<subexpressions> &, var::scope &), std::vector<params> params)
         : func_ref(func), expected_args(params) {
     }
-    void (*func_ref)(const std::vector<subexpressions> &, var::scope &);
+
+    using func_t = void (*)(const std::vector<subexpressions> &, var::scope &);
+
+    func_t func_ref;
     std::vector<params> expected_args;
 
     // does the function declare anyone
@@ -122,7 +125,7 @@ inline bool expression::execute_with_semantic_an() {
 }
 
 // Defines the return type (expected after semantic analysis)
-inline subexpressions::ret_type_subexpr subexpressions::returned_type_subexpr() const{
+inline subexpressions::ret_type_subexpr subexpressions::returned_type_subexpr() const {
     if (subexpr_t == type_subexpr::INT || subexpr_t == type_subexpr::INT_COMPARE)
         return ret_type_subexpr::INT;
     else if (subexpr_t == type_subexpr::STRING || subexpr_t == type_subexpr::STRING_ADD)

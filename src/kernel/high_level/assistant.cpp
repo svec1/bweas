@@ -242,7 +242,7 @@ assistant::get_handle_module_dll(std::string dll_name) {
 }
 #elif defined(UNIX)
 
-const char *assistant::get_error_dl() {
+std::string assistant::get_error_dl() {
     return dlerror();
 }
 

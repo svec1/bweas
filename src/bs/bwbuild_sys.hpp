@@ -5,6 +5,7 @@
 
 #include "bw_defs.hpp"
 #include "bwgenerator_api.hpp"
+#include "bwmodule.hpp"
 #include "bwpackage.hpp"
 
 #include <stack>
@@ -131,10 +132,13 @@ class bwbuilder final {
     void parse_basic_args(const var::struct_sb::target_out &target, bwqueue_templates &target_queue_templates);
 
   private:
-    interpreter::interpreter_exec _interpreter;
+    interpreter::interpreter_exec interpreter;
+    semantic_an::table_func module_tfuncs;
+
+    module::module_mg module_mg;
     std::vector<bwpackage> loaded_packages;
 
-    std::map<std::string, generator_api::base_generator*> generators;
+    std::map<std::string, generator_api::base_generator *> generators;
 
     std::vector<var::struct_sb::target_out> out_targets;
     std::vector<var::struct_sb::template_command> templates;

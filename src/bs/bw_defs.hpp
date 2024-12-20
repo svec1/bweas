@@ -52,6 +52,14 @@ class bwbuilder_excp : public bw_excp::bweas_exception {
     std::string what_hp;
 };
 
+// Exception class for bweas-module only.
+class bwmodule_excp : public bwbuilder_excp {
+  public:
+    bwmodule_excp(std::string _what_hp, std::string number_err) : bwbuilder_excp(_what_hp, number_err, "-MDL") {
+    }
+    ~bwmodule_excp() noexcept override final = default;
+};
+
 // Exception class for bweas-package only.
 class bwpackage_excp : public bwbuilder_excp {
   public:

@@ -202,7 +202,7 @@ class assistant {
 #define HOOK_DETECTED_STR                                                                                              \
     "WARNING!!!A system call was detected, most likely the dynamically loaded dll library is hostile."
 
-    const char *get_error_dl();
+    std::string get_error_dl();
 
     u32t load_dl(std::string dl_name);
     u32t dump_dl(std::string dl_name);

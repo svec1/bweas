@@ -193,11 +193,16 @@ void bwbuilder::init() {
 
     generators.emplace("bwgenerator", generator_api::base_generator::createGeneratorInt(generator::bwgenerator,
                                                                                         generator::bwfile_inputs));
-
     for (const auto &package : loaded_packages)
         for (const auto &generator : package.cfg_package.generators)
             generators.emplace(generator.name_generator,
                                generator_api::base_generator::createGeneratorLua(generator.src_lua_generator));
+
+    for (auto &package : loaded_packages) {
+        semantic_an::table_func tfuncs = module_mg.init_tsfunc(package.cfg_package.mds);
+        for (const auto &func : tfuncs)
+            module_tfuncs.insert(func);
+    }
 }
 
 bwbuilder::mode_working bwbuilder::get_current_mode() {
@@ -265,12 +270,13 @@ void bwbuilder::run_interpreter() {
     new_config.transmit_smt_name_func_with_smt = 1;
     new_config.use_external_scope = 0;
 
-    _interpreter.set_config(new_config);
+    interpreter.set_config(new_config);
+    interpreter.load_external_func(std::move(module_tfuncs));
 
     assist << " - [BWEAS]: Interpreting the configuration file...";
 
-    _interpreter.build_aef();
-    _interpreter.interpreter_run();
+    interpreter.build_aef();
+    interpreter.interpret();
 
     assist << " - [BWEAS]: The interpretation was successful!";
 }
@@ -291,9 +297,9 @@ u32t bwbuilder::gen_cache_target() {
     std::unordered_set<std::string> all_used_call_component;
 
     const auto &vec_global_template =
-        _interpreter.get_current_scope().get_vector_variables_t<var::struct_sb::template_command>();
+        interpreter.get_current_scope().get_vector_variables_t<var::struct_sb::template_command>();
     const auto &vec_c_components =
-        _interpreter.get_current_scope().get_vector_variables_t<var::struct_sb::call_component>();
+        interpreter.get_current_scope().get_vector_variables_t<var::struct_sb::call_component>();
 
     for (i32t i = 0; i < out_targets.size(); ++i) {
         char *prj_v = (char *)&out_targets[i];
@@ -373,12 +379,12 @@ u32t bwbuilder::gen_cache_target() {
     serel_target_tmp += std::to_string(all_used_globally_args.size()) + " ";
 
     for (const auto &g_arg : all_used_globally_args) {
-        if (_interpreter.get_current_scope().what_type(
-                _interpreter.get_current_scope().get_var_value<std::string>(g_arg)) != 2)
+        if (interpreter.get_current_scope().what_type(
+                interpreter.get_current_scope().get_var_value<std::string>(g_arg)) != 2)
             throw bwbuilder_excp("External global parameter for template is not defined correctly", "003");
         serel_target_tmp += g_arg + "-\"" +
-                            _interpreter.get_current_scope().get_var_value<std::string>(
-                                _interpreter.get_current_scope().get_var_value<std::string>(g_arg)) +
+                            interpreter.get_current_scope().get_var_value<std::string>(
+                                interpreter.get_current_scope().get_var_value<std::string>(g_arg)) +
                             "\" ";
     }
     assist.write_file(assist.get_ref_file(bweas_cache), serel_target_tmp, mf::output::write_binary);
@@ -636,7 +642,7 @@ void bwbuilder::build_targets() {
 }
 
 void bwbuilder::load_target() {
-    std::vector<var::struct_sb::target> targets = _interpreter.export_targets();
+    std::vector<var::struct_sb::target> targets = interpreter.export_targets();
 
     var::struct_sb::target_out target_tmp;
 
@@ -783,7 +789,7 @@ void bwbuilder::parse_basic_args(const var::struct_sb::target_out &target, bwque
 
 void bwbuilder::imp_data_interpreter_for_bs() {
     const auto &global_templates =
-        _interpreter.get_current_scope().get_vector_variables_t<var::struct_sb::template_command>();
+        interpreter.get_current_scope().get_vector_variables_t<var::struct_sb::template_command>();
     std::unordered_set<std::string> name_global_external_args;
 
     for (const auto &global_template_it : global_templates) {
@@ -794,21 +800,21 @@ void bwbuilder::imp_data_interpreter_for_bs() {
     }
 
     const auto &global_call_components =
-        _interpreter.get_current_scope().get_vector_variables_t<var::struct_sb::call_component>();
+        interpreter.get_current_scope().get_vector_variables_t<var::struct_sb::call_component>();
     for (const auto &global_call_component : global_call_components)
         call_components.push_back(global_call_component.second);
 
-    const auto &string_variables = _interpreter.get_current_scope().get_vector_variables_t<std::string>();
+    const auto &string_variables = interpreter.get_current_scope().get_vector_variables_t<std::string>();
     for (const auto &name_global_external_arg : name_global_external_args) {
         const auto &ref_extern_arg =
             find_if(string_variables.begin(), string_variables.end(),
                     [name_global_external_arg](const std::pair<std::string, std::string> &str_var) {
                         return str_var.first == name_global_external_arg;
                     });
-        if (_interpreter.get_current_scope().what_type(ref_extern_arg->second) != 2)
+        if (interpreter.get_current_scope().what_type(ref_extern_arg->second) != 2)
             throw bwbuilder_excp(
                 "The parameter reference(name) points to a non-existent variable - " + ref_extern_arg->second, "002");
-        const auto &extern_arg = _interpreter.get_current_scope().get_var_value<std::string>(ref_extern_arg->second);
+        const auto &extern_arg = interpreter.get_current_scope().get_var_value<std::string>(ref_extern_arg->second);
         global_extern_args.push_back(std::pair<std::string, std::string>(ref_extern_arg->first, extern_arg));
     }
 }

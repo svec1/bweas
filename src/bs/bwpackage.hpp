@@ -2,6 +2,7 @@
 #define BWPACKAGE__H
 
 #include "bw_defs.hpp"
+#include "bwmodule.hpp"
 #include "lang\expression.hpp"
 
 // Package expansion
@@ -65,25 +66,9 @@ class bwpackage {
             std::vector<std::string> features_generator;
             std::string src_lua_generator;
         };
-        struct module {
-            struct def_func {
-                std::vector<aef_expr::params> params;
-                std::string returnes;
-
-                // call in semantic analysis
-                bool cst{0};
-            };
-            module(std::string _name_module, std::string _name_dll,
-                   std::vector<def_func> _funcs) :name_module(_name_module),
-                name_dll(_name_dll), funcs(_funcs) {
-            }
-            std::string name_module;
-            std::string name_dll;
-            std::vector<def_func> funcs;
-        };
 
         std::vector<generator_lua> generators;
-        std::vector<module> modules;
+        module::module_mg::modules mds;
     };
 
     // Returns a packet compressed by the lz4 algorithm, with the signature of a bweas packet
