@@ -58,17 +58,11 @@ namespace bwlua {
 // Special tools - Wrappers over the lua class,
 // for simple interaction with the lua stack and others.
 namespace tools {
-template <typename T> inline void push_stack(lua_State *L, T param) {
-    lua(L).push_stack_param(param);
-}
-template <typename T> inline T pop_stack(lua_State *L, int idx = -1) {
-    return lua(L).get_valsymbol<T>(idx);
-}
+template <typename T> inline void push_stack(lua_State *L, T param);
+template <typename T> inline T pop_stack(lua_State *L, int idx = -1);
 
 // Calls a function that is on the top of the stack
-template <typename T, typename... Types> inline T call_function(lua_State *L, Types... param) {
-    return lua(L).call_symbol<T>(param);
-}
+template <typename T, typename... Types> inline T call_function(lua_State *L, Types... param);
 } // namespace tools
 
 // A wrapper class for luajit.
@@ -666,6 +660,21 @@ class lua {
     lua_State *L{NULL};
     std::mutex lmutex;
 };
+
+namespace tools {
+template <typename T> inline void push_stack(lua_State *L, T param) {
+    lua(L).push_stack_param(param);
+}
+template <typename T> inline T pop_stack(lua_State *L, int idx) {
+    return lua(L).template get_valsymbol<T>(idx);
+}
+
+// Calls a function that is on the top of the stack
+template <typename T, typename... Types> inline T call_function(lua_State *L, Types... param) {
+    return lua(L).template call_symbol<T>(param...);
+}
+} // namespace tools
+
 } // namespace bwlua
 
 #endif

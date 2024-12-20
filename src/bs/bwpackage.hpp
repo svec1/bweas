@@ -3,7 +3,6 @@
 
 #include "bw_defs.hpp"
 #include "bwmodule.hpp"
-#include "lang\expression.hpp"
 
 // Package expansion
 #define BW_FORMAT_PACKAGE ".bweas-package"

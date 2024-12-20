@@ -177,11 +177,11 @@ void bwbuilder::init() {
             std::string path_to_package =
                 assist.get_path_program() + "/packages/" + (std::string)package.value() + BW_FORMAT_PACKAGE;
             std::string raw_data_package;
-            file_it package = assist.open_file(path_to_package, mf::open::rb);
-            if (!assist.exist_file(package))
+            file_it it_package = assist.open_file(path_to_package, mf::open::rb);
+            if (!assist.exist_file(it_package))
                 throw bwbuilder_excp(path_to_package, "007");
-            raw_data_package = assist.read_file(assist.get_ref_file(package), mf::input::read_binary);
-            assist.close_file(package);
+            raw_data_package = assist.read_file(assist.get_ref_file(it_package), mf::input::read_binary);
+            assist.close_file(it_package);
 
             loaded_package.load(raw_data_package);
             loaded_packages.push_back(loaded_package);

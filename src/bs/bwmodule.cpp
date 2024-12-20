@@ -13,11 +13,12 @@ module::module_mg::module_mg() {
 semantic_an::table_func module::module_mg::init_tfunc(module &md) {
     semantic_an::table_func tfuncs;
     try {
-        auto dll = assist.load_dll(md.name_dll);
 #if defined(WIN)
+        HMODULE dll = assist.load_dll(md.name_dll);
         if (DWORD it_err = assist.get_error_win32())
             throw bwmodule_excp("WinAPI error: " + std::to_string(it_err), "000");
 #elif defined(UNIX)
+        u32t dll = assist.load_dl(md.name_dll);
         if (!assist.get_error_dl().empty())
             throw bwmodule_excp(assist.get_error_dl(), "000");
 #endif
@@ -43,7 +44,7 @@ semantic_an::table_func module::module_mg::init_tfunc(module &md) {
 semantic_an::table_func module::module_mg::init_tsfunc(modules &mds) {
     semantic_an::table_func tfuncs;
     for (auto &md : mds) {
-        semantic_an::table_func tfuncs_md= init_tfunc(md);
+        semantic_an::table_func tfuncs_md = init_tfunc(md);
         for (const auto &func_md : tfuncs_md)
             tfuncs.insert(func_md);
     }
