@@ -245,6 +245,9 @@ void sl_func::set(const std::vector<subexpressions> &sub_expr, var::scope &curr_
     update_cfg_struct(sub_expr[0].token_of_subexpr[0].token_val, curr_scope);
 }
 
+void sl_func::file(const std::vector<aef_expr::subexpressions> &sub_expr, var::scope &curr_scope) {
+}
+
 void sl_func::project(const std::vector<subexpressions> &sub_expr, var::scope &curr_scope) {
     var::struct_sb::project &prj_ref =
         curr_scope.create_var<var::struct_sb::project>(sub_expr[0].token_of_subexpr[0].token_val);

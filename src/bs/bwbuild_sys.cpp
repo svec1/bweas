@@ -25,7 +25,6 @@ bwbuilder::bwbuilder(int argv, char **args) {
         assist.add_err("BWS005", "Incorrect structure of the bweas-json configuration file");
         assist.add_err("BWS006", "The bweas-json configuration for package package file was not found");
         assist.add_err("BWS007", "Bweas package not found");
-        assist.add_err("BWS008", "Failed to generate commands");
 
         assist.add_err("BWS-HAX000", "Unknown parameter");
         assist.add_err("BWS-HAX001", "The package command is a separate subroutine");
@@ -601,43 +600,36 @@ void bwbuilder::build_targets() {
 
     global_extern_args.push_back(std::pair<std::string, std::string>("", ""));
 
-    try {
+    for (u32t i = 0; i < out_targets.size(); ++i) {
+        if (generators.find(out_targets[i].name_generator) == generators.end())
+            throw bwbuilder_excp("The provided generator as the primary for the current target was not found - " +
+                                     out_targets[i].name_target + ": " + out_targets[i].name_generator,
+                                 "002");
+        auto &current_generator = generators[out_targets[i].name_generator];
+        current_generator->set_ccomponents(call_components);
+        current_generator->init();
+        if (out_targets[i].prj.vec_templates.size() == 0)
+            throw bwbuilder_excp("There are no templates for the target - " + out_targets[i].name_target, "002");
+        std::string dir_target = std::string(DIRWORK_ENV) + "/" + out_targets[i].name_target;
+        if (!std::filesystem::is_directory(dir_target))
+            std::filesystem::create_directories(dir_target);
 
-        for (u32t i = 0; i < out_targets.size(); ++i) {
-            if (generators.find(out_targets[i].name_generator) == generators.end())
-                throw bwbuilder_excp("The provided generator as the primary for the current target was not found - " +
-                                         out_targets[i].name_target + ": " + out_targets[i].name_generator,
-                                     "002");
-            auto &current_generator = generators[out_targets[i].name_generator];
-            current_generator->set_ccomponents(call_components);
-            current_generator->init();
-            if (out_targets[i].prj.vec_templates.size() == 0)
-                throw bwbuilder_excp("There are no templates for the target - " + out_targets[i].name_target, "002");
-            std::string dir_target = std::string(DIRWORK_ENV) + "/" + out_targets[i].name_target;
-            if (!std::filesystem::is_directory(dir_target))
-                std::filesystem::create_directories(dir_target);
+        assist << "BUILDING A TARGET -" + out_targets[i].name_target;
 
-            assist << "BUILDING A TARGET -" + out_targets[i].name_target;
+        bwqueue_templates bw_tcmd;
+        set_queue_templates(create_stack_target_templates(out_targets[i]), bw_tcmd);
+        parse_basic_args(out_targets[i], bw_tcmd);
+        commands cmd_s = current_generator->gen_commands(
+            out_targets[i], bw_tcmd, dir_target, current_generator->input_files(out_targets[i], bw_tcmd, dir_target));
 
-            bwqueue_templates bw_tcmd;
-            set_queue_templates(create_stack_target_templates(out_targets[i]), bw_tcmd);
-            parse_basic_args(out_targets[i], bw_tcmd);
-            commands cmd_s =
-                current_generator->gen_commands(out_targets[i], bw_tcmd, dir_target,
-                                                current_generator->input_files(out_targets[i], bw_tcmd, dir_target));
-
-            for (const command &cmd : cmd_s) {
+        for (const command &cmd : cmd_s) {
 #if defined(WIN)
-                if (system(cmd.c_str()))
+            if (system(cmd.c_str()))
 #elif defined(UNIX)
-                if (((int (*)(const char *))assist.get_realsystem_func())(cmd.c_str()))
+            if (((int (*)(const char *))assist.get_realsystem_func())(cmd.c_str()))
 #endif
-                    throw bwbuilder_excp("Failed build. Command execution error - " + cmd, "004");
-            }
+                throw bwbuilder_excp("Failed build. Command execution error - " + cmd, "004");
         }
-    }
-    catch (bwgenerator_excp &_excp) {
-        throw bweas::bwexception::bwbuilder_excp(assist.get_desc_err(_excp.get_assist_err()), "008");
     }
 }
 

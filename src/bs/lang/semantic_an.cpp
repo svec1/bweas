@@ -50,6 +50,8 @@ void semantic_analyzer::add_standart_function() {
 
     add_func_flink("set", sl_func::set,
                    {params::NCHECK_VAR_ID, params::ANY_VALUE_WITHOUT_FUTUREID_NEXT, params::NEXT_TOO});
+    add_func_flink("file", sl_func::set,
+                   {params::LNUM_OR_ID_VAR, params::FUTURE_VAR_ID, params::LSTR_OR_ID_VAR, params::NEXT_TOO});
     add_func_flink("project", sl_func::project,
                    {params::FUTURE_VAR_ID, params::LNUM_OR_ID_VAR, params::LSTR_OR_ID_VAR, params::NEXT_TOO});
     add_func_flink("executable", sl_func::executable,

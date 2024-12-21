@@ -29,39 +29,40 @@ void interpreter_exec::set_external_scope(var::scope *_external_scope) {
 }
 
 void interpreter_exec::build_aef() {
+    file_it bweas_config = assist.open_file(interp_conf.filename_interp, mf::open::rb);
+
+    lexer.set_symbols(assist.read_file(assist.get_ref_file(bweas_config), mf::input::read_binary));
+    assist.close_file(bweas_config);
+
+    global_scope.clear();
+
+    clock_t beg;
+
+    smt_analyzer.load_external_func_table(external_func_table);
 #if defined(WIN)
     assist.safe_call_dll_func_begin();
 #endif
-    wrap_interpreter(
-        file_it bweas_config = assist.open_file(interp_conf.filename_interp, mf::open::rb);
+    if (interp_conf.debug_output) {
+        debug_mark_time_func(lexer.analysis(), "lexer")
+        parser.set_tokens(lexer.get_tokens());
+        debug_mark_time_func(parser.analysis(), "parser")
+        aef = parser.get_exprs();
+        if (interp_conf.use_external_scope) {
+            debug_mark_time_func(smt_analyzer.analysis(aef, *external_scope), "semantic analyzer")
+        }
+        else {
+            debug_mark_time_func(smt_analyzer.analysis(aef, global_scope), "semantic analyzer")
+        }
+    }
+    else {
+        parser.set_tokens(lexer.analysis());
+        aef = parser.analysis();
 
-        lexer.set_symbols(assist.read_file(assist.get_ref_file(bweas_config), mf::input::read_binary));
-        assist.close_file(bweas_config);
-
-        global_scope.clear();
-
-        clock_t beg;
-
-        smt_analyzer.load_external_func_table(external_func_table); if (interp_conf.debug_output) {
-            debug_mark_time_func(lexer.analysis(), "lexer")
-            parser.set_tokens(lexer.get_tokens());
-            debug_mark_time_func(parser.analysis(), "parser")
-            aef = parser.get_exprs();
-            if (interp_conf.use_external_scope) {
-                debug_mark_time_func(smt_analyzer.analysis(aef, *external_scope), "semantic analyzer")
-            }
-            else {
-                debug_mark_time_func(smt_analyzer.analysis(aef, global_scope), "semantic analyzer")
-            }
-        } else {
-            parser.set_tokens(lexer.analysis());
-            aef = parser.analysis();
-
-            if (interp_conf.use_external_scope)
-                smt_analyzer.analysis(aef, *external_scope);
-            else
-                smt_analyzer.analysis(aef, global_scope);
-        })
+        if (interp_conf.use_external_scope)
+            smt_analyzer.analysis(aef, *external_scope);
+        else
+            smt_analyzer.analysis(aef, global_scope);
+    }
 #ifdef _WIN32
     assist.safe_call_dll_func_end();
 #endif
@@ -69,24 +70,28 @@ void interpreter_exec::build_aef() {
 
 void interpreter_exec::interpret() {
 #if defined(WIN)
-    wrap_interpreter(curr_expr = 0; assist.safe_call_dll_func_begin(); for (; curr_expr < aef.size(); ++curr_expr) {
-        if (aef[curr_expr].expr_func.func_n.func_ref == sl_func::set || aef[curr_expr].execute_with_semantic_an())
+    curr_expr = 0;
+    assist.safe_call_dll_func_begin();
+    for (; curr_expr < aef.size(); ++curr_expr) {
+        if (aef[curr_expr].execute_with_semantic_an())
             continue;
-        wrap_callf_interpreter(aef[curr_expr].expr_func.func_n.func_ref(aef[curr_expr].sub_expr_s, global_scope);, )
-            assist.check_safe_call_dll_func();
-    } assist.safe_call_dll_func_end();)
+        aef[curr_expr].expr_func.func_n.func_ref(aef[curr_expr].sub_expr_s, global_scope);
+        assist.check_safe_call_dll_func();
+    }
+    assist.safe_call_dll_func_end();
 #elif defined(UNIX)
-    wrap_interpreter(curr_expr = 0; for (; curr_expr < aef.size(); ++curr_expr) {
-        if (aef[curr_expr].expr_func.func_n.func_ref == sl_func::set || aef[curr_expr].execute_with_semantic_an())
+    curr_expr = 0;
+    for (; curr_expr < aef.size(); ++curr_expr) {
+        if (aef[curr_expr].execute_with_semantic_an())
             continue;
-        wrap_callf_interpreter(aef[curr_expr].expr_func.func_n.func_ref(aef[curr_expr].sub_expr_s, global_scope);, )
-            assist.check_safe_call_dl_func();
-    })
+        aef[curr_expr].expr_func.func_n.func_ref(aef[curr_expr].sub_expr_s, global_scope);
+        assist.check_safe_call_dl_func();
+    }
 #endif
 }
 
 std::vector<var::struct_sb::target> interpreter_exec::export_targets() {
-    std::vector<std::pair<std::string, var::struct_sb::target>> vec_targets_ref =
+    const std::vector<std::pair<std::string, var::struct_sb::target>> &vec_targets_ref =
         global_scope.get_vector_variables_t<var::struct_sb::target>();
 
     std::vector<var::struct_sb::target> targets;

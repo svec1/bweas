@@ -5,21 +5,6 @@
 
 namespace interpreter {
 
-#define wrap_interpreter(action)                                                                                       \
-    try {                                                                                                              \
-        action                                                                                                         \
-    }                                                                                                                  \
-    catch (bw_excp::bweas_exception & excp) {                                                                          \
-        assist.call_err(excp.get_assist_err(), excp.what());                                                           \
-    }
-
-#define wrap_callf_interpreter(action, debug)                                                                          \
-    try {                                                                                                              \
-        action                                                                                                         \
-    }                                                                                                                  \
-    catch (realtime_excp & excp) {                                                                                     \
-        debug assist.call_err(excp.get_assist_err(), excp.what());                                                     \
-    }
 #define debug_mark_time_func(func, func_name)                                                                          \
     beg = clock();                                                                                                     \
     func;                                                                                                              \
