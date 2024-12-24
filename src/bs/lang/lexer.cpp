@@ -37,7 +37,8 @@ char lex_an::peek() {
 }
 
 bool lex_an::check_sym_valid_grammar(char ch) {
-    if (ch == '*' || ch == '/' || ch == '!' || ch == '-' || ch == '\'' || ch == '[' || ch == ']')
+    if (ch == '*' || ch == '/' || ch == '!' || ch == '-' || ch == '\'' || ch == '[' || ch == ']' || ch == '{' ||
+        ch == '}')
         return 0;
     return 1;
 }

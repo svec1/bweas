@@ -90,10 +90,10 @@ std::string bwpackage::init(data_bw_package _data, bool is_create_pckg) {
                                 "The field for listing the types of function parameters must be an array", "002");
                         for (u32t i = 0; i < field.value().size(); ++i) {
                             if (field.value()[i].is_string())
-                                def_func_tmp.expected_args.push_back(
-                                    parser::utility::type_param_in_str(field.value()[i]));
+                                def_func_tmp.expected_params.push_back(
+                                    aef_expr::param{parser::utility::type_param_in_str(field.value()[i])});
                             else
-                                def_func_tmp.expected_args.push_back(field.value()[i]);
+                                def_func_tmp.expected_params.push_back(aef_expr::param{field.value()[i]});
                         }
                     }
                     else if (field.key() == "csn") {

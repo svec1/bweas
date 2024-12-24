@@ -24,7 +24,7 @@ extern std::string build_pos_subexpr_str(const aef_expr::subexpressions &sub_exp
 extern std::string type_sybexpr_str(aef_expr::subexpressions::type_subexpr sub_expr_t);
 extern std::string tree_build_visually_str(const abstract_expr_func &aef);
 
-extern aef_expr::params type_param_in_str(std::string str);
+extern aef_expr::param_type type_param_in_str(std::string str);
 
 } // namespace utility
 
