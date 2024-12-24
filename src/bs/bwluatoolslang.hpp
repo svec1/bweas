@@ -3,6 +3,7 @@
 
 #include "bwgntools.hpp"
 #include "lang/static_struct.hpp"
+#include "tools/bwfile.hpp"
 #include "tools/bwlua.hpp"
 
 namespace bweas {
@@ -54,7 +55,7 @@ static inline int get_name_output_file_lua(lua_State *L) {
 }
 static inline int file_slc_mask_lua(lua_State *L) {
     commands cmd_s = bwlua::tools::pop_stack<commands>(L);
-    cmd_s = generator::tools::file_slc_mask(lua_tostring(L, -2), cmd_s);
+    cmd_s = bwfile::file_slc_mask(lua_tostring(L, -2), cmd_s);
     bwlua::tools::push_stack(L, cmd_s);
     return 1;
 }

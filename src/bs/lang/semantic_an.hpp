@@ -9,14 +9,6 @@
 
 namespace semantic_an {
 
-#define wrap_callf_declaration(func_decl)                                                                              \
-    try {                                                                                                              \
-        func_decl;                                                                                                     \
-    }                                                                                                                  \
-    catch (rt_semantic_excp & excp) {                                                                                  \
-        throw semantic_excp("SEMANTIC RT HANDLE: " + std::string(excp.what()), excp.get_assist_err());                 \
-    }
-
 using table_func = std::unordered_map<std::string, aef_expr::notion_func>;
 
 extern var::scope global_scope;

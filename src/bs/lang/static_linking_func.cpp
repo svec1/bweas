@@ -1,4 +1,5 @@
 #include "static_linking_func.hpp"
+#include "../tools/bwfile.hpp"
 #include "interpreter.hpp"
 #include "parser.hpp"
 #include "semantic_an.hpp"
@@ -246,6 +247,42 @@ void sl_func::set(const std::vector<subexpressions> &sub_expr, var::scope &curr_
 }
 
 void sl_func::file(const std::vector<aef_expr::subexpressions> &sub_expr, var::scope &curr_scope) {
+    if (std::stoi(sub_expr[0].token_of_subexpr[0].token_val) == 0) {
+        std::vector<std::string> path_files;
+        for (u32t i = 2; i < sub_expr.size(); ++i) {
+            if (std::filesystem::exists(sub_expr[i].token_of_subexpr[0].token_val)) {
+                path_files.push_back(std::filesystem::absolute(sub_expr[i].token_of_subexpr[0].token_val).string());
+                continue;
+            }
+            std::string tmp_path = sub_expr[i].token_of_subexpr[0].token_val;
+            std::string mask = sub_expr[i].token_of_subexpr[0].token_val;
+            u32t it = tmp_path.find_last_of("/\\");
+            if (it != tmp_path.npos) {
+                tmp_path.erase(it);
+                mask = std::filesystem::absolute(mask).string();
+                if (!std::filesystem::is_directory(tmp_path))
+                    throw semantic_an::rt_semantic_excp(
+                        parser::utility::build_pos_tokenb_str(sub_expr[i].token_of_subexpr[0]) +
+                            " Directory does not exist\n",
+                        "003");
+            }
+            else {
+                tmp_path = std::filesystem::current_path().string();
+                mask = tmp_path + "/" + mask;
+            }
+            std::vector<std::string> tmp_path_files, tmp_path_files_o;
+            for (const auto &it_path : std::filesystem::directory_iterator(tmp_path))
+                tmp_path_files.push_back(it_path.path().string());
+            tmp_path_files_o = bwfile::file_slc_mask(mask, tmp_path_files);
+            for (const auto &path_file : tmp_path_files_o)
+                path_files.push_back(path_file);
+        }
+
+        if (path_files.size() == 1)
+            curr_scope.create_var<std::string>(sub_expr[1].token_of_subexpr[0].token_val, path_files[0]);
+        else
+            curr_scope.create_var<std::vector<std::string>>(sub_expr[1].token_of_subexpr[0].token_val, path_files);
+    }
 }
 
 void sl_func::project(const std::vector<subexpressions> &sub_expr, var::scope &curr_scope) {

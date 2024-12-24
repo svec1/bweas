@@ -357,8 +357,11 @@ u32t bwbuilder::gen_cache_target() {
         for (u32t j = 0; j < vec_global_template[i].second.args.size(); ++j) {
             if (vec_global_template[i].second.args[j].arg_t == var::struct_sb::template_command::arg::type::extglobal)
                 all_used_globally_args.emplace(vec_global_template[i].second.args[j].str_arg);
-            serel_target_tmp += vec_global_template[i].second.args[j].str_arg + " " +
-                                std::to_string((i32t)vec_global_template[i].second.args[j].arg_t) + " ";
+            else if (vec_global_template[i].second.args[j].arg_t == var::struct_sb::template_command::arg::type::string)
+                serel_target_tmp += "\"" + vec_global_template[i].second.args[j].str_arg + "\" ";
+            else 
+                serel_target_tmp += vec_global_template[i].second.args[j].str_arg + " ";
+            serel_target_tmp += std::to_string((i32t)vec_global_template[i].second.args[j].arg_t) + " ";
         }
     }
 
@@ -427,7 +430,7 @@ u32t bwbuilder::deserl_cache() {
 
     try {
         for (i32t i = 0; i < serel_str.size(); ++i) {
-            if (serel_str[i] == '\"' && !enum_templates) {
+            if (serel_str[i] == '\"') {
                 if (!open_sk)
                     open_sk = 1;
                 else

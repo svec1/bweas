@@ -1,6 +1,7 @@
 #include "bwgenerator_integral.hpp"
 #include "bwgenerator_api.hpp"
 #include "bwgntools.hpp"
+#include "tools/bwfile.hpp"
 
 using namespace bweas;
 using namespace generator_api;
@@ -79,7 +80,7 @@ std::map<std::string, std::vector<std::string>> bweas::generator::bwfile_inputs(
                 }
                 current_arg.str_arg = "";
 
-                std::vector<std::string> slc_files = tools::file_slc_mask(mask, target.prj.src_files);
+                std::vector<std::string> slc_files = bwfile::file_slc_mask(mask, target.prj.src_files);
                 for (u32t i = 0; i < slc_files.size(); ++i) {
                     if (std::filesystem::last_write_time(slc_files[i]) >
                         std::filesystem::last_write_time(
@@ -211,7 +212,7 @@ commands bweas::generator::bwgenerator(const var::struct_sb::target_out &trg, bw
                             continue;
                         else {
                             std::vector<std::string> files =
-                                tools::file_slc_mask(attribute, input_files[current_template.name]);
+                                bwfile::file_slc_mask(attribute, input_files[current_template.name]);
                             arg.str_arg = "";
                             for (const auto &file : files) {
                                 arg.str_arg += file + " ";
@@ -249,7 +250,7 @@ commands bweas::generator::bwgenerator(const var::struct_sb::target_out &trg, bw
                         else if (attribute == "0")
                             continue;
                         else {
-                            std::vector<std::string> files = tools::file_slc_mask(attribute, trg.prj.src_files);
+                            std::vector<std::string> files = bwfile::file_slc_mask(attribute, trg.prj.src_files);
                             arg.str_arg = "";
                             for (const auto &file : files) {
                                 arg.str_arg += file + " ";

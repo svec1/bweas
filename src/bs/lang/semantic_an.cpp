@@ -50,7 +50,7 @@ void semantic_analyzer::add_standart_function() {
 
     add_func_flink("set", sl_func::set,
                    {params::NCHECK_VAR_ID, params::ANY_VALUE_WITHOUT_FUTUREID_NEXT, params::NEXT_TOO});
-    add_func_flink("file", sl_func::set,
+    add_func_flink("file", sl_func::file,
                    {params::LNUM_OR_ID_VAR, params::FUTURE_VAR_ID, params::LSTR_OR_ID_VAR, params::NEXT_TOO});
     add_func_flink("project", sl_func::project,
                    {params::FUTURE_VAR_ID, params::LNUM_OR_ID_VAR, params::LSTR_OR_ID_VAR, params::NEXT_TOO});
@@ -472,11 +472,11 @@ void semantic_analyzer::smt_second_pass(abstract_expr_func &expr_s, var::scope &
             --i;
         }
         else if (expr_s[i].execute_with_semantic_an()) {
-            wrap_callf_declaration(expr_s[i].expr_func.func_n.func_ref(expr_s[i].sub_expr_s, curr_scope))
+            expr_s[i].expr_func.func_n.func_ref(expr_s[i].sub_expr_s, curr_scope);
 #if defined(WIN)
-                assist.check_safe_call_dll_func();
+            assist.check_safe_call_dll_func();
 #elif defined(UNIX)
-                assist.check_safe_call_dl_func();
+            assist.check_safe_call_dl_func();
 #endif
         }
     }
