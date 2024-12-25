@@ -4,7 +4,6 @@
 #include "../tools/bwexception.hpp"
 #include "token.hpp"
 
-
 #include <string>
 #include <vector>
 
@@ -41,6 +40,8 @@ class lex_an {
     std::vector<token_expr::token> get_tokens();
     void clear_tokens();
 
+    void set_keyword_ops(const std::vector<std::string> &keyword_ops);
+
     // lexical analysis
     // ----------------
     // Creates tokens with type "token_type".
@@ -68,6 +69,8 @@ class lex_an {
 
     std::vector<token_expr::token> tokens;
     std::string symbols;
+
+    std::vector<std::string> keyword_ops{9};
 
     u32t pos{0};
 };

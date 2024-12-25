@@ -41,6 +41,7 @@ pars_an::pars_an(const std::vector<token> &tk_s) {
 
 void pars_an::set_tokens(const std::vector<token> &tk_s) {
     tokens = tk_s;
+    expr_s.clear();
 }
 abstract_expr_func pars_an::get_exprs() {
     return expr_s;

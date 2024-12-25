@@ -237,6 +237,7 @@ void bwbuilder::start() {
     }
     else if (mode_bweas == mode_working::collect_cfg || mode_bweas == mode_working::collect_cfg_w_build) {
     interpreter_start:
+        set_bwstd_functions();
         run_interpreter();
         load_target();
         gen_cache_target();
@@ -258,6 +259,67 @@ void bwbuilder::switch_log(u32t value) {
 void bwbuilder::switch_output_log(u32t value) {
     output_log = value;
     assist.switch_otp(output_log);
+}
+
+void bwbuilder::set_bwstd_functions() {
+    using namespace aef_expr;
+
+    interpreter.set_std_function(
+        "set", sl_func::set,
+        {param_type::NCHECK_VAR_ID, param_type::ANY_VALUE_WITHOUT_FUTUREID_NEXT, param_type::NEXT_TOO});
+    interpreter.set_std_function("file", sl_func::file,
+                                 {{param_type::FUTURE_VAR_ID, "{NULL}"},
+                                  param_type::LNUM_OR_ID_VAR,
+                                  param_type::LSTR_OR_ID_VAR,
+                                  param_type::NEXT_TOO});
+
+    interpreter.set_std_function(
+        "project", sl_func::project,
+        {param_type::FUTURE_VAR_ID, param_type::LNUM_OR_ID_VAR, param_type::LSTR_OR_ID_VAR, param_type::NEXT_TOO});
+    interpreter.set_std_function("executable", sl_func::executable,
+                                 {param_type::FUTURE_VAR_ID, param_type::LNUM_OR_ID_VAR, param_type::VAR_STRUCT_ID});
+
+    interpreter.set_std_function("link_lib", sl_func::link_lib,
+                                 {param_type::VAR_STRUCT_ID, param_type::LSTR_OR_ID_VAR, param_type::NEXT_TOO});
+    interpreter.set_std_function("exp_data", sl_func::exp_data, {param_type::LSTR_OR_ID_VAR});
+    interpreter.set_std_function("cmd", sl_func::cmd, {param_type::LNUM_OR_ID_VAR, param_type::LSTR_OR_ID_VAR});
+    interpreter.set_std_function("debug", sl_func::debug, {param_type::LSTR_OR_ID_VAR, param_type::NEXT_TOO});
+    interpreter.set_std_function("debug_struct", sl_func::debug_struct, {param_type::VAR_STRUCT_ID});
+
+    interpreter.set_std_function(
+        "flags_compiler", sl_func::flags_compiler,
+        {param_type::VAR_STRUCT_ID, param_type::LNUM_OR_ID_VAR, param_type::LSTR_OR_ID_VAR, param_type::NEXT_TOO});
+    interpreter.set_std_function(
+        "flags_linker", sl_func::flags_linker,
+        {param_type::VAR_STRUCT_ID, param_type::LNUM_OR_ID_VAR, param_type::LSTR_OR_ID_VAR, param_type::NEXT_TOO});
+
+    interpreter.set_std_function("path_compiler", sl_func::path_compiler,
+                                 {param_type::VAR_STRUCT_ID, param_type::LSTR_OR_ID_VAR});
+    interpreter.set_std_function("path_linker", sl_func::path_linker,
+                                 {param_type::VAR_STRUCT_ID, param_type::LSTR_OR_ID_VAR});
+    interpreter.set_std_function("standart_c", sl_func::standart_c,
+                                 {param_type::VAR_STRUCT_ID, param_type::LNUM_OR_ID_VAR});
+    interpreter.set_std_function("standart_cpp", sl_func::standart_cpp,
+                                 {param_type::VAR_STRUCT_ID, param_type::LNUM_OR_ID_VAR});
+    interpreter.set_std_function("lang", sl_func::lang, {param_type::VAR_STRUCT_ID, param_type::LNUM_OR_ID_VAR});
+
+    interpreter.set_std_function("generator", sl_func::generator,
+                                 {param_type::VAR_STRUCT_ID, param_type::LSTR_OR_ID_VAR});
+
+    interpreter.set_std_function("create_templates", sl_func::create_templates,
+                                 {param_type::FUTURE_VAR_ID, param_type::LSTR_OR_ID_VAR});
+    interpreter.set_std_function("create_call_component", sl_func::create_call_component,
+                                 {param_type::FUTURE_VAR_ID, param_type::LSTR_OR_ID_VAR, param_type::LSTR_OR_ID_VAR});
+    interpreter.set_std_function("add_param_template", sl_func::add_param_template,
+                                 {param_type::FUTURE_VAR_ID, param_type::VAR_ID});
+    interpreter.set_std_function("use_templates", sl_func::use_templates,
+                                 {param_type::VAR_STRUCT_ID, param_type::LSTR_OR_ID_VAR, param_type::NEXT_TOO});
+    interpreter.set_std_function("use_it_template", sl_func::use_it_template,
+                                 {param_type::VAR_STRUCT_ID, param_type::LNUM_OR_ID_VAR});
+
+    interpreter.set_keyword_ops({STR_KEYWORD_OP_EQUAL, STR_KEYWORD_OP_AND, STR_KEYWORD_OP_OR, STR_KEYWORD_OP_NOT,
+                                 STR_KEYWORD_OP_TSTR, STR_KEYWORD_OP_CONST_RELEASE, STR_KEYWORD_OP_CONST_DEBUG,
+                                 STR_KEYWORD_OP_CONST_TRUE, STR_KEYWORD_OP_CONST_FALSE});
 }
 
 void bwbuilder::run_interpreter() {
@@ -359,7 +421,7 @@ u32t bwbuilder::gen_cache_target() {
                 all_used_globally_args.emplace(vec_global_template[i].second.args[j].str_arg);
             else if (vec_global_template[i].second.args[j].arg_t == var::struct_sb::template_command::arg::type::string)
                 serel_target_tmp += "\"" + vec_global_template[i].second.args[j].str_arg + "\" ";
-            else 
+            else
                 serel_target_tmp += vec_global_template[i].second.args[j].str_arg + " ";
             serel_target_tmp += std::to_string((i32t)vec_global_template[i].second.args[j].arg_t) + " ";
         }

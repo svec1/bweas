@@ -72,6 +72,10 @@ class interpreter_exec {
 
     void load_external_func(semantic_an::table_func &&tfuncs);
 
+    void set_keyword_ops(std::vector<std::string> keyword_ops);
+    void set_std_function(std::string name_token_func, aef_expr::notion_func::func_t func_ref,
+                                 std::vector<aef_expr::param> expected_param);
+
   private:
     static inline bool init_glob{0};
 

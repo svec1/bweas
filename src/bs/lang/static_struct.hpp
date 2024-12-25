@@ -153,23 +153,27 @@ inline configuration to_cfg(std::string target_t) {
 struct version {
     version() = default;
     version(std::string version_str) {
-        std::string major_str = version_str;
-        std::string minor_str = version_str;
-        std::string patch_str = version_str;
+        try {
+            std::string major_str = version_str;
+            std::string minor_str = version_str;
+            std::string patch_str = version_str;
 
-        if (major_str.find('.') == major_str.npos)
-            goto init_mmp;
-        major_str.erase(major_str.find('.'));
-        minor_str.erase(0, minor_str.find('.') + 1);
-        if (minor_str.find('.') == minor_str.npos)
-            goto init_mmp;
-        minor_str.erase(minor_str.find('.'));
-        patch_str.erase(0, patch_str.find_last_of('.') + 1);
+            if (major_str.find('.') == major_str.npos)
+                goto init_mmp;
+            major_str.erase(major_str.find('.'));
+            minor_str.erase(0, minor_str.find('.') + 1);
+            if (minor_str.find('.') == minor_str.npos)
+                goto init_mmp;
+            minor_str.erase(minor_str.find('.'));
+            patch_str.erase(0, patch_str.find_last_of('.') + 1);
 
-    init_mmp:
-        major = std::atoll(major_str.c_str());
-        minor = std::atoll(minor_str.c_str());
-        patch = std::atoll(patch_str.c_str());
+        init_mmp:
+            major = std::atoll(major_str.c_str());
+            minor = std::atoll(minor_str.c_str());
+            patch = std::atoll(patch_str.c_str());
+        }
+        catch (std::logic_error &_excp) {
+        }
     }
     version(u32t mj, u32t mn, u32t ptch) : major{mj}, minor{mn}, patch{ptch} {
     }

@@ -25,7 +25,7 @@ extern void set(const std::vector<aef_expr::subexpressions> &sub_expr, var::scop
 // defining paths for them, to prevent problems with the subsequent build of targets.
 // Functions:
 //  1. PATH
-//  2. FINC
+//  2. FIND
 //  3. COPY
 extern void file(const std::vector<aef_expr::subexpressions> &sub_expr, var::scope &curr_scope);
 

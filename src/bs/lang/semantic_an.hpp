@@ -55,9 +55,6 @@ class semantic_analyzer {
     ~semantic_analyzer() = default;
 
   public:
-    void add_standart_function();
-
-  public:
     // Semantic analysis:
     // ------------------
     //  - It goes through the vector of expressions
@@ -89,11 +86,11 @@ class semantic_analyzer {
     void load_external_func_table(const table_func &notion_external_func);
     void append_external_name_func_w_smt(const std::vector<std::string> &list_name_func);
 
-  private:
     // Adding a function definition to the functions table
     void add_func_flink(std::string name_token_func, aef_expr::notion_func::func_t func_ref,
                         std::vector<aef_expr::param> expected_param);
 
+  private:
     void smt_zero_pass(const parser::abstract_expr_func &expr_s);
     void smt_first_pass(parser::abstract_expr_func &expr_s);
 

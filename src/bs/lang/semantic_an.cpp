@@ -38,61 +38,11 @@ semantic_analyzer::semantic_analyzer() {
         assist.add_err("SMT-RT002", "The number of arguments has been exceeded");
         assist.add_err("SMT-RT003", "The type of the identifier does not match the types of parameters");
         assist.add_err("SMT-RT004", "Internal error of the declared function");
-
-        add_standart_function();
     }
-}
 
-void semantic_analyzer::add_standart_function() {
     add_func_flink("if", NULL, {param_type::LNUM_OR_ID_VAR});
     add_func_flink("else", NULL, {});
     add_func_flink("endif", NULL, {});
-
-    add_func_flink("set", sl_func::set,
-                   {param_type::NCHECK_VAR_ID, param_type::ANY_VALUE_WITHOUT_FUTUREID_NEXT, param_type::NEXT_TOO});
-    add_func_flink("file", sl_func::file,
-                   {param_type::LNUM_OR_ID_VAR,
-                    {param_type::FUTURE_VAR_ID, "{NULL}"},
-                    param_type::LSTR_OR_ID_VAR,
-                    param_type::NEXT_TOO});
-
-    add_func_flink(
-        "project", sl_func::project,
-        {param_type::FUTURE_VAR_ID, param_type::LNUM_OR_ID_VAR, param_type::LSTR_OR_ID_VAR, param_type::NEXT_TOO});
-    add_func_flink("executable", sl_func::executable,
-                   {param_type::FUTURE_VAR_ID, param_type::LNUM_OR_ID_VAR, param_type::VAR_STRUCT_ID});
-
-    add_func_flink("link_lib", sl_func::link_lib,
-                   {param_type::VAR_STRUCT_ID, param_type::LSTR_OR_ID_VAR, param_type::NEXT_TOO});
-    add_func_flink("exp_data", sl_func::exp_data, {param_type::LSTR_OR_ID_VAR});
-    add_func_flink("cmd", sl_func::cmd, {param_type::LNUM_OR_ID_VAR, param_type::LSTR_OR_ID_VAR});
-    add_func_flink("debug", sl_func::debug, {param_type::LSTR_OR_ID_VAR, param_type::NEXT_TOO});
-    add_func_flink("debug_struct", sl_func::debug_struct, {param_type::VAR_STRUCT_ID});
-
-    add_func_flink(
-        "flags_compiler", sl_func::flags_compiler,
-        {param_type::VAR_STRUCT_ID, param_type::LNUM_OR_ID_VAR, param_type::LSTR_OR_ID_VAR, param_type::NEXT_TOO});
-    add_func_flink(
-        "flags_linker", sl_func::flags_linker,
-        {param_type::VAR_STRUCT_ID, param_type::LNUM_OR_ID_VAR, param_type::LSTR_OR_ID_VAR, param_type::NEXT_TOO});
-
-    add_func_flink("path_compiler", sl_func::path_compiler, {param_type::VAR_STRUCT_ID, param_type::LSTR_OR_ID_VAR});
-    add_func_flink("path_linker", sl_func::path_linker, {param_type::VAR_STRUCT_ID, param_type::LSTR_OR_ID_VAR});
-    add_func_flink("standart_c", sl_func::standart_c, {param_type::VAR_STRUCT_ID, param_type::LNUM_OR_ID_VAR});
-    add_func_flink("standart_cpp", sl_func::standart_cpp, {param_type::VAR_STRUCT_ID, param_type::LNUM_OR_ID_VAR});
-    add_func_flink("lang", sl_func::lang, {param_type::VAR_STRUCT_ID, param_type::LNUM_OR_ID_VAR});
-
-    add_func_flink("generator", sl_func::generator, {param_type::VAR_STRUCT_ID, param_type::LSTR_OR_ID_VAR});
-
-    add_func_flink("create_templates", sl_func::create_templates,
-                   {param_type::FUTURE_VAR_ID, param_type::LSTR_OR_ID_VAR});
-    add_func_flink("create_call_component", sl_func::create_call_component,
-                   {param_type::FUTURE_VAR_ID, param_type::LSTR_OR_ID_VAR, param_type::LSTR_OR_ID_VAR});
-    add_func_flink("add_param_template", sl_func::add_param_template, {param_type::FUTURE_VAR_ID, param_type::VAR_ID});
-    add_func_flink("use_templates", sl_func::use_templates,
-                   {param_type::VAR_STRUCT_ID, param_type::LSTR_OR_ID_VAR, param_type::NEXT_TOO});
-    add_func_flink("use_it_template", sl_func::use_it_template,
-                   {param_type::VAR_STRUCT_ID, param_type::LNUM_OR_ID_VAR});
 }
 
 void semantic_analyzer::analysis(abstract_expr_func &expr_s, var::scope &global_scope) {
@@ -174,19 +124,20 @@ void semantic_analyzer::smt_first_pass(abstract_expr_func &expr_s) {
                             expr_s[i].expr_func.func_n.expected_params[current_expected_param].default_val, 0, 0}},
                         conv_param_type_to_subexpr_type(
                             expr_s[i].expr_func.func_n.expected_params[current_expected_param].param_t));
+                    continue;
                 }
             }
             else if (j >= expr_s[i].sub_expr_s.size())
                 continue;
-            else if ((expr_s[i].expr_func.func_n.expected_params[current_expected_param].param_t ==
-                          param_type::FUTURE_VAR_ID ||
-                      expr_s[i].expr_func.func_n.expected_params[current_expected_param].param_t ==
-                          param_type::VAR_ID ||
-                      expr_s[i].expr_func.func_n.expected_params[current_expected_param].param_t ==
-                          param_type::NCHECK_VAR_ID ||
-                      expr_s[i].expr_func.func_n.expected_params[current_expected_param].param_t ==
-                          param_type::VAR_STRUCT_ID) &&
-                     expr_s[i].sub_expr_s[j].subexpr_t != subexpressions::type_subexpr::ID)
+
+            if ((expr_s[i].expr_func.func_n.expected_params[current_expected_param].param_t ==
+                     param_type::FUTURE_VAR_ID ||
+                 expr_s[i].expr_func.func_n.expected_params[current_expected_param].param_t == param_type::VAR_ID ||
+                 expr_s[i].expr_func.func_n.expected_params[current_expected_param].param_t ==
+                     param_type::NCHECK_VAR_ID ||
+                 expr_s[i].expr_func.func_n.expected_params[current_expected_param].param_t ==
+                     param_type::VAR_STRUCT_ID) &&
+                expr_s[i].sub_expr_s[j].subexpr_t != subexpressions::type_subexpr::ID)
                 throw semantic_excp(build_pos_subexpr_str(expr_s[i].sub_expr_s[j]) + " Expected: [VAR ID]\n", "001");
             else if (expr_s[i].expr_func.func_n.expected_params[current_expected_param].param_t ==
                      param_type::NEXT_TOO) {

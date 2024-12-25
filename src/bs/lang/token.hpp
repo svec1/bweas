@@ -36,8 +36,6 @@
 
 namespace token_expr {
 
-extern const std::array<std::string, 9> keywords_op;
-
 // listing all possible token types
 enum class token_type {
     KEYWORD = 0,
@@ -69,7 +67,7 @@ enum class token_type {
 // struct of token
 struct token {
     token() = default;
-    token(token_type tk_t, std::string tk_val, u32t pos_def_line, u32t pos_beg_def_sym)
+    token(token_type tk_t, std::string tk_val, i32t pos_def_line = -1, i32t pos_beg_def_sym = -1)
         : token_t(tk_t), token_val(tk_val), pos_defined_line(pos_def_line), pos_beg_defined_sym(pos_beg_def_sym) {
     }
 
@@ -77,10 +75,10 @@ struct token {
     std::string token_val;
 
     // token position in the text (line number)
-    u32t pos_defined_line{0};
+    i32t pos_defined_line{0};
 
     // token position in the line (symbol number)
-    u32t pos_beg_defined_sym{0};
+    i32t pos_beg_defined_sym{0};
 };
 static inline bool operator==(const token &tk1, const token &tk2) {
     if (tk1.token_t == tk2.token_t && tk1.token_val == tk2.token_val && tk1.pos_defined_line == tk2.pos_defined_line &&

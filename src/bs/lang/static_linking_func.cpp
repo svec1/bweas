@@ -247,7 +247,7 @@ void sl_func::set(const std::vector<subexpressions> &sub_expr, var::scope &curr_
 }
 
 void sl_func::file(const std::vector<aef_expr::subexpressions> &sub_expr, var::scope &curr_scope) {
-    if (std::stoi(sub_expr[0].token_of_subexpr[0].token_val) == 0) {
+    if (std::stoi(sub_expr[1].token_of_subexpr[0].token_val) == 0) {
         std::vector<std::string> path_files;
         for (u32t i = 2; i < sub_expr.size(); ++i) {
             if (std::filesystem::exists(sub_expr[i].token_of_subexpr[0].token_val)) {
@@ -279,9 +279,9 @@ void sl_func::file(const std::vector<aef_expr::subexpressions> &sub_expr, var::s
         }
 
         if (path_files.size() == 1)
-            curr_scope.create_var<std::string>(sub_expr[1].token_of_subexpr[0].token_val, path_files[0]);
+            curr_scope.create_var<std::string>(sub_expr[0].token_of_subexpr[0].token_val, path_files[0]);
         else
-            curr_scope.create_var<std::vector<std::string>>(sub_expr[1].token_of_subexpr[0].token_val, path_files);
+            curr_scope.create_var<std::vector<std::string>>(sub_expr[0].token_of_subexpr[0].token_val, path_files);
     }
 }
 

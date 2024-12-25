@@ -43,13 +43,19 @@ std::string parser::utility::type_ret_subexpr(aef_expr::subexpressions::ret_type
 }
 
 std::string parser::utility::build_pos_tokenb_str(const token &tk) {
+    std::string tmp_str;
+    if (tk.pos_defined_line == -1)
+        tmp_str += "\n(unknown position): ";
+    else {
+        tmp_str += "\n(Line: " + std::to_string(tk.pos_defined_line);
+        if (tk.pos_beg_defined_sym == -1)
+            tmp_str += "): ";
+        else
+            tmp_str += "; Symbols start pos: " + std::to_string(tk.pos_beg_defined_sym) + "): ";
+    }
     if (!tk.token_val.empty())
-        return "\n(Line: " + std::to_string(tk.pos_defined_line) +
-               "; Symbols start pos: " + std::to_string(tk.pos_beg_defined_sym) + "): Type token - " +
-               type_token_str(tk.token_t) + "; Token value - \"" + tk.token_val + "\"\n";
-    return "\n(Line: " + std::to_string(tk.pos_defined_line) +
-           "; Symbols start pos: " + std::to_string(tk.pos_beg_defined_sym) + "): Type token - " +
-           type_token_str(tk.token_t) + "\n";
+        return tmp_str + "Type token - " + type_token_str(tk.token_t) + "; Token value - \"" + tk.token_val + "\"\n";
+    return tmp_str + "Type token - " + type_token_str(tk.token_t) + "\n";
 }
 std::string parser::utility::build_pos_subexpr_str(const subexpressions &sub_expr) {
     std::string str;

@@ -84,8 +84,12 @@ class bwbuilder final {
     u32t create_package(std::string path_json_config_package);
     // loads the bweas json config
     void init();
+
+    // Sets standard functions and keyword operators corresponding to the bweas specification
+    void set_bwstd_functions();
     // running the interpreter with the configuration
     void run_interpreter();
+
     // generates a cache file of all targets that were created by the interpreter
     u32t gen_cache_target();
 
