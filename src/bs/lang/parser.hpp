@@ -28,7 +28,7 @@ extern aef_expr::param_type type_param_in_str(std::string str);
 
 } // namespace utility
 
-class parser_excp : public bw_excp::bweas_exception {
+class parser_excp : public ::bwexception::bweas_exception {
   public:
     parser_excp(std::string _what_hp, std::string number_err)
         : what_hp(_what_hp), bweas_exception("PARS" + number_err) {

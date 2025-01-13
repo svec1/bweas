@@ -13,7 +13,7 @@ using table_func = std::unordered_map<std::string, aef_expr::notion_func>;
 
 extern var::scope global_scope;
 
-class semantic_excp : public bw_excp::bweas_exception {
+class semantic_excp : public ::bwexception::bweas_exception {
   public:
     semantic_excp(std::string _what_hp, std::string number_err)
         : what_hp(_what_hp), bweas_exception("SMT" + number_err) {
@@ -29,7 +29,7 @@ class semantic_excp : public bw_excp::bweas_exception {
     std::string what_hp;
 };
 
-class rt_semantic_excp : public bw_excp::bweas_exception {
+class rt_semantic_excp : public ::bwexception::bweas_exception {
   public:
     rt_semantic_excp(std::string _what_hp, std::string number_err)
         : what_hp(_what_hp), bweas_exception("SMT-RT" + number_err) {

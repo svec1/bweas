@@ -1,3 +1,4 @@
 {
-	"use genlua": 0
+	"cache-gn": "fast_bwcache",
+	"packages": []
 }

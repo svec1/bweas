@@ -1,7 +1,7 @@
 #include "bwmodule.hpp"
 
 using namespace bweas;
-using namespace bwexception;
+using namespace bweas::bwexception;
 
 module::module_mg::module_mg() {
     if (!init_glob) {

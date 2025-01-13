@@ -36,7 +36,7 @@ using commands = std::vector<command>;
 namespace bwexception {
 
 // Exception class for builder only.
-class bwbuilder_excp : public bw_excp::bweas_exception {
+class bwbuilder_excp : public ::bwexception::bweas_exception {
   public:
     bwbuilder_excp(std::string _what_hp, std::string number_err, std::string prefix_err = "")
         : what_hp(_what_hp), bweas_exception("BWS" + prefix_err + number_err) {
@@ -66,6 +66,14 @@ class bwpackage_excp : public bwbuilder_excp {
     bwpackage_excp(std::string _what_hp, std::string number_err) : bwbuilder_excp(_what_hp, number_err, "-PCKG") {
     }
     ~bwpackage_excp() noexcept override final = default;
+};
+
+// Exception class for bweas-generator only.
+class bwcache_excp : public bwbuilder_excp {
+  public:
+    bwcache_excp(std::string _what_hp, std::string number_err) : bwbuilder_excp(_what_hp, number_err, "-CACHE") {
+    }
+    ~bwcache_excp() noexcept override final = default;
 };
 
 // Exception class for bweas-generator only.

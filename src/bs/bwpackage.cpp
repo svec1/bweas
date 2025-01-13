@@ -4,7 +4,7 @@
 #include <nlohmann/json.hpp>
 
 using namespace bweas;
-using namespace bwexception;
+using namespace bweas::bwexception;
 
 bwpackage::bwpackage() {
     if (!init_glob) {
@@ -18,14 +18,12 @@ bwpackage::bwpackage() {
 }
 
 std::string bwpackage::create_data_package(data_bw_package _data) {
-    std::string data_str =
-        BW_PACKAGE_PREFIX_BYTE BW_PACKAGE_VERSION + _data.json_config + BW_PACKAGE_SEPARATE_JSON_BYTES;
+    std::string data_str = BW_PACKAGE_PREFIX_BYTE BW_PACKAGE_VERSION + _data.json_config +
+                           BW_PACKAGE_SEPARATE_JSON_BYTES + _data.src_lua_cache + BW_PACKAGE_SEPARATE_LUA_CACHE;
 
     for (const auto &src_lua_generator : _data.src_lua_generators)
         data_str += src_lua_generator + BW_PACKAGE_SEPARATE_LUA_GENERATE;
 
-    // if the files were created on windows
-    // data_str.erase(std::remove(data_str.begin(), data_str.end(), '\r'), data_str.end());
     return bwlz4::compress_data(data_str);
 }
 
@@ -37,6 +35,25 @@ std::string bwpackage::init(data_bw_package _data, bool is_create_pckg) {
              ((bw_version = var::struct_sb::version(config_json["bweas-version"])) == "0.0.0"))
         throw bwpackage_excp("Build system version field is empty", "002");
 
+    if (config_json.contains("cache-gn")) {
+        nlohmann::json metainf_ch = config_json["cache-gn"];
+        if (!metainf_ch.is_structured())
+            throw bwpackage_excp("The Cache field must be a structure", "002");
+        else if (!metainf_ch.contains("name") || !metainf_ch["name"].is_string())
+            throw bwpackage_excp("Cache metadata must include its name", "002");
+        else if (!metainf_ch.contains("src-luafile-cache") || !metainf_ch["src-luafile-cache"].is_string())
+            throw bwpackage_excp("Cache metadata must include the path to the lua source file", "002");
+
+        cfg_package.cache.name_cache = metainf_ch["name"];
+
+        if (is_create_pckg) {
+            cfg_package.cache.src_lua_cache =
+                assist.read_file(assist.get_ref_file(assist.open_file(metainf_ch["src-luafile-cache"])));
+            _data.src_lua_cache = cfg_package.cache.src_lua_cache;
+        }
+        else
+            cfg_package.cache.src_lua_cache = _data.src_lua_cache;
+    }
     // reading lua script file
     if (config_json.contains("generators")) {
         if (!config_json["generators"].is_structured())
@@ -132,9 +149,14 @@ void bwpackage::load(std::string raw_data_package) {
     data_package.json_config = data_pckg;
     data_package.json_config.erase(data_package.json_config.find(BW_PACKAGE_SEPARATE_JSON_BYTES));
 
+    data_package.src_lua_cache = data_pckg;
+    data_package.src_lua_cache.erase(0, data_package.json_config.size() + BW_PACKAGE_SEPARATE_JSON_BYTES_LENGHT);
+    data_package.src_lua_cache.erase(data_package.src_lua_cache.find(BW_PACKAGE_SEPARATE_LUA_CACHE));
+
     std::string src_codes_luagn = data_pckg;
     std::string current_src_code;
-    src_codes_luagn.erase(0, data_package.json_config.size() + BW_PACKAGE_SEPARATE_JSON_BYTES_LENGHT);
+    src_codes_luagn.erase(0,
+                          src_codes_luagn.find(BW_PACKAGE_SEPARATE_LUA_CACHE) + BW_PACKAGE_SEPARATE_LUA_CACHE_LENGHT);
     while (src_codes_luagn.size()) {
         current_src_code = src_codes_luagn;
         current_src_code.erase(current_src_code.find(BW_PACKAGE_SEPARATE_LUA_GENERATE));

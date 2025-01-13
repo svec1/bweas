@@ -4,7 +4,7 @@
 
 using namespace bweas;
 using namespace generator_api;
-using namespace bwexception;
+using namespace bweas::bwexception;
 
 lua_generator::lua_generator(std::string src_lua) {
     if (!init_glob_gnlua) {

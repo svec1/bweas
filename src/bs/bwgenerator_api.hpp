@@ -91,9 +91,10 @@ class integral_generator : public base_generator {
                           std::map<std::string, std::vector<std::string>>) override final;
 
   private:
+    static inline bool init_glob_gnint{0};
+
     func_generator generator_p;
     func_get_files_input files_input_p;
-    static inline bool init_glob_gnint{0};
 };
 
 // The class defines the API for generators written in lua and presented in bweas packages
@@ -113,8 +114,9 @@ class lua_generator : public base_generator {
                           std::map<std::string, std::vector<std::string>>) override final;
 
   private:
-    bwlua::lua lua;
     static inline bool init_glob_gnlua{0};
+
+    bwlua::lua lua;
 };
 
 base_generator *base_generator::createGeneratorInt(func_generator generator, func_get_files_input files_input) {

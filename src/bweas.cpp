@@ -7,7 +7,7 @@ int main(int argv, char **args) {
         bw.start();
         assist << std::string("Sec: " + std::to_string((double)(clock() - beg) / CLOCKS_PER_SEC));
     }
-    catch (bw_excp::bweas_exception &excp) {
+    catch (bwexception::bweas_exception &excp) {
         assist.call_err(excp.get_assist_err(), excp.what());
     }
 

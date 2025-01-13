@@ -9,7 +9,7 @@
 
 namespace lexer {
 
-class lexer_excp : public bw_excp::bweas_exception {
+class lexer_excp : public ::bwexception::bweas_exception {
   public:
     lexer_excp(std::string _what_hp, std::string number_err) : what_hp(_what_hp), bweas_exception("LEX" + number_err) {
     }
@@ -70,7 +70,8 @@ class lex_an {
     std::vector<token_expr::token> tokens;
     std::string symbols;
 
-    std::vector<std::string> keyword_ops{9};
+    std::vector<std::string> keyword_ops{STR_KEYWORD_OP_EQUAL, STR_KEYWORD_OP_AND, STR_KEYWORD_OP_OR,
+                                         STR_KEYWORD_OP_NOT, STR_KEYWORD_OP_TSTR};
 
     u32t pos{0};
 };

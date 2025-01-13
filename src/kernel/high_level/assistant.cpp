@@ -76,20 +76,13 @@ void assistant::call_err(std::string name_err, std::string addit) {
     SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 4);
 #endif
     if (addit.empty())
-        this->operator<<(it->name_e + "(" + std::to_string(it->ind) + ")");
+        this->operator<<(it->name_e + "(" + std::to_string(it->ind) + "): " + it->desc_e);
     else
         this->operator<<(it->name_e + "(" + std::to_string(it->ind) + "): " + it->desc_e + "\nDetail: [" + addit + "]");
 #if defined(WIN)
     SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 7);
 #endif
     exit(EXIT_FAILURE);
-}
-std::string assistant::get_desc_err(std::string name_err) {
-    const auto &it =
-        find_if(err_s.begin(), err_s.end(), [name_err](const err &err_c) { return err_c.name_e == name_err; });
-    if (it != err_s.end())
-        return it->desc_e;
-    return "";
 }
 
 assistant::file_it assistant::open_file(std::string name_file, file::mode_file::open mode) {

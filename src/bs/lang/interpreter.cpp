@@ -31,6 +31,8 @@ void interpreter_exec::set_external_scope(var::scope *_external_scope) {
 void interpreter_exec::build_aef() {
     file_it bweas_config = assist.open_file(interp_conf.filename_interp, mf::open::rb);
 
+    lexer.set_keyword_ops({STR_KEYWORD_OP_CONST_RELEASE, STR_KEYWORD_OP_CONST_DEBUG, STR_KEYWORD_OP_CONST_TRUE,
+                           STR_KEYWORD_OP_CONST_FALSE});
     lexer.set_symbols(assist.read_file(assist.get_ref_file(bweas_config), mf::input::read_binary));
     assist.close_file(bweas_config);
 
@@ -108,7 +110,7 @@ var::scope &interpreter_exec::get_current_scope() {
     return global_scope;
 }
 
-void interpreter_exec::load_external_func(semantic_an::table_func &&tfuncs) {
+void interpreter_exec::load_external_func(const semantic_an::table_func &tfuncs) {
     std::vector<std::string> tmp_w_smt_funcs;
     for (auto &func : tfuncs) {
         if (interp_conf.transmit_smt_name_func_with_smt &&
@@ -119,10 +121,6 @@ void interpreter_exec::load_external_func(semantic_an::table_func &&tfuncs) {
 
     if (interp_conf.transmit_smt_name_func_with_smt)
         smt_analyzer.append_external_name_func_w_smt(tmp_w_smt_funcs);
-}
-
-void interpreter_exec::set_keyword_ops(std::vector<std::string> keyword_ops) {
-    lexer.set_keyword_ops(keyword_ops);
 }
 
 void interpreter_exec::set_std_function(std::string name_token_func, aef_expr::notion_func::func_t func_ref,

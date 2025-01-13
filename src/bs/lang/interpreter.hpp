@@ -10,7 +10,7 @@ namespace interpreter {
     func;                                                                                                              \
     assist << std::string("Run time " func_name ": " + std::to_string((double)(clock() - beg) / CLOCKS_PER_SEC));
 
-class realtime_excp : public bw_excp::bweas_exception {
+class realtime_excp : public ::bwexception::bweas_exception {
   public:
     realtime_excp(std::string _what_hp, std::string number_err)
         : what_hp(_what_hp), bweas_exception("RTT" + number_err) {
@@ -41,8 +41,7 @@ class interpreter_exec {
         // should be called in semantic analysis to semantic analysis
         bool transmit_smt_name_func_with_smt{0};
 
-        const char *filename_interp{""};
-        const char *file_import_file_f{""};
+        std::string filename_interp;
     };
 
   public:
@@ -70,11 +69,9 @@ class interpreter_exec {
 
     var::scope &get_current_scope();
 
-    void load_external_func(semantic_an::table_func &&tfuncs);
-
-    void set_keyword_ops(std::vector<std::string> keyword_ops);
+    void load_external_func(const semantic_an::table_func &tfuncs);
     void set_std_function(std::string name_token_func, aef_expr::notion_func::func_t func_ref,
-                                 std::vector<aef_expr::param> expected_param);
+                          std::vector<aef_expr::param> expected_param);
 
   private:
     static inline bool init_glob{0};

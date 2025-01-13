@@ -4,6 +4,7 @@
 #include "../mdef.hpp"
 
 #include "bw_defs.hpp"
+#include "bwcache_api.hpp"
 #include "bwgenerator_api.hpp"
 #include "bwmodule.hpp"
 #include "bwpackage.hpp"
@@ -15,9 +16,6 @@
 
 // The current file of a project. It defines all target information
 #define MAIN_FILE "bweasconf.txt"
-
-// Markup file and definitions of modules that will be loaded
-#define IMPORT_FILE "import-modules.imp"
 
 // Cache file, all information about all targets is saved there for quick access, which makes it possible not to
 // reinterpret bweasconf.txt
@@ -85,8 +83,6 @@ class bwbuilder final {
     // loads the bweas json config
     void init();
 
-    // Sets standard functions and keyword operators corresponding to the bweas specification
-    void set_bwstd_functions();
     // running the interpreter with the configuration
     void run_interpreter();
 
@@ -109,10 +105,7 @@ class bwbuilder final {
     void build_targets();
 
     // Deserializes the bweas cache file
-    u32t deserl_cache();
-
-    // Loads all targets from the interpreter's global scope, converting them to target_out
-    void load_target();
+    void deserl_cache();
 
     // Imports all call templates and components declared in bweasconf.txt, which the interpreter also created
     void imp_data_interpreter_for_bs();
@@ -136,7 +129,7 @@ class bwbuilder final {
     void parse_basic_args(const var::struct_sb::target_out &target, bwqueue_templates &target_queue_templates);
 
   private:
-    interpreter::interpreter_exec interpreter;
+    cache_api::base_bwcache *_bwcache{NULL};
     semantic_an::table_func module_tfuncs;
 
     module::module_mg module_mg;

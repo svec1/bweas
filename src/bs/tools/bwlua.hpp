@@ -126,6 +126,7 @@ class lua {
             L->create_var(name_sym, value);
         }
 
+        // registers a function in lua state
         template <typename T> void operator<<(T value) const {
             if (!L->is_created())
                 throw std::runtime_error(LUA_SYMBOL_NE_LUA_STATE);
@@ -239,7 +240,7 @@ class lua {
   public:
     std::string get_stack__nmutex() {
         std::string str = "STACK(" + std::to_string(lua_gettop(L)) + "):\n";
-        for (ptrdiff_t i = 1; i < lua_gettop(L); ++i) {
+        for (ptrdiff_t i = 0; i < lua_gettop(L); ++i) {
             if (i < lua_gettop(L) - 1)
                 str += "| " + std::to_string(lua_gettop(L) - i) + " ";
             else
@@ -306,7 +307,7 @@ class lua {
     // function parameters accepted
     template <typename T, typename... Types> T call_function(std::string name_func, Types... param) {
         if (!is_created())
-            return std::any_cast<T>(std::any{});
+            return T{};
         lua_getglobal(L, name_func.c_str());
         try {
             return call_symbol<T, Types...>(param...);
@@ -391,7 +392,7 @@ class lua {
 
   private:
     template <typename Tuple, size_t... ind> void pre_init_stack(const Tuple &tp, std::index_sequence<ind...>) {
-        (((void)push_stack_param<std::tuple_element_t<ind, Tuple>>(std::get<ind>(tp))), ...);
+        ((push_stack_param<std::tuple_element_t<ind, Tuple>>(std::get<ind>(tp))), ...);
     }
     template <typename T> void push_stack_param(T param) {
         if constexpr (std::is_same_v<T, const char *>)
@@ -400,8 +401,6 @@ class lua {
             lua_pushinteger(L, param);
         else if constexpr (std::is_same_v<T, number>)
             lua_pushnumber(L, param);
-        else if constexpr (std::is_same_v<T, bool>)
-            lua_pushboolean(L, param);
         else if constexpr (std::is_same_v<T, std::string>)
             lua_pushstring(L, param.c_str());
         else if constexpr (is_map<T>::value) {
@@ -432,8 +431,6 @@ class lua {
                 lua_pushinteger(L, std::any_cast<integer>(param));
             else if (param.type() == typeid(number))
                 lua_pushnumber(L, std::any_cast<number>(param));
-            else if (param.type() == typeid(bool))
-                lua_pushboolean(L, std::any_cast<bool>(param));
             else if (param.type() == typeid(std::string))
                 lua_pushstring(L, std::any_cast<std::string>(param).c_str());
 
@@ -441,8 +438,6 @@ class lua {
                 push_stack_param(std::any_cast<std::vector<integer>>(param));
             else if (param.type() == typeid(std::vector<number>))
                 push_stack_param(std::any_cast<std::vector<number>>(param));
-            else if (param.type() == typeid(std::vector<bool>))
-                push_stack_param(std::any_cast<std::vector<bool>>(param));
             else if (param.type() == typeid(std::vector<const char *>))
                 push_stack_param(std::any_cast<std::vector<const char *>>(param));
             else if (param.type() == typeid(std::vector<std::string>))
@@ -467,8 +462,18 @@ class lua {
             else if (param.type() == typeid(table<const char *, std::any>))
                 push_stack_param(std::any_cast<table<const char *, std::any>>(param));
 
-            else if (param.type() == typeid(std::pair<std::any, std::any>))
-                push_stack_param(std::any_cast<std::pair<std::any, std::any>>(param));
+            else if (param.type() == typeid(keyValue<std::string, std::string>))
+                push_stack_param(std::any_cast<keyValue<std::string, std::string>>(param));
+            else if (param.type() == typeid(keyValue<std::string, integer>))
+                push_stack_param(std::any_cast<keyValue<std::string, integer>>(param));
+            else if (param.type() == typeid(keyValue<integer, std::string>))
+                push_stack_param(std::any_cast<keyValue<integer, std::string>>(param));
+            else if (param.type() == typeid(keyValue<std::string, integer>))
+                push_stack_param(std::any_cast<keyValue<std::string, integer>>(param));
+            else if (param.type() == typeid(keyValue<integer, integer>))
+                push_stack_param(std::any_cast<keyValue<integer, integer>>(param));
+            else if (param.type() == typeid(keyValue<std::any, std::any>))
+                push_stack_param(std::any_cast<keyValue<std::any, std::any>>(param));
             else
                 throw std::runtime_error(LUA_PUSH_TYPE_UNK);
         }
@@ -502,12 +507,6 @@ class lua {
                 throw std::runtime_error(LUA_VARIABLE_NFOUND_NUM);
 
             value = lua_tonumber(L, idx);
-        }
-        else if constexpr (std::is_same_v<T, bool>) {
-            if (!lua_isboolean(L, idx))
-                throw std::runtime_error(LUA_VARIABLE_NFOUND_BOOL);
-
-            value = (bool)lua_toboolean(L, idx);
         }
         else if constexpr (std::is_same_v<T, std::any>) {
             if (lua_isnumber(L, idx))
@@ -604,12 +603,10 @@ class lua {
         else if (lua_pcall(L, count_params, 0, 0) != LUA_OK)
             LUA_EXCEPTION()
 
-        std::any res = get_valsymbol<T>();
-
         if constexpr (std::is_same_v<T, void> || std::is_same_v<T, nil>)
             return;
         else
-            return std::any_cast<T>(res);
+            return get_valsymbol<T>();
     }
 
     // returns an object of class symbol, which is a temporary object (it points to a lua object)

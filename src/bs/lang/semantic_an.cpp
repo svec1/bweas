@@ -512,7 +512,7 @@ void semantic_analyzer::convert_id_to_literal(aef_expr::subexpressions &sub_expr
             if (index_var == 1) {
                 sub_expr.token_of_subexpr[i] = token_expr::token(
                     token_expr::token_type::LITERAL,
-                    std::to_string(curr_scope.get_var_value<int>(sub_expr.token_of_subexpr[i].token_val.c_str())),
+                    std::to_string(curr_scope.get_var_value<i32t>(sub_expr.token_of_subexpr[i].token_val.c_str())),
                     sub_expr.token_of_subexpr[i].pos_defined_line, sub_expr.token_of_subexpr[i].pos_beg_defined_sym);
             }
             else if (index_var == 2) {
@@ -546,7 +546,7 @@ void semantic_analyzer::parse_subexpr_param(subexpressions &sub_expr, std::vecto
             if (sub_expr.token_of_subexpr[i].token_t == token_expr::token_type::ID) {
                 parse_subexpr.token_of_subexpr.push_back(token_expr::token(
                     token_expr::token_type::LITERAL,
-                    std::to_string(curr_scope.get_var_value<int>(sub_expr.token_of_subexpr[i].token_val.c_str())),
+                    std::to_string(curr_scope.get_var_value<i32t>(sub_expr.token_of_subexpr[i].token_val.c_str())),
                     sub_expr.token_of_subexpr[i].pos_defined_line, sub_expr.token_of_subexpr[i].pos_beg_defined_sym));
                 if (parse_subexpr.token_of_subexpr.size() == 3)
                     goto parse_integer;
@@ -618,7 +618,7 @@ void semantic_analyzer::parse_subexpr_param(subexpressions &sub_expr, std::vecto
             parse_subexpr.subexpr_t = subexpressions::type_subexpr::INT;
             parse_subexpr.token_of_subexpr.push_back(token_expr::token(
                 token_expr::token_type::LITERAL,
-                std::to_string(curr_scope.get_var_value<int>(sub_expr.token_of_subexpr[0].token_val.c_str())),
+                std::to_string(curr_scope.get_var_value<i32t>(sub_expr.token_of_subexpr[0].token_val.c_str())),
                 sub_expr.token_of_subexpr[0].pos_defined_line, sub_expr.token_of_subexpr[0].pos_beg_defined_sym));
         }
         else if (index_var == 2) {
@@ -632,8 +632,8 @@ void semantic_analyzer::parse_subexpr_param(subexpressions &sub_expr, std::vecto
             std::vector<subexpressions> new_sub_exprs;
             subexpressions tmp_sub_expr;
             tmp_sub_expr.subexpr_t = subexpressions::type_subexpr::INT;
-            const std::vector<int> vec_int_id =
-                curr_scope.get_var_value<std::vector<int>>(sub_expr.token_of_subexpr[0].token_val);
+            const std::vector<i32t> vec_int_id =
+                curr_scope.get_var_value<std::vector<i32t>>(sub_expr.token_of_subexpr[0].token_val);
             for (u32t i = 0; i < pos_sub_expr_in_vec; ++i)
                 new_sub_exprs.push_back(sub_exprs[i]);
             for (u32t i = 0; i < vec_int_id.size(); ++i) {

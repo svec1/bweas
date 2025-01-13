@@ -6,7 +6,7 @@
 using namespace bweas;
 using namespace generator_api;
 using namespace generator;
-using namespace bwexception;
+using namespace bweas::bwexception;
 
 integral_generator::integral_generator(func_generator _generator_p, func_get_files_input _files_input_p) {
     if (!init_glob_gnint) {

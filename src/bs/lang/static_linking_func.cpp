@@ -19,7 +19,7 @@ static const std::array<std::string, 18> vec_name_config_var = {
 
 // ??????
 static void update_cfg_struct(const std::string &name_var, var::scope &curr_scope) {
-    if (curr_scope.what_type("DECL_CONFIG_VAR") == 1 && curr_scope.get_var_value<int>(DECL_VAR_STRUCT) > 0) {
+    if (curr_scope.what_type("DECL_CONFIG_VAR") == 1 && curr_scope.get_var_value<i32t>(DECL_VAR_STRUCT) > 0) {
         u32t tmp_it = 0;
         for (const auto &it : vec_name_config_var) {
             if ((tmp_it = name_var.find(it)) != SIZE_MAX) {
@@ -69,19 +69,19 @@ static void update_cfg_struct(const std::string &name_var, var::scope &curr_scop
                     if (curr_scope.what_type(tmp_str_prefix) != 5 || curr_scope.what_type(name_var) != 1)
                         return;
                     curr_scope.get_var_value<var::struct_sb::project>(tmp_str_prefix).standart_c =
-                        curr_scope.get_var_value<int>(name_var);
+                        curr_scope.get_var_value<i32t>(name_var);
                 }
                 else if (tmp_str_postfix == PRJ_VAR_NAME_STD_CPP) {
                     if (curr_scope.what_type(tmp_str_prefix) != 5 || curr_scope.what_type(name_var) != 1)
                         return;
                     curr_scope.get_var_value<var::struct_sb::project>(tmp_str_prefix).standart_cpp =
-                        curr_scope.get_var_value<int>(name_var);
+                        curr_scope.get_var_value<i32t>(name_var);
                 }
                 else if (tmp_str_postfix == PRJ_VAR_NAME_LANG) {
                     if (curr_scope.what_type(tmp_str_prefix) != 5 || curr_scope.what_type(name_var) != 1)
                         return;
                     curr_scope.get_var_value<var::struct_sb::project>(tmp_str_prefix).lang =
-                        (var::struct_sb::language)curr_scope.get_var_value<int>(name_var);
+                        (var::struct_sb::language)curr_scope.get_var_value<i32t>(name_var);
                 }
                 else if (tmp_str_postfix == PRJ_VAR_NAME_VER) {
                     if (curr_scope.what_type(tmp_str_prefix) != 5 || curr_scope.what_type(name_var) != 2)
@@ -105,7 +105,7 @@ static void update_cfg_struct(const std::string &name_var, var::scope &curr_scop
                     if (curr_scope.what_type(tmp_str_prefix) != 5 || curr_scope.what_type(name_var) != 1)
                         return;
                     curr_scope.get_var_value<var::struct_sb::project>(tmp_str_prefix).use_it_templates =
-                        curr_scope.get_var_value<int>(name_var);
+                        curr_scope.get_var_value<i32t>(name_var);
                 }
                 else if (tmp_str_postfix == TRG_VAR_NAME_NPROJECT) {
                     if (curr_scope.what_type(tmp_str_prefix) != 6 || curr_scope.what_type(name_var) != 2)
@@ -123,13 +123,13 @@ static void update_cfg_struct(const std::string &name_var, var::scope &curr_scop
                     if (curr_scope.what_type(tmp_str_prefix) != 6 || curr_scope.what_type(name_var) != 1)
                         return;
                     curr_scope.get_var_value<var::struct_sb::target>(tmp_str_prefix).target_cfg =
-                        (var::struct_sb::configuration)curr_scope.get_var_value<int>(name_var);
+                        (var::struct_sb::configuration)curr_scope.get_var_value<i32t>(name_var);
                 }
                 else if (tmp_str_postfix == TRG_VAR_NAME_TYPE_T) {
                     if (curr_scope.what_type(tmp_str_prefix) != 6 || curr_scope.what_type(name_var) != 1)
                         return;
                     curr_scope.get_var_value<var::struct_sb::target>(tmp_str_prefix).target_t =
-                        (var::struct_sb::type_target)curr_scope.get_var_value<int>(name_var);
+                        (var::struct_sb::type_target)curr_scope.get_var_value<i32t>(name_var);
                 }
                 else if (tmp_str_postfix == TRG_VAR_NAME_NGENERATOR) {
                     if (curr_scope.what_type(tmp_str_prefix) != 6 || curr_scope.what_type(name_var) != 2)
@@ -160,14 +160,14 @@ void sl_func::set(const std::vector<subexpressions> &sub_expr, var::scope &curr_
     else if (sub_expr.size() == 2) {
         if (sub_expr[1].subexpr_t == subexpressions::type_subexpr::INT) {
             if (index_var == 1)
-                curr_scope.get_var_value<int>(sub_expr[0].token_of_subexpr[0].token_val) =
+                curr_scope.get_var_value<i32t>(sub_expr[0].token_of_subexpr[0].token_val) =
                     std::stoi(sub_expr[1].token_of_subexpr[0].token_val.c_str());
             else if (index_var == 3)
-                curr_scope.get_var_value<std::vector<int>>(sub_expr[0].token_of_subexpr[0].token_val) = {
+                curr_scope.get_var_value<std::vector<i32t>>(sub_expr[0].token_of_subexpr[0].token_val) = {
                     std::stoi(sub_expr[1].token_of_subexpr[0].token_val.c_str())};
             else if (index_var == 0)
                 (void)curr_scope.create_var(sub_expr[0].token_of_subexpr[0].token_val,
-                                            std::stoi(sub_expr[1].token_of_subexpr[0].token_val.c_str()));
+                                            std::stoll(sub_expr[1].token_of_subexpr[0].token_val.c_str()));
             else
                 throw semantic_an::rt_semantic_excp(
                     parser::utility::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) + " Var - [" +
@@ -193,17 +193,17 @@ void sl_func::set(const std::vector<subexpressions> &sub_expr, var::scope &curr_
     }
     else if (sub_expr.size() > 2) {
         if (sub_expr[1].subexpr_t == subexpressions::type_subexpr::INT) {
-            std::vector<int> vec_int_params;
+            std::vector<i32t> vec_int_params;
             vec_int_params.push_back(std::stoi(sub_expr[1].token_of_subexpr[0].token_val.c_str()));
             for (u32t i = 2; i < sub_expr.size(); ++i) {
                 if (sub_expr[i].subexpr_t == subexpressions::type_subexpr::INT)
                     vec_int_params.push_back(std::stoi(sub_expr[i].token_of_subexpr[0].token_val.c_str()));
             }
             if (index_var == 0)
-                (void)curr_scope.create_var<std::vector<int>>(sub_expr[0].token_of_subexpr[0].token_val,
-                                                              vec_int_params);
+                (void)curr_scope.create_var<std::vector<i32t>>(sub_expr[0].token_of_subexpr[0].token_val,
+                                                               vec_int_params);
             else if (index_var == 3)
-                curr_scope.get_var_value<std::vector<int>>(sub_expr[0].token_of_subexpr[0].token_val) = vec_int_params;
+                curr_scope.get_var_value<std::vector<i32t>>(sub_expr[0].token_of_subexpr[0].token_val) = vec_int_params;
             else if (index_var == 1)
                 throw semantic_an::rt_semantic_excp(
                     parser::utility::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) + " Var - [" +
@@ -294,10 +294,10 @@ void sl_func::project(const std::vector<subexpressions> &sub_expr, var::scope &c
         prj_ref.src_files.push_back(sub_expr[i].token_of_subexpr[0].token_val);
 
     // ??????? - I don't know if this helper function is needed
-    if (curr_scope.what_type("DECL_CONFIG_VAR") == 1 && curr_scope.get_var_value<int>(DECL_VAR_STRUCT) > 0) {
-        if (!curr_scope.try_create_var<int>(prj_ref.name_project + PRJ_VAR_NAME_LANG, (int)prj_ref.lang))
+    if (curr_scope.what_type("DECL_CONFIG_VAR") == 1 && curr_scope.get_var_value<i32t>(DECL_VAR_STRUCT) > 0) {
+        if (!curr_scope.try_create_var<i32t>(prj_ref.name_project + PRJ_VAR_NAME_LANG, (i32t)prj_ref.lang))
             prj_ref.lang =
-                (var::struct_sb::language)curr_scope.get_var_value<int>(prj_ref.name_project + PRJ_VAR_NAME_LANG);
+                (var::struct_sb::language)curr_scope.get_var_value<i32t>(prj_ref.name_project + PRJ_VAR_NAME_LANG);
         if (!curr_scope.try_create_var<std::string>(prj_ref.name_project + PRJ_VAR_NAME_VER,
                                                     prj_ref.version_project.get_str_version()))
             prj_ref.version_project =
@@ -321,10 +321,10 @@ void sl_func::project(const std::vector<subexpressions> &sub_expr, var::scope &c
             prj_ref.path_compiler = curr_scope.get_var_value<std::string>(prj_ref.name_project + PRJ_VAR_NAME_PTH_C);
         if (!curr_scope.try_create_var<std::string>(prj_ref.name_project + PRJ_VAR_NAME_PTH_L, prj_ref.path_linker))
             prj_ref.path_linker = curr_scope.get_var_value<std::string>(prj_ref.name_project + PRJ_VAR_NAME_PTH_L);
-        if (!curr_scope.try_create_var<int>(prj_ref.name_project + PRJ_VAR_NAME_STD_C, prj_ref.standart_c))
-            prj_ref.standart_c = curr_scope.get_var_value<int>(prj_ref.name_project + PRJ_VAR_NAME_STD_C);
-        if (!curr_scope.try_create_var<int>(prj_ref.name_project + PRJ_VAR_NAME_STD_CPP, prj_ref.standart_cpp))
-            prj_ref.standart_cpp = curr_scope.get_var_value<int>(prj_ref.name_project + PRJ_VAR_NAME_STD_CPP);
+        if (!curr_scope.try_create_var<i32t>(prj_ref.name_project + PRJ_VAR_NAME_STD_C, prj_ref.standart_c))
+            prj_ref.standart_c = curr_scope.get_var_value<i32t>(prj_ref.name_project + PRJ_VAR_NAME_STD_C);
+        if (!curr_scope.try_create_var<i32t>(prj_ref.name_project + PRJ_VAR_NAME_STD_CPP, prj_ref.standart_cpp))
+            prj_ref.standart_cpp = curr_scope.get_var_value<i32t>(prj_ref.name_project + PRJ_VAR_NAME_STD_CPP);
         if (!curr_scope.try_create_var<std::vector<std::string>>(prj_ref.name_project + PRJ_VAR_NAME_SRC_FILES,
                                                                  prj_ref.src_files))
             prj_ref.src_files =
@@ -333,8 +333,9 @@ void sl_func::project(const std::vector<subexpressions> &sub_expr, var::scope &c
                                                                  prj_ref.vec_templates))
             prj_ref.vec_templates =
                 curr_scope.get_var_value<std::vector<std::string>>(prj_ref.name_project + PRJ_VAR_NAME_UTEMPLATES);
-        if (!curr_scope.try_create_var<int>(prj_ref.name_project + PRJ_VAR_NAME_UITTEMPLATES, prj_ref.use_it_templates))
-            prj_ref.use_it_templates = curr_scope.get_var_value<int>(prj_ref.name_project + PRJ_VAR_NAME_UITTEMPLATES);
+        if (!curr_scope.try_create_var<i32t>(prj_ref.name_project + PRJ_VAR_NAME_UITTEMPLATES,
+                                             prj_ref.use_it_templates))
+            prj_ref.use_it_templates = curr_scope.get_var_value<i32t>(prj_ref.name_project + PRJ_VAR_NAME_UITTEMPLATES);
     }
 }
 void sl_func::executable(const std::vector<subexpressions> &sub_expr, var::scope &curr_scope) {
@@ -355,7 +356,7 @@ void sl_func::executable(const std::vector<subexpressions> &sub_expr, var::scope
     trg_ref.version_target = var::struct_sb::version(0, 0, 0);
 
     // ??????? - I don't know if this helper function is needed
-    if (curr_scope.what_type("DECL_CONFIG_VAR") == 1 && curr_scope.get_var_value<int>(DECL_VAR_STRUCT) > 0) {
+    if (curr_scope.what_type("DECL_CONFIG_VAR") == 1 && curr_scope.get_var_value<i32t>(DECL_VAR_STRUCT) > 0) {
         if (!curr_scope.try_create_var<std::string>(trg_ref.name_target + TRG_VAR_NAME_NPROJECT,
                                                     trg_ref.prj->name_project))
             trg_ref.prj->name_project =
@@ -364,12 +365,12 @@ void sl_func::executable(const std::vector<subexpressions> &sub_expr, var::scope
                                                     trg_ref.version_target.get_str_version()))
             trg_ref.version_target =
                 var::struct_sb::version(curr_scope.get_var_value<std::string>(trg_ref.name_target + TRG_VAR_NAME_VER));
-        if (!curr_scope.try_create_var<int>(trg_ref.name_target + TRG_VAR_NAME_CFG, (int)trg_ref.target_cfg))
+        if (!curr_scope.try_create_var<i32t>(trg_ref.name_target + TRG_VAR_NAME_CFG, (i32t)trg_ref.target_cfg))
             trg_ref.target_cfg =
-                (var::struct_sb::configuration)curr_scope.get_var_value<int>(trg_ref.name_target + TRG_VAR_NAME_CFG);
-        if (!curr_scope.try_create_var<int>(trg_ref.name_target + TRG_VAR_NAME_TYPE_T, (int)trg_ref.target_t))
+                (var::struct_sb::configuration)curr_scope.get_var_value<i32t>(trg_ref.name_target + TRG_VAR_NAME_CFG);
+        if (!curr_scope.try_create_var<i32t>(trg_ref.name_target + TRG_VAR_NAME_TYPE_T, (i32t)trg_ref.target_t))
             trg_ref.target_t =
-                (var::struct_sb::type_target)curr_scope.get_var_value<int>(trg_ref.name_target + TRG_VAR_NAME_TYPE_T);
+                (var::struct_sb::type_target)curr_scope.get_var_value<i32t>(trg_ref.name_target + TRG_VAR_NAME_TYPE_T);
         if (!curr_scope.try_create_var<std::string>(trg_ref.name_target + TRG_VAR_NAME_NGENERATOR,
                                                     trg_ref.name_generator))
             trg_ref.name_generator =
@@ -392,7 +393,7 @@ void sl_func::link_lib(const std::vector<subexpressions> &sub_expr, var::scope &
     for (u32t i = 1; i < sub_expr.size(); ++i)
         trg_ref.target_vec_libs.push_back(sub_expr[i].token_of_subexpr[0].token_val);
 
-    if (curr_scope.what_type("DECL_CONFIG_VAR") == 1 && curr_scope.get_var_value<int>(DECL_VAR_STRUCT) > 0) {
+    if (curr_scope.what_type("DECL_CONFIG_VAR") == 1 && curr_scope.get_var_value<i32t>(DECL_VAR_STRUCT) > 0) {
         if (curr_scope.what_type(trg_ref.name_target + TRG_VAR_NAME_LLIBS) == 4) {
             curr_scope.get_var_value<std::vector<std::string>>(trg_ref.name_target + TRG_VAR_NAME_LLIBS) =
                 trg_ref.target_vec_libs;
@@ -484,7 +485,7 @@ void sl_func::flags_compiler(const std::vector<subexpressions> &sub_expr, var::s
             prj_ref.dflags_compiler += sub_expr[i].token_of_subexpr[0].token_val + " ";
         }
 
-    if (curr_scope.what_type("DECL_CONFIG_VAR") == 1 && curr_scope.get_var_value<int>(DECL_VAR_STRUCT) > 0)
+    if (curr_scope.what_type("DECL_CONFIG_VAR") == 1 && curr_scope.get_var_value<i32t>(DECL_VAR_STRUCT) > 0)
         if (tmp_cfg == var::struct_sb::configuration::DEBUG)
             if (curr_scope.what_type(prj_ref.name_project + PRJ_VAR_NAME_DFLAGS_C) == 2) {
                 curr_scope.get_var_value<std::string>(prj_ref.name_project + PRJ_VAR_NAME_DFLAGS_C) =
@@ -521,7 +522,7 @@ void sl_func::flags_linker(const std::vector<subexpressions> &sub_expr, var::sco
             prj_ref.dflags_linker += sub_expr[i].token_of_subexpr[0].token_val + " ";
         }
 
-    if (curr_scope.what_type("DECL_CONFIG_VAR") == 1 && curr_scope.get_var_value<int>(DECL_VAR_STRUCT) > 0)
+    if (curr_scope.what_type("DECL_CONFIG_VAR") == 1 && curr_scope.get_var_value<i32t>(DECL_VAR_STRUCT) > 0)
         if (tmp_cfg == var::struct_sb::configuration::DEBUG)
             if (curr_scope.what_type(prj_ref.name_project + PRJ_VAR_NAME_DFLAGS_L) == 2) {
                 curr_scope.get_var_value<std::string>(prj_ref.name_project + PRJ_VAR_NAME_DFLAGS_L) =
@@ -547,7 +548,7 @@ void sl_func::path_compiler(const std::vector<subexpressions> &sub_expr, var::sc
         curr_scope.get_var_value<var::struct_sb::project>(sub_expr[0].token_of_subexpr[0].token_val);
     prj_ref.path_compiler = sub_expr[1].token_of_subexpr[0].token_val;
 
-    if (curr_scope.what_type("DECL_CONFIG_VAR") == 1 && curr_scope.get_var_value<int>(DECL_VAR_STRUCT) > 0)
+    if (curr_scope.what_type("DECL_CONFIG_VAR") == 1 && curr_scope.get_var_value<i32t>(DECL_VAR_STRUCT) > 0)
         if (curr_scope.what_type(prj_ref.name_project + PRJ_VAR_NAME_PTH_C) == 2) {
             curr_scope.get_var_value<std::string>(prj_ref.name_project + PRJ_VAR_NAME_PTH_C) = prj_ref.path_compiler;
         }
@@ -564,7 +565,7 @@ void sl_func::path_linker(const std::vector<subexpressions> &sub_expr, var::scop
         curr_scope.get_var_value<var::struct_sb::project>(sub_expr[0].token_of_subexpr[0].token_val);
     prj_ref.path_linker = sub_expr[1].token_of_subexpr[0].token_val;
 
-    if (curr_scope.what_type("DECL_CONFIG_VAR") == 1 && curr_scope.get_var_value<int>(DECL_VAR_STRUCT) > 0)
+    if (curr_scope.what_type("DECL_CONFIG_VAR") == 1 && curr_scope.get_var_value<i32t>(DECL_VAR_STRUCT) > 0)
         if (curr_scope.what_type(prj_ref.name_project + PRJ_VAR_NAME_PTH_C) == 2) {
             curr_scope.get_var_value<std::string>(prj_ref.name_project + PRJ_VAR_NAME_PTH_C) = prj_ref.path_linker;
         }
@@ -580,12 +581,12 @@ void sl_func::standart_c(const std::vector<subexpressions> &sub_expr, var::scope
     var::struct_sb::project &prj_ref =
         curr_scope.get_var_value<var::struct_sb::project>(sub_expr[0].token_of_subexpr[0].token_val);
     prj_ref.standart_c = std::stoi(sub_expr[1].token_of_subexpr[0].token_val.c_str());
-    if (curr_scope.what_type("DECL_CONFIG_VAR") == 1 && curr_scope.get_var_value<int>(DECL_VAR_STRUCT) > 0)
+    if (curr_scope.what_type("DECL_CONFIG_VAR") == 1 && curr_scope.get_var_value<i32t>(DECL_VAR_STRUCT) > 0)
         if (curr_scope.what_type(prj_ref.name_project + PRJ_VAR_NAME_STD_C) == 1) {
-            curr_scope.get_var_value<int>(prj_ref.name_project + PRJ_VAR_NAME_STD_C) = prj_ref.standart_c;
+            curr_scope.get_var_value<i32t>(prj_ref.name_project + PRJ_VAR_NAME_STD_C) = prj_ref.standart_c;
         }
         else
-            curr_scope.create_var<int>(prj_ref.name_project + PRJ_VAR_NAME_STD_C, prj_ref.standart_c);
+            curr_scope.create_var<i32t>(prj_ref.name_project + PRJ_VAR_NAME_STD_C, prj_ref.standart_c);
 }
 void sl_func::standart_cpp(const std::vector<subexpressions> &sub_expr, var::scope &curr_scope) {
     if (curr_scope.what_type(sub_expr[0].token_of_subexpr[0].token_val) != 5)
@@ -596,12 +597,12 @@ void sl_func::standart_cpp(const std::vector<subexpressions> &sub_expr, var::sco
     var::struct_sb::project &prj_ref =
         curr_scope.get_var_value<var::struct_sb::project>(sub_expr[0].token_of_subexpr[0].token_val);
     prj_ref.standart_cpp = std::stoi(sub_expr[1].token_of_subexpr[0].token_val.c_str());
-    if (curr_scope.what_type("DECL_CONFIG_VAR") == 1 && curr_scope.get_var_value<int>(DECL_VAR_STRUCT) > 0)
+    if (curr_scope.what_type("DECL_CONFIG_VAR") == 1 && curr_scope.get_var_value<i32t>(DECL_VAR_STRUCT) > 0)
         if (curr_scope.what_type(prj_ref.name_project + PRJ_VAR_NAME_STD_CPP) == 1) {
-            curr_scope.get_var_value<int>(prj_ref.name_project + PRJ_VAR_NAME_STD_CPP) = prj_ref.standart_c;
+            curr_scope.get_var_value<i32t>(prj_ref.name_project + PRJ_VAR_NAME_STD_CPP) = prj_ref.standart_c;
         }
         else
-            curr_scope.create_var<int>(prj_ref.name_project + PRJ_VAR_NAME_STD_CPP, prj_ref.standart_c);
+            curr_scope.create_var<i32t>(prj_ref.name_project + PRJ_VAR_NAME_STD_CPP, prj_ref.standart_c);
 }
 void sl_func::lang(const std::vector<subexpressions> &sub_expr, var::scope &curr_scope) {
     if (curr_scope.what_type(sub_expr[0].token_of_subexpr[0].token_val) != 5)
@@ -612,12 +613,12 @@ void sl_func::lang(const std::vector<subexpressions> &sub_expr, var::scope &curr
     var::struct_sb::project &prj_ref =
         curr_scope.get_var_value<var::struct_sb::project>(sub_expr[0].token_of_subexpr[0].token_val);
     prj_ref.lang = (var::struct_sb::language)std::stoi(sub_expr[1].token_of_subexpr[0].token_val);
-    if (curr_scope.what_type("DECL_CONFIG_VAR") == 1 && curr_scope.get_var_value<int>(DECL_VAR_STRUCT) > 0)
+    if (curr_scope.what_type("DECL_CONFIG_VAR") == 1 && curr_scope.get_var_value<i32t>(DECL_VAR_STRUCT) > 0)
         if (curr_scope.what_type(prj_ref.name_project + PRJ_VAR_NAME_LANG) == 1) {
-            curr_scope.get_var_value<int>(prj_ref.name_project + PRJ_VAR_NAME_LANG) = (int)prj_ref.lang;
+            curr_scope.get_var_value<i32t>(prj_ref.name_project + PRJ_VAR_NAME_LANG) = (i32t)prj_ref.lang;
         }
         else
-            curr_scope.create_var<int>(prj_ref.name_project + PRJ_VAR_NAME_LANG, (int)prj_ref.lang);
+            curr_scope.create_var<i32t>(prj_ref.name_project + PRJ_VAR_NAME_LANG, (i32t)prj_ref.lang);
 }
 
 void sl_func::generator(const std::vector<aef_expr::subexpressions> &sub_expr, var::scope &curr_scope) {
@@ -632,8 +633,15 @@ void sl_func::generator(const std::vector<aef_expr::subexpressions> &sub_expr, v
 }
 
 void sl_func::add_param_template(const std::vector<subexpressions> &sub_expr, var::scope &curr_scope) {
-    curr_scope.create_var<std::string>(sub_expr[0].token_of_subexpr[0].token_val,
-                                       sub_expr[1].token_of_subexpr[0].token_val);
+    if (curr_scope.what_type(sub_expr[1].token_of_subexpr[0].token_val) != 2)
+        throw interpreter::realtime_excp(parser::utility::build_pos_tokenb_str(sub_expr[0].token_of_subexpr[0]) +
+                                             " Global template arguments must be of type string: " +
+                                             sub_expr[0].token_of_subexpr[0].token_val + "\n",
+                                         "003");
+    curr_scope.create_var<std::pair<std::string, std::string>>(
+        sub_expr[0].token_of_subexpr[0].token_val,
+        {sub_expr[0].token_of_subexpr[0].token_val,
+         curr_scope.get_var_value<std::string>(sub_expr[1].token_of_subexpr[0].token_val)});
 }
 
 void sl_func::create_templates(const std::vector<aef_expr::subexpressions> &sub_expr, var::scope &curr_scope) {
@@ -1086,7 +1094,7 @@ void sl_func::use_templates(const std::vector<subexpressions> &sub_expr, var::sc
         prj_ref.vec_templates.push_back(sub_expr[i].token_of_subexpr[0].token_val);
     }
 
-    if (curr_scope.what_type("DECL_CONFIG_VAR") == 1 && curr_scope.get_var_value<int>(DECL_VAR_STRUCT) > 0)
+    if (curr_scope.what_type("DECL_CONFIG_VAR") == 1 && curr_scope.get_var_value<i32t>(DECL_VAR_STRUCT) > 0)
         if (curr_scope.what_type(prj_ref.name_project + PRJ_VAR_NAME_UTEMPLATES) == 4) {
             curr_scope.get_var_value<std::vector<std::string>>(prj_ref.name_project + PRJ_VAR_NAME_UTEMPLATES) =
                 prj_ref.vec_templates;
@@ -1105,10 +1113,10 @@ void sl_func::use_it_template(const std::vector<subexpressions> &sub_expr, var::
     var::struct_sb::project &prj_ref =
         curr_scope.get_var_value<var::struct_sb::project>(sub_expr[0].token_of_subexpr[0].token_val);
     prj_ref.use_it_templates = std::stoi(sub_expr[1].token_of_subexpr[0].token_val);
-    if (curr_scope.what_type("DECL_CONFIG_VAR") == 1 && curr_scope.get_var_value<int>(DECL_VAR_STRUCT) > 0)
+    if (curr_scope.what_type("DECL_CONFIG_VAR") == 1 && curr_scope.get_var_value<i32t>(DECL_VAR_STRUCT) > 0)
         if (curr_scope.what_type(prj_ref.name_project + PRJ_VAR_NAME_UITTEMPLATES) == 1) {
-            curr_scope.get_var_value<int>(prj_ref.name_project + PRJ_VAR_NAME_UITTEMPLATES) = prj_ref.use_it_templates;
+            curr_scope.get_var_value<i32t>(prj_ref.name_project + PRJ_VAR_NAME_UITTEMPLATES) = prj_ref.use_it_templates;
         }
         else
-            curr_scope.create_var<int>(prj_ref.name_project + PRJ_VAR_NAME_UITTEMPLATES, prj_ref.use_it_templates);
+            curr_scope.create_var<i32t>(prj_ref.name_project + PRJ_VAR_NAME_UITTEMPLATES, prj_ref.use_it_templates);
 }
