@@ -147,10 +147,6 @@ class assistant {
 
     void set_file_log_name(std::string name_file);
 
-    // if log = false, the function does nothing
-    // *turns logging on or off (subsequent log requests will be ignored)
-    void switch_log(bool val);
-
     // if output = false, the function does nothing
     // *turns console output on or off (subsequent output requests will be ignored)
     void switch_otp(bool val);
@@ -238,7 +234,8 @@ class assistant {
     void *realsystem_func;
 #endif
 
-    bool output{1}, log{1};
+    bool output{1}, log{0};
+    bool current_system_info{0};
 };
 
 #endif

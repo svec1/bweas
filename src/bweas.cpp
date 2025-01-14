@@ -4,6 +4,7 @@ int main(int argv, char **args) {
     try {
         clock_t beg = clock();
         bweas::bwbuilder bw(argv, args);
+        bw.set_logging();
         bw.start();
         assist << std::string("Sec: " + std::to_string((double)(clock() - beg) / CLOCKS_PER_SEC));
     }

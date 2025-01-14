@@ -58,6 +58,8 @@ class pars_an {
 
   public:
     void set_tokens(const std::vector<token_expr::token> &tk_s);
+    void set_additional_const(std::unordered_map<std::string, token_expr::token> addit_const);
+
     abstract_expr_func get_exprs();
     void clear_aef();
 
@@ -90,6 +92,8 @@ class pars_an {
 
     std::vector<token_expr::token> tokens;
     abstract_expr_func expr_s;
+
+    std::unordered_map<std::string, token_expr::token> addit_const;
 };
 
 } // namespace parser

@@ -145,7 +145,8 @@ commands bweas::generator::bwgenerator(const var::struct_sb::target_out &trg, bw
         else if (current_template.returnable == var::struct_sb::target_t_str(trg.target_t)) {
             output_file = tools::get_name_output_file(current_ccmp->pattern_ret_files,
                                                       used_input_files_in_curr_template++, dir_work_endv);
-            is_ind_template = 1;
+            if (!std::filesystem::exists(output_file) || used_input_files)
+                is_ind_template = 1;
         }
         else {
             for (; used_output_files < trg.prj.src_files.size(); ++used_output_files) {
@@ -265,7 +266,7 @@ commands bweas::generator::bwgenerator(const var::struct_sb::target_out &trg, bw
             }
             current_cmd += arg.str_arg + " ";
         }
-
+        assist.next_output_important();
         assist << "GENERATED COMMAND: " + current_cmd;
 
         if (is_ind_template)

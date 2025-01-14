@@ -8,9 +8,6 @@ using file_it = assistant::file_it;
 
 interpreter_exec::interpreter_exec() {
     if (!init_glob) {
-        assist.add_err("RTT000", "Undefined behavior");
-        assist.add_err("RTT001", "The DLL cannot be loaded");
-        assist.add_err("RTT002", "Function declarations cannot be found");
         assist.add_err("RTT003", "It is impossible to find the structure");
         assist.add_err("RTT004", "Failed to open file");
         assist.add_err("RTT005", "Internal function error");
@@ -31,14 +28,18 @@ void interpreter_exec::set_external_scope(var::scope *_external_scope) {
 void interpreter_exec::build_aef() {
     file_it bweas_config = assist.open_file(interp_conf.filename_interp, mf::open::rb);
 
-    lexer.set_keyword_ops({STR_KEYWORD_OP_CONST_RELEASE, STR_KEYWORD_OP_CONST_DEBUG, STR_KEYWORD_OP_CONST_TRUE,
-                           STR_KEYWORD_OP_CONST_FALSE});
+    parser.set_additional_const(
+        {{STR_KEYWORD_OP_CONST_RELEASE, token_expr::token(token_expr::token_type::LITERAL, "1")},
+         {STR_KEYWORD_OP_CONST_DEBUG, token_expr::token(token_expr::token_type::LITERAL, "0")},
+         {STR_KEYWORD_OP_CONST_TRUE, token_expr::token(token_expr::token_type::LITERAL, "1")},
+         {STR_KEYWORD_OP_CONST_FALSE, token_expr::token(token_expr::token_type::LITERAL, "0")}});
+
     lexer.set_symbols(assist.read_file(assist.get_ref_file(bweas_config), mf::input::read_binary));
     assist.close_file(bweas_config);
 
     global_scope.clear();
 
-    clock_t beg;
+    debug_init_time()
 
     smt_analyzer.load_external_func_table(external_func_table);
 #if defined(WIN)

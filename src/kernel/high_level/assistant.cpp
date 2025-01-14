@@ -41,11 +41,9 @@ void assistant::set_file_log_name(std::string name_file) {
     if (name_file.empty())
         return;
     log_file_name = name_file;
+    log = 1;
     if (files.begin() + get_iterator_file(log_file_name) == files.end())
-        open_file(name_file, file::mode_file::open::wa);
-}
-void assistant::switch_log(bool val) {
-    log = val;
+        open_file(name_file, file::mode_file::open::w);
 }
 void assistant::switch_otp(bool val) {
     output = val;
@@ -138,6 +136,7 @@ std::string assistant::read_file(file &file, file::mode_file::input mode) {
         while (std::getline(file.stream, tmp))
             data_file += tmp + "\n";
     }
+
     return data_file;
 }
 void assistant::write_file(file &file, std::string buf, file::mode_file::output mode) {
@@ -163,6 +162,8 @@ void assistant::next_output_unsuccess() {
 #endif
 }
 void assistant::next_output_important() {
+    current_system_info = 1;
+
 #if defined(WIN)
     SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_INTENSITY);
 #elif defined(UNIX)
@@ -285,10 +286,13 @@ void *assistant::get_realsystem_func() {
 void assistant::operator<<(std::string text) {
     if (output)
         printf("%s\n", text.c_str());
-    const auto &log_file = files.begin() + get_iterator_file(log_file_name);
-    if (log && log_file != files.end() && log_file->file_opened)
-        write_file(*log_file, text + "\n", file::mode_file::output::write_default);
+    if (log && current_system_info) {
+        const auto &log_file = files.begin() + get_iterator_file(log_file_name);
+        if (log_file != files.end() && log_file->file_opened)
+            write_file(*log_file, text + "\n", file::mode_file::output::write_default);
 
+        current_system_info = 0;
+    }
 #if defined(WIN)
     SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 15);
 #elif defined(UNIX)

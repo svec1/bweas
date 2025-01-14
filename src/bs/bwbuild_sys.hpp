@@ -21,7 +21,11 @@
 // reinterpret bweasconf.txt
 #define CACHE_FILE "bwcache"
 
+// The name of the directory where the build files will be created
 #define DIRWORK_ENV ".bweas"
+
+// The file in which all actions of the build system will be logged
+#define LOG_FILE "bweas-last.log"
 
 namespace bweas {
 
@@ -94,8 +98,8 @@ class bwbuilder final {
     void gen_DPCM();
 
   public:
-    // Sets logging to a file, 1 - yes, log, 0 - no
-    void switch_log(u32t value);
+    // Sets the logging mode
+    void set_logging();
 
     // Sets output to the console, 1 - yes, output all information, 0 - no
     void switch_output_log(u32t value);
@@ -140,7 +144,6 @@ class bwbuilder final {
     std::vector<var::struct_sb::target_out> out_targets;
     std::vector<var::struct_sb::template_command> templates;
     std::vector<var::struct_sb::call_component> call_components;
-
     bwargs global_extern_args;
 
     static inline bool init_glob{0};

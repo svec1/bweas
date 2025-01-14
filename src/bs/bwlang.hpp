@@ -1,7 +1,7 @@
 #ifndef BWLANG__H
 #define BWLANG__H
 
-#include "lang\interpreter.hpp"
+#include "lang/interpreter.hpp"
 
 namespace bweas {
 

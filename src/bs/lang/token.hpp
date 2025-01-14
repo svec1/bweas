@@ -21,17 +21,9 @@
 
 #define IS_BIBARY_KW_OP(STR) (STR == STR_KEYWORD_OP_EQUAL || STR == STR_KEYWORD_OP_AND || STR == STR_KEYWORD_OP_OR)
 #define IS_UNARY_KW_OP(STR) (STR == STR_KEYWORD_OP_TSTR || STR == STR_KEYWORD_OP_NOT)
-#define IS_CONSTANT_KW_OP(STR)                                                                                         \
-    (STR == STR_KEYWORD_OP_CONST_RELEASE || STR == STR_KEYWORD_OP_CONST_DEBUG || STR == STR_KEYWORD_OP_CONST_TRUE ||   \
-     STR == STR_KEYWORD_OP_CONST_FALSE)
-
-#define IS_CONSTANT_RET_INT(STR)                                                                                       \
-    (STR == STR_KEYWORD_OP_CONST_RELEASE || STR == STR_KEYWORD_OP_CONST_DEBUG || STR == STR_KEYWORD_OP_CONST_TRUE ||   \
-     STR == STR_KEYWORD_OP_CONST_FALSE)
 
 #define RET_INT_KW_OP(STR)                                                                                             \
-    (STR == STR_KEYWORD_OP_EQUAL || STR == STR_KEYWORD_OP_AND || STR == STR_KEYWORD_OP_NOT ||                          \
-     STR == STR_KEYWORD_OP_OR || IS_CONSTANT_RET_INT(STR))
+    (STR == STR_KEYWORD_OP_EQUAL || STR == STR_KEYWORD_OP_AND || STR == STR_KEYWORD_OP_NOT || STR == STR_KEYWORD_OP_OR)
 #define RET_STR_KW_OP(STR) (STR == STR_KEYWORD_OP_TSTR)
 
 namespace token_expr {
@@ -67,8 +59,15 @@ enum class token_type {
 // struct of token
 struct token {
     token() = default;
-    token(token_type tk_t, std::string tk_val, i32t pos_def_line = -1, i32t pos_beg_def_sym = -1)
+    explicit token(token_type tk_t, std::string tk_val, i32t pos_def_line = -1, i32t pos_beg_def_sym = -1)
         : token_t(tk_t), token_val(tk_val), pos_defined_line(pos_def_line), pos_beg_defined_sym(pos_beg_def_sym) {
+    }
+
+    token &operator=(const token &tk) {
+        token_t = tk.token_t;
+        token_val = tk.token_val;
+
+        return *this;
     }
 
     token_type token_t;

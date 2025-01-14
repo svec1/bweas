@@ -70,7 +70,7 @@ static inline bwlua::lua::table<std::string, std::any> conv_to_table(const var::
                                                     {TRG_VAR_NAME_LLIBS, trg_o.target_vec_libs}};
 }
 
-static inline var::struct_sb::project conv_to_project(bwlua::lua::table<std::string, std::any> &prj_t) {
+static inline var::struct_sb::project conv_to_project(bwlua::lua::table<std::string, std::any> prj_t) {
     var::struct_sb::project prj;
 
     prj.name_project = std::any_cast<std::string>(prj_t[PRJ_VAR_NAME]);
@@ -105,7 +105,7 @@ static inline var::struct_sb::target_out conv_to_target(bwlua::lua::table<std::s
 }
 
 static inline std::vector<var::struct_sb::template_command::arg> conv_to_args(
-    bwlua::lua::array<bwlua::lua::array<std::any>> &args) {
+    bwlua::lua::array<bwlua::lua::array<std::any>> args) {
     std::vector<var::struct_sb::template_command::arg> _args;
 
     for (const auto &arg : args)

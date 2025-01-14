@@ -5,6 +5,8 @@
 
 namespace interpreter {
 
+#define debug_init_time() clock_t beg;
+
 #define debug_mark_time_func(func, func_name)                                                                          \
     beg = clock();                                                                                                     \
     func;                                                                                                              \

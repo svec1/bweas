@@ -269,9 +269,8 @@ void bwbuilder::start() {
     }
 }
 
-void bwbuilder::switch_log(u32t value) {
-    log = value;
-    assist.switch_log(log);
+void bwbuilder::set_logging() {
+    assist.set_file_log_name(LOG_FILE);
 }
 
 void bwbuilder::switch_output_log(u32t value) {
@@ -357,10 +356,14 @@ void bwbuilder::build_targets() {
         bwqueue_templates bw_tcmd;
         set_queue_templates(create_stack_target_templates(out_targets[i]), bw_tcmd);
         parse_basic_args(out_targets[i], bw_tcmd);
+
+        assist.switch_otp(0);
         commands cmd_s = current_generator->gen_commands(
             out_targets[i], bw_tcmd, dir_target, current_generator->input_files(out_targets[i], bw_tcmd, dir_target));
+        assist.switch_otp(1);
 
         for (const command &cmd : cmd_s) {
+
 #if defined(WIN)
             if (system(cmd.c_str()))
 #elif defined(UNIX)
