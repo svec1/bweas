@@ -63,9 +63,9 @@ std::map<std::string, std::vector<std::string>> lua_generator::input_files(
     }
 }
 
-commands lua_generator::gen_commands(const var::struct_sb::target_out &trg, bwqueue_templates &tcmd_s,
-                                     std::string dir_work_endv,
-                                     std::map<std::string, std::vector<std::string>> files_input) {
+std::map<std::string, std::string> lua_generator::gen_commands(
+    const var::struct_sb::target_out &trg, bwqueue_templates &tcmd_s, std::string dir_work_endv,
+    std::map<std::string, std::vector<std::string>> files_input) {
     std::vector<bwlua::lua::table<std::string, std::any>> tcmd_s_vec;
     for (u32t i = 0; i < tcmd_s.size(); ++i)
         tcmd_s_vec.emplace_back(luatools_lang::conv_to_table(tcmd_s[i]));

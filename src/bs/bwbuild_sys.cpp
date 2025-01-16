@@ -358,18 +358,21 @@ void bwbuilder::build_targets() {
         parse_basic_args(out_targets[i], bw_tcmd);
 
         assist.switch_otp(0);
-        commands cmd_s = current_generator->gen_commands(
+        auto cmd_s = current_generator->gen_commands(
             out_targets[i], bw_tcmd, dir_target, current_generator->input_files(out_targets[i], bw_tcmd, dir_target));
         assist.switch_otp(1);
 
-        for (const command &cmd : cmd_s) {
+        for (const auto &cmd : cmd_s) {
+
+            assist.next_output_important();
+            assist << "Compile - " + cmd.first;
 
 #if defined(WIN)
-            if (system(cmd.c_str()))
+            if (system(cmd.second.c_str()))
 #elif defined(UNIX)
-            if (((int (*)(const char *))assist.get_realsystem_func())(cmd.c_str()))
+            if (((int (*)(const char *))assist.get_realsystem_func())(cmd.second.c_str()))
 #endif
-                throw bwbuilder_excp("Failed build. Command execution error - " + cmd, "004");
+                throw bwbuilder_excp("Failed build. Command execution error - " + cmd.second, "004");
         }
     }
 }

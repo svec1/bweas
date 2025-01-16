@@ -29,9 +29,9 @@ std::map<std::string, std::vector<std::string>> integral_generator::input_files(
     return files_input_p(trg, templates, *ccmp_p, dir_work_endv);
 }
 
-commands integral_generator::gen_commands(const var::struct_sb::target_out &trg, bwqueue_templates &templates,
-                                          std::string dir_work_endv,
-                                          std::map<std::string, std::vector<std::string>> files_input) {
+std::map<std::string, std::string> integral_generator::gen_commands(
+    const var::struct_sb::target_out &trg, bwqueue_templates &templates, std::string dir_work_endv,
+    std::map<std::string, std::vector<std::string>> files_input) {
     return generator_p(trg, templates, *ccmp_p, files_input, dir_work_endv);
 }
 
@@ -107,11 +107,11 @@ std::map<std::string, std::vector<std::string>> bweas::generator::bwfile_inputs(
     return input_files;
 }
 
-commands bweas::generator::bwgenerator(const var::struct_sb::target_out &trg, bwqueue_templates &templates,
-                                       const std::vector<var::struct_sb::call_component> &ccmp_p,
-                                       std::map<std::string, std::vector<std::string>> input_files,
-                                       std::string dir_work_endv) {
-    commands cmd_s;
+std::map<std::string, std::string> bweas::generator::bwgenerator(
+    const var::struct_sb::target_out &trg, bwqueue_templates &templates,
+    const std::vector<var::struct_sb::call_component> &ccmp_p,
+    std::map<std::string, std::vector<std::string>> input_files, std::string dir_work_endv) {
+    std::map<std::string, std::string> cmd_s;
     command current_cmd;
 
     std::map<std::string, std::vector<std::string>> global_internal_args;
@@ -270,7 +270,7 @@ commands bweas::generator::bwgenerator(const var::struct_sb::target_out &trg, bw
         assist << "GENERATED COMMAND: " + current_cmd;
 
         if (is_ind_template)
-            cmd_s.push_back(current_cmd);
+            cmd_s.emplace(output_file, current_cmd);
         current_cmd.clear();
 
         if (!generate_single_input || used_input_files_in_curr_template == trg.prj.src_files.size()) {
