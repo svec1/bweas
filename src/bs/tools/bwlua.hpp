@@ -6,9 +6,9 @@
 #define BWLUA__H
 
 #include <any>
-#include <exception>
 #include <map>
 #include <mutex>
+#include <stdexcept>
 #include <string>
 #include <tuple>
 #include <vector>
