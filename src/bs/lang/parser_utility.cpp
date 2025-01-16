@@ -38,18 +38,24 @@ std::string parser::utility::type_ret_subexpr(aef_expr::subexpressions::ret_type
         return "VAR ID";
         break;
     default:
-        break;
+        return "";
     }
 }
 
 std::string parser::utility::build_pos_tokenb_str(const token &tk) {
+    std::string tmp_str;
+    if (tk.pos_defined_line == -1)
+        tmp_str += "\n(unknown position): ";
+    else {
+        tmp_str += "\n(Line: " + std::to_string(tk.pos_defined_line);
+        if (tk.pos_beg_defined_sym == -1)
+            tmp_str += "): ";
+        else
+            tmp_str += "; Symbols start pos: " + std::to_string(tk.pos_beg_defined_sym) + "): ";
+    }
     if (!tk.token_val.empty())
-        return "\n(Line: " + std::to_string(tk.pos_defined_line) +
-               "; Symbols start pos: " + std::to_string(tk.pos_beg_defined_sym) + "): Type token - " +
-               type_token_str(tk.token_t) + "; Token value - \"" + tk.token_val + "\"\n";
-    return "\n(Line: " + std::to_string(tk.pos_defined_line) +
-           "; Symbols start pos: " + std::to_string(tk.pos_beg_defined_sym) + "): Type token - " +
-           type_token_str(tk.token_t) + "\n";
+        return tmp_str + "Type token - " + type_token_str(tk.token_t) + "; Token value - \"" + tk.token_val + "\"\n";
+    return tmp_str + "Type token - " + type_token_str(tk.token_t) + "\n";
 }
 std::string parser::utility::build_pos_subexpr_str(const subexpressions &sub_expr) {
     std::string str;
@@ -67,15 +73,15 @@ std::string parser::utility::build_pos_subexpr_str(const subexpressions &sub_exp
 std::string parser::utility::type_sybexpr_str(subexpressions::type_subexpr sub_expr_t) {
     switch (sub_expr_t) {
     case subexpressions::type_subexpr::ID:
-        return "<ID>";
+        return "ID";
     case subexpressions::type_subexpr::INT:
-        return "<INT>";
+        return "INT";
     case subexpressions::type_subexpr::STRING:
-        return "<STRING>";
+        return "STRING";
     case subexpressions::type_subexpr::INT_COMPARE:
-        return "<INT_COMPARE>";
+        return "INT_COMPARE";
     case subexpressions::type_subexpr::STRING_ADD:
-        return "<STRING_ADD>";
+        return "STRING_ADD";
     default:
         return "<UNDEF>";
     }
@@ -102,27 +108,27 @@ std::string parser::utility::tree_build_visually_str(const abstract_expr_func &a
     }
     return tree_visible.str();
 }
-params parser::utility::type_param_in_str(std::string str) {
+param_type parser::utility::type_param_in_str(std::string str) {
     if (str == "FUTURE_VAR_ID")
-        return params::FUTURE_VAR_ID;
+        return param_type::FUTURE_VAR_ID;
     else if (str == "VAR_ID")
-        return params::VAR_ID;
+        return param_type::VAR_ID;
     else if (str == "NCHECK_VAR")
-        return params::NCHECK_VAR_ID;
+        return param_type::NCHECK_VAR_ID;
     else if (str == "VAR_STRUCT_ID")
-        return params::VAR_STRUCT_ID;
+        return param_type::VAR_STRUCT_ID;
     else if (str == "ANY_VALUE_WITHOUT_FUTUREID_NEXT")
-        return params::ANY_VALUE_WITHOUT_FUTUREID_NEXT;
+        return param_type::ANY_VALUE_WITHOUT_FUTUREID_NEXT;
     else if (str == "LIT_STR")
-        return params::LIT_STR;
+        return param_type::LIT_STR;
     else if (str == "LIT_NUM")
-        return params::LIT_NUM;
+        return param_type::LIT_NUM;
     else if (str == "LSTR_OR_ID_VAR")
-        return params::LSTR_OR_ID_VAR;
+        return param_type::LSTR_OR_ID_VAR;
     else if (str == "LNUM_OR_ID_VAR")
-        return params::LSTR_OR_ID_VAR;
+        return param_type::LSTR_OR_ID_VAR;
     else if (str == "NEXT_TOO")
-        return params::NEXT_TOO;
+        return param_type::NEXT_TOO;
     else
-        return params::SIZE_ENUM_PARAMS;
+        return param_type::SIZE_ENUM_PARAMS;
 }

@@ -3,8 +3,8 @@
 
 #include "../../kernel/high_level/bwtype.h"
 
+#include "../tools/bwexception.hpp"
 #include "../tools/call_cmd.hpp"
-#include "../tools/exception.hpp"
 #include "static_struct.hpp"
 #include "var.hpp"
 
@@ -30,10 +30,12 @@ inline std::string type_var_to_str(u32t ind) {
         return "template command";
     else if (ind == 8)
         return "call component";
+    else if (ind == 9)
+        return "global external args";
     return "undef";
 }
 
-class scope_excp : public bw_excp::bweas_exception {
+class scope_excp : public ::bwexception::bweas_exception {
   public:
     scope_excp(std::string _what_hp, std::string number_err) : what_hp(_what_hp), bweas_exception("SCOP" + number_err) {
     }
@@ -78,6 +80,7 @@ class scope {
     // 6 - target
     // 7 - template command
     // 8 - call component
+    // 9 - global external args
     // 0 - undefined
     inline u32t what_type(std::string name_var);
 
@@ -87,15 +90,16 @@ class scope {
   private:
     static inline bool init_glob{0};
 
-    var::datatype_var<int> int_v;
+    var::datatype_var<i32t> int_v;
     var::datatype_var<std::string> str_v;
     var::datatype_var<struct_sb::project> prj_v;
     var::datatype_var<struct_sb::target> trg_v;
-    var::datatype_var<std::vector<int>> vec_int_v;
+    var::datatype_var<std::vector<i32t>> vec_int_v;
     var::datatype_var<std::vector<std::string>> vec_str_v;
 
     var::datatype_var<struct_sb::template_command> tcmd_v;
     var::datatype_var<struct_sb::call_component> ccmp_v;
+    var::datatype_var<std::pair<std::string, std::string>> global_ext_args_v;
 };
 
 inline scope::scope() {
@@ -108,7 +112,7 @@ inline scope::scope() {
 }
 
 template <typename T> inline T &scope::create_var(std::string name_var, T val) {
-    if constexpr (std::is_same_v<T, int>) {
+    if constexpr (std::is_same_v<T, i32t>) {
         if (int_v.create_var(name_var, val))
             throw scope_excp("int(" + std::to_string(val) + ") <- " + name_var, "001");
         return int_v.get_val_ref(name_var);
@@ -128,7 +132,7 @@ template <typename T> inline T &scope::create_var(std::string name_var, T val) {
             throw scope_excp("target(" + val.name_target + ") <- " + name_var, "001");
         return trg_v.get_val_ref(name_var);
     }
-    else if constexpr (std::is_same_v<T, std::vector<int>>) {
+    else if constexpr (std::is_same_v<T, std::vector<i32t>>) {
         if (vec_int_v.create_var(name_var, val))
             throw scope_excp("vector<int>(" + std::to_string(val[0]) + ", ..." + ") <- " + name_var, "001");
         return vec_int_v.get_val_ref(name_var);
@@ -148,11 +152,16 @@ template <typename T> inline T &scope::create_var(std::string name_var, T val) {
             throw scope_excp("call_component(" + val.name + ", ..." + ") <- " + name_var, "001");
         return ccmp_v.get_val_ref(name_var);
     }
+    else if constexpr (std::is_same_v<T, std::pair<std::string, std::string>>) {
+        if (global_ext_args_v.create_var(name_var, val))
+            throw scope_excp("global_external_args(" + val.first + ", ..." + ") <- " + name_var, "001");
+        return global_ext_args_v.get_val_ref(name_var);
+    }
 }
 
 template <typename T> inline bool scope::try_create_var(std::string name_var, T val) {
     bool creates = 0;
-    if constexpr (std::is_same_v<T, int>)
+    if constexpr (std::is_same_v<T, i32t>)
         creates = int_v.create_var(name_var, val);
     else if constexpr (std::is_same_v<T, std::string>)
         creates = str_v.create_var(name_var, val);
@@ -160,7 +169,7 @@ template <typename T> inline bool scope::try_create_var(std::string name_var, T 
         creates = prj_v.create_var(name_var, val);
     else if constexpr (std::is_same_v<T, struct_sb::target>)
         creates = trg_v.create_var(name_var, val);
-    else if constexpr (std::is_same_v<T, std::vector<int>>)
+    else if constexpr (std::is_same_v<T, std::vector<i32t>>)
         creates = vec_int_v.create_var(name_var, val);
     else if constexpr (std::is_same_v<T, std::vector<std::string>>)
         creates = vec_str_v.create_var(name_var, val);
@@ -168,12 +177,14 @@ template <typename T> inline bool scope::try_create_var(std::string name_var, T 
         creates = tcmd_v.create_var(name_var, val);
     else if constexpr (std::is_same_v<T, struct_sb::call_component>)
         creates = ccmp_v.create_var(name_var, val);
+    else if constexpr (std::is_same_v<T, std::pair<std::string, std::string>>)
+        creates = global_ext_args_v.create_var(name_var, val);
 
     return !creates;
 }
 
 template <typename T> inline void scope::delete_var(std::string name_var) {
-    if constexpr (std::is_same_v<T, int>) {
+    if constexpr (std::is_same_v<T, i32t>) {
         if (int_v.delete_var(name_var))
             throw scope_excp("int() <- " + name_var, "000");
     }
@@ -189,7 +200,7 @@ template <typename T> inline void scope::delete_var(std::string name_var) {
         if (trg_v.delete_var(name_var))
             throw scope_excp("target() <- " + name_var, "000");
     }
-    else if constexpr (std::is_same_v<T, std::vector<int>>) {
+    else if constexpr (std::is_same_v<T, std::vector<i32t>>) {
         if (vec_int_v.delete_var(name_var))
             throw scope_excp("vector<int>() <- " + name_var, "000");
     }
@@ -205,10 +216,14 @@ template <typename T> inline void scope::delete_var(std::string name_var) {
         if (ccmp_v.delete_var(name_var))
             throw scope_excp("call_component() <- " + name_var, "000");
     }
+    else if constexpr (std::is_same_v<T, std::pair<std::string, std::string>>) {
+        if (global_ext_args_v.delete_var(name_var))
+            throw scope_excp("global_external_args() <- " + name_var, "000");
+    }
 }
 
 template <typename T> inline T &scope::get_var_value(std::string name_var) {
-    if constexpr (std::is_same_v<T, int>) {
+    if constexpr (std::is_same_v<T, i32t>) {
         if (!int_v.is_exist_var(name_var))
             throw scope_excp("int() <- " + name_var, "000");
         return int_v.get_val_ref(name_var);
@@ -228,7 +243,7 @@ template <typename T> inline T &scope::get_var_value(std::string name_var) {
             throw scope_excp("target() <- " + name_var, "000");
         return trg_v.get_val_ref(name_var);
     }
-    else if constexpr (std::is_same_v<T, std::vector<int>>) {
+    else if constexpr (std::is_same_v<T, std::vector<i32t>>) {
         if (!vec_int_v.is_exist_var(name_var))
             throw scope_excp("vector<int>() <- " + name_var, "000");
         return vec_int_v.get_val_ref(name_var);
@@ -248,10 +263,15 @@ template <typename T> inline T &scope::get_var_value(std::string name_var) {
             throw scope_excp("call_component() <- " + name_var, "000");
         return ccmp_v.get_val_ref(name_var);
     }
+    else if constexpr (std::is_same_v<T, std::pair<std::string, std::string>>) {
+        if (!global_ext_args_v.is_exist_var(name_var))
+            throw scope_excp("global_external_args() <- " + name_var, "000");
+        return global_ext_args_v.get_val_ref(name_var);
+    }
 }
 
 template <typename T> inline std::vector<std::pair<std::string, T>> &scope::get_vector_variables_t() {
-    if constexpr (std::is_same_v<T, int>)
+    if constexpr (std::is_same_v<T, i32t>)
         return int_v.get_vector_variables();
     else if constexpr (std::is_same_v<T, std::string>)
         return str_v.get_vector_variables();
@@ -259,7 +279,7 @@ template <typename T> inline std::vector<std::pair<std::string, T>> &scope::get_
         return prj_v.get_vector_variables();
     else if constexpr (std::is_same_v<T, struct_sb::target>)
         return trg_v.get_vector_variables();
-    else if constexpr (std::is_same_v<T, std::vector<int>>)
+    else if constexpr (std::is_same_v<T, std::vector<i32t>>)
         return vec_int_v.get_vector_variables();
     else if constexpr (std::is_same_v<T, std::vector<std::string>>)
         return vec_str_v.get_vector_variables();
@@ -267,12 +287,14 @@ template <typename T> inline std::vector<std::pair<std::string, T>> &scope::get_
         return tcmd_v.get_vector_variables();
     else if constexpr (std::is_same_v<T, struct_sb::call_component>)
         return ccmp_v.get_vector_variables();
+    else if constexpr (std::is_same_v<T, std::pair<std::string, std::string>>)
+        return global_ext_args_v.get_vector_variables();
 }
 
 inline bool scope::is_exist(std::string name_var) {
     if (int_v.is_exist_var(name_var) || str_v.is_exist_var(name_var) || vec_int_v.is_exist_var(name_var) ||
         vec_str_v.is_exist_var(name_var) || prj_v.is_exist_var(name_var) || trg_v.is_exist_var(name_var) ||
-        tcmd_v.is_exist_var(name_var) || ccmp_v.is_exist_var(name_var))
+        tcmd_v.is_exist_var(name_var) || ccmp_v.is_exist_var(name_var) || global_ext_args_v.is_exist_var(name_var))
         return 1;
     return 0;
 }
@@ -293,6 +315,8 @@ inline u32t scope::what_type(std::string name_var) {
         return 7;
     else if (ccmp_v.is_exist_var(name_var))
         return 8;
+    else if (global_ext_args_v.is_exist_var(name_var))
+        return 9;
     else
         return 0;
 }
@@ -306,6 +330,7 @@ inline void scope::clear() {
     trg_v.clear();
     tcmd_v.clear();
     ccmp_v.clear();
+    global_ext_args_v.clear();
 }
 
 } // namespace var

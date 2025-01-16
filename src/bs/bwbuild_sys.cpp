@@ -1,5 +1,6 @@
 #include "bwbuild_sys.hpp"
 #include "bwgenerator_integral.hpp"
+#include "bwlang.hpp"
 #include "lang/static_struct.hpp"
 
 #include <algorithm>
@@ -10,10 +11,12 @@
 #include <unordered_set>
 
 using namespace bweas;
-using namespace bwexception;
+using namespace bweas::bwexception;
 
 using mf = assistant::file::mode_file;
 using file_it = assistant::file_it;
+
+bwlang _bwlang{MAIN_FILE};
 
 bwbuilder::bwbuilder(int argv, char **args) {
     if (!init_glob) {
@@ -46,8 +49,10 @@ bwbuilder::bwbuilder(int argv, char **args) {
 }
 
 bwbuilder::~bwbuilder() {
-    if (generator_api::base_generator::is_exist(generator))
-        generator->deleteGenerator();
+    if (_bwcache)
+        _bwcache->delete_cache();
+    for (const auto &generator : generators)
+        generator.second->deleteGenerator();
 }
 
 void bwbuilder::handle_args(std::vector<std::string> args) {
@@ -137,10 +142,10 @@ u32t bwbuilder::create_package(std::string path_json_config_package) {
     data_package.json_config = assist.read_file(assist.get_ref_file(json_config_package), mf::input::read_default);
     assist.close_file(json_config_package);
 
+    bweas::bwpackage loaded_package;
     std::string pckg = loaded_package.init(data_package, 1);
-    const file_it &package = assist.open_file(std::filesystem::current_path().string() + "/" +
-                                                  loaded_package.data.cfg_package.name_package + BW_FORMAT_PACKAGE,
-                                              mf::open::wb);
+    const file_it &package = assist.open_file(
+        std::filesystem::current_path().string() + "/" + loaded_package.name_package + BW_FORMAT_PACKAGE, mf::open::wb);
     assist.write_file(assist.get_ref_file(package), pckg, mf::output::write_binary);
     assist.close_file(package);
 
@@ -151,7 +156,6 @@ void bwbuilder::init() {
     std::string bweas_path = assist.get_path_program() + "/" + JSON_CONFIG_FILE;
 
     nlohmann::json config_json;
-    std::string name_package;
     file_it file_json_config = assist.open_file(bweas_path, mf::open::r);
     if (!assist.exist_file(file_json_config)) {
         assist.get_ref_file(file_json_config).open(mf::open::w);
@@ -166,32 +170,57 @@ void bwbuilder::init() {
         assist.close_file(file_json_config);
     }
 
-    if (config_json.contains("package")) {
-        if (config_json["package"].is_null())
-            throw bwbuilder_excp("At least one package must be defined", "005");
+    if (config_json.contains("cache-gn")) {
+        if (!config_json["cache-gn"].is_string())
+            throw bwbuilder_excp("Cache generator name expected", "005");
 
-        name_package = config_json["package"];
-        std::string path_to_package = assist.get_path_program() + "/packages/" + name_package + BW_FORMAT_PACKAGE;
-        std::string raw_data_package;
-        file_it package = assist.open_file(path_to_package, mf::open::rb);
-        if (!assist.exist_file(package))
-            throw bwbuilder_excp(path_to_package, "007");
-        raw_data_package = assist.read_file(assist.get_ref_file(package), mf::input::read_binary);
-        assist.close_file(package);
-
-        loaded_package.load(raw_data_package);
-        assist.next_output_success();
-        assist << " - [BWEAS]: The package was loaded successfully(" + std::to_string(raw_data_package.size()) +
-                      " bytes)";
+        if (config_json["cache-gn"] == "fast_bwcache")
+            _bwcache = cache_api::base_bwcache::create_fast_bwcache();
+        else if (config_json["cache-gn"] == "json_bwcache")
+            _bwcache = cache_api::base_bwcache::create_json_bwcache();
     }
-    if (!config_json.contains("use genlua") || !config_json["use genlua"].is_number_integer())
-        throw bwbuilder_excp("The use of the lua generator is not defined", "005");
-    else if (config_json["use genlua"] == 0)
-        generator = generator_api::base_generator::createGeneratorInt(generator::bwgenerator, generator::bwfile_inputs);
-    else {
-        if (!loaded_package.is_init())
+    else
+        _bwcache = cache_api::base_bwcache::create_fast_bwcache();
+
+    if (config_json.contains("packages")) {
+        if (!config_json["packages"].is_array())
             throw bwbuilder_excp("At least one package must be defined", "005");
-        generator = generator_api::base_generator::createGeneratorLua(loaded_package.data.src_lua_generator);
+        for (const auto &package : config_json["packages"].items()) {
+            if (!package.value().is_string())
+                throw bwbuilder_excp("Package names are expected", "005");
+            bweas::bwpackage loaded_package;
+
+            std::string path_to_package =
+                assist.get_path_program() + "/packages/" + (std::string)package.value() + BW_FORMAT_PACKAGE;
+            std::string raw_data_package;
+            file_it it_package = assist.open_file(path_to_package, mf::open::rb);
+            if (!assist.exist_file(it_package))
+                throw bwbuilder_excp(path_to_package, "007");
+            raw_data_package = assist.read_file(assist.get_ref_file(it_package), mf::input::read_binary);
+            assist.close_file(it_package);
+
+            loaded_package.load(raw_data_package);
+            loaded_packages.push_back(loaded_package);
+
+            if (_bwcache == NULL && loaded_package.cfg_package.cache.name_cache == config_json["cache-gn"])
+                _bwcache = cache_api::base_bwcache::create_lua_bwcache(loaded_package.cfg_package.cache.src_lua_cache);
+            assist.next_output_success();
+            assist << " - [BWEAS]: The package was loaded successfully(" + std::to_string(raw_data_package.size()) +
+                          " bytes)";
+        }
+    }
+
+    generators.emplace("bwgenerator", generator_api::base_generator::createGeneratorInt(generator::bwgenerator,
+                                                                                        generator::bwfile_inputs));
+    for (const auto &package : loaded_packages)
+        for (const auto &generator : package.cfg_package.generators)
+            generators.emplace(generator.name_generator,
+                               generator_api::base_generator::createGeneratorLua(generator.src_lua_generator));
+
+    for (auto &package : loaded_packages) {
+        semantic_an::table_func tfuncs = module_mg.init_tsfunc(package.cfg_package.mds);
+        for (const auto &func : tfuncs)
+            module_tfuncs.insert(func);
     }
 }
 
@@ -229,7 +258,6 @@ void bwbuilder::start() {
     else if (mode_bweas == mode_working::collect_cfg || mode_bweas == mode_working::collect_cfg_w_build) {
     interpreter_start:
         run_interpreter();
-        load_target();
         gen_cache_target();
         imp_data_interpreter_for_bs();
     }
@@ -241,9 +269,8 @@ void bwbuilder::start() {
     }
 }
 
-void bwbuilder::switch_log(u32t value) {
-    log = value;
-    assist.switch_log(log);
+void bwbuilder::set_logging() {
+    assist.set_file_log_name(LOG_FILE);
 }
 
 void bwbuilder::switch_output_log(u32t value) {
@@ -252,23 +279,16 @@ void bwbuilder::switch_output_log(u32t value) {
 }
 
 void bwbuilder::run_interpreter() {
-    interpreter::interpreter_exec::config new_config;
-
-    new_config.debug_output = 0;
-    new_config.import_module = 1;
-    new_config.filename_interp = MAIN_FILE;
-    new_config.file_import_file_f = IMPORT_FILE;
-    new_config.transmit_smt_name_func_with_smt = 1;
-    new_config.use_external_scope = 0;
-
-    _interpreter.set_config(new_config);
+    _bwlang.load_external_tfuncs(std::move(module_tfuncs));
 
     assist << " - [BWEAS]: Interpreting the configuration file...";
-
-    _interpreter.build_aef();
-    _interpreter.interpreter_run();
-
+    _bwlang.execute();
     assist << " - [BWEAS]: The interpretation was successful!";
+
+    out_targets = _bwlang.get_targets();
+    templates = _bwlang.get_templates();
+    call_components = _bwlang.get_call_components();
+    global_extern_args = _bwlang.get_global_external_args();
 }
 
 u32t bwbuilder::gen_cache_target() {
@@ -280,103 +300,12 @@ u32t bwbuilder::gen_cache_target() {
 
     file_it bweas_cache = assist.open_file(CACHE_FILE, mf::open::w);
 
-    std::string serel_target_tmp;
+    _bwcache->_cache_data.targets_o_p = &out_targets;
+    _bwcache->_cache_data.templates = templates;
+    _bwcache->_cache_data.call_components = call_components;
+    _bwcache->_cache_data.global_external_args = global_extern_args;
 
-    std::unordered_set<std::string> used_templates;
-    std::unordered_set<std::string> all_used_globally_args;
-    std::unordered_set<std::string> all_used_call_component;
-
-    const auto &vec_global_template =
-        _interpreter.get_current_scope().get_vector_variables_t<var::struct_sb::template_command>();
-    const auto &vec_c_components =
-        _interpreter.get_current_scope().get_vector_variables_t<var::struct_sb::call_component>();
-
-    for (i32t i = 0; i < out_targets.size(); ++i) {
-        char *prj_v = (char *)&out_targets[i];
-        serel_target_tmp += std::to_string(out_targets[i].prj.src_files.size()) + " " +
-                            std::to_string(out_targets[i].prj.vec_templates.size()) + " " +
-                            std::to_string(out_targets[i].target_vec_libs.size()) + " ";
-        for (u32t j = 0; j < sizeof(var::struct_sb::project); j += sizeof(std::string)) {
-
-            // version project
-            if (j == sizeof(std::string)) {
-                serel_target_tmp += (*(var::struct_sb::version *)(prj_v + j)).get_str_version() + " " +
-                                    std::to_string(*(unsigned long *)(prj_v + j + sizeof(var::struct_sb::version))) +
-                                    " ";
-                j += sizeof(var::struct_sb::version) + sizeof(size_t);
-            }
-
-            // standart c
-            else if (j == sizeof(std::string) * 7 + sizeof(var::struct_sb::version) + sizeof(size_t)) {
-                serel_target_tmp += std::to_string(*(i32t *)(prj_v + j)) + " " +
-                                    std::to_string(*(i32t *)(prj_v + j + sizeof(i32t))) + " " +
-                                    std::to_string(*(bool *)(prj_v + j + sizeof(i32t) * 2)) + " ";
-                break;
-            }
-            if ((*(std::string *)(prj_v + j)).find(" ") != serel_target_tmp.npos)
-                serel_target_tmp += "\"" + *(std::string *)(prj_v + j) + "\" ";
-            else
-                serel_target_tmp += *(std::string *)(prj_v + j) + " ";
-        }
-        for (u32t j = 0; j < out_targets[i].prj.src_files.size(); ++j)
-            serel_target_tmp += out_targets[i].prj.src_files[j] + " ";
-        for (u32t j = 0; j < out_targets[i].prj.vec_templates.size(); ++j) {
-            used_templates.emplace(out_targets[i].prj.vec_templates[j]);
-            serel_target_tmp += out_targets[i].prj.vec_templates[j] + " ";
-        }
-
-        serel_target_tmp += var::struct_sb::target_t_str(out_targets[i].target_t) + " " +
-                            var::struct_sb::cfg_str(out_targets[i].target_cfg) + " " + out_targets[i].name_target +
-                            " " + out_targets[i].version_target.get_str_version() + " ";
-        for (u32t j = 0; j < out_targets[i].target_vec_libs.size(); ++j)
-            serel_target_tmp += out_targets[i].target_vec_libs[j] + " ";
-    }
-
-    serel_target_tmp += "EOET" + std::to_string(vec_global_template.size()) + " "; // end of enum targets
-
-    for (u32t i = 0; i < vec_global_template.size(); ++i) {
-        serel_target_tmp +=
-            std::to_string(vec_global_template[i].second.name_accept_params.size()) + " " +
-            std::to_string(vec_global_template[i].second.args.size()) + " " + vec_global_template[i].second.name + " " +
-            vec_global_template[i].second.name_call_component + " " + vec_global_template[i].second.returnable + " ";
-
-        all_used_call_component.emplace(vec_global_template[i].second.name_call_component);
-
-        for (u32t j = 0; j < vec_global_template[i].second.name_accept_params.size(); ++j)
-            serel_target_tmp += vec_global_template[i].second.name_accept_params[j] + " ";
-        for (u32t j = 0; j < vec_global_template[i].second.args.size(); ++j) {
-            if (vec_global_template[i].second.args[j].arg_t == var::struct_sb::template_command::arg::type::extglobal)
-                all_used_globally_args.emplace(vec_global_template[i].second.args[j].str_arg);
-            serel_target_tmp += vec_global_template[i].second.args[j].str_arg + " " +
-                                std::to_string((i32t)vec_global_template[i].second.args[j].arg_t) + " ";
-        }
-    }
-
-    serel_target_tmp += std::to_string(all_used_call_component.size()) + " ";
-
-    for (const auto &c_component : all_used_call_component) {
-        const auto &ref_c_component =
-            find_if(vec_c_components.begin(), vec_c_components.end(),
-                    [c_component](const std::pair<std::string, var::struct_sb::call_component> &ccmp) {
-                        return ccmp.first == c_component;
-                    })
-                ->second;
-        serel_target_tmp +=
-            ref_c_component.name + " " + ref_c_component.name_program + " " + ref_c_component.pattern_ret_files + " ";
-    }
-
-    serel_target_tmp += std::to_string(all_used_globally_args.size()) + " ";
-
-    for (const auto &g_arg : all_used_globally_args) {
-        if (_interpreter.get_current_scope().what_type(
-                _interpreter.get_current_scope().get_var_value<std::string>(g_arg)) != 2)
-            throw bwbuilder_excp("External global parameter for template is not defined correctly", "003");
-        serel_target_tmp += g_arg + "-\"" +
-                            _interpreter.get_current_scope().get_var_value<std::string>(
-                                _interpreter.get_current_scope().get_var_value<std::string>(g_arg)) +
-                            "\" ";
-    }
-    assist.write_file(assist.get_ref_file(bweas_cache), serel_target_tmp, mf::output::write_binary);
+    assist.write_file(assist.get_ref_file(bweas_cache), _bwcache->create_cache(), mf::output::write_binary);
     assist.close_file(bweas_cache);
 
     assist.next_output_success();
@@ -385,202 +314,22 @@ u32t bwbuilder::gen_cache_target() {
     return 0;
 }
 
-u32t bwbuilder::deserl_cache() {
+void bwbuilder::deserl_cache() {
     file_it bweas_cache = assist.open_file(CACHE_FILE, mf::open::rb);
-    std::string serel_str = assist.read_file(assist.get_ref_file(bweas_cache));
-
-    assist.close_file(bweas_cache);
 
     assist << " - [BWEAS]: Cache deserialization...";
 
-    var::struct_sb::target_out trg_tmp;
-    var::struct_sb::template_command tcmd_tmp;
-    var::struct_sb::template_command::arg arg_tmp;
-    var::struct_sb::call_component ccmp_tmp;
+    _bwcache->get_cache_data(assist.read_file(assist.get_ref_file(bweas_cache)));
 
-    std::string str_tmp;
-
-    i32t count_word = 0, offset_byte_prj = 0, offset_byte_ccmp = 0;
-    i32t size_src_files = 0, size_vec_templates = 0, size_vec_libs = 0;
-    i32t size_templates = 0;
-    i32t size_internal_args = 0, size_external_args = 0, size_call_components = 0, size_global_extern_args = 0;
-
-    char *tproj_p = (char *)&trg_tmp.prj;
-    char *ccmp_p = (char *)&ccmp_tmp;
-
-    bool open_sk = 0;
-    bool enum_templates = 0;
-    bool enum_call_component = 0;
-    bool enum_global_extern_args = 0;
-
-    bool expected_arg_param_str = 1;
-
-    try {
-        for (i32t i = 0; i < serel_str.size(); ++i) {
-            if (serel_str[i] == '\"' && !enum_templates) {
-                if (!open_sk)
-                    open_sk = 1;
-                else
-                    open_sk = 0;
-                continue;
-            }
-
-            if (serel_str[i] == ' ' && !open_sk) {
-            next_word:
-                ++count_word;
-                if (enum_global_extern_args) {
-                    if (!size_global_extern_args)
-                        break;
-                    std::string name_arg = str_tmp;
-                    name_arg.erase(name_arg.find("-"));
-                    str_tmp.erase(0, str_tmp.find("-") + 1);
-                    global_extern_args.push_back(std::pair<std::string, std::string>(name_arg, str_tmp));
-                }
-                else if (enum_call_component) {
-                    if (offset_byte_ccmp / sizeof(std::string) == 3) {
-                        call_components.push_back(ccmp_tmp);
-                        offset_byte_ccmp = 0;
-
-                        --size_call_components;
-
-                        if (!size_call_components) {
-                            enum_global_extern_args = 1;
-                            enum_call_component = 0;
-
-                            size_global_extern_args = std::stoi(str_tmp);
-                            goto next;
-                        }
-                    }
-                    *(std::string *)(ccmp_p + offset_byte_ccmp) = str_tmp;
-                    offset_byte_ccmp += sizeof(std::string);
-                }
-                else if (enum_templates) {
-                    if (count_word == 1)
-                        size_internal_args = std::stoi(str_tmp);
-                    else if (count_word == 2)
-                        size_external_args = std::stoi(str_tmp);
-                    else if (count_word == 3)
-                        tcmd_tmp.name = str_tmp;
-                    else if (count_word == 4)
-                        tcmd_tmp.name_call_component = str_tmp;
-                    else if (count_word == 5)
-                        tcmd_tmp.returnable = str_tmp;
-                    else if (count_word >= 6 && count_word < 6 + size_internal_args)
-                        tcmd_tmp.name_accept_params.push_back(str_tmp);
-                    else if ((count_word >= 6 + size_internal_args &&
-                              count_word < 6 + size_internal_args + (size_external_args * 2)) ||
-                             count_word == 6 + size_internal_args) {
-                        if (expected_arg_param_str) {
-                            arg_tmp.str_arg = str_tmp;
-                            expected_arg_param_str = 0;
-                        }
-                        else {
-                            arg_tmp.arg_t = (var::struct_sb::template_command::arg::type)std::stoi(str_tmp);
-                            tcmd_tmp.args.push_back(arg_tmp);
-                            expected_arg_param_str = 1;
-                        }
-                    }
-                    else if (count_word == 6 + size_internal_args + (size_external_args * 2)) {
-                        templates.push_back(tcmd_tmp);
-                        --size_templates;
-
-                        tcmd_tmp.name_accept_params = {};
-                        tcmd_tmp.args = {};
-
-                        if (!size_templates) {
-                            enum_call_component = 1;
-                            enum_templates = 0;
-
-                            size_call_components = std::stoi(str_tmp);
-                        }
-                        else {
-                            count_word = 0;
-                            goto next_word;
-                        }
-                    }
-                }
-                else {
-                    if (count_word == 1)
-                        size_src_files = std::stoi(str_tmp);
-                    else if (count_word == 2)
-                        size_vec_templates = std::stoi(str_tmp);
-                    else if (count_word == 3)
-                        size_vec_libs = std::stoi(str_tmp);
-                    else if (count_word > 3) {
-                        if (count_word == 6 || (count_word >= 13 && count_word <= 15)) {
-                            *(i32t *)(tproj_p + offset_byte_prj) = std::atoll(str_tmp.c_str());
-                            offset_byte_prj += sizeof(i32t);
-                        }
-                        else if (count_word == 5) {
-                            trg_tmp.prj.version_project = str_tmp;
-                            offset_byte_prj += sizeof(var::struct_sb::version);
-                        }
-                        else {
-
-                            if (count_word >= 16 && count_word < 16 + size_src_files)
-                                trg_tmp.prj.src_files.push_back(str_tmp);
-                            else if (count_word >= 16 + size_src_files &&
-                                     count_word < 16 + size_src_files + size_vec_templates) {
-                                if (str_tmp != "null")
-                                    trg_tmp.prj.vec_templates.push_back(str_tmp);
-                            }
-                            else if (count_word == 16 + size_src_files + size_vec_templates)
-                                trg_tmp.target_t = var::struct_sb::to_type_target(str_tmp);
-                            else if (count_word == 16 + size_src_files + size_vec_templates + 1)
-                                trg_tmp.target_cfg = var::struct_sb::to_cfg(str_tmp);
-                            else if (count_word == 16 + size_src_files + size_vec_templates + 2)
-                                trg_tmp.name_target = str_tmp;
-                            else if (count_word == 16 + size_src_files + size_vec_templates + 3)
-                                trg_tmp.version_target = str_tmp;
-                            else if (count_word >= 16 + size_src_files + size_vec_templates + 4 &&
-                                     count_word < 16 + size_src_files + size_vec_templates + 4 + size_vec_libs)
-                                trg_tmp.target_vec_libs.push_back(str_tmp);
-                            else if (count_word == 16 + size_src_files + size_vec_templates + 4 + size_vec_libs) {
-                                out_targets.push_back(trg_tmp);
-
-                                trg_tmp.target_vec_libs = {};
-                                trg_tmp.prj.src_files = {};
-                                trg_tmp.prj.vec_templates = {};
-
-                                offset_byte_prj = 0;
-                                count_word = 0;
-
-                                if (str_tmp.find("EOET") != str_tmp.npos) {
-                                    str_tmp.erase(0, str_tmp.find("EOET") + 4);
-
-                                    size_templates = std::stoi(str_tmp);
-
-                                    enum_templates = 1;
-                                }
-                                else
-                                    goto next_word;
-                            }
-                            else {
-                                *(std::string *)(tproj_p + offset_byte_prj) = str_tmp;
-                                offset_byte_prj += sizeof(std::string);
-                            }
-                        }
-                    }
-                }
-
-            next:
-                str_tmp.clear();
-                continue;
-            }
-            str_tmp += serel_str[i];
-        }
-    }
-    catch (const std::logic_error &_excp) {
-        assist.next_output_unsuccess();
-        throw bwbuilder_excp("", "001");
-    }
+    out_targets = _bwcache->_cache_data.targets_o;
+    templates = _bwcache->_cache_data.templates;
+    call_components = _bwcache->_cache_data.call_components;
+    global_extern_args = _bwcache->_cache_data.global_external_args;
 
     assist << " - [BWEAS]: Cache deserialization was successful!";
 
     assist.next_output_success();
     assist << " - [BWEAS]: Was loaded " + std::to_string(templates.size()) + " template of command!";
-
-    return 0;
 }
 
 void bwbuilder::build_targets() {
@@ -588,10 +337,14 @@ void bwbuilder::build_targets() {
 
     global_extern_args.push_back(std::pair<std::string, std::string>("", ""));
 
-    generator->set_ccomponents(call_components);
-    generator->init();
-
     for (u32t i = 0; i < out_targets.size(); ++i) {
+        if (generators.find(out_targets[i].name_generator) == generators.end())
+            throw bwbuilder_excp("The provided generator as the primary for the current target was not found - " +
+                                     out_targets[i].name_target + ": " + out_targets[i].name_generator,
+                                 "002");
+        auto &current_generator = generators[out_targets[i].name_generator];
+        current_generator->set_ccomponents(call_components);
+        current_generator->init();
         if (out_targets[i].prj.vec_templates.size() == 0)
             throw bwbuilder_excp("There are no templates for the target - " + out_targets[i].name_target, "002");
         std::string dir_target = std::string(DIRWORK_ENV) + "/" + out_targets[i].name_target;
@@ -603,34 +356,24 @@ void bwbuilder::build_targets() {
         bwqueue_templates bw_tcmd;
         set_queue_templates(create_stack_target_templates(out_targets[i]), bw_tcmd);
         parse_basic_args(out_targets[i], bw_tcmd);
-        commands cmd_s = generator->gen_commands(out_targets[i], bw_tcmd, dir_target,
-                                                 generator->input_files(out_targets[i], bw_tcmd, dir_target));
 
-        for (const command &cmd : cmd_s) {
+        assist.switch_otp(0);
+        auto cmd_s = current_generator->gen_commands(
+            out_targets[i], bw_tcmd, dir_target, current_generator->input_files(out_targets[i], bw_tcmd, dir_target));
+        assist.switch_otp(1);
+
+        for (const auto &cmd : cmd_s) {
+
+            assist.next_output_important();
+            assist << "Compile - " + cmd.first;
+
 #if defined(WIN)
-            if (system(cmd.c_str()))
+            if (system(cmd.second.c_str()))
 #elif defined(UNIX)
-            if (((int (*)(const char *))assist.get_realsystem_func())(cmd.c_str()))
+            if (((int (*)(const char *))assist.get_realsystem_func())(cmd.second.c_str()))
 #endif
-                throw bwbuilder_excp("Failed build. Command execution error - " + cmd, "004");
+                throw bwbuilder_excp("Failed build. Command execution error - " + cmd.second, "004");
         }
-    }
-}
-
-void bwbuilder::load_target() {
-    std::vector<var::struct_sb::target> targets = _interpreter.export_targets();
-
-    var::struct_sb::target_out target_tmp;
-
-    for (u32t i = 0; i < targets.size(); ++i) {
-        target_tmp.name_target = targets[i].name_target;
-        target_tmp.target_t = targets[i].target_t;
-        target_tmp.target_cfg = targets[i].target_cfg;
-        target_tmp.version_target = targets[i].version_target;
-        target_tmp.target_vec_libs = targets[i].target_vec_libs;
-        target_tmp.prj = *targets[i].prj;
-
-        out_targets.push_back(target_tmp);
     }
 }
 
@@ -764,7 +507,7 @@ void bwbuilder::parse_basic_args(const var::struct_sb::target_out &target, bwque
 
 void bwbuilder::imp_data_interpreter_for_bs() {
     const auto &global_templates =
-        _interpreter.get_current_scope().get_vector_variables_t<var::struct_sb::template_command>();
+        _bwlang.get_global_scope().get_vector_variables_t<var::struct_sb::template_command>();
     std::unordered_set<std::string> name_global_external_args;
 
     for (const auto &global_template_it : global_templates) {
@@ -775,21 +518,21 @@ void bwbuilder::imp_data_interpreter_for_bs() {
     }
 
     const auto &global_call_components =
-        _interpreter.get_current_scope().get_vector_variables_t<var::struct_sb::call_component>();
+        _bwlang.get_global_scope().get_vector_variables_t<var::struct_sb::call_component>();
     for (const auto &global_call_component : global_call_components)
         call_components.push_back(global_call_component.second);
 
-    const auto &string_variables = _interpreter.get_current_scope().get_vector_variables_t<std::string>();
+    const auto &string_variables = _bwlang.get_global_scope().get_vector_variables_t<std::string>();
     for (const auto &name_global_external_arg : name_global_external_args) {
         const auto &ref_extern_arg =
             find_if(string_variables.begin(), string_variables.end(),
                     [name_global_external_arg](const std::pair<std::string, std::string> &str_var) {
                         return str_var.first == name_global_external_arg;
                     });
-        if (_interpreter.get_current_scope().what_type(ref_extern_arg->second) != 2)
+        if (_bwlang.get_global_scope().what_type(ref_extern_arg->second) != 2)
             throw bwbuilder_excp(
                 "The parameter reference(name) points to a non-existent variable - " + ref_extern_arg->second, "002");
-        const auto &extern_arg = _interpreter.get_current_scope().get_var_value<std::string>(ref_extern_arg->second);
+        const auto &extern_arg = _bwlang.get_global_scope().get_var_value<std::string>(ref_extern_arg->second);
         global_extern_args.push_back(std::pair<std::string, std::string>(ref_extern_arg->first, extern_arg));
     }
 }

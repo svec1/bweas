@@ -1,18 +1,17 @@
 #ifndef _LEXER__H
 #define _LEXER__H
 
+#include "../tools/bwexception.hpp"
 #include "token.hpp"
-#include "../tools/exception.hpp"
 
 #include <string>
 #include <vector>
 
 namespace lexer {
 
-class lexer_excp : public bw_excp::bweas_exception {
+class lexer_excp : public ::bwexception::bweas_exception {
   public:
-    lexer_excp(std::string _what_hp, std::string number_err)
-        : what_hp(_what_hp), bweas_exception("LEX" + number_err) {
+    lexer_excp(std::string _what_hp, std::string number_err) : what_hp(_what_hp), bweas_exception("LEX" + number_err) {
     }
     ~lexer_excp() noexcept override final = default;
 
@@ -41,6 +40,8 @@ class lex_an {
     std::vector<token_expr::token> get_tokens();
     void clear_tokens();
 
+    void set_keyword_ops(const std::vector<std::string> &keyword_ops);
+
     // lexical analysis
     // ----------------
     // Creates tokens with type "token_type".
@@ -68,6 +69,9 @@ class lex_an {
 
     std::vector<token_expr::token> tokens;
     std::string symbols;
+
+    std::vector<std::string> keyword_ops{STR_KEYWORD_OP_EQUAL, STR_KEYWORD_OP_AND, STR_KEYWORD_OP_OR,
+                                         STR_KEYWORD_OP_NOT, STR_KEYWORD_OP_TSTR};
 
     u32t pos{0};
 };

@@ -7,7 +7,7 @@
 // ----------------------------------------------
 // - set, project, executable, link_lib, exp_data, cmd,
 // debug, debug_struct, flags_compiler, flags_linker, path_compiler,
-// path_linker, standart_c, standart_cpp, lang,
+// path_linker, standart_c, standart_cpp, lang, generator,
 // add_param_template, use_tamplates, use_it_template
 namespace sl_func {
 
@@ -20,6 +20,14 @@ extern const std::vector<std::string> name_static_func_sm;
 // A function that creates or modifies (if it already exists) a variable.
 // Cannot work with variables that are structural (project, target)
 extern void set(const std::vector<aef_expr::subexpressions> &sub_expr, var::scope &curr_scope);
+
+// A function that finds (or performs other actions) files,
+// defining paths for them, to prevent problems with the subsequent build of targets.
+// Functions:
+//  1. PATH
+//  2. FIND
+//  3. COPY
+extern void file(const std::vector<aef_expr::subexpressions> &sub_expr, var::scope &curr_scope);
 
 // Creates a project with a specific language and source files
 extern void project(const std::vector<aef_expr::subexpressions> &sub_expr, var::scope &curr_scope);
@@ -66,6 +74,9 @@ extern void standart_cpp(const std::vector<aef_expr::subexpressions> &sub_expr, 
 // Sets the language of the project that was passed
 extern void lang(const std::vector<aef_expr::subexpressions> &sub_expr, var::scope &curr_scope);
 
+// Sets the base generator for the target that was passed.
+extern void generator(const std::vector<aef_expr::subexpressions> &sub_expr, var::scope &curr_scope);
+
 // Creates a parameter declaration for a command template (variable)
 // that refers to another variable. Therefore, the parameter for the template
 // command will depend on the passed variable
@@ -73,8 +84,8 @@ extern void add_param_template(const std::vector<aef_expr::subexpressions> &sub_
 
 // Creates a template that can be used to generate commands
 // ----------
-// #### NAME_CALL_COMPONENT(ACP1, ...) -> return NAME_smt: <param1>,<param2>,<{ACP1}>, <[FIELD_TARGET_OR_PROJECT]>, FEATURES_CURRENT_GENERATOR ...
-// Available components: COMPILER C/C++, LINKER C/C++, ARCHIVER, INTERPRETER, [user]...
+// #### NAME_CALL_COMPONENT(ACP1, ...) -> return NAME_smt: <param1>,<param2>,<{ACP1}>, <[FIELD_TARGET_OR_PROJECT]>,
+// FEATURES_CURRENT_GENERATOR ... Available components: COMPILER C/C++, LINKER C/C++, ARCHIVER, INTERPRETER, [user]...
 // NAME_ret is file or list of files
 extern void create_templates(const std::vector<aef_expr::subexpressions> &sub_expr, var::scope &curr_scope);
 

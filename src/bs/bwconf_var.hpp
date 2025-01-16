@@ -6,6 +6,8 @@
         \"use genlua\": 0 \
     }"
 
+#define DEFAULT_BWEAS_GENERATOR "bwgenerator"
+
 #if defined(WIN)
 
 #define RELEASE_FLAGS_COMPILER_CPP                                                                                     \

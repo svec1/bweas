@@ -34,6 +34,7 @@
 #define TRG_VAR_NAME_VER "_VERSION"
 #define TRG_VAR_NAME_CFG "_CFG"
 #define TRG_VAR_NAME_TYPE_T "_TYPE_TARGET"
+#define TRG_VAR_NAME_NGENERATOR "_GENERATOR_NAME"
 #define TRG_VAR_NAME_LLIBS "_LIBS"
 
 // name of additional fields, which are also part of structures,
@@ -70,6 +71,10 @@
 #define NAME_FIELD_TEMPLATE_COMMAND_NAME_ACCEPTS_ARGS "_ACP_ARGS"
 #define NAME_FIELD_TEMPLATE_COMMAND_RET "_RETURN"
 #define NAME_FIELD_TEMPLATE_COMMAND_NAME_ARGS "_ARGS"
+
+#define NAME_FIELD_CALL_COMPONENT_NAME "_NAME"
+#define NAME_FIELD_CALL_COMPONENT_NAME_PROGRAM "_NAME_PROGRAM"
+#define NAME_FIELD_CALL_COMPONENT_PATTERN_FILES "_PATTERN_FILES"
 
 namespace var {
 namespace struct_sb {
@@ -152,23 +157,27 @@ inline configuration to_cfg(std::string target_t) {
 struct version {
     version() = default;
     version(std::string version_str) {
-        std::string major_str = version_str;
-        std::string minor_str = version_str;
-        std::string patch_str = version_str;
+        try {
+            std::string major_str = version_str;
+            std::string minor_str = version_str;
+            std::string patch_str = version_str;
 
-        if (major_str.find('.') == major_str.npos)
-            goto init_mmp;
-        major_str.erase(major_str.find('.'));
-        minor_str.erase(0, minor_str.find('.') + 1);
-        if (minor_str.find('.') == minor_str.npos)
-            goto init_mmp;
-        minor_str.erase(minor_str.find('.'));
-        patch_str.erase(0, patch_str.find_last_of('.') + 1);
+            if (major_str.find('.') == major_str.npos)
+                goto init_mmp;
+            major_str.erase(major_str.find('.'));
+            minor_str.erase(0, minor_str.find('.') + 1);
+            if (minor_str.find('.') == minor_str.npos)
+                goto init_mmp;
+            minor_str.erase(minor_str.find('.'));
+            patch_str.erase(0, patch_str.find_last_of('.') + 1);
 
-    init_mmp:
-        major = std::atoll(major_str.c_str());
-        minor = std::atoll(minor_str.c_str());
-        patch = std::atoll(patch_str.c_str());
+        init_mmp:
+            major = std::atoll(major_str.c_str());
+            minor = std::atoll(minor_str.c_str());
+            patch = std::atoll(patch_str.c_str());
+        }
+        catch (std::logic_error &_excp) {
+        }
     }
     version(u32t mj, u32t mn, u32t ptch) : major{mj}, minor{mn}, patch{ptch} {
     }
@@ -233,6 +242,7 @@ struct target {
     configuration target_cfg;
 
     std::string name_target;
+    std::string name_generator{DEFAULT_BWEAS_GENERATOR};
     version version_target;
 
     std::vector<std::string> target_vec_libs{"null"};
@@ -247,6 +257,7 @@ struct target_out {
     configuration target_cfg;
 
     std::string name_target;
+    std::string name_generator;
     version version_target;
 
     std::vector<std::string> target_vec_libs{"null"};

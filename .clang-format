@@ -9,4 +9,4 @@ BraceWrapping :
     AfterEnum: False
     BeforeElse: True
 
-StatementMacros: [call_err_tk_inf_lex, wrap_interpreter, debug_mark_time_func]
+StatementMacros: [call_err_tk_inf_lex, wrap_interpreter, debug_init_time, debug_mark_time_func]

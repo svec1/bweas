@@ -1,32 +1,18 @@
 #ifndef INTERPRETER__H
 #define INTERPRETER__H
 
-#include "../smodule/module.hpp"
 #include "semantic_an.hpp"
 
 namespace interpreter {
 
-#define wrap_interpreter(action)                                                                                       \
-    try {                                                                                                              \
-        action                                                                                                         \
-    }                                                                                                                  \
-    catch (bw_excp::bweas_exception & excp) {                                                                          \
-        assist.call_err(excp.get_assist_err(), excp.what());                                                           \
-    }
+#define debug_init_time() clock_t beg;
 
-#define wrap_callf_interpreter(action, debug)                                                                          \
-    try {                                                                                                              \
-        action                                                                                                         \
-    }                                                                                                                  \
-    catch (realtime_excp & excp) {                                                                                     \
-        debug assist.call_err(excp.get_assist_err(), excp.what());                                                     \
-    }
 #define debug_mark_time_func(func, func_name)                                                                          \
     beg = clock();                                                                                                     \
     func;                                                                                                              \
     assist << std::string("Run time " func_name ": " + std::to_string((double)(clock() - beg) / CLOCKS_PER_SEC));
 
-class realtime_excp : public bw_excp::bweas_exception {
+class realtime_excp : public ::bwexception::bweas_exception {
   public:
     realtime_excp(std::string _what_hp, std::string number_err)
         : what_hp(_what_hp), bweas_exception("RTT" + number_err) {
@@ -42,19 +28,13 @@ class realtime_excp : public bw_excp::bweas_exception {
     std::string what_hp;
 };
 
-class interpreter_exec : private module::mdl_manager {
+class interpreter_exec {
   public:
     struct config {
         // output:
         // - tree after semanticanalyzer
         // - run time every of components interpreter(lexer, parser...)
         bool debug_output{0};
-
-        // construction of dynamic post-semantic command module(DPCM)
-        bool CDPCM{0};
-
-        // whether to import modules
-        bool import_module{0};
 
         // whether to use external scope
         bool use_external_scope{0};
@@ -63,8 +43,7 @@ class interpreter_exec : private module::mdl_manager {
         // should be called in semantic analysis to semantic analysis
         bool transmit_smt_name_func_with_smt{0};
 
-        const char *filename_interp{""};
-        const char *file_import_file_f{""};
+        std::string filename_interp;
     };
 
   public:
@@ -83,7 +62,7 @@ class interpreter_exec : private module::mdl_manager {
 
     // Interpretation of functions (not declaring, and which are not
     // explicitly marked as called in the semantic analysis)
-    void interpreter_run();
+    void interpret();
 
     void set_config(config conf);
     void set_external_scope(var::scope *_external_scope);
@@ -92,8 +71,9 @@ class interpreter_exec : private module::mdl_manager {
 
     var::scope &get_current_scope();
 
-  private:
-    void build_external_func_table();
+    void load_external_func(const semantic_an::table_func &tfuncs);
+    void set_std_function(std::string name_token_func, aef_expr::notion_func::func_t func_ref,
+                          std::vector<aef_expr::param> expected_param);
 
   private:
     static inline bool init_glob{0};

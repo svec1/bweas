@@ -41,11 +41,9 @@ void assistant::set_file_log_name(std::string name_file) {
     if (name_file.empty())
         return;
     log_file_name = name_file;
+    log = 1;
     if (files.begin() + get_iterator_file(log_file_name) == files.end())
-        open_file(name_file, file::mode_file::open::wa);
-}
-void assistant::switch_log(bool val) {
-    log = val;
+        open_file(name_file, file::mode_file::open::w);
 }
 void assistant::switch_otp(bool val) {
     output = val;
@@ -76,20 +74,13 @@ void assistant::call_err(std::string name_err, std::string addit) {
     SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 4);
 #endif
     if (addit.empty())
-        this->operator<<(it->name_e + "(" + std::to_string(it->ind) + ")");
+        this->operator<<(it->name_e + "(" + std::to_string(it->ind) + "): " + it->desc_e);
     else
         this->operator<<(it->name_e + "(" + std::to_string(it->ind) + "): " + it->desc_e + "\nDetail: [" + addit + "]");
 #if defined(WIN)
     SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 7);
 #endif
     exit(EXIT_FAILURE);
-}
-std::string assistant::get_desc_err(std::string name_err) {
-    const auto &it =
-        find_if(err_s.begin(), err_s.end(), [name_err](const err &err_c) { return err_c.name_e == name_err; });
-    if (it != err_s.end())
-        return it->desc_e;
-    return "";
 }
 
 assistant::file_it assistant::open_file(std::string name_file, file::mode_file::open mode) {
@@ -145,6 +136,7 @@ std::string assistant::read_file(file &file, file::mode_file::input mode) {
         while (std::getline(file.stream, tmp))
             data_file += tmp + "\n";
     }
+
     return data_file;
 }
 void assistant::write_file(file &file, std::string buf, file::mode_file::output mode) {
@@ -170,6 +162,8 @@ void assistant::next_output_unsuccess() {
 #endif
 }
 void assistant::next_output_important() {
+    current_system_info = 1;
+
 #if defined(WIN)
     SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_INTENSITY);
 #elif defined(UNIX)
@@ -242,7 +236,7 @@ assistant::get_handle_module_dll(std::string dll_name) {
 }
 #elif defined(UNIX)
 
-const char *assistant::get_error_dl() {
+std::string assistant::get_error_dl() {
     return dlerror();
 }
 
@@ -292,10 +286,13 @@ void *assistant::get_realsystem_func() {
 void assistant::operator<<(std::string text) {
     if (output)
         printf("%s\n", text.c_str());
-    const auto &log_file = files.begin() + get_iterator_file(log_file_name);
-    if (log && log_file != files.end() && log_file->file_opened)
-        write_file(*log_file, text + "\n", file::mode_file::output::write_default);
+    if (log && current_system_info) {
+        const auto &log_file = files.begin() + get_iterator_file(log_file_name);
+        if (log_file != files.end() && log_file->file_opened)
+            write_file(*log_file, text + "\n", file::mode_file::output::write_default);
 
+        current_system_info = 0;
+    }
 #if defined(WIN)
     SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 15);
 #elif defined(UNIX)

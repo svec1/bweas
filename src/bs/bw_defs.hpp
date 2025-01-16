@@ -4,7 +4,7 @@
 // bweas main header file
 
 #include "lang/interpreter.hpp"
-#include "tools/exception.hpp"
+#include "tools/bwexception.hpp"
 
 #include <memory>
 #include <vector>
@@ -36,7 +36,7 @@ using commands = std::vector<command>;
 namespace bwexception {
 
 // Exception class for builder only.
-class bwbuilder_excp : public bw_excp::bweas_exception {
+class bwbuilder_excp : public ::bwexception::bweas_exception {
   public:
     bwbuilder_excp(std::string _what_hp, std::string number_err, std::string prefix_err = "")
         : what_hp(_what_hp), bweas_exception("BWS" + prefix_err + number_err) {
@@ -52,6 +52,14 @@ class bwbuilder_excp : public bw_excp::bweas_exception {
     std::string what_hp;
 };
 
+// Exception class for bweas-module only.
+class bwmodule_excp : public bwbuilder_excp {
+  public:
+    bwmodule_excp(std::string _what_hp, std::string number_err) : bwbuilder_excp(_what_hp, number_err, "-MDL") {
+    }
+    ~bwmodule_excp() noexcept override final = default;
+};
+
 // Exception class for bweas-package only.
 class bwpackage_excp : public bwbuilder_excp {
   public:
@@ -61,13 +69,21 @@ class bwpackage_excp : public bwbuilder_excp {
 };
 
 // Exception class for bweas-generator only.
+class bwcache_excp : public bwbuilder_excp {
+  public:
+    bwcache_excp(std::string _what_hp, std::string number_err) : bwbuilder_excp(_what_hp, number_err, "-CACHE") {
+    }
+    ~bwcache_excp() noexcept override final = default;
+};
+
+// Exception class for bweas-generator only.
 class bwgenerator_excp : public bwbuilder_excp {
   public:
     bwgenerator_excp(std::string _what_hp, std::string number_err) : bwbuilder_excp(_what_hp, number_err, "-GNRT") {
     }
     ~bwgenerator_excp() noexcept override final = default;
 };
-} // namespace exception
+} // namespace bwexception
 
 } // namespace bweas
 

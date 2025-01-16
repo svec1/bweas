@@ -4,7 +4,9 @@
 #include "../mdef.hpp"
 
 #include "bw_defs.hpp"
+#include "bwcache_api.hpp"
 #include "bwgenerator_api.hpp"
+#include "bwmodule.hpp"
 #include "bwpackage.hpp"
 
 #include <stack>
@@ -15,14 +17,15 @@
 // The current file of a project. It defines all target information
 #define MAIN_FILE "bweasconf.txt"
 
-// Markup file and definitions of modules that will be loaded
-#define IMPORT_FILE "import-modules.imp"
-
 // Cache file, all information about all targets is saved there for quick access, which makes it possible not to
 // reinterpret bweasconf.txt
 #define CACHE_FILE "bwcache"
 
+// The name of the directory where the build files will be created
 #define DIRWORK_ENV ".bweas"
+
+// The file in which all actions of the build system will be logged
+#define LOG_FILE "bweas-last.log"
 
 namespace bweas {
 
@@ -83,8 +86,10 @@ class bwbuilder final {
     u32t create_package(std::string path_json_config_package);
     // loads the bweas json config
     void init();
+
     // running the interpreter with the configuration
     void run_interpreter();
+
     // generates a cache file of all targets that were created by the interpreter
     u32t gen_cache_target();
 
@@ -93,8 +98,8 @@ class bwbuilder final {
     void gen_DPCM();
 
   public:
-    // Sets logging to a file, 1 - yes, log, 0 - no
-    void switch_log(u32t value);
+    // Sets the logging mode
+    void set_logging();
 
     // Sets output to the console, 1 - yes, output all information, 0 - no
     void switch_output_log(u32t value);
@@ -104,10 +109,7 @@ class bwbuilder final {
     void build_targets();
 
     // Deserializes the bweas cache file
-    u32t deserl_cache();
-
-    // Loads all targets from the interpreter's global scope, converting them to target_out
-    void load_target();
+    void deserl_cache();
 
     // Imports all call templates and components declared in bweasconf.txt, which the interpreter also created
     void imp_data_interpreter_for_bs();
@@ -131,15 +133,17 @@ class bwbuilder final {
     void parse_basic_args(const var::struct_sb::target_out &target, bwqueue_templates &target_queue_templates);
 
   private:
-    interpreter::interpreter_exec _interpreter;
-    bwpackage loaded_package;
+    cache_api::base_bwcache *_bwcache{NULL};
+    semantic_an::table_func module_tfuncs;
 
-    generator_api::base_generator *generator{nullptr};
+    module::module_mg module_mg;
+    std::vector<bwpackage> loaded_packages;
+
+    std::map<std::string, generator_api::base_generator *> generators;
 
     std::vector<var::struct_sb::target_out> out_targets;
     std::vector<var::struct_sb::template_command> templates;
     std::vector<var::struct_sb::call_component> call_components;
-
     bwargs global_extern_args;
 
     static inline bool init_glob{0};

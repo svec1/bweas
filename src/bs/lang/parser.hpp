@@ -24,11 +24,11 @@ extern std::string build_pos_subexpr_str(const aef_expr::subexpressions &sub_exp
 extern std::string type_sybexpr_str(aef_expr::subexpressions::type_subexpr sub_expr_t);
 extern std::string tree_build_visually_str(const abstract_expr_func &aef);
 
-extern aef_expr::params type_param_in_str(std::string str);
+extern aef_expr::param_type type_param_in_str(std::string str);
 
 } // namespace utility
 
-class parser_excp : public bw_excp::bweas_exception {
+class parser_excp : public ::bwexception::bweas_exception {
   public:
     parser_excp(std::string _what_hp, std::string number_err)
         : what_hp(_what_hp), bweas_exception("PARS" + number_err) {
@@ -58,6 +58,8 @@ class pars_an {
 
   public:
     void set_tokens(const std::vector<token_expr::token> &tk_s);
+    void set_additional_const(std::unordered_map<std::string, token_expr::token> addit_const);
+
     abstract_expr_func get_exprs();
     void clear_aef();
 
@@ -90,6 +92,8 @@ class pars_an {
 
     std::vector<token_expr::token> tokens;
     abstract_expr_func expr_s;
+
+    std::unordered_map<std::string, token_expr::token> addit_const;
 };
 
 } // namespace parser

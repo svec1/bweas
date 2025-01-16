@@ -1,11 +1,12 @@
 #include "bwgenerator_integral.hpp"
 #include "bwgenerator_api.hpp"
 #include "bwgntools.hpp"
+#include "tools/bwfile.hpp"
 
 using namespace bweas;
 using namespace generator_api;
 using namespace generator;
-using namespace bwexception;
+using namespace bweas::bwexception;
 
 integral_generator::integral_generator(func_generator _generator_p, func_get_files_input _files_input_p) {
     if (!init_glob_gnint) {
@@ -28,9 +29,9 @@ std::map<std::string, std::vector<std::string>> integral_generator::input_files(
     return files_input_p(trg, templates, *ccmp_p, dir_work_endv);
 }
 
-commands integral_generator::gen_commands(const var::struct_sb::target_out &trg, bwqueue_templates &templates,
-                                          std::string dir_work_endv,
-                                          std::map<std::string, std::vector<std::string>> files_input) {
+std::map<std::string, std::string> integral_generator::gen_commands(
+    const var::struct_sb::target_out &trg, bwqueue_templates &templates, std::string dir_work_endv,
+    std::map<std::string, std::vector<std::string>> files_input) {
     return generator_p(trg, templates, *ccmp_p, files_input, dir_work_endv);
 }
 
@@ -79,7 +80,7 @@ std::map<std::string, std::vector<std::string>> bweas::generator::bwfile_inputs(
                 }
                 current_arg.str_arg = "";
 
-                std::vector<std::string> slc_files = tools::file_slc_mask(mask, target.prj.src_files);
+                std::vector<std::string> slc_files = bwfile::file_slc_mask(mask, target.prj.src_files);
                 for (u32t i = 0; i < slc_files.size(); ++i) {
                     if (std::filesystem::last_write_time(slc_files[i]) >
                         std::filesystem::last_write_time(
@@ -106,11 +107,11 @@ std::map<std::string, std::vector<std::string>> bweas::generator::bwfile_inputs(
     return input_files;
 }
 
-commands bweas::generator::bwgenerator(const var::struct_sb::target_out &trg, bwqueue_templates &templates,
-                                       const std::vector<var::struct_sb::call_component> &ccmp_p,
-                                       std::map<std::string, std::vector<std::string>> input_files,
-                                       std::string dir_work_endv) {
-    commands cmd_s;
+std::map<std::string, std::string> bweas::generator::bwgenerator(
+    const var::struct_sb::target_out &trg, bwqueue_templates &templates,
+    const std::vector<var::struct_sb::call_component> &ccmp_p,
+    std::map<std::string, std::vector<std::string>> input_files, std::string dir_work_endv) {
+    std::map<std::string, std::string> cmd_s;
     command current_cmd;
 
     std::map<std::string, std::vector<std::string>> global_internal_args;
@@ -144,7 +145,8 @@ commands bweas::generator::bwgenerator(const var::struct_sb::target_out &trg, bw
         else if (current_template.returnable == var::struct_sb::target_t_str(trg.target_t)) {
             output_file = tools::get_name_output_file(current_ccmp->pattern_ret_files,
                                                       used_input_files_in_curr_template++, dir_work_endv);
-            is_ind_template = 1;
+            if (!std::filesystem::exists(output_file) || used_input_files)
+                is_ind_template = 1;
         }
         else {
             for (; used_output_files < trg.prj.src_files.size(); ++used_output_files) {
@@ -211,7 +213,7 @@ commands bweas::generator::bwgenerator(const var::struct_sb::target_out &trg, bw
                             continue;
                         else {
                             std::vector<std::string> files =
-                                tools::file_slc_mask(attribute, input_files[current_template.name]);
+                                bwfile::file_slc_mask(attribute, input_files[current_template.name]);
                             arg.str_arg = "";
                             for (const auto &file : files) {
                                 arg.str_arg += file + " ";
@@ -249,7 +251,7 @@ commands bweas::generator::bwgenerator(const var::struct_sb::target_out &trg, bw
                         else if (attribute == "0")
                             continue;
                         else {
-                            std::vector<std::string> files = tools::file_slc_mask(attribute, trg.prj.src_files);
+                            std::vector<std::string> files = bwfile::file_slc_mask(attribute, trg.prj.src_files);
                             arg.str_arg = "";
                             for (const auto &file : files) {
                                 arg.str_arg += file + " ";
@@ -264,11 +266,11 @@ commands bweas::generator::bwgenerator(const var::struct_sb::target_out &trg, bw
             }
             current_cmd += arg.str_arg + " ";
         }
-
+        assist.next_output_important();
         assist << "GENERATED COMMAND: " + current_cmd;
 
         if (is_ind_template)
-            cmd_s.push_back(current_cmd);
+            cmd_s.emplace(output_file, current_cmd);
         current_cmd.clear();
 
         if (!generate_single_input || used_input_files_in_curr_template == trg.prj.src_files.size()) {

@@ -2,13 +2,6 @@
 
 #include "lexer.hpp"
 
-#include <array>
-
-const std::array<std::string, 9> token_expr::keywords_op = {
-    STR_KEYWORD_OP_EQUAL,       STR_KEYWORD_OP_AND,        STR_KEYWORD_OP_OR,
-    STR_KEYWORD_OP_NOT,         STR_KEYWORD_OP_TSTR,       STR_KEYWORD_OP_CONST_RELEASE,
-    STR_KEYWORD_OP_CONST_DEBUG, STR_KEYWORD_OP_CONST_TRUE, STR_KEYWORD_OP_CONST_FALSE};
-
 using namespace lexer;
 using namespace token_expr;
 
@@ -37,7 +30,8 @@ char lex_an::peek() {
 }
 
 bool lex_an::check_sym_valid_grammar(char ch) {
-    if (ch == '*' || ch == '/' || ch == '!' || ch == '-' || ch == '\'' || ch == '[' || ch == ']')
+    if (ch == '*' || ch == '/' || ch == '!' || ch == '-' || ch == '\'' || ch == '[' || ch == ']' || ch == '{' ||
+        ch == '}')
         return 0;
     return 1;
 }
@@ -51,6 +45,11 @@ std::vector<token> lex_an::get_tokens() {
 void lex_an::clear_tokens() {
     tokens.clear();
 }
+void lex_an::set_keyword_ops(const std::vector<std::string> &_keyword_ops) {
+    for (const auto &keyword_op : _keyword_ops)
+        keyword_ops.push_back(keyword_op);
+}
+
 std::vector<token> lex_an::analysis() {
     std::string lexem;
     token tmp_curr_token;
@@ -76,6 +75,11 @@ std::vector<token> lex_an::analysis() {
     while (ch = get()) {
         ++count_sym;
         if ((ch == ' ' || ch == '\n' || ch == '\r' | ch == '\t') && !br) {
+            if (err_lexem)
+                throw lexer_excp("\n(Line: " + std::to_string(count_line) + "; Symbols start pos: " +
+                                     std::to_string(count_sym - lexem.size()) + "): Lexem - \"" + lexem + "\"\n",
+                                 "000");
+
             if (lexer_option && (ch == '\r' || ch == '\n')) {
                 if (lexem.empty())
                     throw lexer_excp("\n(Line: " + std::to_string(count_line) + "; Symbols start pos: " +
@@ -169,7 +173,7 @@ std::vector<token> lex_an::analysis() {
                     tmp_curr_token.token_t = token_type::KEYWORD;
                     tokens.push_back(tmp_curr_token);
                 }
-                else if (std::find(keywords_op.begin(), keywords_op.end(), lexem) != keywords_op.end()) {
+                else if (std::find(keyword_ops.begin(), keyword_ops.end(), lexem) != keyword_ops.end()) {
                     tmp_curr_token.token_t = token_type::KW_OPERATOR;
                     tokens.push_back(tmp_curr_token);
                 }

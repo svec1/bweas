@@ -147,10 +147,6 @@ class assistant {
 
     void set_file_log_name(std::string name_file);
 
-    // if log = false, the function does nothing
-    // *turns logging on or off (subsequent log requests will be ignored)
-    void switch_log(bool val);
-
     // if output = false, the function does nothing
     // *turns console output on or off (subsequent output requests will be ignored)
     void switch_otp(bool val);
@@ -160,8 +156,6 @@ class assistant {
     // detects and handles the error
     void call_err(std::string name_err);
     void call_err(std::string name_err, std::string addit);
-    // returns description of specified error
-    std::string get_desc_err(std::string name_err);
 
     file_it open_file(std::string name_file, file::mode_file::open mode = file::mode_file::open::r);
     void close_file(file_it file);
@@ -202,7 +196,7 @@ class assistant {
 #define HOOK_DETECTED_STR                                                                                              \
     "WARNING!!!A system call was detected, most likely the dynamically loaded dll library is hostile."
 
-    const char *get_error_dl();
+    std::string get_error_dl();
 
     u32t load_dl(std::string dl_name);
     u32t dump_dl(std::string dl_name);
@@ -240,7 +234,8 @@ class assistant {
     void *realsystem_func;
 #endif
 
-    bool output{1}, log{1};
+    bool output{1}, log{0};
+    bool current_system_info{0};
 };
 
 #endif

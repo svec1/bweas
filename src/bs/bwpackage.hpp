@@ -2,6 +2,7 @@
 #define BWPACKAGE__H
 
 #include "bw_defs.hpp"
+#include "bwmodule.hpp"
 
 // Package expansion
 #define BW_FORMAT_PACKAGE ".bweas-package"
@@ -26,8 +27,20 @@
 // bweas package)
 #define BW_PACKAGE_SEPARATE_JSON_BYTES "ejc"
 
-// Length in bytes of the ending json configuration of the bweas package
+// Source code separator bytes of cache
+#define BW_PACKAGE_SEPARATE_LUA_CACHE "elc"
+
+// Source code separator bytes of generators
+#define BW_PACKAGE_SEPARATE_LUA_GENERATE "elg"
+
+// Length of separating bytes json configuration of the bweas package
 #define BW_PACKAGE_SEPARATE_JSON_BYTES_LENGHT 3
+
+// Length of separating bytes between cache source codes
+#define BW_PACKAGE_SEPARATE_LUA_CACHE_LENGHT 3
+
+// Length of separating bytes between generator source codes
+#define BW_PACKAGE_SEPARATE_LUA_GENERATE_LENGHT 3
 
 // Maximum bweas packet size(5 mb)
 #define MAX_SIZE_BW_PACKAGE 5 MB
@@ -43,22 +56,35 @@ class bwpackage {
     // Data for creating a bweas package
     struct data_bw_package {
         std::string json_config;
-        std::string src_lua_generator;
+        std::string src_lua_cache;
+        std::vector<std::string> src_lua_generators;
     };
 
     // All its configuration is stored here in the usual format.
     struct config {
-        std::string name_package;
-        var::struct_sb::version bw_version;
+        struct cache_lua {
+            cache_lua() = default;
+            cache_lua(std::string _name_cache, std::string src_lua_cache)
+                : name_cache(_name_cache), src_lua_cache(src_lua_cache) {
+            }
+            std::string name_cache;
+            std::string src_lua_cache;
+        };
+        struct generator_lua {
+            generator_lua() = default;
+            generator_lua(std::string _name_generator, std::vector<std::string> _features_generator,
+                          std::string _src_lua_generator)
+                : name_generator(_name_generator), features_generator(_features_generator),
+                  src_lua_generator(_src_lua_generator) {
+            }
+            std::string name_generator;
+            std::vector<std::string> features_generator;
+            std::string src_lua_generator;
+        };
 
-        std::string name_generator;
-        std::vector<std::pair<std::string, std::string>> features_generator;
-    };
-
-    // Package structure. All his current data is stored here
-    struct package {
-        config cfg_package;
-        std::string src_lua_generator;
+        cache_lua cache;
+        std::vector<generator_lua> generators;
+        module::module_mg::modules mds;
     };
 
     // Returns a packet compressed by the lz4 algorithm, with the signature of a bweas packet
@@ -75,7 +101,10 @@ class bwpackage {
     bool is_init();
 
   public:
-    package data;
+    std::string name_package;
+    var::struct_sb::version bw_version;
+
+    config cfg_package;
 
   private:
     std::string path_to_package;

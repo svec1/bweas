@@ -11,9 +11,10 @@ extern std::map<std::string, std::vector<std::string>> bwfile_inputs(
     const std::vector<var::struct_sb::call_component> &ccmp_p, std::string dir_work_endv);
 
 // First and basic template-based command generator
-extern commands bwgenerator(const var::struct_sb::target_out &trg, bwqueue_templates &templates,
-                            const std::vector<var::struct_sb::call_component> &ccmp_p,
-                            std::map<std::string, std::vector<std::string>> files_input, std::string dir_work_endv);
+extern std::map<std::string, std::string> bwgenerator(const var::struct_sb::target_out &trg, bwqueue_templates &templates,
+                                                   const std::vector<var::struct_sb::call_component> &ccmp_p,
+                                                   std::map<std::string, std::vector<std::string>> files_input,
+                                                   std::string dir_work_endv);
 } // namespace generator
 } // namespace bweas
 

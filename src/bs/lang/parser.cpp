@@ -41,7 +41,13 @@ pars_an::pars_an(const std::vector<token> &tk_s) {
 
 void pars_an::set_tokens(const std::vector<token> &tk_s) {
     tokens = tk_s;
+    expr_s.clear();
 }
+
+void pars_an::set_additional_const(std::unordered_map<std::string, token_expr::token> addit_const) {
+    this->addit_const = addit_const;
+}
+
 abstract_expr_func pars_an::get_exprs() {
     return expr_s;
 }
@@ -86,7 +92,8 @@ void pars_an::check_valid_subexpr_first_pass(const subexpressions &sub_expr) {
     if ((!expected_op &&
          sub_expr.token_of_subexpr[sub_expr.token_of_subexpr.size() - 1].token_t == token_type::OPERATOR) ||
         (expected_param_kw_op &&
-         !IS_CONSTANT_KW_OP(sub_expr.token_of_subexpr[sub_expr.token_of_subexpr.size() - 1].token_val)))
+         addit_const.find(sub_expr.token_of_subexpr[sub_expr.token_of_subexpr.size() - 1].token_val) ==
+             addit_const.end()))
         throw parser_excp(build_pos_tokenb_str(sub_expr.token_of_subexpr[sub_expr.token_of_subexpr.size() - 1]), "005");
 }
 void pars_an::check_valid_subexpr_second_pass(subexpressions &sub_expr) {
@@ -97,6 +104,7 @@ void pars_an::check_valid_subexpr_second_pass(subexpressions &sub_expr) {
     bool operator_plus = 0, operator_compare = 0, keyword_op = 0;
 
     for (u32t i = 0; i < sub_expr.token_of_subexpr.size(); ++i) {
+    current_token:
         if (sub_expr.token_of_subexpr[i].token_t == token_type::LITERALS) {
             if (num_type_expr) {
                 if (operator_plus)
@@ -115,8 +123,14 @@ void pars_an::check_valid_subexpr_second_pass(subexpressions &sub_expr) {
             }
             num_type_expr = 1;
         }
-        else if (sub_expr.token_of_subexpr[i].token_t == token_type::ID)
+        else if (sub_expr.token_of_subexpr[i].token_t == token_type::ID) {
+            const auto &it_keyword_ops = addit_const.find(sub_expr.token_of_subexpr[i].token_val);
+            if (it_keyword_ops != addit_const.end()) {
+                sub_expr.token_of_subexpr[i] = it_keyword_ops->second;
+                goto current_token;
+            }
             id_type_expr = 1;
+        }
         else if (sub_expr.token_of_subexpr[i].token_t == token_type::OPERATOR &&
                  sub_expr.token_of_subexpr[i].token_val == "+") {
             if (operator_compare)

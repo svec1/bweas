@@ -9,19 +9,11 @@
 
 namespace semantic_an {
 
-#define wrap_callf_declaration(func_decl)                                                                              \
-    try {                                                                                                              \
-        func_decl;                                                                                                     \
-    }                                                                                                                  \
-    catch (rt_semantic_excp & excp) {                                                                                  \
-        throw semantic_excp("SEMANTIC RT HANDLE: " + std::string(excp.what()), excp.get_assist_err());                 \
-    }
-
 using table_func = std::unordered_map<std::string, aef_expr::notion_func>;
 
 extern var::scope global_scope;
 
-class semantic_excp : public bw_excp::bweas_exception {
+class semantic_excp : public ::bwexception::bweas_exception {
   public:
     semantic_excp(std::string _what_hp, std::string number_err)
         : what_hp(_what_hp), bweas_exception("SMT" + number_err) {
@@ -37,7 +29,7 @@ class semantic_excp : public bw_excp::bweas_exception {
     std::string what_hp;
 };
 
-class rt_semantic_excp : public bw_excp::bweas_exception {
+class rt_semantic_excp : public ::bwexception::bweas_exception {
   public:
     rt_semantic_excp(std::string _what_hp, std::string number_err)
         : what_hp(_what_hp), bweas_exception("SMT-RT" + number_err) {
@@ -61,9 +53,6 @@ class semantic_analyzer {
     semantic_analyzer &operator=(semantic_analyzer &&) = delete;
 
     ~semantic_analyzer() = default;
-
-  public:
-    void add_standart_function();
 
   public:
     // Semantic analysis:
@@ -97,12 +86,11 @@ class semantic_analyzer {
     void load_external_func_table(const table_func &notion_external_func);
     void append_external_name_func_w_smt(const std::vector<std::string> &list_name_func);
 
-  private:
     // Adding a function definition to the functions table
-    void add_func_flink(std::string name_token_func,
-                        void (*func_ref)(const std::vector<aef_expr::subexpressions> &, var::scope &curr_scope),
-                        std::vector<aef_expr::params> expected_args);
+    void add_func_flink(std::string name_token_func, aef_expr::notion_func::func_t func_ref,
+                        std::vector<aef_expr::param> expected_param);
 
+  private:
     void smt_zero_pass(const parser::abstract_expr_func &expr_s);
     void smt_first_pass(parser::abstract_expr_func &expr_s);
 
@@ -113,19 +101,19 @@ class semantic_analyzer {
     // Converts all variable identifiers to their values and also keyword operators(constant) to literal ​​(for
     // subsequent processing of keyword operators)
     void convert_id_to_literal(aef_expr::subexpressions &sub_expr, var::scope &curr_scope,
-                               aef_expr::params expected_param);
+                               aef_expr::param_type expected_param);
 
     // Converts all keyword operators that are unary
     void convert_kwop_u_to_literal(aef_expr::subexpressions &sub_expr, var::scope &curr_scope,
-                                   aef_expr::params expected_param);
+                                   aef_expr::param_type expected_param);
     // Parses a subexpression if it has not token the type
     // INT, STRING, or VAR_STRUCT_ID after parsing at the AEF construction
     void parse_subexpr_param(aef_expr::subexpressions &sub_expr, std::vector<aef_expr::subexpressions> &sub_exprs,
-                             u32t &pos_sub_expr_in_vec, var::scope &curr_scope, aef_expr::params expected_param);
+                             u32t &pos_sub_expr_in_vec, var::scope &curr_scope, aef_expr::param_type expected_param);
 
     // Auxiliary function for parse_subexpr_param. Processes all keyword operators
     void parse_keywords_op_param(aef_expr::subexpressions &sub_expr, u32t pos_token_kw_in_subexpr,
-                                 var::scope &curr_scope, aef_expr::params expected_param, u32t parse_okeyword = 0);
+                                 var::scope &curr_scope, aef_expr::param_type expected_param, u32t parse_okeyword = 0);
     void defining_call_func(const std::string &name, aef_expr::notion_func &nfunc);
 
   private:

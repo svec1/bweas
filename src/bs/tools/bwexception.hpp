@@ -4,7 +4,7 @@
 #include <exception>
 #include <string>
 
-namespace bw_excp {
+namespace bwexception {
 
 // Base exception class bweas, which inherits from std::exception.
 // All child exception classes of bweas must inherit from it.
