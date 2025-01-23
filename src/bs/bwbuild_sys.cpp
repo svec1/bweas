@@ -4,6 +4,7 @@
 #include "lang/static_struct.hpp"
 
 #include <algorithm>
+#include <cmath>
 #include <filesystem>
 #include <memory>
 #include <nlohmann/json.hpp>
@@ -42,7 +43,7 @@ bwbuilder::bwbuilder(int argv, char **args) {
 
     handle_args(vec_args);
 
-    if (mode_bweas != mode_working::build_package) {
+    if (mode_bweas != mode_working::build_package && mode_bweas != mode_working::undef) {
         assist << "Initializing system build - bweas " + bwbuilde_ver.get_str_version();
         init();
     }
@@ -73,12 +74,7 @@ void bwbuilder::handle_args(std::vector<std::string> args) {
                 expected_path_bweas_config = 0;
             args[i].erase(args[i].find("--"), 2);
             if (args[i] == "build") {
-                if (!path_bweas_to_build.empty()) {
-                    assist.next_output_important();
-                    assist << " - [BWEAS]: The build folder has already been set";
-                    continue;
-                }
-                else if (mode_bweas == mode_working::build_package)
+                if (mode_bweas == mode_working::build_package)
                     throw bwbuilder_excp(args[i], "001", "-HAX");
 
                 if (mode_bweas == mode_working::collect_cfg)
@@ -100,6 +96,10 @@ void bwbuilder::handle_args(std::vector<std::string> args) {
                 mode_bweas = mode_working::build_package;
                 expected_path_json_cfg_package = 1;
             }
+            else if (args[i] == "help")
+                assist << BWEAS_HELP;
+            else if (args[i] == "version")
+                assist << BWEAS_INFO;
             else
                 throw bwbuilder_excp("Parameter: " + args[i] + "\n" + BWEAS_HELP, "000", "-HAX");
         }
@@ -107,6 +107,8 @@ void bwbuilder::handle_args(std::vector<std::string> args) {
             // --cfg <arg> or arg
             if (expected_path_bweas_config) {
                 path_bweas_config = std::filesystem::absolute(args[i]).string();
+                mode_bweas = mode_working::collect_cfg;
+
                 expected_path_bweas_config = 0;
             }
             // --build <arg>
@@ -218,7 +220,7 @@ void bwbuilder::init() {
                                generator_api::base_generator::createGeneratorLua(generator.src_lua_generator));
 
     for (auto &package : loaded_packages) {
-        semantic_an::table_func tfuncs = module_mg.init_tsfunc(package.cfg_package.mds);
+        semantic_an::table_func tfuncs = module_manager.init_tsfunc(package.cfg_package.mds);
         for (const auto &func : tfuncs)
             module_tfuncs.insert(func);
     }
@@ -343,29 +345,33 @@ void bwbuilder::build_targets() {
                                      out_targets[i].name_target + ": " + out_targets[i].name_generator,
                                  "002");
         auto &current_generator = generators[out_targets[i].name_generator];
-        current_generator->set_ccomponents(call_components);
+        current_generator->set_const_data(call_components, global_extern_args);
         current_generator->init();
         if (out_targets[i].prj.vec_templates.size() == 0)
             throw bwbuilder_excp("There are no templates for the target - " + out_targets[i].name_target, "002");
-        std::string dir_target = std::string(DIRWORK_ENV) + "/" + out_targets[i].name_target;
+        std::string dir_target = path_bweas_to_build + "/" + out_targets[i].name_target;
         if (!std::filesystem::is_directory(dir_target))
             std::filesystem::create_directories(dir_target);
 
-        assist << "BUILDING A TARGET -" + out_targets[i].name_target;
+        assist << " - [BWEAS]: Build {" + out_targets[i].name_target + "}";
 
         bwqueue_templates bw_tcmd;
         set_queue_templates(create_stack_target_templates(out_targets[i]), bw_tcmd);
-        parse_basic_args(out_targets[i], bw_tcmd);
 
         assist.switch_otp(0);
         auto cmd_s = current_generator->gen_commands(
             out_targets[i], bw_tcmd, dir_target, current_generator->input_files(out_targets[i], bw_tcmd, dir_target));
         assist.switch_otp(1);
 
+        double k_state = 0.f;
+
         for (const auto &cmd : cmd_s) {
 
+            k_state += 1.f / (double)cmd_s.size() * 100;
+
             assist.next_output_important();
-            assist << "Compile - " + cmd.first;
+            assist << "[" + std::to_string(k_state).erase(std::to_string((u32t)k_state).size() + 3, 4) +
+                          "%]Compile - " + cmd.first;
 
 #if defined(WIN)
             if (system(cmd.second.c_str()))
@@ -429,79 +435,6 @@ void bwbuilder::set_queue_templates(std::stack<std::string> &&stack_target_templ
                                            });
         target_queue_templates.push_back(*it_templates);
         stack_target_templates.pop();
-    }
-}
-
-void bwbuilder::parse_basic_args(const var::struct_sb::target_out &target, bwqueue_templates &target_queue_templates) {
-    for (auto &trg_template : target_queue_templates) {
-        for (u32t i = 0; i < trg_template.args.size(); ++i) {
-            var::struct_sb::template_command::arg &current_arg = trg_template.args[i];
-            if (current_arg.arg_t == var::struct_sb::template_command::arg::type::string ||
-                current_arg.arg_t == var::struct_sb::template_command::arg::type::features ||
-                current_arg.arg_t == var::struct_sb::template_command::arg::type::internal)
-                continue;
-            else if (current_arg.arg_t == var::struct_sb::template_command::arg::type::extglobal) {
-                const auto &extern_arg =
-                    std::find_if(global_extern_args.begin(), global_extern_args.end(),
-                                 [current_arg](const std::pair<std::string, std::string> extern_arg_tmp) {
-                                     return extern_arg_tmp.first == current_arg.str_arg;
-                                 });
-                if (extern_arg == global_extern_args.end())
-                    throw bwbuilder_excp("[" + trg_template.name +
-                                             "] The specified external parameter does not exist - " +
-                                             current_arg.str_arg,
-                                         "002");
-
-                current_arg.str_arg = extern_arg->second;
-            }
-            else if (current_arg.arg_t == var::struct_sb::template_command::arg::type::trgfield) {
-                if (current_arg.str_arg == NAME_FIELD_TARGET_NAME)
-                    current_arg.str_arg = target.name_target;
-                else if (current_arg.str_arg == NAME_FIELD_TARGET_LIBS) {
-                    current_arg.str_arg = "";
-                    for (u32t k = 0; k < target.target_vec_libs.size(); ++k) {
-                        current_arg.str_arg += target.target_vec_libs[k];
-                        if (k < target.target_vec_libs.size() - 1)
-                            current_arg.str_arg += " ";
-                    }
-                }
-                else if (current_arg.str_arg == NAME_FIELD_TARGET_TYPE)
-                    current_arg.str_arg = var::struct_sb::target_t_str(target.target_t);
-                else if (current_arg.str_arg == NAME_FIELD_TARGET_CFG)
-                    current_arg.str_arg = var::struct_sb::cfg_str(target.target_cfg);
-                else if (current_arg.str_arg == NAME_FIELD_TARGET_VER)
-                    current_arg.str_arg = target.version_target.get_str_version();
-                else if (current_arg.str_arg == NAME_FIELD_PROJECT_NAME)
-                    current_arg.str_arg = target.prj.name_project;
-                else if (current_arg.str_arg == NAME_FIELD_PROJECT_VER)
-                    current_arg.str_arg = target.prj.version_project.get_str_version();
-                else if (current_arg.str_arg == NAME_FIELD_PROJECT_LANG)
-                    current_arg.str_arg = var::struct_sb::lang_str(target.prj.lang);
-                else if (current_arg.str_arg == NAME_FIELD_PROJECT_PCOMPILER)
-                    current_arg.str_arg = target.prj.path_compiler;
-                else if (current_arg.str_arg == NAME_FIELD_PROJECT_PLINKER)
-                    current_arg.str_arg = target.prj.path_linker;
-                else if (current_arg.str_arg == NAME_FIELD_PROJECT_RFCOMPILER)
-                    current_arg.str_arg = target.prj.rflags_compiler;
-                else if (current_arg.str_arg == NAME_FIELD_PROJECT_RFLINKER)
-                    current_arg.str_arg = target.prj.rflags_linker;
-                else if (current_arg.str_arg == NAME_FIELD_PROJECT_DFCOMPILER)
-                    current_arg.str_arg = target.prj.dflags_compiler;
-                else if (current_arg.str_arg == NAME_FIELD_PROJECT_DFLINKER)
-                    current_arg.str_arg = target.prj.dflags_linker;
-                else if (current_arg.str_arg == NAME_FIELD_PROJECT_STD_C)
-                    current_arg.str_arg = std::to_string(target.prj.standart_c);
-                else if (current_arg.str_arg == NAME_FIELD_PROJECT_STD_CPP)
-                    current_arg.str_arg = std::to_string(target.prj.standart_cpp);
-                else if (current_arg.str_arg.find(NAME_FIELD_PROJECT_SRC_FILES) == 0)
-                    continue;
-                else
-                    throw bwbuilder_excp(
-                        "[" + trg_template.name + "] There is no such parameter - " + current_arg.str_arg, "002");
-            }
-
-            current_arg.arg_t = var::struct_sb::template_command::arg::type::string;
-        }
     }
 }
 

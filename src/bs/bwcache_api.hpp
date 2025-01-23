@@ -20,8 +20,10 @@ namespace bweas {
 
 namespace cache_api {
 
+// Abstract class that bases API for creating cache generators
 class base_bwcache {
   public:
+    // A structure that is intermediate for transferring data to be hashed (and back).
     struct cache_data {
         cache_data() = default;
 
@@ -37,11 +39,16 @@ class base_bwcache {
     base_bwcache() = default;
 
   public:
+    // A function that must be defined in a child class, and return a cache of data
     virtual std::string create_cache() = 0;
+
+    // A function that must be defined in a child class and return cache data
     virtual const cache_data &get_cache_data(std::string cache_str) = 0;
 
     virtual void delete_cache() = 0;
 
+    // A number of factory functions to create all possible child classes that implement the bwcache cache generator
+    // based on the bwcache API
   public:
     static inline base_bwcache *create_fast_bwcache();
     static inline base_bwcache *create_json_bwcache();
@@ -51,6 +58,7 @@ class base_bwcache {
     cache_data _cache_data;
 };
 
+// A basic cache generator that is fast but also creates a hard-to-read cache for humans to use
 class fast_bwcache final : private base_bwcache {
   public:
     fast_bwcache();
@@ -65,6 +73,8 @@ class fast_bwcache final : private base_bwcache {
     static inline bool init_glob_chfast{0};
 };
 
+// The second basic cache generator, which in turn has a human readable form,
+// but is also slow compared to fast_bwcache
 class json_bwcache final : private base_bwcache {
   public:
     json_bwcache();
@@ -79,6 +89,7 @@ class json_bwcache final : private base_bwcache {
     static inline bool init_glob_chjson{0};
 };
 
+// A class providing an API for creating cache generators in lua, based on the bwcache API
 class lua_bwcache final : private base_bwcache {
   public:
     lua_bwcache() = delete;

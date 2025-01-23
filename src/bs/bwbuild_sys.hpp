@@ -126,17 +126,11 @@ class bwbuilder final {
     void set_queue_templates(std::stack<std::string> &&stack_target_templates,
                              bwqueue_templates &target_queue_templates);
 
-    // Parses all the basic arguments for further template command generation
-    // Types of arguments that will be parsed:
-    //  1. extglobal
-    //  2. trgfield(except T_PROJECT_SRC_FILES)
-    void parse_basic_args(const var::struct_sb::target_out &target, bwqueue_templates &target_queue_templates);
-
   private:
     cache_api::base_bwcache *_bwcache{NULL};
     semantic_an::table_func module_tfuncs;
 
-    module::module_mg module_mg;
+    module::module_mg module_manager;
     std::vector<bwpackage> loaded_packages;
 
     std::map<std::string, generator_api::base_generator *> generators;
@@ -146,14 +140,15 @@ class bwbuilder final {
     std::vector<var::struct_sb::call_component> call_components;
     bwargs global_extern_args;
 
-    static inline bool init_glob{0};
-
     std::string name_bweas_prg;
-    std::string path_bweas_config, path_bweas_to_build;
+    std::string path_bweas_config, path_bweas_to_build{DIRWORK_ENV};
+
     mode_working mode_bweas{mode_working::undef};
 
     var::struct_sb::version bwbuilde_ver{BWEAS_VERSION_STR};
     bool log{1}, output_log{1};
+
+    static inline bool init_glob{0};
 };
 } // namespace bweas
 

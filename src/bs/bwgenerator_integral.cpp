@@ -10,6 +10,7 @@ using namespace bweas::bwexception;
 
 integral_generator::integral_generator(func_generator _generator_p, func_get_files_input _files_input_p) {
     if (!init_glob_gnint) {
+        assist.add_err("BWS-GNRT000", "Unable to parse basic arguments");
         assist.add_err("BWS-GNRT001", "Internal global argument not found");
         assist.add_err("BWS-GNRT002", "This generator does not have the specified features");
         init_glob_gnint = 1;
@@ -32,6 +33,7 @@ std::map<std::string, std::vector<std::string>> integral_generator::input_files(
 std::map<std::string, std::string> integral_generator::gen_commands(
     const var::struct_sb::target_out &trg, bwqueue_templates &templates, std::string dir_work_endv,
     std::map<std::string, std::vector<std::string>> files_input) {
+    generator::tools::parse_basic_args(trg, templates, *global_external_args_p);
     return generator_p(trg, templates, *ccmp_p, files_input, dir_work_endv);
 }
 

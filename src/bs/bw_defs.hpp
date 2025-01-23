@@ -15,13 +15,17 @@
 #define BWEAS_VERSION_MINOR "1"
 #define BWEAS_VERSION_PATCH "0"
 
+#define BWEAS_INFO "bweas version " BWEAS_VERSION_STR "\nrep on github - https://github.com/svec1/bweas"
+
 #define BWEAS_HELP                                                                                                     \
     "bweas-call: \n   bweas <parameter>... path_depending\n   bweas path_bweas_config <parameter>..."                  \
     "\nAcceptable parameters:"                                                                                         \
     "\n   --build - builds the project (either by executing the configuration file or deserializing the cache file "   \
     "if it exists)"                                                                                                    \
     "\n   --cfg - executes the configuration file if it has been changed and creates a new cache file"                 \
-    "\n   --package - creates a bweas package based on the transferred json file(json config)"
+    "\n   --package - creates a bweas package based on the transferred json file(json config)"                         \
+    "\n   --help - outputs the syntax of the bweas call as well as its possible functions"                             \
+    "\n   --version - outputs the version of bweas"
 
 namespace bweas {
 using bwarg = std::pair<std::string, std::string>;

@@ -19,7 +19,7 @@ static const std::array<std::string, 18> vec_name_config_var = {
 
 // ??????
 static void update_cfg_struct(const std::string &name_var, var::scope &curr_scope) {
-    if (curr_scope.what_type("DECL_CONFIG_VAR") == 1 && curr_scope.get_var_value<i32t>(DECL_VAR_STRUCT) > 0) {
+    if (curr_scope.what_type("DECL_CONFIG_VAR") == 1 && curr_scope.get_var_value<i32t>(DECL_VAR_STRUCT)) {
         u32t tmp_it = 0;
         for (const auto &it : vec_name_config_var) {
             if ((tmp_it = name_var.find(it)) != SIZE_MAX) {

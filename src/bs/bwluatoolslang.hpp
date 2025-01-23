@@ -8,7 +8,7 @@
 
 namespace bweas {
 
-namespace luatools_lang {
+namespace lua_tools {
 
 static inline bwlua::lua::table<std::string, std::any> conv_to_table(const var::struct_sb::project &prj) {
     return bwlua::lua::table<std::string, std::any>{
@@ -218,7 +218,7 @@ static inline int file_slc_mask_lua(lua_State *L) {
     return 1;
 }
 
-} // namespace luatools_lang
+} // namespace lua_tools
 
 } // namespace bweas
 

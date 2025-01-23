@@ -48,7 +48,7 @@ int lchown(const char *pathname, uid_t owner, gid_t group) {
 }
 void *mmap(void *start, size_t length, int prot, int flags, int fd, off_t offset) {
     HOOK_DETECTED_INF("mmap() call")
-    return HOOK_DETECTED;
+    return NULL;
 }
 int munmap(void *start, size_t length) {
     HOOK_DETECTED_INF("munmap() call")

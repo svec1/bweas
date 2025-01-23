@@ -52,6 +52,7 @@ void assistant::add_err(std::string name_err, std::string desc) {
     err_s.emplace_back(name_err, desc, err_s.size());
 }
 void assistant::call_err(std::string name_err) {
+    current_system_info = 1;
     const auto &it =
         std::find_if(err_s.begin(), err_s.end(), [name_err](const err &_err) { return _err.name_e == name_err; });
     if (it == err_s.end()) {
@@ -63,6 +64,7 @@ void assistant::call_err(std::string name_err) {
     exit(EXIT_FAILURE);
 }
 void assistant::call_err(std::string name_err, std::string addit) {
+    current_system_info = 1;
     const auto &it =
         std::find_if(err_s.begin(), err_s.end(), [name_err](const err &_err) { return _err.name_e == name_err; });
     if (it == err_s.end()) {

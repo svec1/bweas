@@ -56,10 +56,11 @@ class base_generator : public gninterface::interface_generator {
     ~base_generator() = default;
 
   public:
-    void set_ccomponents(std::vector<var::struct_sb::call_component> &ccmp) {
+    void set_const_data(std::vector<var::struct_sb::call_component> &ccmp, bwargs global_external_args) {
         ccmp_p = std::shared_ptr<std::vector<var::struct_sb::call_component>>(
             (std::vector<var::struct_sb::call_component> *)&ccmp,
             [](const std::vector<var::struct_sb::call_component> *) {});
+        global_external_args_p = std::shared_ptr<bwargs>((bwargs *)&global_external_args, [](const bwargs *) {});
     }
 
   public:
@@ -75,6 +76,7 @@ class base_generator : public gninterface::interface_generator {
 
   protected:
     std::shared_ptr<std::vector<var::struct_sb::call_component>> ccmp_p;
+    std::shared_ptr<bwargs> global_external_args_p;
 };
 
 // The class defines the API for internal generators, i.e. built into bweas as basic
