@@ -11,11 +11,9 @@ interpreter_exec::interpreter_exec() {
         assist.add_err("RTT003", "It is impossible to find the structure");
         assist.add_err("RTT004", "Failed to open file");
         assist.add_err("RTT005", "Internal function error");
+
+        init_glob = 1;
     }
-}
-interpreter_exec::interpreter_exec(config conf) {
-    interpreter_exec();
-    interp_conf = conf;
 }
 
 void interpreter_exec::set_config(config conf) {

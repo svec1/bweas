@@ -1,31 +1,22 @@
+//
+// BWEAS is distributed under the GNU General Public License 2.0 (GPL-2.0).
+// you can view the license text at the link:
+//     <https://www.gnu.org/licenses>
+// ------------------------------------------
+//
+
 #ifndef BWBUILD_SYS__H
 #define BWBUILD_SYS__H
 
 #include "../mdef.hpp"
+
+#include <stack>
 
 #include "bw_defs.hpp"
 #include "bwcache_api.hpp"
 #include "bwgenerator_api.hpp"
 #include "bwmodule.hpp"
 #include "bwpackage.hpp"
-
-#include <stack>
-
-// bweas configuration file, defines all packages that should be loaded by the builder
-#define JSON_CONFIG_FILE "bweas-config.json"
-
-// The current file of a project. It defines all target information
-#define MAIN_FILE "bweasconf.txt"
-
-// Cache file, all information about all targets is saved there for quick access, which makes it possible not to
-// reinterpret bweasconf.txt
-#define CACHE_FILE "bwcache"
-
-// The name of the directory where the build files will be created
-#define DIRWORK_ENV ".bweas"
-
-// The file in which all actions of the build system will be logged
-#define LOG_FILE "bweas-last.log"
 
 namespace bweas {
 
@@ -40,7 +31,7 @@ class bwbuilder final {
     bwbuilder(const bwbuilder &) = delete;
     bwbuilder &operator=(bwbuilder &&) = delete;
 
-    ~bwbuilder();
+    ~bwbuilder() = default;
 
   public:
     // all possible bweas operating modes
@@ -81,7 +72,7 @@ class bwbuilder final {
     //            it exists)
     //  --package - creates a bweas package based on the transferred files (json config, lua - generator script)
     //
-    void handle_args(std::vector<std::string> args);
+    void handle_args(std::vector<std::string> &args);
     // Creates a bweas package based on the provided package configuration json file
     u32t create_package(std::string path_json_config_package);
     // loads the bweas json config
@@ -111,29 +102,23 @@ class bwbuilder final {
     // Deserializes the bweas cache file
     void deserl_cache();
 
-    // Imports all call templates and components declared in bweasconf.txt, which the interpreter also created
-    void imp_data_interpreter_for_bs();
-
   private:
     // Creates a stack of templates for the correct sequential generation of commands(for every targets)
-    std::stack<std::string> create_stack_target_templates(const var::struct_sb::target_out &target);
+    bwqueue_templates create_queue_target_templates(const var::struct_sb::target_out &target);
 
     // Recursive function, for create_stack_target_templates
-    u32t recovery_stack_templates(std::vector<var::struct_sb::template_command> &vec_templates,
-                                  const std::string &name_internal_param, std::stack<std::string> &stack_templates);
-
-    // Converts the stack into an ordered pattern vector
-    void set_queue_templates(std::stack<std::string> &&stack_target_templates,
-                             bwqueue_templates &target_queue_templates);
+    void recovery_queue_target_templates(std::vector<var::struct_sb::template_command> &vec_templates,
+                                         const std::string &name_internal_param,
+                                         bwqueue_templates &queue_target_templates);
 
   private:
-    cache_api::base_bwcache *_bwcache{NULL};
+    std::unique_ptr<cache_api::base_bwcache> _bwcache;
     semantic_an::table_func module_tfuncs;
 
     module::module_mg module_manager;
     std::vector<bwpackage> loaded_packages;
 
-    std::map<std::string, generator_api::base_generator *> generators;
+    std::map<std::string, std::shared_ptr<generator_api::base_generator>> generators;
 
     std::vector<var::struct_sb::target_out> out_targets;
     std::vector<var::struct_sb::template_command> templates;

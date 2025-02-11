@@ -1,3 +1,10 @@
+//
+// BWEAS is distributed under the gnu general public license 2.0 (gpl-2.0).
+// you can view the license text at the link:
+//     <https://www.gnu.org/licenses>
+// ------------------------------------------
+//
+
 #ifndef BWLANG__H
 #define BWLANG__H
 
@@ -29,6 +36,9 @@ class bwlang {
 
     // Loads external functions (passed into this function) into the interpreter (semantic analyzer)
     inline void load_external_tfuncs(const semantic_an::table_func &tfuncs);
+
+    // Sets custom extension fields for projects
+    inline void set_custom_ext_fields_project(std::map<std::string, std::string> &custom_ext_fields);
 
     template <typename T> inline bool create_global_var(std::string name_var, T val = {}) {
         return interpreter.get_current_scope().try_create_var(name_var, val);
@@ -75,7 +85,7 @@ void bwlang::set_bwstd_funcs() {
 
     interpreter.set_std_function(
         "project", sl_func::project,
-        {param_type::FUTURE_VAR_ID, param_type::LNUM_OR_ID_VAR, param_type::LSTR_OR_ID_VAR, param_type::NEXT_TOO});
+        {param_type::FUTURE_VAR_ID, param_type::LSTR_OR_ID_VAR, param_type::LSTR_OR_ID_VAR, param_type::NEXT_TOO});
     interpreter.set_std_function("executable", sl_func::executable,
                                  {param_type::FUTURE_VAR_ID, param_type::LNUM_OR_ID_VAR, param_type::VAR_STRUCT_ID});
 
@@ -101,7 +111,7 @@ void bwlang::set_bwstd_funcs() {
                                  {param_type::VAR_STRUCT_ID, param_type::LNUM_OR_ID_VAR});
     interpreter.set_std_function("standart_cpp", sl_func::standart_cpp,
                                  {param_type::VAR_STRUCT_ID, param_type::LNUM_OR_ID_VAR});
-    interpreter.set_std_function("lang", sl_func::lang, {param_type::VAR_STRUCT_ID, param_type::LNUM_OR_ID_VAR});
+    interpreter.set_std_function("lang", sl_func::lang, {param_type::VAR_STRUCT_ID, param_type::LSTR_OR_ID_VAR});
 
     interpreter.set_std_function("generator", sl_func::generator,
                                  {param_type::VAR_STRUCT_ID, param_type::LSTR_OR_ID_VAR});
@@ -131,6 +141,9 @@ void bwlang::execute() {
 }
 void bwlang::load_external_tfuncs(const semantic_an::table_func &tfuncs) {
     interpreter.load_external_func(tfuncs);
+}
+void bwlang::set_custom_ext_fields_project(std::map<std::string, std::string> &custom_ext_fields) {
+    var::struct_sb::project::preset_ext_fields.merge(custom_ext_fields);
 }
 std::vector<var::struct_sb::target_out> bwlang::get_targets() {
     std::vector<var::struct_sb::target> targets = interpreter.export_targets();

@@ -1,3 +1,10 @@
+//
+// BWEAS is distributed under the gnu general public license 2.0 (gpl-2.0).
+// you can view the license text at the link:
+//     <https://www.gnu.org/licenses>
+// ------------------------------------------
+//
+
 #ifndef BWPACKAGE__H
 #define BWPACKAGE__H
 
@@ -73,18 +80,23 @@ class bwpackage {
         struct generator_lua {
             generator_lua() = default;
             generator_lua(std::string _name_generator, std::vector<std::string> _features_generator,
-                          std::string _src_lua_generator)
+                          bool _use_custom_build_graph_depends, std::string _src_lua_generator)
                 : name_generator(_name_generator), features_generator(_features_generator),
-                  src_lua_generator(_src_lua_generator) {
+                  src_lua_generator(_src_lua_generator),
+                  use_custom_build_graph_depends(_use_custom_build_graph_depends) {
             }
             std::string name_generator;
             std::vector<std::string> features_generator;
             std::string src_lua_generator;
+
+            // Use a custom file dependency(search) system
+            bool use_custom_build_graph_depends{0};
         };
 
         cache_lua cache;
         std::vector<generator_lua> generators;
         module::module_mg::modules mds;
+        std::map<std::string, std::string> custom_ext_fields_project;
     };
 
     // Returns a packet compressed by the lz4 algorithm, with the signature of a bweas packet

@@ -1,3 +1,10 @@
+//
+// BWEAS is distributed under the gnu general public license 2.0 (gpl-2.0).
+// you can view the license text at the link:
+//     <https://www.gnu.org/licenses>
+// ------------------------------------------
+//
+
 #ifndef EXCEPTION__H
 #define EXCEPTION__H
 
@@ -15,7 +22,7 @@ class bweas_exception : std::exception {
     ~bweas_exception() noexcept = default;
 
   public:
-    const char *what() const noexcept{
+    const char *what() const noexcept {
         return "";
     }
 
@@ -27,6 +34,6 @@ class bweas_exception : std::exception {
     // For example: BWS000
     std::string assist_err;
 };
-} // namespace bw_excp
+} // namespace bwexception
 
 #endif

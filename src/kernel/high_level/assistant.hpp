@@ -161,6 +161,7 @@ class assistant {
     void close_file(file_it file);
 
     bool exist_file(file_it file);
+    bool exist_file(std::string name_file);
 
     file_it get_iterator_file(std::string name_file);
     file &get_ref_file(file_it file);
@@ -212,8 +213,10 @@ class assistant {
 
   private:
     struct err {
-        err() = default;
-        err(std::string _name_e, std::string _desc_e, u32t _ind) : name_e(_name_e), desc_e(_desc_e), ind(_ind) {
+      public:
+        err();
+        err(std::string_view _name_e, std::string_view _desc_e, u32t _ind)
+            : name_e(_name_e), desc_e(_desc_e), ind(_ind) {
         }
 
       public:

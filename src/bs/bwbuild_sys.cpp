@@ -1,23 +1,32 @@
-#include "bwbuild_sys.hpp"
-#include "bwgenerator_integral.hpp"
-#include "bwlang.hpp"
-#include "lang/static_struct.hpp"
+//
+// BWEAS is distributed under the GNU General Public License 2.0 (GPL-2.0).
+// you can view the license text at the link:
+//     <https://www.gnu.org/licenses>
+// ------------------------------------------
+//
 
 #include <algorithm>
 #include <cmath>
 #include <filesystem>
 #include <memory>
-#include <nlohmann/json.hpp>
 #include <string>
 #include <unordered_set>
+
+#include "bwbuild_sys.hpp"
+#include "bwdepends_files.hpp"
+#include "bwdepends_generator.hpp"
+#include "bwdepends_integral.hpp"
+#include "bwgenerator_integral.hpp"
+#include "bwlang.hpp"
+#include "lang/static_struct.hpp"
+
+#include <nlohmann/json.hpp>
 
 using namespace bweas;
 using namespace bweas::bwexception;
 
 using mf = assistant::file::mode_file;
 using file_it = assistant::file_it;
-
-bwlang _bwlang{MAIN_FILE};
 
 bwbuilder::bwbuilder(int argv, char **args) {
     if (!init_glob) {
@@ -49,14 +58,7 @@ bwbuilder::bwbuilder(int argv, char **args) {
     }
 }
 
-bwbuilder::~bwbuilder() {
-    if (_bwcache)
-        _bwcache->delete_cache();
-    for (const auto &generator : generators)
-        generator.second->deleteGenerator();
-}
-
-void bwbuilder::handle_args(std::vector<std::string> args) {
+void bwbuilder::handle_args(std::vector<std::string> &args) {
     args[0].erase(0, args[0].find_last_of("/\\") + 1);
     name_bweas_prg = args[0];
     path_bweas_config = std::filesystem::current_path().string();
@@ -177,12 +179,12 @@ void bwbuilder::init() {
             throw bwbuilder_excp("Cache generator name expected", "005");
 
         if (config_json["cache-gn"] == "fast_bwcache")
-            _bwcache = cache_api::base_bwcache::create_fast_bwcache();
+            _bwcache = std::unique_ptr<cache_api::base_bwcache>(cache_api::base_bwcache::create_fast_bwcache());
         else if (config_json["cache-gn"] == "json_bwcache")
-            _bwcache = cache_api::base_bwcache::create_json_bwcache();
+            _bwcache = std::unique_ptr<cache_api::base_bwcache>(cache_api::base_bwcache::create_json_bwcache());
     }
     else
-        _bwcache = cache_api::base_bwcache::create_fast_bwcache();
+        _bwcache = std::unique_ptr<cache_api::base_bwcache>(cache_api::base_bwcache::create_fast_bwcache());
 
     if (config_json.contains("packages")) {
         if (!config_json["packages"].is_array())
@@ -191,13 +193,13 @@ void bwbuilder::init() {
             if (!package.value().is_string())
                 throw bwbuilder_excp("Package names are expected", "005");
             bweas::bwpackage loaded_package;
+            std::string raw_data_package, path_to_package{assist.get_path_program() + "/packages/" +
+                                                          (std::string)package.value() + BW_FORMAT_PACKAGE};
 
-            std::string path_to_package =
-                assist.get_path_program() + "/packages/" + (std::string)package.value() + BW_FORMAT_PACKAGE;
-            std::string raw_data_package;
             file_it it_package = assist.open_file(path_to_package, mf::open::rb);
             if (!assist.exist_file(it_package))
                 throw bwbuilder_excp(path_to_package, "007");
+
             raw_data_package = assist.read_file(assist.get_ref_file(it_package), mf::input::read_binary);
             assist.close_file(it_package);
 
@@ -205,20 +207,29 @@ void bwbuilder::init() {
             loaded_packages.push_back(loaded_package);
 
             if (_bwcache == NULL && loaded_package.cfg_package.cache.name_cache == config_json["cache-gn"])
-                _bwcache = cache_api::base_bwcache::create_lua_bwcache(loaded_package.cfg_package.cache.src_lua_cache);
+                _bwcache = std::unique_ptr<cache_api::base_bwcache>(
+                    cache_api::base_bwcache::create_lua_bwcache(loaded_package.cfg_package.cache.src_lua_cache));
             assist.next_output_success();
             assist << " - [BWEAS]: The package was loaded successfully(" + std::to_string(raw_data_package.size()) +
                           " bytes)";
         }
     }
 
-    generators.emplace("bwgenerator", generator_api::base_generator::createGeneratorInt(generator::bwgenerator,
-                                                                                        generator::bwfile_inputs));
-    for (const auto &package : loaded_packages)
-        for (const auto &generator : package.cfg_package.generators)
-            generators.emplace(generator.name_generator,
-                               generator_api::base_generator::createGeneratorLua(generator.src_lua_generator));
+    generators.emplace("bwgenerator", std::shared_ptr<generator_api::base_generator>(
+                                          generator_api::base_generator::create_generator_int(
+                                              generator::bwgenerator, generator::bwbuild_graph_depends_file,
+                                              generator::bwget_input_files),
+                                          [](generator_api::base_generator *ptr) { ptr->_delete(); }));
 
+    for (const auto &package : loaded_packages)
+        for (const auto &generator : package.cfg_package.generators) {
+            generators.emplace(generator.name_generator,
+                               std::shared_ptr<generator_api::base_generator>(
+                                   generator_api::base_generator::create_generator_lua(generator.src_lua_generator),
+                                   [](generator_api::base_generator *ptr) { ptr->_delete(); }));
+            if (generator.use_custom_build_graph_depends)
+                generators[generator.name_generator]->set_use_build_graph_depends();
+        }
     for (auto &package : loaded_packages) {
         semantic_an::table_func tfuncs = module_manager.init_tsfunc(package.cfg_package.mds);
         for (const auto &func : tfuncs)
@@ -261,7 +272,6 @@ void bwbuilder::start() {
     interpreter_start:
         run_interpreter();
         gen_cache_target();
-        imp_data_interpreter_for_bs();
     }
 
     if (mode_bweas == mode_working::build || mode_bweas == mode_working::collect_cfg_w_build) {
@@ -281,7 +291,11 @@ void bwbuilder::switch_output_log(u32t value) {
 }
 
 void bwbuilder::run_interpreter() {
+
+    bwlang _bwlang{MAIN_FILE};
     _bwlang.load_external_tfuncs(std::move(module_tfuncs));
+    for (auto loaded_package : loaded_packages)
+        _bwlang.set_custom_ext_fields_project(loaded_package.cfg_package.custom_ext_fields_project);
 
     assist << " - [BWEAS]: Interpreting the configuration file...";
     _bwlang.execute();
@@ -344,33 +358,59 @@ void bwbuilder::build_targets() {
             throw bwbuilder_excp("The provided generator as the primary for the current target was not found - " +
                                      out_targets[i].name_target + ": " + out_targets[i].name_generator,
                                  "002");
-        auto &current_generator = generators[out_targets[i].name_generator];
-        current_generator->set_const_data(call_components, global_extern_args);
-        current_generator->init();
-        if (out_targets[i].prj.vec_templates.size() == 0)
+        else if (out_targets[i].prj.vec_templates.size() == 0)
             throw bwbuilder_excp("There are no templates for the target - " + out_targets[i].name_target, "002");
+
         std::string dir_target = path_bweas_to_build + "/" + out_targets[i].name_target;
+        double build_state = 0.f;
+
+        bwqueue_templates bw_tcmd = create_queue_target_templates(out_targets[i]);
+
+        auto &current_generator = generators[out_targets[i].name_generator];
+        std::unique_ptr<bwdepends_files> depends_files;
+
+        bweas::generator_api::data_transfer data_t{&out_targets[i], &bw_tcmd, &call_components, &global_extern_args,
+                                                   dir_target};
+
         if (!std::filesystem::is_directory(dir_target))
             std::filesystem::create_directories(dir_target);
 
+        current_generator->init();
+
+        if (current_generator->has_build_graph_depends())
+            depends_files =
+                std::make_unique<bwdepends_generator>(current_generator, out_targets[i].prj.language, dir_target);
+        else
+            depends_files = std::make_unique<bwdepends_integral>(out_targets[i].prj.language, dir_target);
+
+        for (const auto &name_file : out_targets[i].prj.src_files) {
+            if (!assist.exist_file(name_file))
+                throw bwbuilder_excp("The target's source file was not found", "002");
+            std::string name_depends_file = name_file + DEPENDS_FILE_POSTFIX;
+            if (assist.exist_file(name_depends_file))
+                depends_files->build_graph_depends_file_string(
+                    name_file, assist.read_file(assist.get_ref_file(assist.open_file(name_depends_file))));
+            else
+                assist.write_file(assist.get_ref_file(assist.open_file(name_depends_file, mf::open::w)),
+                                  depends_files->get_string_depends_file(name_file));
+        }
+
+        depends_files->build_graphs_depends_files(out_targets[i].prj.src_files, out_targets[i].prj.include_paths);
+        data_t.dfiles = depends_files->get_graphs_depends_files();
+
         assist << " - [BWEAS]: Build {" + out_targets[i].name_target + "}";
 
-        bwqueue_templates bw_tcmd;
-        set_queue_templates(create_stack_target_templates(out_targets[i]), bw_tcmd);
-
         assist.switch_otp(0);
-        auto cmd_s = current_generator->gen_commands(
-            out_targets[i], bw_tcmd, dir_target, current_generator->input_files(out_targets[i], bw_tcmd, dir_target));
-        assist.switch_otp(1);
 
-        double k_state = 0.f;
+        current_generator->get_input_files(data_t);
+        auto cmd_s = current_generator->generate_command(data_t);
+
+        assist.switch_otp(1);
 
         for (const auto &cmd : cmd_s) {
 
-            k_state += 1.f / (double)cmd_s.size() * 100;
-
             assist.next_output_important();
-            assist << "[" + std::to_string(k_state).erase(std::to_string((u32t)k_state).size() + 3, 4) +
+            assist << "[" + std::to_string(build_state).erase(std::to_string((u32t)build_state).size() + 3, 4) +
                           "%]Compile - " + cmd.first;
 
 #if defined(WIN)
@@ -378,14 +418,16 @@ void bwbuilder::build_targets() {
 #elif defined(UNIX)
             if (((int (*)(const char *))assist.get_realsystem_func())(cmd.second.c_str()))
 #endif
-                throw bwbuilder_excp("Failed build. Command execution error - " + cmd.second, "004");
+                throw bwbuilder_excp("Failed build. Command execution error: \n" + cmd.second, "004");
+
+            build_state += 1.f / (double)cmd_s.size() * 100;
         }
     }
 }
 
-std::stack<std::string> bwbuilder::create_stack_target_templates(const var::struct_sb::target_out &target) {
+bwqueue_templates bwbuilder::create_queue_target_templates(const var::struct_sb::target_out &target) {
     std::vector<var::struct_sb::template_command> vec_templates_tmp;
-    std::stack<std::string> stack_templates;
+    bwqueue_templates target_queue_templates;
 
     for (u32t i = 0; i < target.prj.vec_templates.size(); ++i) {
         for (u32t j = 0; j < templates.size(); ++j)
@@ -403,69 +445,26 @@ std::stack<std::string> bwbuilder::create_stack_target_templates(const var::stru
                                  var::struct_sb::target_t_str(target.target_t),
                              "002");
 
-    stack_templates.push(it_template->name);
+    target_queue_templates.push_back(*it_template);
     for (u32t i = 0; i < it_template->name_accept_params.size(); ++i)
-        recovery_stack_templates(vec_templates_tmp, it_template->name_accept_params[i], stack_templates);
+        recovery_queue_target_templates(vec_templates_tmp, it_template->name_accept_params[i], target_queue_templates);
 
-    return stack_templates;
+    std::reverse(target_queue_templates.begin(), target_queue_templates.end());
+
+    return target_queue_templates;
 }
 
-u32t bwbuilder::recovery_stack_templates(std::vector<var::struct_sb::template_command> &vec_templates,
-                                         const std::string &name_internal_param,
-                                         std::stack<std::string> &stack_templates) {
+void bwbuilder::recovery_queue_target_templates(std::vector<var::struct_sb::template_command> &vec_templates,
+                                                const std::string &name_internal_param,
+                                                bwqueue_templates &target_queue_templates) {
     const auto &it = find_if(vec_templates.begin(), vec_templates.end(),
                              [name_internal_param](const var::struct_sb::template_command &_template) {
                                  return _template.returnable == name_internal_param;
                              });
     if (it == vec_templates.end())
-        return 1;
+        return;
 
-    stack_templates.push(it->name);
+    target_queue_templates.push_back(*it);
     for (u32t i = 0; i < it->name_accept_params.size(); ++i)
-        recovery_stack_templates(vec_templates, it->name_accept_params[i], stack_templates);
-
-    return 0;
-}
-void bwbuilder::set_queue_templates(std::stack<std::string> &&stack_target_templates,
-                                    bwqueue_templates &target_queue_templates) {
-    while (stack_target_templates.size()) {
-        const auto &it_templates = find_if(templates.begin(), templates.end(),
-                                           [stack_target_templates](const var::struct_sb::template_command &tcmd) {
-                                               return tcmd.name == stack_target_templates.top();
-                                           });
-        target_queue_templates.push_back(*it_templates);
-        stack_target_templates.pop();
-    }
-}
-
-void bwbuilder::imp_data_interpreter_for_bs() {
-    const auto &global_templates =
-        _bwlang.get_global_scope().get_vector_variables_t<var::struct_sb::template_command>();
-    std::unordered_set<std::string> name_global_external_args;
-
-    for (const auto &global_template_it : global_templates) {
-        for (const auto &arg : global_template_it.second.args)
-            if (arg.arg_t == var::struct_sb::template_command::arg::type::extglobal)
-                name_global_external_args.emplace(arg.str_arg);
-        templates.push_back(global_template_it.second);
-    }
-
-    const auto &global_call_components =
-        _bwlang.get_global_scope().get_vector_variables_t<var::struct_sb::call_component>();
-    for (const auto &global_call_component : global_call_components)
-        call_components.push_back(global_call_component.second);
-
-    const auto &string_variables = _bwlang.get_global_scope().get_vector_variables_t<std::string>();
-    for (const auto &name_global_external_arg : name_global_external_args) {
-        const auto &ref_extern_arg =
-            find_if(string_variables.begin(), string_variables.end(),
-                    [name_global_external_arg](const std::pair<std::string, std::string> &str_var) {
-                        return str_var.first == name_global_external_arg;
-                    });
-        if (_bwlang.get_global_scope().what_type(ref_extern_arg->second) != 2)
-            throw bwbuilder_excp(
-                "The parameter reference(name) points to a non-existent variable - " + ref_extern_arg->second, "002");
-        const auto &extern_arg = _bwlang.get_global_scope().get_var_value<std::string>(ref_extern_arg->second);
-        global_extern_args.push_back(std::pair<std::string, std::string>(ref_extern_arg->first, extern_arg));
-    }
+        recovery_queue_target_templates(vec_templates, it->name_accept_params[i], target_queue_templates);
 }

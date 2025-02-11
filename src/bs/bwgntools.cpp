@@ -1,3 +1,10 @@
+//
+// BWEAS is distributed under the gnu general public license 2.0 (gpl-2.0).
+// you can view the license text at the link:
+//     <https://www.gnu.org/licenses>
+// ------------------------------------------
+//
+
 #include "bwgntools.hpp"
 
 using namespace bweas;
@@ -58,7 +65,7 @@ void generator::tools::parse_basic_args(const var::struct_sb::target_out &target
                 else if (current_arg.str_arg == NAME_FIELD_PROJECT_VER)
                     current_arg.str_arg = target.prj.version_project.get_str_version();
                 else if (current_arg.str_arg == NAME_FIELD_PROJECT_LANG)
-                    current_arg.str_arg = var::struct_sb::lang_str(target.prj.lang);
+                    current_arg.str_arg = target.prj.language;
                 else if (current_arg.str_arg == NAME_FIELD_PROJECT_PCOMPILER)
                     current_arg.str_arg = target.prj.path_compiler;
                 else if (current_arg.str_arg == NAME_FIELD_PROJECT_PLINKER)

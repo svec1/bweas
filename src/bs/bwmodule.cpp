@@ -1,3 +1,10 @@
+//
+// BWEAS is distributed under the gnu general public license 2.0 (gpl-2.0).
+// you can view the license text at the link:
+//     <https://www.gnu.org/licenses>
+// ------------------------------------------
+//
+
 #include "bwmodule.hpp"
 
 using namespace bweas;
@@ -7,6 +14,8 @@ module::module_mg::module_mg() {
     if (!init_glob) {
         assist.add_err("BWS-MDL000", "Failed to load module dependent dll file");
         assist.add_err("BWS-MDL001", "Failed to get the specified module function");
+
+        init_glob = 1;
     }
 }
 

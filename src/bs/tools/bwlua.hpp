@@ -1,8 +1,14 @@
+//
+// BWEAS is distributed under the gnu general public license 2.0 (gpl-2.0).
+// you can view the license text at the link:
+//     <https://www.gnu.org/licenses>
+// ------------------------------------------
+//
+
 #ifndef BWLUA__H
 
 // Header-library bwlua - svec
 // This library is a wrapper around luajit
-// **************************************
 #define BWLUA__H
 
 #include <any>
@@ -10,6 +16,7 @@
 #include <mutex>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <tuple>
 #include <vector>
 
@@ -196,12 +203,21 @@ class lua {
             throw std::runtime_error(LUA_TABLE_KEYCMP + std::string(op1.type().name()));
         }
     };
-    template <typename Key, typename Value> using keyValue = std::pair<Key, Value>;
+
+    template <typename T> using ref = const T &;
+
     template <typename T> using array = std::vector<T>;
-    template <typename Key, typename Value> using fastTable = std::vector<keyValue<Key, Value>>;
+    template <typename Key, typename Value> using key_value = std::pair<Key, Value>;
+    template <typename Key, typename Value> using fast_table = std::vector<key_value<Key, Value>>;
     template <typename Key, typename Value> using table = std::map<Key, Value, lcomp_anymap>;
+
     using cfunc = int (*)(lua_State *);
 
+    using string_param = std::string_view;
+    using integer = ptrdiff_t;
+    using number = double;
+
+  private:
     template <typename> struct is_map : std::false_type {};
     template <typename K, typename V> struct is_map<table<K, V>> : std::true_type {};
 
@@ -214,9 +230,6 @@ class lua {
     template <typename> struct is_vec_pairs : std::false_type {};
     template <typename A, typename K, typename V>
     struct is_vec_pairs<std::vector<std::pair<K, V>, A>> : std::true_type {};
-
-    typedef ptrdiff_t integer;
-    typedef double number;
 
     friend struct symbol;
     template <typename T> friend inline void tools::push_stack(lua_State *L, T param);
@@ -238,7 +251,7 @@ class lua {
     }
 
   public:
-    std::string get_stack__nmutex() {
+    std::string get_string_stack() {
         std::string str = "STACK(" + std::to_string(lua_gettop(L)) + "):\n";
         for (ptrdiff_t i = 0; i < lua_gettop(L); ++i) {
             if (i < lua_gettop(L) - 1)
@@ -308,7 +321,7 @@ class lua {
     template <typename T, typename... Types> T call_function(std::string name_func, Types... param) {
         if (!is_created())
             return T{};
-        lua_getglobal(L, name_func.c_str());
+        lua_getglobal(L, name_func.data());
         try {
             return call_symbol<T, Types...>(param...);
         }
@@ -317,23 +330,23 @@ class lua {
         }
     }
 
-    void register_function(std::string name_func, cfunc impl_cfunc) {
+    void register_function(std::string_view name_func, cfunc impl_cfunc) {
         lua_pushcfunction(L, impl_cfunc);
-        lua_setglobal(L, name_func.c_str());
+        lua_setglobal(L, name_func.data());
     }
 
     // execute lua code as a string
-    void execute_str(std::string str_code) {
+    void execute_str(std::string_view str_code) {
         if (!is_created())
             return;
-        if (luaL_dostring(L, str_code.c_str()) != LUA_OK)
+        if (luaL_dostring(L, str_code.data()) != LUA_OK)
             LUA_EXCEPTION()
     }
 
     // gets the value of a variable of the given type
     // Possible types: string, integer, number, boolean and table
     template <typename T> T get_var(std::string name_var) {
-        lua_getglobal(L, name_var.c_str());
+        lua_getglobal(L, name_var.data());
 
         try {
             return get_valsymbol<T>();
@@ -362,11 +375,11 @@ class lua {
     }
 
     // Returns true if exists function(global) in lua state
-    inline bool is_function(std::string name_func) {
+    inline bool is_function(std::string_view name_func) {
         if (!is_created())
             return 0;
         else {
-            lua_getglobal(L, name_func.c_str());
+            lua_getglobal(L, name_func.data());
 
             if (!lua_isfunction(L, -1)) {
                 lua_pop(L, 1);
@@ -378,11 +391,11 @@ class lua {
     }
 
     // Returns true if exists variable(global) in lua state
-    inline bool is_var(std::string name_var) {
+    inline bool is_var(std::string_view name_var) {
         if (!is_created())
             return 0;
         else {
-            lua_getglobal(L, name_var.c_str());
+            lua_getglobal(L, name_var.data());
 
             if (lua_isnoneornil(L, -1))
                 return 0;
@@ -395,14 +408,12 @@ class lua {
         ((push_stack_param<std::tuple_element_t<ind, Tuple>>(std::get<ind>(tp))), ...);
     }
     template <typename T> void push_stack_param(T param) {
-        if constexpr (std::is_same_v<T, const char *>)
-            lua_pushstring(L, param);
-        else if constexpr (std::is_same_v<T, integer>)
+        if constexpr (std::is_same_v<T, integer>)
             lua_pushinteger(L, param);
         else if constexpr (std::is_same_v<T, number>)
             lua_pushnumber(L, param);
-        else if constexpr (std::is_same_v<T, std::string>)
-            lua_pushstring(L, param.c_str());
+        else if constexpr (std::is_same_v<T, std::string> || std::is_same_v<T, std::string_view>)
+            lua_pushstring(L, param.data());
         else if constexpr (is_map<T>::value) {
             lua_createtable(L, 0, param.size());
             for (const auto &[key, value] : param) {
@@ -425,21 +436,21 @@ class lua {
             lua_settable(L, -3);
         }
         else if constexpr (std::is_same_v<T, std::any>) {
-            if (param.type() == typeid(const char *))
-                lua_pushstring(L, std::any_cast<const char *>(param));
-            else if (param.type() == typeid(integer))
+            if (param.type() == typeid(integer))
                 lua_pushinteger(L, std::any_cast<integer>(param));
             else if (param.type() == typeid(number))
                 lua_pushnumber(L, std::any_cast<number>(param));
             else if (param.type() == typeid(std::string))
                 lua_pushstring(L, std::any_cast<std::string>(param).c_str());
+            else if (param.type() == typeid(std::string_view))
+                lua_pushstring(L, std::any_cast<std::string_view>(param).data());
 
             else if (param.type() == typeid(std::vector<integer>))
                 push_stack_param(std::any_cast<std::vector<integer>>(param));
             else if (param.type() == typeid(std::vector<number>))
                 push_stack_param(std::any_cast<std::vector<number>>(param));
-            else if (param.type() == typeid(std::vector<const char *>))
-                push_stack_param(std::any_cast<std::vector<const char *>>(param));
+            else if (param.type() == typeid(std::vector<std::string_view>))
+                push_stack_param(std::any_cast<std::vector<std::string_view>>(param));
             else if (param.type() == typeid(std::vector<std::string>))
                 push_stack_param(std::any_cast<std::vector<std::string>>(param));
             else if (param.type() == typeid(std::vector<std::any>))
@@ -447,8 +458,8 @@ class lua {
 
             else if (param.type() == typeid(table<std::string, std::string>))
                 push_stack_param(std::any_cast<table<std::string, std::string>>(param));
-            else if (param.type() == typeid(table<const char *, const char *>))
-                push_stack_param(std::any_cast<table<const char *, const char *>>(param));
+            else if (param.type() == typeid(table<std::string_view, std::string_view>))
+                push_stack_param(std::any_cast<table<std::string_view, std::string_view>>(param));
             else if (param.type() == typeid(table<std::string, integer>))
                 push_stack_param(std::any_cast<table<std::string, integer>>(param));
             else if (param.type() == typeid(table<std::string, number>))
@@ -459,21 +470,21 @@ class lua {
                 push_stack_param(std::any_cast<table<number, std::any>>(param));
             else if (param.type() == typeid(table<std::string, std::any>))
                 push_stack_param(std::any_cast<table<std::string, std::any>>(param));
-            else if (param.type() == typeid(table<const char *, std::any>))
-                push_stack_param(std::any_cast<table<const char *, std::any>>(param));
+            else if (param.type() == typeid(table<std::string_view, std::any>))
+                push_stack_param(std::any_cast<table<std::string_view, std::any>>(param));
 
-            else if (param.type() == typeid(keyValue<std::string, std::string>))
-                push_stack_param(std::any_cast<keyValue<std::string, std::string>>(param));
-            else if (param.type() == typeid(keyValue<std::string, integer>))
-                push_stack_param(std::any_cast<keyValue<std::string, integer>>(param));
-            else if (param.type() == typeid(keyValue<integer, std::string>))
-                push_stack_param(std::any_cast<keyValue<integer, std::string>>(param));
-            else if (param.type() == typeid(keyValue<std::string, integer>))
-                push_stack_param(std::any_cast<keyValue<std::string, integer>>(param));
-            else if (param.type() == typeid(keyValue<integer, integer>))
-                push_stack_param(std::any_cast<keyValue<integer, integer>>(param));
-            else if (param.type() == typeid(keyValue<std::any, std::any>))
-                push_stack_param(std::any_cast<keyValue<std::any, std::any>>(param));
+            else if (param.type() == typeid(key_value<std::string, std::string>))
+                push_stack_param(std::any_cast<key_value<std::string, std::string>>(param));
+            else if (param.type() == typeid(key_value<std::string, integer>))
+                push_stack_param(std::any_cast<key_value<std::string, integer>>(param));
+            else if (param.type() == typeid(key_value<integer, std::string>))
+                push_stack_param(std::any_cast<key_value<integer, std::string>>(param));
+            else if (param.type() == typeid(key_value<std::string, integer>))
+                push_stack_param(std::any_cast<key_value<std::string, integer>>(param));
+            else if (param.type() == typeid(key_value<integer, integer>))
+                push_stack_param(std::any_cast<key_value<integer, integer>>(param));
+            else if (param.type() == typeid(key_value<std::any, std::any>))
+                push_stack_param(std::any_cast<key_value<std::any, std::any>>(param));
             else
                 throw std::runtime_error(LUA_PUSH_TYPE_UNK);
         }
@@ -484,17 +495,17 @@ class lua {
     }
     template <typename T> T get_valsymbol(int idx = -1, int pop_last = 1) {
         std::any value;
-        if constexpr (std::is_same_v<T, const char *>) {
-            if (!lua_isstring(L, idx))
-                throw std::runtime_error(LUA_VARIABLE_NFOUND_STR);
-
-            value = lua_tostring(L, idx);
-        }
-        else if constexpr (std::is_same_v<T, std::string>) {
+        if constexpr (std::is_same_v<T, std::string>) {
             if (!lua_isstring(L, idx))
                 throw std::runtime_error(LUA_VARIABLE_NFOUND_STR);
 
             value = std::string(lua_tostring(L, idx));
+        }
+        else if constexpr (std::is_same_v<T, std::string_view>) {
+            if (!lua_isstring(L, idx))
+                throw std::runtime_error(LUA_VARIABLE_NFOUND_STR);
+
+            value = std::string_view(lua_tostring(L, idx));
         }
         else if constexpr (std::is_same_v<T, integer>) {
             if (!lua_isnumber(L, idx))
@@ -519,7 +530,7 @@ class lua {
                 if (lua_isarray())
                     value = get_valsymbol<array<std::any>>(-1, 0);
                 else if (lua_ispair())
-                    value = get_valsymbol<keyValue<std::any, std::any>>(-1, 0);
+                    value = get_valsymbol<key_value<std::any, std::any>>(-1, 0);
                 else
                     value = get_valsymbol<table<std::any, std::any>>(-1, 0);
             }

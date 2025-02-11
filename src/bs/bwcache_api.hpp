@@ -1,20 +1,30 @@
+//
+// BWEAS is distributed under the gnu general public license 2.0 (gpl-2.0).
+// you can view the license text at the link:
+//     <https://www.gnu.org/licenses>
+// ------------------------------------------
+//
+
 #ifndef BWCACHE__H
 #define BWCACHE__H
 
 #include "bw_defs.hpp"
-#include "tools/bwlua.hpp"
+#include "bwluatools.hpp"
 
-#define NAME_FUNCTION_GENCACHE "create_cache"
-#define DEFINITION_FUNCTION_GENCACHE                                                                                   \
-<std::string, bwlua::lua::array<bwlua::lua::table<std::string, std::any>>, bwlua::lua::array<bwlua::lua::table<std::string, std::any>>, bwlua::lua::array<bwlua::lua::table<std::string, std::any>>, bwlua::lua::array<bwlua::lua::keyValue<std::string, std::string>>>
+#define NAME_FUNCTION_GENERATE_CACHE_LUA "create_cache"
+#define DEFINITION_FUNCTION_GENERATE_CACHE_LUA                                                                         \
+    std::string, bwluatools::ref<bwluatools::array<bwluatools::table<std::string, std::any>>>,                         \
+        bwluatools::ref<bwluatools::array<bwluatools::table<std::string, std::any>>>,                                  \
+        bwluatools::ref<bwluatools::array<bwluatools::table<std::string, std::any>>>,                                  \
+        bwluatools::ref<bwluatools::array<bwluatools::key_value<std::string, std::string>>>
 
-#define NAME_FUNCTION_GETDATA_CACHE "get_cache_data"
-#define DEFINITION_FUNCTION_GETDATA_CACHE <void, bwlua::lua::nil>
+#define NAME_FUNCTION_GET_DATA_CACHE_LUA "get_cache_data"
+#define DEFINITION_FUNCTION_GET_DATA_CACHE_LUA void, bwluatools::nil
 
-#define NAME_VARIABLE_TARGETS_F_EXTERN "targets"
-#define NAME_VARIABLE_TEMPLATES_F_EXTERN "templates"
-#define NAME_VARIABLE_CCOMPONENTS_F_EXTERN "call_components"
-#define NAME_VARIABLE_GEARGS_F_EXTERN "global_external_args"
+#define NAME_VARIABLE_TARGETS_F_EXTERN_LUA "targets"
+#define NAME_VARIABLE_TEMPLATES_F_EXTERN_LUA "templates"
+#define NAME_VARIABLE_CCOMPONENTS_F_EXTERN_LUA "call_components"
+#define NAME_VARIABLE_GEARGS_F_EXTERN_LUA "global_external_args"
 
 namespace bweas {
 

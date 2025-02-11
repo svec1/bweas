@@ -1,3 +1,10 @@
+//
+// BWEAS is distributed under the gnu general public license 2.0 (gpl-2.0).
+// you can view the license text at the link:
+//     <https://www.gnu.org/licenses>
+// ------------------------------------------
+//
+
 #include "bwpackage.hpp"
 
 #include "tools/bwlz4.hpp"
@@ -34,6 +41,10 @@ std::string bwpackage::init(data_bw_package _data, bool is_create_pckg) {
     else if (!config_json.contains("bweas-version") ||
              ((bw_version = var::struct_sb::version(config_json["bweas-version"])) == "0.0.0"))
         throw bwpackage_excp("Build system version field is empty", "002");
+    else if (!config_json.contains("custom_fields_project") && !config_json["custom_fields_project"].is_structured())
+        throw bwpackage_excp(
+            "Definition of custom fields for the project must be in the form of key-value (string and string)", "002");
+    cfg_package.custom_ext_fields_project = config_json["custom_fields_project"];
 
     if (config_json.contains("cache-gn")) {
         nlohmann::json metainf_ch = config_json["cache-gn"];
@@ -71,16 +82,22 @@ std::string bwpackage::init(data_bw_package _data, bool is_create_pckg) {
                                      "002");
             else if (!metainf_gn.contains("features-generator") || !metainf_gn["features-generator"].is_array())
                 throw bwpackage_excp("Generator metadata should include a list of new generator features", "002");
-
+            else if (config_json.contains("use_custom_search_dependencies") &&
+                     !config_json["use_custom_search_dependencies"].is_boolean())
+                throw bwpackage_excp(
+                    "Definition of custom fields for the project must be in the form of key-value (string and string)",
+                    "002");
             auto it_gnlua_script = assist.open_file(metainf_gn["src-luafile-gen"]);
             if (is_create_pckg) {
                 cfg_package.generators.emplace_back(generator.key(), metainf_gn["features-generator"],
+                                                    metainf_gn["use_custom_search_dependencies"],
                                                     assist.read_file(assist.get_ref_file(it_gnlua_script)));
                 _data.src_lua_generators.push_back(
                     cfg_package.generators[cfg_package.generators.size() - 1].src_lua_generator);
             }
             else {
                 cfg_package.generators.emplace_back(generator.key(), metainf_gn["features-generator"],
+                                                    metainf_gn["use_custom_search_dependencies"],
                                                     _data.src_lua_generators[i]);
                 ++i;
             }

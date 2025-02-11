@@ -1,9 +1,16 @@
+//
+// BWEAS is distributed under the gnu general public license 2.0 (gpl-2.0).
+// you can view the license text at the link:
+//     <https://www.gnu.org/licenses>
+// ------------------------------------------
+//
+
 #ifndef BWGNTOOLS__H
 #define BWGNTOOLS__H
 
-#include "bw_defs.hpp"
-
 #include <map>
+
+#include "bw_defs.hpp"
 
 namespace bweas {
 namespace generator {

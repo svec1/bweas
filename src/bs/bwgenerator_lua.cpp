@@ -1,6 +1,13 @@
+//
+// BWEAS is distributed under the gnu general public license 2.0 (gpl-2.0).
+// you can view the license text at the link:
+//     <https://www.gnu.org/licenses>
+// ------------------------------------------
+//
+
 #include "bwgenerator_api.hpp"
 #include "bwgntools.hpp"
-#include "bwluatoolslang.hpp"
+#include "bwluatools.hpp"
 
 using namespace bweas;
 using namespace generator_api;
@@ -29,57 +36,67 @@ lua_generator::lua_generator(std::string src_lua) {
 void lua_generator::init() {
     if (!lua.is_created())
         throw bwgenerator_excp("", "001");
-    else if (!lua.is_function(NAME_FUNCTION_GENLUA))
+    else if (!lua.is_function(NAME_FUNCTION_GENERATE_COMMAND_LUA))
         throw bwgenerator_excp("", "003");
-    else if (!lua.is_function(NAME_FUNCTION_FILECLUA))
+    else if (!lua.is_function(NAME_FUNCTION_GET_INPUT_FILE_LUA))
         throw bwgenerator_excp("", "004");
 
-    bwlua::lua::array<bwlua::lua::array<std::string>> ccmps;
-    for (u32t i = 0; i < ccmp_p->size(); ++i)
-        ccmps.emplace_back(bwlua::lua::array<std::string>{(*ccmp_p)[i].name, (*ccmp_p)[i].name_program,
-                                                          (*ccmp_p)[i].pattern_ret_files});
-
-    lua["get_name_output_file_lua"] << lua_tools::get_name_output_file_lua;
-    lua["file_slc_mask"] << lua_tools::file_slc_mask_lua;
-
-    lua["CCMPS"] = ccmps;
+    lua["get_name_output_file_lua"] << bwluatools::get_name_output_file_lua;
+    lua["file_slc_mask"] << bwluatools::file_slc_mask_lua;
 }
-void lua_generator::deleteGenerator() {
+void lua_generator::_delete() {
     delete this;
 }
 
-std::map<std::string, std::vector<std::string>> lua_generator::input_files(
-    const var::struct_sb::target_out &target, const bwqueue_templates &target_queue_templates,
-    std::string dir_work_endv) {
-    bwlua::lua::array<bwlua::lua::table<std::string, std::any>> tcmd_s_vec;
-    for (u32t i = 0; i < target_queue_templates.size(); ++i)
-        tcmd_s_vec.emplace_back(lua_tools::conv_to_table(target_queue_templates[i]));
-
+std::unordered_set<std::string> lua_generator::build_graph_depends_file(std::string_view language,
+                                                                        std::string_view name_file,
+                                                                        std::string_view work_directory,
+                                                                        std::vector<std::string> include_path) {
     try {
-        return bwlua::lua::to_map(lua.call_function DEFINITION_FUNCTION_FILECLUA(
-            NAME_FUNCTION_FILECLUA, lua_tools::conv_to_table(target), tcmd_s_vec));
+        bwluatools::array<std::string> dependencies = lua.call_function<DEFINITION_FUNCTION_BUILD_DEPENDS_LUA>(
+            NAME_FUNCTION_BUILD_DEPENDS_LUA, language, name_file, work_directory, include_path);
+        return std::unordered_set<std::string>{dependencies.begin(), dependencies.end()};
     }
     catch (std::exception &what) {
         throw bwgenerator_excp(what.what(), "005");
     }
 }
 
-std::map<std::string, std::string> lua_generator::gen_commands(
-    const var::struct_sb::target_out &trg, bwqueue_templates &templates, std::string dir_work_endv,
-    std::map<std::string, std::vector<std::string>> files_input) {
-
-    generator::tools::parse_basic_args(trg, templates, *global_external_args_p);
-
-    std::vector<bwlua::lua::table<std::string, std::any>> tcmd_s_vec;
-    for (u32t i = 0; i < templates.size(); ++i)
-        tcmd_s_vec.emplace_back(lua_tools::conv_to_table(templates[i]));
-
-    lua["CURRENT_TARGET"] = lua_tools::conv_to_table(trg);
-    lua["CURRENT_QUEUE_TEMPLATES"] = tcmd_s_vec;
-    lua["CURRENT_DIR"] = dir_work_endv;
+void lua_generator::get_input_files(data_transfer &data_t) {
+    bwluatools::array<bwluatools::array<std::string>> ccmps;
+    for (u32t i = 0; i < (*data_t.ccmp_s).size(); ++i)
+        ccmps.emplace_back(bwluatools::array<std::string>{(*data_t.ccmp_s)[i].name, (*data_t.ccmp_s)[i].name_program,
+                                                          (*data_t.ccmp_s)[i].pattern_ret_files});
+    bwluatools::array<bwluatools::table<std::string, std::any>> tcmd_s_vec;
+    for (u32t i = 0; i < (*data_t.trg_templates).size(); ++i)
+        tcmd_s_vec.emplace_back(bwluatools::conv_to_table((*data_t.trg_templates)[i]));
 
     try {
-        return lua.call_function DEFINITION_FUNCTION_GENLUA(NAME_FUNCTION_GENLUA, bwlua::lua::to_table(files_input));
+        lua["CCMPS"] = ccmps;
+        data_t.ifiles = bwlua::lua::to_map(lua.call_function<DEFINITION_FUNCTION_GET_INPUT_FILE_LUA>(
+            NAME_FUNCTION_GET_INPUT_FILE_LUA, bwluatools::conv_to_table(*data_t.trg), tcmd_s_vec,
+            bwluatools::conv_to_table(data_t.dfiles)));
+    }
+    catch (std::exception &what) {
+        throw bwgenerator_excp(what.what(), "005");
+    }
+}
+
+gen_command lua_generator::generate_command(data_transfer &data_t) {
+
+    generator::tools::parse_basic_args(*data_t.trg, *data_t.trg_templates, *data_t.global_extern_args);
+
+    std::vector<bwluatools::table<std::string, std::any>> tcmd_s_vec;
+    for (u32t i = 0; i < (*data_t.trg_templates).size(); ++i)
+        tcmd_s_vec.emplace_back(bwluatools::conv_to_table((*data_t.trg_templates)[i]));
+
+    lua["CURRENT_TARGET"] = bwluatools::conv_to_table(*data_t.trg);
+    lua["CURRENT_QUEUE_TEMPLATES"] = tcmd_s_vec;
+    lua["CURRENT_DIR"] = data_t.work_directory;
+
+    try {
+        return bwlua::lua::to_map(lua.call_function<DEFINITION_FUNCTION_GENERATE_COMMAND_LUA>(
+            NAME_FUNCTION_GENERATE_COMMAND_LUA, bwlua::lua::to_table(data_t.ifiles)));
     }
     catch (std::exception &what) {
         throw bwgenerator_excp(what.what(), "004");

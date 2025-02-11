@@ -48,7 +48,6 @@ class interpreter_exec {
 
   public:
     interpreter_exec();
-    interpreter_exec(config conf);
 
     interpreter_exec(interpreter_exec &&) = delete;
     interpreter_exec(const interpreter_exec &) = delete;

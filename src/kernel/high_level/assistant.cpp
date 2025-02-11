@@ -109,7 +109,11 @@ bool assistant::exist_file(file_it file) {
         return 0;
     return 1;
 }
-
+bool assistant::exist_file(std::string name_file) {
+    if (std::filesystem::exists(name_file))
+        return 1;
+    return 0;
+}
 assistant::file_it assistant::get_iterator_file(std::string name_file) {
     return std::distance(files.begin(),
                          std::find_if(files.begin(), files.end(), [name_file](const assistant::file &file) {

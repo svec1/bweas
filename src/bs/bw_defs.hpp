@@ -1,3 +1,10 @@
+//
+// BWEAS is distributed under the GNU General Public License 2.0 (GPL-2.0).
+// you can view the license text at the link:
+//     <https://www.gnu.org/licenses>
+// ------------------------------------------
+//
+
 #ifndef BWDEFS__H
 #define BWDEFS__H
 
@@ -27,7 +34,27 @@
     "\n   --help - outputs the syntax of the bweas call as well as its possible functions"                             \
     "\n   --version - outputs the version of bweas"
 
+// bweas configuration file, defines all packages that should be loaded by the builder
+#define JSON_CONFIG_FILE "bweas-config.json"
+
+// The current file of a project. It defines all target information
+#define MAIN_FILE "bweasconf.txt"
+
+// Cache file, all information about all targets is saved there for quick access, which makes it possible not to
+// reinterpret bweasconf.txt
+#define CACHE_FILE "bwcache"
+
+// The name of the directory where the build files will be created
+#define DIRWORK_ENV ".bweas"
+
+// The file in which all actions of the build system will be logged
+#define LOG_FILE "bweas-last.log"
+
+// A postfix (extension) to the file name containing the names of the source file dependencies
+#define DEPENDS_FILE_POSTFIX ".d"
+
 namespace bweas {
+
 using bwarg = std::pair<std::string, std::string>;
 using bwargs = std::vector<bwarg>;
 using bwarg_files = std::pair<std::string, std::vector<std::string>>;

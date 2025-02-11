@@ -1,20 +1,68 @@
+//
+// BWEAS is distributed under the gnu general public license 2.0 (gpl-2.0).
+// you can view the license text at the link:
+//     <https://www.gnu.org/licenses>
+// ------------------------------------------
+//
+
 #ifndef BWGENERATOR__H
 #define BWGENERATOR__H
 
+#include <string_view>
+
 #include "bw_defs.hpp"
-#include "tools/bwlua.hpp"
+#include "bwdepends_files.hpp"
+#include "bwluatools.hpp"
 
-#define NAME_FUNCTION_GENLUA "generate"
-#define DEFINITION_FUNCTION_GENLUA                                                                                     \
-<std::map<std::string, std::string>, bwlua::lua::table<std::string, std::vector<std::string>>>
+// Accepts only an array of input files. However, the bass generator API creates global configuration variables that the
+// function can access (target - "CURRENT_TARGET", templates - "CURRENT_QUEUE_TEMPLATES", call components - "CCMPS", and
+// the path of the working directory - "CURRENT_DIR")
+#define NAME_FUNCTION_GENERATE_COMMAND_LUA "generate"
+#define DEFINITION_FUNCTION_GENERATE_COMMAND_LUA                                                                       \
+    bwluatools::table<std::string, std::string>,                                                                       \
+        bwluatools::ref<bwluatools::table<std::string, bwluatools::array<std::string>>>
 
-#define NAME_FUNCTION_FILECLUA "get_files_input"
-#define DEFINITION_FUNCTION_FILECLUA                                                                                   \
-<bwlua::lua::table<std::string, std::vector<std::string>>, bwlua::lua::table<std::string, std::any>, std::vector<bwlua::lua::table<std::string, std::any>>>
+// Accepts a name file, directory work
+#define NAME_FUNCTION_BUILD_DEPENDS_LUA "build_graph_depends_file"
+#define DEFINITION_FUNCTION_BUILD_DEPENDS_LUA                                                                          \
+    bwluatools::array<std::string>, std::string_view, std::string_view, std::string_view,                              \
+        bwluatools::ref<std::vector<std::string>>
+
+// Accepts a target, its templates, and a global list of file trees (It can also use the "CCMPS" global variable)
+#define NAME_FUNCTION_GET_INPUT_FILE_LUA "get_input_files"
+#define DEFINITION_FUNCTION_GET_INPUT_FILE_LUA                                                                         \
+    bwluatools::table<std::string, bwluatools::array<std::string>>,                                                    \
+        bwluatools::ref<bwluatools::table<std::string, std::any>>,                                                     \
+        bwluatools::ref<bwluatools::array<bwluatools::table<std::string, std::any>>>,                                  \
+        bwluatools::ref<bwluatools::table<std::string, bwluatools::array<std::string>>>
 
 namespace bweas {
 
 namespace generator_api {
+
+// name_templates, name files
+using files_input = std::map<std::string, std::vector<std::string>>;
+// name_input_file, command
+using gen_command = std::map<std::string, std::string>;
+
+// A temporary structure that allows you to transfer data to the generator and its sub-functions
+struct data_transfer {
+    data_transfer(var::struct_sb::target_out *_trg, bwqueue_templates *_trg_templates,
+                  std::vector<var::struct_sb::call_component> *_ccmp_s, bwargs *_global_extern_args,
+                  std::string _work_directory)
+        : trg(_trg), trg_templates(_trg_templates), ccmp_s(_ccmp_s), global_extern_args(_global_extern_args),
+          work_directory(_work_directory) {
+    }
+    var::struct_sb::target_out *const trg;
+    bwqueue_templates *const trg_templates;
+    std::vector<var::struct_sb::call_component> *const ccmp_s;
+    bwargs *const global_extern_args;
+
+    bwdepends_files::depends_map dfiles;
+    files_input ifiles;
+    std::string work_directory;
+};
+
 namespace gninterface {
 
 // Interface class that defines the structure of generator classes
@@ -23,18 +71,17 @@ class interface_generator {
     interface_generator &operator=(const interface_generator &) = delete;
 
   public:
-    virtual void deleteGenerator() = 0;
+    virtual void _delete() = 0;
     // Generator initialization function
     virtual void init() = 0;
-    // Returns a list of files of the passed target that need to be compiled
-    virtual std::map<std::string, std::vector<std::string>> input_files(const var::struct_sb::target_out &target,
-                                                                        const bwqueue_templates &target_queue_templates,
-                                                                        std::string) = 0;
+    // Implementing a function for the file dependency system, returns a list of dependent files(graph)
+    virtual std::unordered_set<std::string> build_graph_depends_file(std::string_view, std::string_view,
+                                                                     std::string_view, std::vector<std::string>) = 0;
+    // Initializes(defines) files that should be compiled (recompiled) for the current target
+    virtual void get_input_files(data_transfer &) = 0;
     // The generator function returns the commands generated by it in the order of the templates used for the
     // transmitted target
-    virtual std::map<std::string, std::string> gen_commands(const var::struct_sb::target_out &, bwqueue_templates &,
-                                                            std::string,
-                                                            std::map<std::string, std::vector<std::string>>) = 0;
+    virtual gen_command generate_command(data_transfer &) = 0;
 
   protected:
     virtual ~interface_generator() = default;
@@ -42,13 +89,10 @@ class interface_generator {
 
 } // namespace gninterface
 
-using func_generator = std::map<std::string, std::string> (*)(const var::struct_sb::target_out &, bwqueue_templates &,
-                                                              const std::vector<var::struct_sb::call_component> &,
-                                                              std::map<std::string, std::vector<std::string>>,
-                                                              std::string);
-using func_get_files_input = std::map<std::string, std::vector<std::string>> (*)(
-    const var::struct_sb::target_out &, const bwqueue_templates &,
-    const std::vector<var::struct_sb::call_component> &ccmp_p, std::string);
+using func_generator = gen_command (*)(data_transfer &);
+using func_build_graph_depends_file = std::unordered_set<std::string> (*)(std::string_view, std::string_view,
+                                                                          std::string_view, std::vector<std::string>);
+using func_get_input_files = void (*)(data_transfer &);
 
 // An abstract class that defines the creation of generator classes and is also a generalization
 class base_generator : public gninterface::interface_generator {
@@ -56,16 +100,18 @@ class base_generator : public gninterface::interface_generator {
     ~base_generator() = default;
 
   public:
-    void set_const_data(std::vector<var::struct_sb::call_component> &ccmp, bwargs global_external_args) {
-        ccmp_p = std::shared_ptr<std::vector<var::struct_sb::call_component>>(
-            (std::vector<var::struct_sb::call_component> *)&ccmp,
-            [](const std::vector<var::struct_sb::call_component> *) {});
-        global_external_args_p = std::shared_ptr<bwargs>((bwargs *)&global_external_args, [](const bwargs *) {});
+    void set_use_build_graph_depends() {
+        use_build_graph_depends = 1;
+    }
+
+    bool has_build_graph_depends() {
+        return use_build_graph_depends;
     }
 
   public:
-    static inline base_generator *createGeneratorInt(func_generator, func_get_files_input);
-    static inline base_generator *createGeneratorLua(std::string);
+    static inline base_generator *create_generator_int(func_generator, func_build_graph_depends_file,
+                                                       func_get_input_files);
+    static inline base_generator *create_generator_lua(std::string);
 
   public:
     static bool is_exist(base_generator *generator) {
@@ -74,38 +120,39 @@ class base_generator : public gninterface::interface_generator {
         return 1;
     }
 
-  protected:
-    std::shared_ptr<std::vector<var::struct_sb::call_component>> ccmp_p;
-    std::shared_ptr<bwargs> global_external_args_p;
+  private:
+    bool use_build_graph_depends{0};
 };
 
 // The class defines the API for internal generators, i.e. built into bweas as basic
 class integral_generator : public base_generator {
-    friend base_generator *base_generator::createGeneratorInt(func_generator, func_get_files_input);
+    friend base_generator *base_generator::create_generator_int(func_generator, func_build_graph_depends_file,
+                                                                func_get_input_files);
 
   private:
-    integral_generator(func_generator, func_get_files_input);
+    integral_generator(func_generator, func_build_graph_depends_file, func_get_input_files);
     ~integral_generator() = default;
 
   public:
     void init() override final;
-    void deleteGenerator() override final;
-    std::map<std::string, std::vector<std::string>> input_files(const var::struct_sb::target_out &,
-                                                                const bwqueue_templates &, std::string) override final;
-    std::map<std::string, std::string> gen_commands(const var::struct_sb::target_out &, bwqueue_templates &,
-                                                    std::string,
-                                                    std::map<std::string, std::vector<std::string>>) override final;
+    void _delete() override final;
+    std::unordered_set<std::string> build_graph_depends_file(std::string_view language, std::string_view name_file,
+                                                             std::string_view work_directory,
+                                                             std::vector<std::string> include_paths) override final;
+    void get_input_files(data_transfer &data_t) override final;
+    gen_command generate_command(data_transfer &data_t) override final;
 
   private:
     static inline bool init_glob_gnint{0};
 
     func_generator generator_p;
-    func_get_files_input files_input_p;
+    func_build_graph_depends_file build_graph_depends_file_p;
+    func_get_input_files get_input_files_p;
 };
 
 // The class defines the API for generators written in lua and presented in bweas packages
 class lua_generator : public base_generator {
-    friend base_generator *base_generator::createGeneratorLua(std::string);
+    friend base_generator *base_generator::create_generator_lua(std::string);
 
   private:
     lua_generator(std::string);
@@ -113,12 +160,12 @@ class lua_generator : public base_generator {
 
   public:
     void init() override final;
-    void deleteGenerator() override final;
-    std::map<std::string, std::vector<std::string>> input_files(const var::struct_sb::target_out &,
-                                                                const bwqueue_templates &, std::string) override final;
-    std::map<std::string, std::string> gen_commands(const var::struct_sb::target_out &, bwqueue_templates &,
-                                                    std::string,
-                                                    std::map<std::string, std::vector<std::string>>) override final;
+    void _delete() override final;
+    std::unordered_set<std::string> build_graph_depends_file(std::string_view language, std::string_view name_file,
+                                                             std::string_view work_directory,
+                                                             std::vector<std::string> include_paths) override final;
+    void get_input_files(data_transfer &data_t) override final;
+    gen_command generate_command(data_transfer &data_t) override final;
 
   private:
     static inline bool init_glob_gnlua{0};
@@ -126,10 +173,12 @@ class lua_generator : public base_generator {
     bwlua::lua lua;
 };
 
-base_generator *base_generator::createGeneratorInt(func_generator generator, func_get_files_input files_input) {
-    return (base_generator *)new integral_generator(generator, files_input);
+base_generator *base_generator::create_generator_int(func_generator generator,
+                                                     func_build_graph_depends_file build_graph_depends_file,
+                                                     func_get_input_files get_input_files) {
+    return (base_generator *)new integral_generator(generator, build_graph_depends_file, get_input_files);
 }
-base_generator *base_generator::createGeneratorLua(std::string src_lua) {
+base_generator *base_generator::create_generator_lua(std::string src_lua) {
     return (base_generator *)new lua_generator(src_lua);
 }
 } // namespace generator_api

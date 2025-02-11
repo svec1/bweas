@@ -62,6 +62,8 @@ else()
     set(BWEAS_INCLUDE ${NLOHMANN_JSON_INCLUDE_INSTALL_DIR} ${LuaJIT_SRC_DIR} CACHE STRING "All header-files for bweas")
 endif()
 
+set(BWEAS_INCLUDE ${BWEAS_INCLUDE} "kernel/high_level")
+
 target_link_libraries(${BWEAS_SLIB} PRIVATE ${BWEAS_LIBS})
 include_directories(${BWEAS_INCLUDE})
 

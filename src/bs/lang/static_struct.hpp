@@ -4,6 +4,7 @@
 #include "../../kernel/high_level/bwtype.h"
 #include "../bwconf_var.hpp"
 
+#include <map>
 #include <memory>
 #include <string>
 #include <vector>
@@ -28,6 +29,7 @@
 #define PRJ_VAR_NAME_SRC_FILES "_SRC_FILES"
 #define PRJ_VAR_NAME_UTEMPLATES "_USE_TEMPLATES"
 #define PRJ_VAR_NAME_UITTEMPLATES "_USE_IT_TEMPLATES"
+#define PRJ_VAR_NAME_CUSTOM_EXT_FIELDS "_CUSTOM_EXTENSION_FIELDS"
 
 // enum of str postfix name var a target
 #define TRG_VAR_NAME_NPROJECT "_NAME_PROJECT"
@@ -79,12 +81,6 @@
 namespace var {
 namespace struct_sb {
 
-enum class language {
-    c = 0,
-    cpp,
-    csharp,
-    asm_
-};
 enum class type_target {
     exe = 0,
     lib,
@@ -95,17 +91,6 @@ enum class configuration {
     DEBUG
 };
 
-inline std::string lang_str(const language &lang) {
-    if (lang == language::c)
-        return "C";
-    else if (lang == language::cpp)
-        return "C++";
-    else if (lang == language::csharp)
-        return "C#";
-    else if (lang == language::asm_)
-        return "ASM";
-    return "null";
-}
 inline std::string target_t_str(const type_target &target_t) {
     if (target_t == type_target::exe)
         return "EXECUTABLE";
@@ -123,17 +108,6 @@ inline std::string cfg_str(const configuration &target_t) {
     return "null";
 }
 
-inline language to_lang(std::string lang) {
-    if (lang == "C")
-        return language::c;
-    else if (lang == "C++")
-        return language::cpp;
-    else if (lang == "C#")
-        return language::csharp;
-    else if (lang == "ASM")
-        return language::asm_;
-    return language::c;
-}
 inline type_target to_type_target(std::string target_t) {
     if (target_t == "EXECUTABLE")
         return type_target::exe;
@@ -214,11 +188,13 @@ struct version {
 // includes settings that are needed
 // to generate compilation commands, linking, etc.
 struct project {
-    project() = default;
+    project() {
+        custom_ext_fields.merge(preset_ext_fields);
+    }
     std::string name_project;
     version version_project;
 
-    language lang;
+    std::string language;
 
     std::string path_compiler{DEFAULT_COMPILER_C}, path_linker{DEFAULT_COMPILER_C};
     std::string rflags_compiler{RELEASE_FLAGS_COMPILER_CPP}, rflags_linker{RELEASE_FLAGS_LINKER_CXX};
@@ -228,7 +204,12 @@ struct project {
     bool use_it_templates{0};
 
     std::vector<std::string> src_files;
+    std::vector<std::string> include_paths{"null"};
     std::vector<std::string> vec_templates{"null"};
+
+    std::map<std::string, std::string> custom_ext_fields{{"null", ""}};
+
+    static std::map<std::string, std::string> preset_ext_fields;
 };
 
 // target structure

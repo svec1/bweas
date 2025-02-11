@@ -1,3 +1,10 @@
+//
+// BWEAS is distributed under the GNU General Public License 2.0 (GPL-2.0).
+// you can view the license text at the link:
+//     <https://www.gnu.org/licenses>
+// ------------------------------------------
+//
+
 #ifndef EXPRESSION__H
 #define EXPRESSION__H
 

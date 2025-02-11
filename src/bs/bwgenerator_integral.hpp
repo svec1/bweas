@@ -1,21 +1,27 @@
+//
+// BWEAS is distributed under the gnu general public license 2.0 (gpl-2.0).
+// you can view the license text at the link:
+//     <https://www.gnu.org/licenses>
+// ------------------------------------------
+//
+
 #ifndef BWGENERATOR_INTEGRAL__H
 #define BWGENERATOR_INTEGRAL__H
 
-#include "bw_defs.hpp"
 #include <map>
+
+#include "bw_defs.hpp"
+#include "bwgenerator_api.hpp"
 
 namespace bweas {
 namespace generator {
-extern std::map<std::string, std::vector<std::string>> bwfile_inputs(
-    const var::struct_sb::target_out &target, const bwqueue_templates &target_queue_templates,
-    const std::vector<var::struct_sb::call_component> &ccmp_p, std::string dir_work_endv);
 
+extern std::unordered_set<std::string> bwbuild_graph_depends_file(std::string_view, std::string_view, std::string_view,
+                                                                  std::vector<std::string>);
+
+extern void bwget_input_files(bweas::generator_api::data_transfer &);
 // First and basic template-based command generator
-extern std::map<std::string, std::string> bwgenerator(const var::struct_sb::target_out &trg,
-                                                      bwqueue_templates &templates,
-                                                      const std::vector<var::struct_sb::call_component> &ccmp_p,
-                                                      std::map<std::string, std::vector<std::string>> files_input,
-                                                      std::string dir_work_endv);
+extern bweas::generator_api::gen_command bwgenerator(bweas::generator_api::data_transfer &);
 } // namespace generator
 } // namespace bweas
 

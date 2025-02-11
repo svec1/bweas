@@ -1,3 +1,10 @@
+//
+// BWEAS is distributed under the gnu general public license 2.0 (gpl-2.0).
+// you can view the license text at the link:
+//     <https://www.gnu.org/licenses>
+// ------------------------------------------
+//
+
 #include "bwcache_api.hpp"
 
 #include <nlohmann/json.hpp>
@@ -31,7 +38,7 @@ std::string json_bwcache::create_cache() {
                                                      {"project",
                                                       {{"name", target.prj.name_project},
                                                        {"version", target.prj.version_project.get_str_version()},
-                                                       {"lang", var::struct_sb::lang_str(target.prj.lang)},
+                                                       {"lang", target.prj.language},
                                                        {"path_compiler", target.prj.path_compiler},
                                                        {"path_linker", target.prj.path_linker},
                                                        {"release_flags_compiler", target.prj.rflags_compiler},
@@ -41,8 +48,10 @@ std::string json_bwcache::create_cache() {
                                                        {"std_c", target.prj.standart_c},
                                                        {"std_cpp", target.prj.standart_cpp},
                                                        {"files", target.prj.src_files},
+                                                       {"include_paths", target.prj.include_paths},
                                                        {"use_it_templates", target.prj.use_it_templates},
-                                                       {"templates", target.prj.vec_templates}}}};
+                                                       {"templates", target.prj.vec_templates},
+                                                       {"custom_extension_fields", target.prj.custom_ext_fields}}}};
 
     for (const auto &_template : _cache_data.templates) {
         cache_data["templates"][_template.name] = {{"name_call_component", _template.name_call_component},
@@ -81,7 +90,7 @@ const base_bwcache::cache_data &json_bwcache::get_cache_data(std::string cache_s
             const auto &prj = fields["project"];
             target_o_tmp.prj.name_project = prj["name"];
             target_o_tmp.prj.version_project = (std::string)prj["version"];
-            target_o_tmp.prj.lang = var::struct_sb::to_lang(prj["lang"]);
+            target_o_tmp.prj.language = prj["lang"];
             target_o_tmp.prj.path_compiler = prj["path_compiler"];
             target_o_tmp.prj.path_linker = prj["path_linker"];
             target_o_tmp.prj.rflags_compiler = prj["release_flags_compiler"];
@@ -91,9 +100,10 @@ const base_bwcache::cache_data &json_bwcache::get_cache_data(std::string cache_s
             target_o_tmp.prj.standart_c = prj["std_c"];
             target_o_tmp.prj.standart_cpp = prj["std_cpp"];
             target_o_tmp.prj.src_files = prj["files"];
+            target_o_tmp.prj.include_paths = prj["include_paths"];
             target_o_tmp.prj.use_it_templates = prj["use_it_templates"];
             target_o_tmp.prj.vec_templates = prj["templates"];
-
+            target_o_tmp.prj.custom_ext_fields = prj["custom_extension_fields"];
             _cache_data.targets_o.push_back(target_o_tmp);
         }
 
