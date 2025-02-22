@@ -46,7 +46,8 @@ void integral_generator::get_input_files(data_transfer &data_t) {
 }
 
 gen_command integral_generator::generate_command(data_transfer &data_t) {
-    generator::tools::parse_basic_args(*data_t.trg, *data_t.trg_templates, *data_t.global_extern_args);
+    generator::tools::parse_basic_args(*data_t.context->current_target, data_t.context->templates,
+                                       data_t.context->global_external_args);
     return generator_p(data_t);
 }
 

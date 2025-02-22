@@ -64,17 +64,17 @@ std::unordered_set<std::string> lua_generator::build_graph_depends_file(std::str
 
 void lua_generator::get_input_files(data_transfer &data_t) {
     bwluatools::array<bwluatools::array<std::string>> ccmps;
-    for (u32t i = 0; i < (*data_t.ccmp_s).size(); ++i)
-        ccmps.emplace_back(bwluatools::array<std::string>{(*data_t.ccmp_s)[i].name, (*data_t.ccmp_s)[i].name_program,
-                                                          (*data_t.ccmp_s)[i].pattern_ret_files});
+    for (const auto &call_component : data_t.context->call_components)
+        ccmps.emplace_back(bwluatools::array<std::string>{call_component.name, call_component.name_program,
+                                                          call_component.pattern_ret_files});
     bwluatools::array<bwluatools::table<std::string, std::any>> tcmd_s_vec;
-    for (u32t i = 0; i < (*data_t.trg_templates).size(); ++i)
-        tcmd_s_vec.emplace_back(bwluatools::conv_to_table((*data_t.trg_templates)[i]));
+    for (const auto &_template : data_t.context->templates)
+        tcmd_s_vec.emplace_back(bwluatools::conv_to_table(_template));
 
     try {
         lua["CCMPS"] = ccmps;
         data_t.ifiles = bwlua::lua::to_map(lua.call_function<DEFINITION_FUNCTION_GET_INPUT_FILE_LUA>(
-            NAME_FUNCTION_GET_INPUT_FILE_LUA, bwluatools::conv_to_table(*data_t.trg), tcmd_s_vec,
+            NAME_FUNCTION_GET_INPUT_FILE_LUA, bwluatools::conv_to_table(*data_t.context->current_target), tcmd_s_vec,
             bwluatools::conv_to_table(data_t.dfiles)));
     }
     catch (std::exception &what) {
@@ -84,13 +84,14 @@ void lua_generator::get_input_files(data_transfer &data_t) {
 
 gen_command lua_generator::generate_command(data_transfer &data_t) {
 
-    generator::tools::parse_basic_args(*data_t.trg, *data_t.trg_templates, *data_t.global_extern_args);
+    generator::tools::parse_basic_args(*data_t.context->current_target, data_t.context->templates,
+                                       data_t.context->global_external_args);
 
     std::vector<bwluatools::table<std::string, std::any>> tcmd_s_vec;
-    for (u32t i = 0; i < (*data_t.trg_templates).size(); ++i)
-        tcmd_s_vec.emplace_back(bwluatools::conv_to_table((*data_t.trg_templates)[i]));
+    for (const auto &_template : data_t.context->templates)
+        tcmd_s_vec.emplace_back(bwluatools::conv_to_table(_template));
 
-    lua["CURRENT_TARGET"] = bwluatools::conv_to_table(*data_t.trg);
+    lua["CURRENT_TARGET"] = bwluatools::conv_to_table(*data_t.context->current_target);
     lua["CURRENT_QUEUE_TEMPLATES"] = tcmd_s_vec;
     lua["CURRENT_DIR"] = data_t.work_directory;
 

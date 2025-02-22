@@ -33,49 +33,36 @@ namespace cache_api {
 // Abstract class that bases API for creating cache generators
 class base_bwcache {
   public:
-    // A structure that is intermediate for transferring data to be hashed (and back).
-    struct cache_data {
-        cache_data() = default;
-
-      public:
-        std::vector<var::struct_sb::target_out> *targets_o_p{NULL};
-
-        std::vector<var::struct_sb::target_out> targets_o;
-        std::vector<var::struct_sb::template_command> templates;
-        std::vector<var::struct_sb::call_component> call_components;
-        std::vector<std::pair<std::string, std::string>> global_external_args;
-    };
-
-    base_bwcache() = default;
+    base_bwcache(bw_context *const _context) : context(_context) {};
 
   public:
     // A function that must be defined in a child class, and return a cache of data
     virtual std::string create_cache() = 0;
 
     // A function that must be defined in a child class and return cache data
-    virtual const cache_data &get_cache_data(std::string cache_str) = 0;
+    virtual void extract_cache_data(std::string &&cache_str) = 0;
 
     virtual void delete_cache() = 0;
 
     // A number of factory functions to create all possible child classes that implement the bwcache cache generator
     // based on the bwcache API
   public:
-    static inline base_bwcache *create_fast_bwcache();
-    static inline base_bwcache *create_json_bwcache();
-    static inline base_bwcache *create_lua_bwcache(std::string src_lua);
+    static inline base_bwcache *create_fast_bwcache(bw_context *const _context);
+    static inline base_bwcache *create_json_bwcache(bw_context *const _context);
+    static inline base_bwcache *create_lua_bwcache(bw_context *const _context, std::string src_lua);
 
   public:
-    cache_data _cache_data;
+    bw_context *const context;
 };
 
 // A basic cache generator that is fast but also creates a hard-to-read cache for humans to use
 class fast_bwcache final : private base_bwcache {
   public:
-    fast_bwcache();
+    fast_bwcache(bw_context *const);
 
   public:
     std::string create_cache() override final;
-    const cache_data &get_cache_data(std::string cache_str) override final;
+    void extract_cache_data(std::string &&cache_str) override final;
 
     void delete_cache() override final;
 
@@ -87,11 +74,11 @@ class fast_bwcache final : private base_bwcache {
 // but is also slow compared to fast_bwcache
 class json_bwcache final : private base_bwcache {
   public:
-    json_bwcache();
+    json_bwcache(bw_context *const);
 
   public:
     std::string create_cache() override final;
-    const cache_data &get_cache_data(std::string cache_str) override final;
+    void extract_cache_data(std::string &&cache_str) override final;
 
     void delete_cache() override final;
 
@@ -102,12 +89,11 @@ class json_bwcache final : private base_bwcache {
 // A class providing an API for creating cache generators in lua, based on the bwcache API
 class lua_bwcache final : private base_bwcache {
   public:
-    lua_bwcache() = delete;
-    lua_bwcache(std::string);
+    lua_bwcache(bw_context *const, std::string);
 
   public:
     std::string create_cache() override final;
-    const cache_data &get_cache_data(std::string cache_str) override final;
+    void extract_cache_data(std::string &&cache_str) override final;
 
     void delete_cache() override final;
 
@@ -117,14 +103,14 @@ class lua_bwcache final : private base_bwcache {
     bwlua::lua lua;
 };
 
-base_bwcache *base_bwcache::create_fast_bwcache() {
-    return (base_bwcache *)new fast_bwcache;
+base_bwcache *base_bwcache::create_fast_bwcache(bw_context *const _context) {
+    return (base_bwcache *)new fast_bwcache(_context);
 }
-base_bwcache *base_bwcache::create_json_bwcache() {
-    return (base_bwcache *)new json_bwcache;
+base_bwcache *base_bwcache::create_json_bwcache(bw_context *const _context) {
+    return (base_bwcache *)new json_bwcache(_context);
 }
-base_bwcache *base_bwcache::create_lua_bwcache(std::string src_lua) {
-    return (base_bwcache *)new lua_bwcache(src_lua);
+base_bwcache *base_bwcache::create_lua_bwcache(bw_context *const _context, std::string src_lua) {
+    return (base_bwcache *)new lua_bwcache(_context, src_lua);
 }
 
 } // namespace cache_api

@@ -12,7 +12,7 @@ using namespace bweas;
 using namespace cache_api;
 using namespace bweas::bwexception;
 
-lua_bwcache::lua_bwcache(std::string src_lua) {
+lua_bwcache::lua_bwcache(bw_context *const _context, std::string src_lua) : base_bwcache(_context) {
     if (!init_glob_chlua) {
         assist.add_err("BWS-CACHE000", "Failed to load lua script");
         assist.add_err("BWS-CACHE001", "No entry function for creates cache");
@@ -37,23 +37,23 @@ std::string lua_bwcache::create_cache() {
     std::vector<bwluatools::table<std::string, std::any>> ltcmd_s;
     std::vector<bwluatools::table<std::string, std::any>> lccmp_s;
 
-    for (const auto &ltarget_o : _cache_data.targets_o_p != nullptr ? *_cache_data.targets_o_p : _cache_data.targets_o)
+    for (const auto &ltarget_o : context->out_targets)
         ltargets_o.push_back(bwluatools::conv_to_table(ltarget_o));
-    for (const auto &ltcmd : _cache_data.templates)
+    for (const auto &ltcmd : context->templates)
         ltcmd_s.push_back(bwluatools::conv_to_table(ltcmd));
-    for (const auto &lccmp : _cache_data.call_components)
+    for (const auto &lccmp : context->call_components)
         lccmp_s.push_back(bwluatools::conv_to_table(lccmp));
 
     try {
         return lua.call_function<DEFINITION_FUNCTION_GENERATE_CACHE_LUA>(
-            NAME_FUNCTION_GENERATE_CACHE_LUA, ltargets_o, ltcmd_s, lccmp_s, _cache_data.global_external_args);
+            NAME_FUNCTION_GENERATE_CACHE_LUA, ltargets_o, ltcmd_s, lccmp_s, context->global_external_args);
     }
     catch (std::exception &what) {
         throw bwcache_excp(what.what(), "000");
     }
 }
 
-const base_bwcache::cache_data &lua_bwcache::get_cache_data(std::string cache_str) {
+void lua_bwcache::extract_cache_data(std::string &&cache_str) {
 
     std::vector<bwluatools::table<std::string, std::any>> ltargets_o;
     std::vector<bwluatools::table<std::string, std::any>> ltcmd_s;
@@ -76,13 +76,11 @@ const base_bwcache::cache_data &lua_bwcache::get_cache_data(std::string cache_st
         throw bwcache_excp(what.what(), "000");
     }
     for (auto &ltarget_o : ltargets_o)
-        _cache_data.targets_o.push_back(bwluatools::conv_to_target(ltarget_o));
+        context->out_targets.push_back(bwluatools::conv_to_target(ltarget_o));
     for (auto &ltcmd : ltcmd_s)
-        _cache_data.templates.push_back(bwluatools::conv_to_template(ltcmd));
+        context->templates.push_back(bwluatools::conv_to_template(ltcmd));
     for (auto &lccmp : lccmp_s)
-        _cache_data.call_components.push_back(bwluatools::conv_to_call_components(lccmp));
+        context->call_components.push_back(bwluatools::conv_to_call_components(lccmp));
 
-    _cache_data.global_external_args = lglobal_external_args;
-
-    return _cache_data;
+    context->global_external_args = lglobal_external_args;
 }

@@ -12,6 +12,7 @@
 
 namespace bweas {
 
+// Implementing a file dependency system based on the bweas generators API
 class bwdepends_generator : public bweas::bwdepends_files {
   public:
     bwdepends_generator(std::shared_ptr<generator_api::base_generator> _generator, const std::string_view language,

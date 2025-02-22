@@ -13,7 +13,7 @@ using namespace bweas;
 using namespace cache_api;
 using namespace bweas::bwexception;
 
-json_bwcache::json_bwcache() {
+json_bwcache::json_bwcache(bw_context *const context) : base_bwcache(context) {
     if (!init_glob_chjson) {
         assist.add_err("BWS-CACHE000", "Incorrect json cache structure");
 
@@ -27,9 +27,8 @@ void json_bwcache::delete_cache() {
 
 std::string json_bwcache::create_cache() {
     nlohmann::json cache_data;
-    const auto &out_targets = _cache_data.targets_o_p != nullptr ? *_cache_data.targets_o_p : _cache_data.targets_o;
 
-    for (const auto &target : out_targets)
+    for (const auto &target : context->out_targets)
         cache_data["targets"][target.name_target] = {{"type", var::struct_sb::target_t_str(target.target_t)},
                                                      {"configuration", var::struct_sb::cfg_str(target.target_cfg)},
                                                      {"version", target.version_target.get_str_version()},
@@ -53,7 +52,7 @@ std::string json_bwcache::create_cache() {
                                                        {"templates", target.prj.vec_templates},
                                                        {"custom_extension_fields", target.prj.custom_ext_fields}}}};
 
-    for (const auto &_template : _cache_data.templates) {
+    for (const auto &_template : context->templates) {
         cache_data["templates"][_template.name] = {{"name_call_component", _template.name_call_component},
                                                    {"returnable", _template.returnable},
                                                    {"accept_params", _template.name_accept_params}};
@@ -61,18 +60,18 @@ std::string json_bwcache::create_cache() {
             cache_data["templates"][_template.name]["args"].push_back({{"type", arg.arg_t}, {"str", arg.str_arg}});
     }
 
-    for (const auto &call_component : _cache_data.call_components)
+    for (const auto &call_component : context->call_components)
         cache_data["call_components"][call_component.name] = {{"name_program", call_component.name_program},
                                                               {"pattern_ret_files", call_component.pattern_ret_files}};
 
-    for (const auto &global_external_arg : _cache_data.global_external_args)
+    for (const auto &global_external_arg : context->global_external_args)
         cache_data["global_external_args"].push_back(
             {{"name", global_external_arg.first}, {"value", global_external_arg.second}});
 
     return cache_data.dump(4);
 }
 
-const base_bwcache::cache_data &json_bwcache::get_cache_data(std::string cache_str) {
+void json_bwcache::extract_cache_data(std::string &&cache_str) {
     try {
         nlohmann::json cache_data = nlohmann::json::parse(cache_str);
 
@@ -104,7 +103,8 @@ const base_bwcache::cache_data &json_bwcache::get_cache_data(std::string cache_s
             target_o_tmp.prj.use_it_templates = prj["use_it_templates"];
             target_o_tmp.prj.vec_templates = prj["templates"];
             target_o_tmp.prj.custom_ext_fields = prj["custom_extension_fields"];
-            _cache_data.targets_o.push_back(target_o_tmp);
+
+            context->out_targets.push_back(target_o_tmp);
         }
 
         for (const auto &_template : cache_data["templates"].items()) {
@@ -119,7 +119,7 @@ const base_bwcache::cache_data &json_bwcache::get_cache_data(std::string cache_s
                 template_tmp.args.push_back(var::struct_sb::template_command::arg(
                     arg["str"], (var::struct_sb::template_command::arg::type)arg["type"]));
 
-            _cache_data.templates.push_back(template_tmp);
+            context->templates.push_back(template_tmp);
         }
 
         for (const auto &call_component : cache_data["call_components"].items()) {
@@ -130,14 +130,11 @@ const base_bwcache::cache_data &json_bwcache::get_cache_data(std::string cache_s
             call_component_tmp.name_program = fields["name_program"];
             call_component_tmp.pattern_ret_files = fields["pattern_ret_files"];
 
-            _cache_data.call_components.push_back(call_component_tmp);
+            context->call_components.push_back(call_component_tmp);
         }
 
         for (const auto &call_component : cache_data["global_external_args"].items())
-            _cache_data.global_external_args.emplace_back(call_component.value()["name"],
-                                                          call_component.value()["value"]);
-
-        return _cache_data;
+            context->global_external_args.emplace_back(call_component.value()["name"], call_component.value()["value"]);
     }
     catch (std::exception &what) {
         throw bwcache_excp(what.what(), "000");

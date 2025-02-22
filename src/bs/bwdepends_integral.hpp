@@ -12,6 +12,8 @@
 #include "bwgenerator_integral.hpp"
 
 namespace bweas {
+
+// Implementing an internal file dependency system
 class bwdepends_integral : public bwdepends_files {
   public:
     bwdepends_integral(const std::string_view language, const std::string_view work_directory)

@@ -8,7 +8,7 @@
 #ifndef BWLANG__H
 #define BWLANG__H
 
-#include "lang/interpreter.hpp"
+#include "bw_defs.hpp"
 
 namespace bweas {
 
@@ -16,7 +16,7 @@ namespace bweas {
 // the standard bweas functions and also provides interaction with the global scope
 class bwlang {
   public:
-    bwlang(std::string bwconf_file = "");
+    bwlang(std::string bwconf_file = MAIN_FILE);
 
     bwlang(bwlang &&) = delete;
     bwlang(const bwlang &) = delete;
@@ -50,6 +50,9 @@ class bwlang {
     var::scope &get_global_scope();
     template <typename T> std::vector<std::pair<std::string, T>> &get_class_variables();
 
+    bw_context get_context();
+
+  private:
     std::vector<var::struct_sb::target_out> get_targets();
     std::vector<var::struct_sb::template_command> get_templates();
     std::vector<var::struct_sb::call_component> get_call_components();
@@ -60,6 +63,7 @@ class bwlang {
 
   private:
     interpreter::interpreter_exec interpreter;
+    bw_context context;
 };
 bwlang::bwlang(std::string bwconf_file) {
     cfg_intp.debug_output = 0;
@@ -145,6 +149,16 @@ void bwlang::load_external_tfuncs(const semantic_an::table_func &tfuncs) {
 void bwlang::set_custom_ext_fields_project(std::map<std::string, std::string> &custom_ext_fields) {
     var::struct_sb::project::preset_ext_fields.merge(custom_ext_fields);
 }
+
+bw_context bwlang::get_context() {
+    context.out_targets = get_targets();
+    context.templates = get_templates();
+    context.call_components = get_call_components();
+    context.global_external_args = get_global_external_args();
+
+    return context;
+}
+
 std::vector<var::struct_sb::target_out> bwlang::get_targets() {
     std::vector<var::struct_sb::target> targets = interpreter.export_targets();
 

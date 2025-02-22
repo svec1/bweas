@@ -13,12 +13,15 @@ using namespace bweas;
 using namespace cache_api;
 using namespace bweas::bwexception;
 
-fast_bwcache::fast_bwcache() {
+fast_bwcache::fast_bwcache(bw_context *const _context) : base_bwcache(_context) {
     if (!init_glob_chfast) {
         assist.add_err("BWS-CACHE000", "Incorrect cache structure");
 
         init_glob_chfast = 1;
     }
+
+    if (!context)
+        throw bwcache_excp("", "000");
 }
 
 void fast_bwcache::delete_cache() {
@@ -32,7 +35,10 @@ std::string fast_bwcache::create_cache() {
     std::unordered_set<std::string> all_used_globally_args;
     std::unordered_set<std::string> all_used_call_component;
 
-    const auto &out_targets = _cache_data.targets_o_p != nullptr ? *_cache_data.targets_o_p : _cache_data.targets_o;
+    const auto &out_targets = context->out_targets;
+    const auto &templates = context->templates;
+    const auto &call_components = context->call_components;
+    const auto &global_external_args = context->global_external_args;
 
     for (i32t i = 0; i < out_targets.size(); ++i) {
         char *prj_v = (char *)&out_targets[i];
@@ -42,7 +48,6 @@ std::string fast_bwcache::create_cache() {
                             std::to_string(out_targets[i].prj.custom_ext_fields.size()) + " " +
                             std::to_string(out_targets[i].target_vec_libs.size()) + " ";
         for (u32t j = 0; j < sizeof(var::struct_sb::project); j += sizeof(std::string)) {
-
             // version project
             if (j == sizeof(std::string)) {
                 serel_target_tmp += (*(var::struct_sb::version *)(prj_v + j)).get_str_version() + " " +
@@ -81,54 +86,52 @@ std::string fast_bwcache::create_cache() {
             serel_target_tmp += out_targets[i].target_vec_libs[j] + " ";
     }
 
-    serel_target_tmp += "EOET" + std::to_string(_cache_data.templates.size()) + " "; // end of enum targets
+    serel_target_tmp += "EOET" + std::to_string(templates.size()) + " "; // end of enum targets
 
-    for (u32t i = 0; i < _cache_data.templates.size(); ++i) {
-        serel_target_tmp += std::to_string(_cache_data.templates[i].name_accept_params.size()) + " " +
-                            std::to_string(_cache_data.templates[i].args.size()) + " " + _cache_data.templates[i].name +
-                            " " + _cache_data.templates[i].name_call_component + " " +
-                            _cache_data.templates[i].returnable + " ";
+    for (u32t i = 0; i < templates.size(); ++i) {
+        serel_target_tmp += std::to_string(templates[i].name_accept_params.size()) + " " +
+                            std::to_string(templates[i].args.size()) + " " + templates[i].name + " " +
+                            templates[i].name_call_component + " " + templates[i].returnable + " ";
 
-        all_used_call_component.emplace(_cache_data.templates[i].name_call_component);
+        all_used_call_component.emplace(templates[i].name_call_component);
 
-        for (u32t j = 0; j < _cache_data.templates[i].name_accept_params.size(); ++j)
-            serel_target_tmp += _cache_data.templates[i].name_accept_params[j] + " ";
-        for (u32t j = 0; j < _cache_data.templates[i].args.size(); ++j) {
-            if (_cache_data.templates[i].args[j].arg_t == var::struct_sb::template_command::arg::type::extglobal)
-                all_used_globally_args.emplace(_cache_data.templates[i].args[j].str_arg);
-            else if (_cache_data.templates[i].args[j].arg_t == var::struct_sb::template_command::arg::type::string)
-                serel_target_tmp += "\"" + _cache_data.templates[i].args[j].str_arg + "\" ";
+        for (u32t j = 0; j < templates[i].name_accept_params.size(); ++j)
+            serel_target_tmp += templates[i].name_accept_params[j] + " ";
+        for (u32t j = 0; j < templates[i].args.size(); ++j) {
+            if (templates[i].args[j].arg_t == var::struct_sb::template_command::arg::type::extglobal)
+                all_used_globally_args.emplace(templates[i].args[j].str_arg);
+            else if (templates[i].args[j].arg_t == var::struct_sb::template_command::arg::type::string)
+                serel_target_tmp += "\"" + templates[i].args[j].str_arg + "\" ";
             else
-                serel_target_tmp += _cache_data.templates[i].args[j].str_arg + " ";
-            serel_target_tmp += std::to_string((i32t)_cache_data.templates[i].args[j].arg_t) + " ";
+                serel_target_tmp += templates[i].args[j].str_arg + " ";
+            serel_target_tmp += std::to_string((i32t)templates[i].args[j].arg_t) + " ";
         }
     }
 
     serel_target_tmp += std::to_string(all_used_call_component.size()) + " ";
 
-    for (const auto &c_component : all_used_call_component) {
-        const auto &ref_c_component =
-            find_if(_cache_data.call_components.begin(), _cache_data.call_components.end(),
-                    [c_component](const var::struct_sb::call_component &ccmp) { return ccmp.name == c_component; });
-        serel_target_tmp += ref_c_component->name + " " + ref_c_component->name_program + " " +
-                            ref_c_component->pattern_ret_files + " ";
+    for (const auto &call_component : all_used_call_component) {
+        const auto &ref_call_component = find_if(
+            call_components.begin(), call_components.end(),
+            [call_component](const var::struct_sb::call_component &ccmp) { return ccmp.name == call_component; });
+        serel_target_tmp += ref_call_component->name + " " + ref_call_component->name_program + " " +
+                            ref_call_component->pattern_ret_files + " ";
     }
 
     serel_target_tmp += std::to_string(all_used_globally_args.size()) + " ";
 
     for (const auto &g_arg : all_used_globally_args) {
-        const auto &g_arg_it =
-            std::find_if(_cache_data.global_external_args.begin(), _cache_data.global_external_args.end(),
-                         [g_arg](const std::pair<std::string, std::string> &global_external_arg) {
-                             return global_external_arg.first == g_arg;
-                         });
+        const auto &g_arg_it = std::find_if(global_external_args.begin(), global_external_args.end(),
+                                            [g_arg](const std::pair<std::string, std::string> &global_external_arg) {
+                                                return global_external_arg.first == g_arg;
+                                            });
         serel_target_tmp += g_arg_it->first + "-\"" + g_arg_it->second + "\" ";
     }
 
     return serel_target_tmp;
 }
 
-const base_bwcache::cache_data &fast_bwcache::get_cache_data(std::string cache_str) {
+void fast_bwcache::extract_cache_data(std::string &&cache_str) {
     var::struct_sb::target_out trg_tmp;
     var::struct_sb::template_command tcmd_tmp;
     var::struct_sb::template_command::arg arg_tmp;
@@ -172,11 +175,11 @@ const base_bwcache::cache_data &fast_bwcache::get_cache_data(std::string cache_s
                     std::string name_arg = str_tmp;
                     name_arg.erase(name_arg.find("-"));
                     str_tmp.erase(0, str_tmp.find("-") + 1);
-                    _cache_data.global_external_args.push_back(std::pair<std::string, std::string>(name_arg, str_tmp));
+                    context->global_external_args.push_back(std::pair<std::string, std::string>(name_arg, str_tmp));
                 }
                 else if (enum_call_component) {
                     if (offset_byte_ccmp / sizeof(std::string) == 3) {
-                        _cache_data.call_components.push_back(ccmp_tmp);
+                        context->call_components.push_back(ccmp_tmp);
                         offset_byte_ccmp = 0;
 
                         --size_call_components;
@@ -219,7 +222,7 @@ const base_bwcache::cache_data &fast_bwcache::get_cache_data(std::string cache_s
                         }
                     }
                     else if (count_word == 6 + size_internal_args + (size_external_args * 2)) {
-                        _cache_data.templates.push_back(tcmd_tmp);
+                        context->templates.push_back(tcmd_tmp);
                         --size_templates;
 
                         tcmd_tmp.name_accept_params = {};
@@ -309,7 +312,7 @@ const base_bwcache::cache_data &fast_bwcache::get_cache_data(std::string cache_s
                                 trg_tmp.target_vec_libs.push_back(str_tmp);
                             else if (count_word == 18 + size_src_files + size_include_paths + size_vec_templates +
                                                        size_custom_ext_fields + 5 + size_vec_libs) {
-                                _cache_data.targets_o.push_back(trg_tmp);
+                                context->out_targets.push_back(trg_tmp);
 
                                 trg_tmp.target_vec_libs = {};
                                 trg_tmp.prj.src_files = {};
@@ -347,6 +350,4 @@ const base_bwcache::cache_data &fast_bwcache::get_cache_data(std::string cache_s
         assist.next_output_unsuccess();
         throw bwcache_excp("", "000");
     }
-
-    return _cache_data;
 }

@@ -179,12 +179,12 @@ void bwbuilder::init() {
             throw bwbuilder_excp("Cache generator name expected", "005");
 
         if (config_json["cache-gn"] == "fast_bwcache")
-            _bwcache = std::unique_ptr<cache_api::base_bwcache>(cache_api::base_bwcache::create_fast_bwcache());
+            cache = std::unique_ptr<cache_api::base_bwcache>(cache_api::base_bwcache::create_fast_bwcache(&context));
         else if (config_json["cache-gn"] == "json_bwcache")
-            _bwcache = std::unique_ptr<cache_api::base_bwcache>(cache_api::base_bwcache::create_json_bwcache());
+            cache = std::unique_ptr<cache_api::base_bwcache>(cache_api::base_bwcache::create_json_bwcache(&context));
     }
     else
-        _bwcache = std::unique_ptr<cache_api::base_bwcache>(cache_api::base_bwcache::create_fast_bwcache());
+        cache = std::unique_ptr<cache_api::base_bwcache>(cache_api::base_bwcache::create_fast_bwcache(&context));
 
     if (config_json.contains("packages")) {
         if (!config_json["packages"].is_array())
@@ -206,9 +206,9 @@ void bwbuilder::init() {
             loaded_package.load(raw_data_package);
             loaded_packages.push_back(loaded_package);
 
-            if (_bwcache == NULL && loaded_package.cfg_package.cache.name_cache == config_json["cache-gn"])
-                _bwcache = std::unique_ptr<cache_api::base_bwcache>(
-                    cache_api::base_bwcache::create_lua_bwcache(loaded_package.cfg_package.cache.src_lua_cache));
+            if (cache == NULL && loaded_package.cfg_package.cache.name_cache == config_json["cache-gn"])
+                cache = std::unique_ptr<cache_api::base_bwcache>(cache_api::base_bwcache::create_lua_bwcache(
+                    &context, loaded_package.cfg_package.cache.src_lua_cache));
             assist.next_output_success();
             assist << " - [BWEAS]: The package was loaded successfully(" + std::to_string(raw_data_package.size()) +
                           " bytes)";
@@ -291,7 +291,6 @@ void bwbuilder::switch_output_log(u32t value) {
 }
 
 void bwbuilder::run_interpreter() {
-
     bwlang _bwlang{MAIN_FILE};
     _bwlang.load_external_tfuncs(std::move(module_tfuncs));
     for (auto loaded_package : loaded_packages)
@@ -301,27 +300,20 @@ void bwbuilder::run_interpreter() {
     _bwlang.execute();
     assist << " - [BWEAS]: The interpretation was successful!";
 
-    out_targets = _bwlang.get_targets();
-    templates = _bwlang.get_templates();
-    call_components = _bwlang.get_call_components();
-    global_extern_args = _bwlang.get_global_external_args();
+    context = _bwlang.get_context();
 }
 
 u32t bwbuilder::gen_cache_target() {
-    if (!out_targets.size()) {
+    if (!context.out_targets.size()) {
         assist << "Generating a file with a cache will not be performed.";
         return 1;
     }
+
     assist << " - [BWEAS]: Generating a cache file...";
 
     file_it bweas_cache = assist.open_file(CACHE_FILE, mf::open::w);
 
-    _bwcache->_cache_data.targets_o_p = &out_targets;
-    _bwcache->_cache_data.templates = templates;
-    _bwcache->_cache_data.call_components = call_components;
-    _bwcache->_cache_data.global_external_args = global_extern_args;
-
-    assist.write_file(assist.get_ref_file(bweas_cache), _bwcache->create_cache(), mf::output::write_binary);
+    assist.write_file(assist.get_ref_file(bweas_cache), cache->create_cache(), mf::output::write_binary);
     assist.close_file(bweas_cache);
 
     assist.next_output_success();
@@ -335,42 +327,37 @@ void bwbuilder::deserl_cache() {
 
     assist << " - [BWEAS]: Cache deserialization...";
 
-    _bwcache->get_cache_data(assist.read_file(assist.get_ref_file(bweas_cache)));
-
-    out_targets = _bwcache->_cache_data.targets_o;
-    templates = _bwcache->_cache_data.templates;
-    call_components = _bwcache->_cache_data.call_components;
-    global_extern_args = _bwcache->_cache_data.global_external_args;
+    cache->extract_cache_data(assist.read_file(assist.get_ref_file(bweas_cache)));
 
     assist << " - [BWEAS]: Cache deserialization was successful!";
 
     assist.next_output_success();
-    assist << " - [BWEAS]: Was loaded " + std::to_string(templates.size()) + " template of command!";
+    assist << " - [BWEAS]: Was loaded " + std::to_string(context.templates.size()) + " template of command!";
 }
 
 void bwbuilder::build_targets() {
     assist << " - [BWEAS]: Building targets...";
 
-    global_extern_args.push_back(std::pair<std::string, std::string>("", ""));
+    context.global_external_args.push_back(std::pair<std::string, std::string>("", ""));
 
-    for (u32t i = 0; i < out_targets.size(); ++i) {
-        if (generators.find(out_targets[i].name_generator) == generators.end())
+    for (auto &target : context.out_targets) {
+        if (generators.find(target.name_generator) == generators.end())
             throw bwbuilder_excp("The provided generator as the primary for the current target was not found - " +
-                                     out_targets[i].name_target + ": " + out_targets[i].name_generator,
+                                     target.name_target + ": " + target.name_generator,
                                  "002");
-        else if (out_targets[i].prj.vec_templates.size() == 0)
-            throw bwbuilder_excp("There are no templates for the target - " + out_targets[i].name_target, "002");
+        else if (target.prj.vec_templates.size() == 0)
+            throw bwbuilder_excp("There are no templates for the target - " + target.name_target, "002");
 
-        std::string dir_target = path_bweas_to_build + "/" + out_targets[i].name_target;
+        std::string dir_target = path_bweas_to_build + "/" + target.name_target;
         double build_state = 0.f;
 
-        bwqueue_templates bw_tcmd = create_queue_target_templates(out_targets[i]);
+        bwqueue_templates bw_tcmd = create_queue_target_templates(target);
 
-        auto &current_generator = generators[out_targets[i].name_generator];
+        auto &current_generator = generators[target.name_generator];
         std::unique_ptr<bwdepends_files> depends_files;
 
-        bweas::generator_api::data_transfer data_t{&out_targets[i], &bw_tcmd, &call_components, &global_extern_args,
-                                                   dir_target};
+        context.current_target = &target;
+        bweas::generator_api::data_transfer data_t{&context, dir_target};
 
         if (!std::filesystem::is_directory(dir_target))
             std::filesystem::create_directories(dir_target);
@@ -378,12 +365,11 @@ void bwbuilder::build_targets() {
         current_generator->init();
 
         if (current_generator->has_build_graph_depends())
-            depends_files =
-                std::make_unique<bwdepends_generator>(current_generator, out_targets[i].prj.language, dir_target);
+            depends_files = std::make_unique<bwdepends_generator>(current_generator, target.prj.language, dir_target);
         else
-            depends_files = std::make_unique<bwdepends_integral>(out_targets[i].prj.language, dir_target);
+            depends_files = std::make_unique<bwdepends_integral>(target.prj.language, dir_target);
 
-        for (const auto &name_file : out_targets[i].prj.src_files) {
+        for (const auto &name_file : target.prj.src_files) {
             if (!assist.exist_file(name_file))
                 throw bwbuilder_excp("The target's source file was not found", "002");
             std::string name_depends_file = name_file + DEPENDS_FILE_POSTFIX;
@@ -395,10 +381,10 @@ void bwbuilder::build_targets() {
                                   depends_files->get_string_depends_file(name_file));
         }
 
-        depends_files->build_graphs_depends_files(out_targets[i].prj.src_files, out_targets[i].prj.include_paths);
+        depends_files->build_graphs_depends_files(target.prj.src_files, target.prj.include_paths);
         data_t.dfiles = depends_files->get_graphs_depends_files();
 
-        assist << " - [BWEAS]: Build {" + out_targets[i].name_target + "}";
+        assist << " - [BWEAS]: Build {" + target.name_target + "}";
 
         assist.switch_otp(0);
 
@@ -430,9 +416,9 @@ bwqueue_templates bwbuilder::create_queue_target_templates(const var::struct_sb:
     bwqueue_templates target_queue_templates;
 
     for (u32t i = 0; i < target.prj.vec_templates.size(); ++i) {
-        for (u32t j = 0; j < templates.size(); ++j)
-            if (target.prj.vec_templates[i] == templates[j].name)
-                vec_templates_tmp.push_back(templates[j]);
+        for (const auto &_template : context.templates)
+            if (target.prj.vec_templates[i] == _template.name)
+                vec_templates_tmp.push_back(_template);
     }
 
     const auto &it_template = find_if(vec_templates_tmp.begin(), vec_templates_tmp.end(),

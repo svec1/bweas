@@ -64,6 +64,16 @@ using bwqueue_templates = std::vector<var::struct_sb::template_command>;
 using command = std::string;
 using commands = std::vector<command>;
 
+// The structure defining the main data for the build
+struct bw_context {
+    std::vector<var::struct_sb::target_out> out_targets;
+    std::vector<var::struct_sb::template_command> templates;
+    std::vector<var::struct_sb::call_component> call_components;
+    std::vector<std::pair<std::string, std::string>> global_external_args;
+
+    var::struct_sb::target_out *current_target;
+};
+
 namespace bwexception {
 
 // Exception class for builder only.

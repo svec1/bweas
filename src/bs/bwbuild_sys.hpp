@@ -84,10 +84,6 @@ class bwbuilder final {
     // generates a cache file of all targets that were created by the interpreter
     u32t gen_cache_target();
 
-    // Generates a dll that will call, based on the current bweasconf.txt, functions for configuration and creation of
-    // targets. The build will be much faster if the project is large. (No implementation yet)
-    void gen_DPCM();
-
   public:
     // Sets the logging mode
     void set_logging();
@@ -112,18 +108,15 @@ class bwbuilder final {
                                          bwqueue_templates &queue_target_templates);
 
   private:
-    std::unique_ptr<cache_api::base_bwcache> _bwcache;
-    semantic_an::table_func module_tfuncs;
-
-    module::module_mg module_manager;
-    std::vector<bwpackage> loaded_packages;
-
+    std::unique_ptr<cache_api::base_bwcache> cache;
     std::map<std::string, std::shared_ptr<generator_api::base_generator>> generators;
 
-    std::vector<var::struct_sb::target_out> out_targets;
-    std::vector<var::struct_sb::template_command> templates;
-    std::vector<var::struct_sb::call_component> call_components;
-    bwargs global_extern_args;
+    std::vector<bwpackage> loaded_packages;
+
+    module::module_mg module_manager;
+    semantic_an::table_func module_tfuncs;
+
+    bw_context context;
 
     std::string name_bweas_prg;
     std::string path_bweas_config, path_bweas_to_build{DIRWORK_ENV};

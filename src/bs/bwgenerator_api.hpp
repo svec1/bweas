@@ -47,16 +47,12 @@ using gen_command = std::map<std::string, std::string>;
 
 // A temporary structure that allows you to transfer data to the generator and its sub-functions
 struct data_transfer {
-    data_transfer(var::struct_sb::target_out *_trg, bwqueue_templates *_trg_templates,
-                  std::vector<var::struct_sb::call_component> *_ccmp_s, bwargs *_global_extern_args,
-                  std::string _work_directory)
-        : trg(_trg), trg_templates(_trg_templates), ccmp_s(_ccmp_s), global_extern_args(_global_extern_args),
-          work_directory(_work_directory) {
+    data_transfer(bw_context *const _context, std::string _work_directory)
+        : context(_context), work_directory(_work_directory) {
     }
-    var::struct_sb::target_out *const trg;
-    bwqueue_templates *const trg_templates;
-    std::vector<var::struct_sb::call_component> *const ccmp_s;
-    bwargs *const global_extern_args;
+
+  public:
+    bw_context *const context;
 
     bwdepends_files::depends_map dfiles;
     files_input ifiles;
