@@ -8,9 +8,12 @@
 #ifndef BWCONF_VAR__H
 #define BWCONF_VAR__H
 
+#include <bwmacros_platform.h>
+
 #define DEFAULT_BWEAS_JSON_CONFIG                                                                                      \
     "{ \
-        \"use genlua\": 0 \
+        \"cache-gn \": \"fast_bwcache\", \
+        \"packages\": [] \
     }"
 
 #define DEFAULT_BWEAS_GENERATOR "bwgenerator"

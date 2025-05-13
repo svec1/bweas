@@ -12,20 +12,15 @@
 using namespace bweas;
 using namespace generator_api;
 using namespace generator;
-using namespace bweas::bwexception;
+
+static logger log{"BWGENERATOR[INTERNAL]"};
 
 integral_generator::integral_generator(func_generator _generator_p,
                                        func_build_graph_depends_file _build_graph_depends_file_p,
                                        func_get_input_files _get_input_files_p) {
-    if (!init_glob_gnint) {
-        assist.add_err("BWS-GNRT000", "Unable to parse basic arguments");
-        assist.add_err("BWS-GNRT001", "Internal global argument not found");
-        assist.add_err("BWS-GNRT002", "This generator does not have the specified features");
-        init_glob_gnint = 1;
-    }
-    generator_p = _generator_p;
+    generator_p                = _generator_p;
     build_graph_depends_file_p = _build_graph_depends_file_p;
-    get_input_files_p = _get_input_files_p;
+    get_input_files_p          = _get_input_files_p;
 }
 
 void integral_generator::init() {

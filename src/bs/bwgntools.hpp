@@ -10,7 +10,7 @@
 
 #include <map>
 
-#include "bw_defs.hpp"
+#include <bw_defs.hpp>
 
 namespace bweas {
 namespace generator {

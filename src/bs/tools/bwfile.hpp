@@ -8,10 +8,11 @@
 #ifndef BWFILE__H
 #define BWFILE__H
 
-#include "../../kernel/high_level/bwtype.h"
-
+#include <algorithm>
 #include <string>
 #include <vector>
+
+#include <bwtype.h>
 
 namespace bwfile {
 

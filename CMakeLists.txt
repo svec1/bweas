@@ -25,7 +25,7 @@ add_executable(${BW_NAME_PRJ} src/bweas.cpp)
 
 target_link_libraries(${BW_NAME_PRJ} PRIVATE slbweas)
 
-include_directories(${BWEAS_INCLUDE})
+include_directories(${BWEAS_INCLUDE} "src/bs/")
 
 if(WIN32)
     file(COPY ${CMAKE_SOURCE_DIR}/bweas-config.json DESTINATION ${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE})
@@ -33,7 +33,6 @@ else()
     file(COPY ${CMAKE_SOURCE_DIR}/bweas-config.json DESTINATION ${CMAKE_BINARY_DIR})
 
     install(TARGETS ${BW_NAME_PRJ} DESTINATION bin)
-    install(TARGETS bwhook_safe DESTINATION bin)
     install(FILES ${CMAKE_SOURCE_DIR}/bweas-config.json DESTINATION bin)
 
     set_target_properties(bweas PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/bin")

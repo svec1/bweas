@@ -11,17 +11,12 @@
 
 using namespace bweas;
 using namespace cache_api;
-using namespace bweas::bwexception;
+
+static logger _log{"BWCACHE[FAST]"};
 
 fast_bwcache::fast_bwcache(bw_context *const _context) : base_bwcache(_context) {
-    if (!init_glob_chfast) {
-        assist.add_err("BWS-CACHE000", "Incorrect cache structure");
-
-        init_glob_chfast = 1;
-    }
-
     if (!context)
-        throw bwcache_excp("", "000");
+        (_log << bwtools::fatal) << (log_message(log_type::fatal) << "Bweas the context is not defined");
 }
 
 void fast_bwcache::delete_cache() {
@@ -35,9 +30,9 @@ std::string fast_bwcache::create_cache() {
     std::unordered_set<std::string> all_used_globally_args;
     std::unordered_set<std::string> all_used_call_component;
 
-    const auto &out_targets = context->out_targets;
-    const auto &templates = context->templates;
-    const auto &call_components = context->call_components;
+    const auto &out_targets          = context->out_targets;
+    const auto &templates            = context->templates;
+    const auto &call_components      = context->call_components;
     const auto &global_external_args = context->global_external_args;
 
     for (i32t i = 0; i < out_targets.size(); ++i) {
@@ -141,17 +136,17 @@ void fast_bwcache::extract_cache_data(std::string &&cache_str) {
 
     i32t count_word = 0, offset_byte_prj = 0, offset_byte_ccmp = 0;
     i32t size_src_files = 0, size_include_paths, size_vec_templates = 0, size_custom_ext_fields, size_vec_libs = 0;
-    i32t size_templates = 0;
+    i32t size_templates     = 0;
     i32t size_internal_args = 0, size_external_args = 0, size_call_components = 0, size_global_extern_args = 0;
 
     char *tproj_p = (char *)&trg_tmp.prj;
-    char *ccmp_p = (char *)&ccmp_tmp;
+    char *ccmp_p  = (char *)&ccmp_tmp;
 
     bool is_beg_custom_field = 0;
 
-    bool open_sk = 0;
-    bool enum_templates = 0;
-    bool enum_call_component = 0;
+    bool open_sk                 = 0;
+    bool enum_templates          = 0;
+    bool enum_call_component     = 0;
     bool enum_global_extern_args = 0;
 
     bool expected_arg_param_str = 1;
@@ -186,7 +181,7 @@ void fast_bwcache::extract_cache_data(std::string &&cache_str) {
 
                         if (!size_call_components) {
                             enum_global_extern_args = 1;
-                            enum_call_component = 0;
+                            enum_call_component     = 0;
 
                             size_global_extern_args = std::stoi(str_tmp);
                             goto next;
@@ -212,7 +207,7 @@ void fast_bwcache::extract_cache_data(std::string &&cache_str) {
                               count_word < 6 + size_internal_args + (size_external_args * 2)) ||
                              count_word == 6 + size_internal_args) {
                         if (expected_arg_param_str) {
-                            arg_tmp.str_arg = str_tmp;
+                            arg_tmp.str_arg        = str_tmp;
                             expected_arg_param_str = 0;
                         }
                         else {
@@ -226,11 +221,11 @@ void fast_bwcache::extract_cache_data(std::string &&cache_str) {
                         --size_templates;
 
                         tcmd_tmp.name_accept_params = {};
-                        tcmd_tmp.args = {};
+                        tcmd_tmp.args               = {};
 
                         if (!size_templates) {
                             enum_call_component = 1;
-                            enum_templates = 0;
+                            enum_templates      = 0;
 
                             size_call_components = std::stoi(str_tmp);
                         }
@@ -284,7 +279,7 @@ void fast_bwcache::extract_cache_data(std::string &&cache_str) {
                                     ;
                                 else if (is_beg_custom_field = !is_beg_custom_field) {
                                     trg_tmp.prj.custom_ext_fields[str_tmp] = "";
-                                    str_tmp_key = str_tmp;
+                                    str_tmp_key                            = str_tmp;
                                     --count_word;
                                 }
                                 else
@@ -314,12 +309,12 @@ void fast_bwcache::extract_cache_data(std::string &&cache_str) {
                                                        size_custom_ext_fields + 5 + size_vec_libs) {
                                 context->out_targets.push_back(trg_tmp);
 
-                                trg_tmp.target_vec_libs = {};
-                                trg_tmp.prj.src_files = {};
+                                trg_tmp.target_vec_libs   = {};
+                                trg_tmp.prj.src_files     = {};
                                 trg_tmp.prj.vec_templates = {};
 
                                 offset_byte_prj = 0;
-                                count_word = 0;
+                                count_word      = 0;
 
                                 if (str_tmp.find("EOET") != str_tmp.npos) {
                                     str_tmp.erase(0, str_tmp.find("EOET") + 4);
@@ -347,7 +342,6 @@ void fast_bwcache::extract_cache_data(std::string &&cache_str) {
         }
     }
     catch (const std::logic_error &_excp) {
-        assist.next_output_unsuccess();
-        throw bwcache_excp("", "000");
+        (_log << bwtools::fatal) << (log_message(log_type::fatal) << "Invalid structure of the bweas cache file");
     }
 }

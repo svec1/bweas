@@ -11,18 +11,8 @@
 #include <nlohmann/json.hpp>
 
 using namespace bweas;
-using namespace bweas::bwexception;
 
-bwpackage::bwpackage() {
-    if (!init_glob) {
-        assist.add_err("BWS-PCKG000", "Incorrect bweas package structure");
-        assist.add_err("BWS-PCKG001", "The package of this version is not supported by the build system");
-        assist.add_err("BWS-PCKG002", "Incorrect json file structure");
-        assist.add_err("BWS-PCKG003", "The bweas-lua generator for package file was not found");
-
-        init_glob = 1;
-    }
-}
+static logger _log{"BWPACKAGE"};
 
 std::string bwpackage::create_data_package(data_bw_package _data) {
     std::string data_str = BW_PACKAGE_PREFIX_BYTE BW_PACKAGE_VERSION + _data.json_config +
@@ -37,29 +27,33 @@ std::string bwpackage::create_data_package(data_bw_package _data) {
 std::string bwpackage::init(data_bw_package _data, bool is_create_pckg) {
     nlohmann::json config_json = nlohmann::json::parse(_data.json_config);
     if (!config_json.contains("package-name") || ((name_package = config_json["package-name"]) == ""))
-        throw bwpackage_excp("Bweas package name field is empty", "002");
+        (_log << bwtools::error) << (log_message(log_type::error) << "Bweas package name field is empty");
     else if (!config_json.contains("bweas-version") ||
              ((bw_version = var::struct_sb::version(config_json["bweas-version"])) == "0.0.0"))
-        throw bwpackage_excp("Build system version field is empty", "002");
+        (_log << bwtools::error) << (log_message(log_type::error) << "Build system version field is empty");
     else if (!config_json.contains("custom_fields_project") && !config_json["custom_fields_project"].is_structured())
-        throw bwpackage_excp(
-            "Definition of custom fields for the project must be in the form of key-value (string and string)", "002");
+        (_log << bwtools::error)
+            << (log_message(log_type::error)
+                << "Definition of custom fields for the project must be in the form of key-value (string and string)");
+
     cfg_package.custom_ext_fields_project = config_json["custom_fields_project"];
 
     if (config_json.contains("cache-gn")) {
         nlohmann::json metainf_ch = config_json["cache-gn"];
         if (!metainf_ch.is_structured())
-            throw bwpackage_excp("The Cache field must be a structure", "002");
+            (_log << bwtools::error) << (log_message(log_type::error) << "The Cache field must be a structure");
+
         else if (!metainf_ch.contains("name") || !metainf_ch["name"].is_string())
-            throw bwpackage_excp("Cache metadata must include its name", "002");
+            (_log << bwtools::error) << (log_message(log_type::error) << "Cache metadata must include its name");
         else if (!metainf_ch.contains("src-luafile-cache") || !metainf_ch["src-luafile-cache"].is_string())
-            throw bwpackage_excp("Cache metadata must include the path to the lua source file", "002");
+            (_log << bwtools::error) << (log_message(log_type::error)
+                                         << "Cache metadata must include the path to the lua source file");
 
         cfg_package.cache.name_cache = metainf_ch["name"];
 
         if (is_create_pckg) {
-            cfg_package.cache.src_lua_cache =
-                assist.read_file(assist.get_ref_file(assist.open_file(metainf_ch["src-luafile-cache"])));
+            cfg_package.cache.src_lua_cache = bwtools::read_file(
+                bwtools::get_ref_file(bwtools::open_file((std::string)metainf_ch["src-luafile-cache"])));
             _data.src_lua_cache = cfg_package.cache.src_lua_cache;
         }
         else
@@ -68,7 +62,8 @@ std::string bwpackage::init(data_bw_package _data, bool is_create_pckg) {
     // reading lua script file
     if (config_json.contains("generators")) {
         if (!config_json["generators"].is_structured())
-            throw bwpackage_excp("The \"generators\" field must be of type json structure", "002");
+            (_log << bwtools::error) << (log_message(log_type::error)
+                                         << "The \"generators\" field must be of type json structure");
 
         u32t i = 0;
 
@@ -76,22 +71,26 @@ std::string bwpackage::init(data_bw_package _data, bool is_create_pckg) {
             nlohmann::json metainf_gn = generator.value();
 
             if (!metainf_gn.is_object())
-                throw bwpackage_excp("The generator meta information unit must be a json object", "002");
+                (_log << bwtools::error) << (log_message(log_type::error)
+                                             << "The generator meta information unit must be a json object");
             else if (!metainf_gn.contains("src-luafile-gen") || !metainf_gn["src-luafile-gen"].is_string())
-                throw bwpackage_excp("Generator metadata must include the path to the lua (generator) source code file",
-                                     "002");
+                (_log << bwtools::error)
+                    << (log_message(log_type::error)
+                        << "Generator metadata must include the path to the lua (generator) source code file");
             else if (!metainf_gn.contains("features-generator") || !metainf_gn["features-generator"].is_array())
-                throw bwpackage_excp("Generator metadata should include a list of new generator features", "002");
+                (_log << bwtools::error) << (log_message(log_type::error)
+                                             << "Generator metadata should include a list of new generator features");
             else if (config_json.contains("use_custom_search_dependencies") &&
                      !config_json["use_custom_search_dependencies"].is_boolean())
-                throw bwpackage_excp(
-                    "Definition of custom fields for the project must be in the form of key-value (string and string)",
-                    "002");
-            auto it_gnlua_script = assist.open_file(metainf_gn["src-luafile-gen"]);
+                (_log << bwtools::error)
+                    << (log_message(log_type::error)
+                        << "Definition of custom fields for the project must be in the form of key-value (string and "
+                           "string)");
+            auto it_gnlua_script = bwtools::open_file((std::string)metainf_gn["src-luafile-gen"]);
             if (is_create_pckg) {
                 cfg_package.generators.emplace_back(generator.key(), metainf_gn["features-generator"],
                                                     metainf_gn["use_custom_search_dependencies"],
-                                                    assist.read_file(assist.get_ref_file(it_gnlua_script)));
+                                                    bwtools::read_file(bwtools::get_ref_file(it_gnlua_script)));
                 _data.src_lua_generators.push_back(
                     cfg_package.generators[cfg_package.generators.size() - 1].src_lua_generator);
             }
@@ -105,61 +104,66 @@ std::string bwpackage::init(data_bw_package _data, bool is_create_pckg) {
     }
     if (config_json.contains("modules")) {
         if (!config_json["modules"].is_structured())
-            throw bwpackage_excp("The \"generators\" field must be of type json structure", "002");
+            (_log << bwtools::error) << (log_message(log_type::error)
+                                         << "The \"generators\" field must be of type json structure");
         for (const auto &module : config_json["modules"].items()) {
             nlohmann::json metainf_md = module.value();
-            semantic_an::table_func funcs_md;
-            if (!metainf_md.contains("dll") || !metainf_md["dll"].is_string())
-                throw bwpackage_excp("Module metadata must include the name of the dll file", "002");
+            std::vector<decl_func> funcs;
+            if (!metainf_md.contains("lua source file") || !metainf_md["lua source file"].is_string())
+                (_log << bwtools::error) << (log_message(log_type::error)
+                                             << "Module metadata must include the name of the lua source file");
             else if (!metainf_md.contains("functions") || !metainf_md["functions"].is_object())
-                throw bwpackage_excp("Module metadata must include the functions they provide for import", "002");
+                (_log << bwtools::error) << (log_message(log_type::error)
+                                             << "Module metadata must include the functions they provide for import");
 
             for (const auto &func : metainf_md["functions"].items()) {
                 auto it_func = func.value();
-                aef_expr::notion_func def_func_tmp;
+                decl_func def_func_tmp;
+                def_func_tmp.name_func = func.key();
                 for (const auto &field : it_func.items()) {
                     if (field.key() == "accepted") {
                         if (!field.value().is_array())
-                            throw bwpackage_excp(
-                                "The field for listing the types of function parameters must be an array", "002");
+                            (_log << bwtools::error)
+                                << (log_message(log_type::error)
+                                    << "The field for listing the types of function parameters must be an array");
                         for (u32t i = 0; i < field.value().size(); ++i) {
                             if (field.value()[i].is_string())
                                 def_func_tmp.expected_params.push_back(
-                                    aef_expr::param{parser::utility::type_param_in_str(field.value()[i])});
+                                    param{get_string_param_type((std::string)field.value()[i])});
                             else
-                                def_func_tmp.expected_params.push_back(aef_expr::param{field.value()[i]});
+                                def_func_tmp.expected_params.push_back(param{field.value()[i]});
                         }
                     }
-                    else if (field.key() == "csn") {
-                        if (!field.value().is_boolean())
-                            throw bwpackage_excp(
-                                "Field for selecting the location of the function call, must be an boolean", "002");
-                        def_func_tmp.only_with_semantic = field.value();
-                    }
                 }
-                funcs_md[func.key()] = def_func_tmp;
+                funcs.push_back(def_func_tmp);
             }
-            cfg_package.mds.emplace_back(module.key(), metainf_md["dll"], funcs_md);
+            cfg_package.modules.emplace_back(module.key(), metainf_md["lua source file"], funcs);
         }
     }
+
+    if (_log.error_status())
+        return "";
     return create_data_package(_data);
 }
 
-void bwpackage::load(std::string raw_data_package) {
+void bwpackage::load(std::string_view raw_data_package) {
     std::string data_pckg = bwlz4::decompress_data(raw_data_package, MAX_SIZE_BW_PACKAGE);
     if (data_pckg.size() == 0)
-        throw bwpackage_excp("Unsuccessful decompression of package bweas", "000");
+        (_log << bwtools::error) << (log_message(log_type::error) << "Unsuccessful decompression of package bweas");
 
     if (data_pckg.find(BW_PACKAGE_PREFIX_BYTE) == data_pckg.npos &&
         data_pckg.find(BW_PACKAGE_SEPARATE_JSON_BYTES) == data_pckg.npos)
-        throw bwpackage_excp("[Package: " + path_to_package + "]", "000");
+        (_log << bwtools::error) << (log_message(log_type::error) << "Incorrect bweas package structure"
+                                                                  << "[Package: " << data_pckg.size() << " bytes]");
 
     std::string prefix_package = data_pckg;
     prefix_package.erase(0, BW_PACKAGE_PREFIX_BYTE_LENGHT);
     prefix_package.erase(BW_PACKAGE_VERSION_BWEAS_VERSION_LENGHT);
 
     if (var::struct_sb::version(prefix_package) < var::struct_sb::version(BW_PACKAGE_PREFIX_BYTE))
-        throw bwpackage_excp("[Package: " + path_to_package + "] Ver pckg: " + prefix_package, "001");
+        (_log << bwtools::error) << (log_message(log_type::error)
+                                     << "The package of this version is not supported by the build system"
+                                     << "[Package: " << data_pckg.size() << " bytes] Ver pckg: " << prefix_package);
     data_pckg.erase(0, BW_PACKAGE_START_BYTES_LENGHT);
 
     data_bw_package data_package;

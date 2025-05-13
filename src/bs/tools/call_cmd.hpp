@@ -8,15 +8,14 @@
 #ifndef CALL_CMD__H
 #define CALL_CMD__H
 
-#include "../../mdef.hpp"
+#include <bwtype.h>
 
 #include <string>
 #include <vector>
 
-namespace tools {
 class call_cmd_manager {
   public:
-    call_cmd_manager() = default;
+    call_cmd_manager()                         = default;
     call_cmd_manager(const call_cmd_manager &) = default;
 
     ~call_cmd_manager() = default;
@@ -45,6 +44,5 @@ class call_cmd_manager {
     std::vector<std::string> before_build;
     std::vector<std::string> after_build;
 };
-} // namespace tools
 
 #endif

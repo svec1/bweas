@@ -8,11 +8,10 @@
 #ifndef BWBUILD_SYS__H
 #define BWBUILD_SYS__H
 
-#include "../mdef.hpp"
-
 #include <stack>
 
 #include "bw_defs.hpp"
+
 #include "bwcache_api.hpp"
 #include "bwgenerator_api.hpp"
 #include "bwmodule.hpp"
@@ -24,12 +23,11 @@ namespace bweas {
 // parameters to it when launching programs
 class bwbuilder final {
   public:
-    bwbuilder() = delete;
     bwbuilder(int argv, char **args);
 
-    bwbuilder(bwbuilder &&) = delete;
-    bwbuilder(const bwbuilder &) = delete;
-    bwbuilder &operator=(bwbuilder &&) = delete;
+    bwbuilder()                             = delete;
+    bwbuilder(const bwbuilder &)            = delete;
+    bwbuilder &operator=(const bwbuilder &) = delete;
 
     ~bwbuilder() = default;
 
@@ -84,13 +82,6 @@ class bwbuilder final {
     // generates a cache file of all targets that were created by the interpreter
     u32t gen_cache_target();
 
-  public:
-    // Sets the logging mode
-    void set_logging();
-
-    // Sets output to the console, 1 - yes, output all information, 0 - no
-    void switch_output_log(u32t value);
-
   private:
     // Collects projects(out_targets) by initializing the generator and calling(bwIGenerator::gen_commands)
     void build_targets();
@@ -113,8 +104,8 @@ class bwbuilder final {
 
     std::vector<bwpackage> loaded_packages;
 
-    module::module_mg module_manager;
-    semantic_an::table_func module_tfuncs;
+    bwmodule_mg module_manager;
+    std::vector<decl_func> external_modules_funcs;
 
     bw_context context;
 
@@ -124,9 +115,6 @@ class bwbuilder final {
     mode_working mode_bweas{mode_working::undef};
 
     var::struct_sb::version bwbuilde_ver{BWEAS_VERSION_STR};
-    bool log{1}, output_log{1};
-
-    static inline bool init_glob{0};
 };
 } // namespace bweas
 

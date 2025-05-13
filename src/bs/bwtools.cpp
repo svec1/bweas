@@ -1,0 +1,143 @@
+//
+// BWEAS is distributed under the gnu general public license 2.0 (gpl-2.0).
+// you can view the license text at the link:
+//     <https://www.gnu.org/licenses>
+// ------------------------------------------
+//
+
+#include <algorithm>
+#include <cerrno>
+#include <chrono>
+#include <ctime>
+#include <iomanip>
+#include <stdlib.h>
+
+#include <cstring>
+
+#include <bwmacros_platform.h>
+#include <bwtools.hpp>
+
+#if defined(UNIX)
+#include <linux/limits.h>
+#include <unistd.h>
+#endif
+
+using namespace bweas;
+
+std::vector<bwtools::file> bwtools::files;
+
+void bwtools::message(std::string_view str) {
+    fprintf(stdout, "%s\n", str.data());
+}
+void bwtools::success(std::string_view str) {
+    fprintf(stdout, "\e[1;32m%s\e[0m\n", str.data());
+}
+void bwtools::warning(std::string_view str_warn) {
+    fprintf(stderr, "\e[1;33m bweas warning: ");
+    fprintf(stderr, "%s\e[0m\n", str_warn.data());
+}
+void bwtools::error(std::string_view str_err) {
+    fprintf(stderr, "\e[1;31m bweas error: ");
+    if (str_err.empty())
+        fprintf(stderr, "%s\e[0m\n", std::strerror(errno));
+    else
+        fprintf(stderr, "%s\e[0m\n", str_err.data());
+}
+void bwtools::fatal(std::string_view str_err) {
+    fprintf(stderr, "\e[1;31m bweas fatal error: ");
+    if (str_err.empty())
+        fprintf(stderr, "%s\e[0m\n", std::strerror(errno));
+    else
+        fprintf(stderr, "%s\e[0m\n", str_err.data());
+
+#ifdef WIN
+    ExitProcess(FATAL_ERROR);
+#endif
+    exit(FATAL_ERROR);
+}
+std::string bwtools::get_time() {
+    auto time    = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+    tm *time_now = std::localtime(&time);
+
+    return std::to_string(time_now->tm_mon) + "." + std::to_string(time_now->tm_mday) + " " +
+           std::to_string(time_now->tm_hour) + ":" + std::to_string(time_now->tm_min);
+}
+
+std::string bwtools::get_path_program() {
+#if defined(WIN)
+    char buffer[MAX_PATH];
+    GetModuleFileNameA(NULL, buffer, MAX_PATH);
+#elif defined(UNIX)
+    char buffer[PATH_MAX];
+    ssize_t count = readlink("/proc/self/exe", buffer, PATH_MAX);
+#endif
+    std::string str(buffer);
+    str.erase(str.find_last_of("/\\"), str.size());
+
+    FATAL();
+    return str;
+}
+std::string bwtools::get_current_path() {
+    return std::filesystem::current_path();
+}
+bwtools::file_it bwtools::open_file(std::string_view name_file, file::mode_file::open mode) {
+    file_it it = get_iterator_file(name_file);
+    if (exist_file(it) && !(files.begin() + it)->file_opened) {
+        files[it].open(mode);
+        return it;
+    }
+    files.emplace_back(std::filesystem::absolute(name_file), mode);
+
+    return files.size() - 1;
+}
+void bwtools::close_file(bwtools::file_it file) {
+    if (!exist_file(file))
+        fatal("There are no files with this index.");
+    files.erase(files.begin() + file);
+}
+bool bwtools::exist_file(file_it file) {
+    if ((files.begin() + file) == files.end() || !(files.begin() + file)->file_opened)
+        return 0;
+    return 1;
+}
+bool bwtools::exist_file(std::string_view name_file) {
+    if (std::filesystem::exists(name_file))
+        return 1;
+    return 0;
+}
+bwtools::file_it bwtools::get_iterator_file(std::string_view name_file) {
+    return std::distance(files.begin(),
+                         std::find_if(files.begin(), files.end(), [name_file](const bwtools::file &file) {
+                             return file.path_to == std::filesystem::absolute(name_file);
+                         }));
+}
+
+bwtools::file &bwtools::get_ref_file(file_it file) {
+    return *(files.begin() + file);
+}
+
+std::string bwtools::read_file(file &file, file::mode_file::input mode) {
+    std::string data_file;
+    if (mode == file::mode_file::input::read_binary) {
+        u32t size_file;
+        file.stream.seekg(0, std::ios::end);
+        size_file = file.stream.tellg();
+        file.stream.seekg(0, std::ios::beg);
+        data_file.resize(size_file);
+        file.stream.read(data_file.data(), size_file);
+    }
+    else {
+        std::string tmp;
+        while (std::getline(file.stream, tmp))
+            data_file += tmp + "\n";
+    }
+
+    return data_file;
+}
+void bwtools::write_file(file &file, std::string_view buf, file::mode_file::output mode) {
+    if (mode == file::mode_file::output::write_binary)
+        file.stream.write(buf.data(), buf.size());
+    else
+        file.stream << buf;
+}
+

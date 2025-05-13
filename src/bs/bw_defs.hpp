@@ -10,9 +10,15 @@
 
 // bweas main header file
 
-#include "lang/interpreter.hpp"
-#include "tools/bwexception.hpp"
+#include <bwmacros_platform.h>
+#include <bwtype.h>
 
+#include <bwlogger.hpp>
+
+#include <lang/interpreter.hpp>
+#include <tools/bwexception.hpp>
+
+#include <algorithm>
 #include <memory>
 #include <vector>
 
@@ -34,34 +40,26 @@
     "\n   --help - outputs the syntax of the bweas call as well as its possible functions"                             \
     "\n   --version - outputs the version of bweas"
 
-// bweas configuration file, defines all packages that should be loaded by the builder
-#define JSON_CONFIG_FILE "bweas-config.json"
-
-// The current file of a project. It defines all target information
-#define MAIN_FILE "bweasconf.txt"
-
-// Cache file, all information about all targets is saved there for quick access, which makes it possible not to
-// reinterpret bweasconf.txt
-#define CACHE_FILE "bwcache"
-
-// The name of the directory where the build files will be created
-#define DIRWORK_ENV ".bweas"
-
-// The file in which all actions of the build system will be logged
-#define LOG_FILE "bweas-last.log"
-
-// A postfix (extension) to the file name containing the names of the source file dependencies
-#define DEPENDS_FILE_POSTFIX ".d"
+#define JSON_CONFIG_FILE                                                                                               \
+    "bweas-config.json"           // Bweas configuration file, defines all packages that should be loaded by the builder
+#define MAIN_FILE "bweasconf.txt" // The current file of a project. It defines all target information
+#define CACHE_FILE                                                                                                     \
+    "bwcache" /* Cache file, all information about all targets is saved there for quick access, which makes it         \
+                 possible not to reinterpret bweasconf.txt*/
+#define BW_FORMAT_PACKAGE ".bweas-package" // Package expansion
+#define DIRWORK_ENV ".bweas"               // The name of the directory where the build files will be created
+#define DEPENDS_FILE_POSTFIX                                                                                           \
+    ".d" // A postfix (extension) to the file name containing the names of the source file dependencies
 
 namespace bweas {
 
-using bwarg = std::pair<std::string, std::string>;
-using bwargs = std::vector<bwarg>;
-using bwarg_files = std::pair<std::string, std::vector<std::string>>;
-using bwargs_files = std::vector<bwarg_files>;
+using bwarg             = std::pair<std::string, std::string>;
+using bwargs            = std::vector<bwarg>;
+using bwarg_files       = std::pair<std::string, std::vector<std::string>>;
+using bwargs_files      = std::vector<bwarg_files>;
 using bwqueue_templates = std::vector<var::struct_sb::template_command>;
 
-using command = std::string;
+using command  = std::string;
 using commands = std::vector<command>;
 
 // The structure defining the main data for the build
@@ -73,58 +71,6 @@ struct bw_context {
 
     var::struct_sb::target_out *current_target;
 };
-
-namespace bwexception {
-
-// Exception class for builder only.
-class bwbuilder_excp : public ::bwexception::bweas_exception {
-  public:
-    bwbuilder_excp(std::string _what_hp, std::string number_err, std::string prefix_err = "")
-        : what_hp(_what_hp), bweas_exception("BWS" + prefix_err + number_err) {
-    }
-    ~bwbuilder_excp() noexcept override = default;
-
-  public:
-    const char *what() const noexcept override final {
-        return what_hp.c_str();
-    }
-
-  protected:
-    std::string what_hp;
-};
-
-// Exception class for bweas-module only.
-class bwmodule_excp : public bwbuilder_excp {
-  public:
-    bwmodule_excp(std::string _what_hp, std::string number_err) : bwbuilder_excp(_what_hp, number_err, "-MDL") {
-    }
-    ~bwmodule_excp() noexcept override final = default;
-};
-
-// Exception class for bweas-package only.
-class bwpackage_excp : public bwbuilder_excp {
-  public:
-    bwpackage_excp(std::string _what_hp, std::string number_err) : bwbuilder_excp(_what_hp, number_err, "-PCKG") {
-    }
-    ~bwpackage_excp() noexcept override final = default;
-};
-
-// Exception class for bweas-generator only.
-class bwcache_excp : public bwbuilder_excp {
-  public:
-    bwcache_excp(std::string _what_hp, std::string number_err) : bwbuilder_excp(_what_hp, number_err, "-CACHE") {
-    }
-    ~bwcache_excp() noexcept override final = default;
-};
-
-// Exception class for bweas-generator only.
-class bwgenerator_excp : public bwbuilder_excp {
-  public:
-    bwgenerator_excp(std::string _what_hp, std::string number_err) : bwbuilder_excp(_what_hp, number_err, "-GNRT") {
-    }
-    ~bwgenerator_excp() noexcept override final = default;
-};
-} // namespace bwexception
 
 } // namespace bweas
 

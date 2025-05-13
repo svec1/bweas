@@ -1,7 +1,7 @@
 #ifndef _VAR__H
 #define _VAR__H
 
-#include "../../kernel/high_level/bwtype.h"
+#include <bwtype.h>
 
 #include <memory>
 #include <string>
@@ -13,7 +13,7 @@ template <typename T> class datatype_var {
     datatype_var() = default;
 
     datatype_var(const datatype_var &) = default;
-    datatype_var(datatype_var &&) = default;
+    datatype_var(datatype_var &&)      = default;
 
     datatype_var<T> &operator=(const datatype_var<T> &dt_var);
 

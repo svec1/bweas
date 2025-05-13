@@ -5,8 +5,6 @@
 // ------------------------------------------
 //
 
-#include <bwtype.h>
-
 #include "bwdepends_files.hpp"
 
 bweas::bwdepends_files::depends_map &bweas::bwdepends_files::build_graphs_depends_files(

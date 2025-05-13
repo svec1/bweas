@@ -36,10 +36,8 @@ void generator::tools::parse_basic_args(const var::struct_sb::target_out &target
                                      return extern_arg_tmp.first == current_arg.str_arg;
                                  });
                 if (extern_arg == global_extern_args.end())
-                    throw bwexception::bwgenerator_excp("[" + trg_template.name +
-                                                            "] The specified external parameter does not exist - " +
-                                                            current_arg.str_arg,
-                                                        "000");
+                    throw "[" + trg_template.name + "] The specified external parameter does not exist - " +
+                        current_arg.str_arg;
 
                 current_arg.str_arg = extern_arg->second;
             }
@@ -85,8 +83,7 @@ void generator::tools::parse_basic_args(const var::struct_sb::target_out &target
                 else if (current_arg.str_arg.find(NAME_FIELD_PROJECT_SRC_FILES) == 0)
                     continue;
                 else
-                    throw bwexception::bwgenerator_excp(
-                        "[" + trg_template.name + "] There is no such parameter - " + current_arg.str_arg, "000");
+                    throw "[" + trg_template.name + "] There is no such parameter - " + current_arg.str_arg;
             }
 
             current_arg.arg_t = var::struct_sb::template_command::arg::type::string;

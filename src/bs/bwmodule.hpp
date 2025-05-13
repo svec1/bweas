@@ -8,42 +8,37 @@
 #ifndef BWMODULE__H
 #define BWMODULE__H
 
-#include "bw_defs.hpp"
+#include <bw_defs.hpp>
+#include <bwluatools.hpp>
 
 namespace bweas {
-namespace module {
 
 // Class defining modules
-class module_mg {
+class bwmodule_mg {
   public:
-    module_mg();
-    ~module_mg() = default;
+    bwmodule_mg()  = default;
+    ~bwmodule_mg() = default;
 
   public:
     struct module {
-        module(std::string _name_module, std::string _name_dll,
-               semantic_an::table_func _funcs) :name_module(_name_module),
-            name_dll(_name_dll), funcs(_funcs) {
+        module(std::string _name_module, std::string _name_lua_source_file,
+               std::vector<decl_func> _funcs) :name_module(_name_module),
+            name_lua_source_file(_name_lua_source_file), funcs(_funcs) {
         }
         std::string name_module;
-        std::string name_dll;
-        semantic_an::table_func funcs;
+        std::string name_lua_source_file;
+        std::vector<decl_func> funcs;
     };
 
     using modules = std::vector<module>;
 
   public:
-    // Load the dynamic library corresponding to the passed module,
-    // and initialize (receive) function pointers
-    semantic_an::table_func init_tfunc(module &md);
-
-    // Initializes multiple modules, returning a common function table
-    semantic_an::table_func init_tsfunc(modules &mds);
+    // Initializes lua modules functions for subsequent calls
+    std::vector<decl_func> init_mfuncs(modules &mds);
 
   private:
-    static inline bool init_glob{0};
+    static std::unordered_map<std::string, bwlua::lua> lua_stream_s;
 };
-} // namespace module
 } // namespace bweas
 
 #endif

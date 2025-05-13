@@ -65,11 +65,14 @@ namespace bwlua {
 // Special tools - Wrappers over the lua class,
 // for simple interaction with the lua stack and others.
 namespace tools {
+
+inline void get_symbol(lua_State *L, std::string_view name_symbol);
 template <typename T> inline void push_stack(lua_State *L, T param);
 template <typename T> inline T pop_stack(lua_State *L, int idx = -1);
 
 // Calls a function that is on the top of the stack
 template <typename T, typename... Types> inline T call_function(lua_State *L, Types... param);
+template <typename T> inline T call_function(lua_State *L, int count_param);
 } // namespace tools
 
 // A wrapper class for luajit.
@@ -91,7 +94,7 @@ class lua {
         close();
     }
 
-    lua(const lua &) = delete;
+    lua(const lua &)       = delete;
     lua &operator=(lua &&) = delete;
 
   public:
@@ -113,8 +116,8 @@ class lua {
         ~symbol() = default;
 
       private:
-        symbol() = delete;
-        symbol(symbol &&) = delete;
+        symbol()                     = delete;
+        symbol(symbol &&)            = delete;
         symbol &operator=(symbol &&) = delete;
 
         explicit symbol(type _symbol_t, std::string _name_sym, lua *_L)
@@ -206,16 +209,16 @@ class lua {
 
     template <typename T> using ref = const T &;
 
-    template <typename T> using array = std::vector<T>;
-    template <typename Key, typename Value> using key_value = std::pair<Key, Value>;
+    template <typename T> using array                        = std::vector<T>;
+    template <typename Key, typename Value> using key_value  = std::pair<Key, Value>;
     template <typename Key, typename Value> using fast_table = std::vector<key_value<Key, Value>>;
-    template <typename Key, typename Value> using table = std::map<Key, Value, lcomp_anymap>;
+    template <typename Key, typename Value> using table      = std::map<Key, Value, lcomp_anymap>;
 
     using cfunc = int (*)(lua_State *);
 
     using string_param = std::string_view;
-    using integer = ptrdiff_t;
-    using number = double;
+    using integer      = ptrdiff_t;
+    using number       = double;
 
   private:
     template <typename> struct is_map : std::false_type {};
@@ -235,6 +238,7 @@ class lua {
     template <typename T> friend inline void tools::push_stack(lua_State *L, T param);
     template <typename T> friend inline T tools::pop_stack(lua_State *L, int idx);
     template <typename T, typename... Types> friend inline T tools::call_function(lua_State *L, Types... param);
+    template <typename T> friend inline T call_function(lua_State *L, int count_param);
 
   public:
     template <typename Key, typename Value> static std::map<Key, Value> to_map(table<Key, Value> _table) {
@@ -313,6 +317,11 @@ class lua {
             return;
         else if (lua_pcall(L, 0, 0, 0) != LUA_OK)
             LUA_EXCEPTION()
+    }
+
+    bool get_global_symbol(std::string_view name_symbol) {
+        lua_getglobal(L, name_symbol.data());
+        return !lua_isnoneornil(L, -1);
     }
 
     // Calls a function, provided that it exists and all parameters match.
@@ -604,7 +613,26 @@ class lua {
 
         pre_init_stack(params, std::index_sequence_for<Types...>{});
 
-        if (!lua_isfunction(L, 1))
+        if (!lua_isfunction(L, -count_params))
+            throw std::runtime_error(LUA_FUNCTION_NFOUND);
+
+        if constexpr (!std::is_same_v<T, void> && !std::is_same_v<T, nil>) {
+            if (lua_pcall(L, count_params, 1, 0) != LUA_OK)
+                LUA_EXCEPTION()
+        }
+        else if (lua_pcall(L, count_params, 0, 0) != LUA_OK)
+            LUA_EXCEPTION()
+
+        if constexpr (std::is_same_v<T, void> || std::is_same_v<T, nil>)
+            return;
+        else
+            return get_valsymbol<T>();
+    }
+
+    // call symbol(function) in top of stack
+    // Assumes that the user parameters are already on the stack
+    template <typename T> T call_symbol(int count_params) {
+        if (!lua_isfunction(L, -count_params))
             throw std::runtime_error(LUA_FUNCTION_NFOUND);
 
         if constexpr (!std::is_same_v<T, void> && !std::is_same_v<T, nil>) {
@@ -680,6 +708,12 @@ template <typename T> inline T pop_stack(lua_State *L, int idx) {
 // Calls a function that is on the top of the stack
 template <typename T, typename... Types> inline T call_function(lua_State *L, Types... param) {
     return lua(L).template call_symbol<T>(param...);
+}
+template <typename T> inline T call_function(lua_State *L, int count_params) {
+    return lua(L).template call_symbol<T>(count_params);
+}
+inline void get_symbol(lua_State *L, std::string_view name_symbol) {
+    (void)lua(L).get_global_symbol(name_symbol);
 }
 } // namespace tools
 

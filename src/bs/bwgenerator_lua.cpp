@@ -11,35 +11,25 @@
 
 using namespace bweas;
 using namespace generator_api;
-using namespace bweas::bwexception;
+
+static logger log{"BWGENERATOR[LUA]"};
 
 lua_generator::lua_generator(std::string src_lua) {
-    if (!init_glob_gnlua) {
-        assist.add_err("BWS-GNRT000", "Unable to parse basic arguments");
-        assist.add_err("BWS-GNRT001", "Lua script not loaded");
-        assist.add_err("BWS-GNRT002", "Failed to load lua script");
-        assist.add_err("BWS-GNRT003", "No entry function for generator");
-        assist.add_err("BWS-GNRT004", "Not found function for get input files");
-        assist.add_err("BWS-GNRT005", "Run-time error");
-
-        init_glob_gnlua = 1;
-    }
-
     try {
         lua.create(src_lua);
     }
     catch (std::exception &excp) {
-        throw bwgenerator_excp(excp.what(), "002");
+        (log << bwtools::fatal) << (log_message(log_type::fatal) << "Couldn't load lua code");
     }
 }
 
 void lua_generator::init() {
     if (!lua.is_created())
-        throw bwgenerator_excp("", "001");
+        (log << bwtools::fatal) << (log_message(log_type::fatal) << "Lua script not loaded");
     else if (!lua.is_function(NAME_FUNCTION_GENERATE_COMMAND_LUA))
-        throw bwgenerator_excp("", "003");
+        (log << bwtools::fatal) << (log_message(log_type::fatal) << "No entry function for generator");
     else if (!lua.is_function(NAME_FUNCTION_GET_INPUT_FILE_LUA))
-        throw bwgenerator_excp("", "004");
+        (log << bwtools::fatal) << (log_message(log_type::fatal) << "No entry function for get input files");
 
     lua["get_name_output_file_lua"] << bwluatools::get_name_output_file_lua;
     lua["file_slc_mask"] << bwluatools::file_slc_mask_lua;
@@ -58,7 +48,7 @@ std::unordered_set<std::string> lua_generator::build_graph_depends_file(std::str
         return std::unordered_set<std::string>{dependencies.begin(), dependencies.end()};
     }
     catch (std::exception &what) {
-        throw bwgenerator_excp(what.what(), "005");
+        (log << bwtools::fatal) << (log_message(log_type::fatal) << "Run-time error" << what.what());
     }
 }
 
@@ -72,13 +62,13 @@ void lua_generator::get_input_files(data_transfer &data_t) {
         tcmd_s_vec.emplace_back(bwluatools::conv_to_table(_template));
 
     try {
-        lua["CCMPS"] = ccmps;
+        lua["CCMPS"]  = ccmps;
         data_t.ifiles = bwlua::lua::to_map(lua.call_function<DEFINITION_FUNCTION_GET_INPUT_FILE_LUA>(
             NAME_FUNCTION_GET_INPUT_FILE_LUA, bwluatools::conv_to_table(*data_t.context->current_target), tcmd_s_vec,
             bwluatools::conv_to_table(data_t.dfiles)));
     }
     catch (std::exception &what) {
-        throw bwgenerator_excp(what.what(), "005");
+        (log << bwtools::fatal) << (log_message(log_type::fatal) << "Run-time error" << what.what());
     }
 }
 
@@ -91,15 +81,15 @@ gen_command lua_generator::generate_command(data_transfer &data_t) {
     for (const auto &_template : data_t.context->templates)
         tcmd_s_vec.emplace_back(bwluatools::conv_to_table(_template));
 
-    lua["CURRENT_TARGET"] = bwluatools::conv_to_table(*data_t.context->current_target);
+    lua["CURRENT_TARGET"]          = bwluatools::conv_to_table(*data_t.context->current_target);
     lua["CURRENT_QUEUE_TEMPLATES"] = tcmd_s_vec;
-    lua["CURRENT_DIR"] = data_t.work_directory;
+    lua["CURRENT_DIR"]             = data_t.work_directory;
 
     try {
         return bwlua::lua::to_map(lua.call_function<DEFINITION_FUNCTION_GENERATE_COMMAND_LUA>(
             NAME_FUNCTION_GENERATE_COMMAND_LUA, bwlua::lua::to_table(data_t.ifiles)));
     }
     catch (std::exception &what) {
-        throw bwgenerator_excp(what.what(), "004");
+        (log << bwtools::fatal) << (log_message(log_type::fatal) << "Run-time error" << what.what());
     }
 }

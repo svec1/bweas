@@ -13,7 +13,8 @@
 
 #include <unordered_map>
 #include <unordered_set>
-#include <vector>
+
+#include <bw_defs.hpp>
 
 namespace bweas {
 
@@ -28,7 +29,7 @@ class bwdepends_files {
   public:
     // file, dependencies
     using depends_file = std::pair<std::string, std::unordered_set<std::string>>;
-    using depends_map = std::unordered_map<typename depends_file::first_type, typename depends_file::second_type>;
+    using depends_map  = std::unordered_map<typename depends_file::first_type, typename depends_file::second_type>;
 
     // Dependency graphs of source files are built
     depends_map &build_graphs_depends_files(const std::vector<std::string> &src_files,

@@ -10,22 +10,18 @@
 
 using namespace bweas;
 using namespace cache_api;
-using namespace bweas::bwexception;
+
+static logger _log{"BWCACHE[LUA]"};
 
 lua_bwcache::lua_bwcache(bw_context *const _context, std::string src_lua) : base_bwcache(_context) {
-    if (!init_glob_chlua) {
-        assist.add_err("BWS-CACHE000", "Failed to load lua script");
-        assist.add_err("BWS-CACHE001", "No entry function for creates cache");
-        assist.add_err("BWS-CACHE002", "No entry function for get data of cache");
-
-        init_glob_chlua = 1;
-    }
+    if (!context)
+        (_log << bwtools::fatal) << (log_message(log_type::fatal) << "Bweas the context is not defined");
     lua.create(src_lua);
 
     if (!lua.is_function(NAME_FUNCTION_GENERATE_CACHE_LUA))
-        throw bwcache_excp("", "001");
+        (_log << bwtools::fatal) << (log_message(log_type::fatal) << "No entry function for creates cache");
     else if (!lua.is_function(NAME_FUNCTION_GET_DATA_CACHE_LUA))
-        throw bwcache_excp("", "002");
+        (_log << bwtools::fatal) << (log_message(log_type::fatal) << "No entry function for get data of cache");
 }
 
 void lua_bwcache::delete_cache() {
@@ -49,7 +45,7 @@ std::string lua_bwcache::create_cache() {
             NAME_FUNCTION_GENERATE_CACHE_LUA, ltargets_o, ltcmd_s, lccmp_s, context->global_external_args);
     }
     catch (std::exception &what) {
-        throw bwcache_excp(what.what(), "000");
+        (_log << bwtools::fatal) << (log_message(log_type::fatal) << what.what());
     }
 }
 
@@ -73,7 +69,7 @@ void lua_bwcache::extract_cache_data(std::string &&cache_str) {
             lua[NAME_VARIABLE_GEARGS_F_EXTERN_LUA].getval<std::vector<std::pair<std::string, std::string>>>();
     }
     catch (std::exception &what) {
-        throw bwcache_excp(what.what(), "000");
+        (_log << bwtools::fatal) << (log_message(log_type::fatal) << what.what());
     }
     for (auto &ltarget_o : ltargets_o)
         context->out_targets.push_back(bwluatools::conv_to_target(ltarget_o));

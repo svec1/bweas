@@ -1,13 +1,21 @@
 project(bweas_slib LANGUAGES CXX C)
 
 file(GLOB_RECURSE FILE_SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
-list(REMOVE_ITEM FILE_SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/bweas.cpp
-                             ${CMAKE_CURRENT_SOURCE_DIR}/kernel/high_level/hook_linux_lib/decl_func_fbwhook.c)
-if(NOT WIN32)
-    list(REMOVE_ITEM FILE_SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/kernel/high_level/hook_winapi.cpp)
-endif()
+list(REMOVE_ITEM FILE_SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/bweas.cpp)
 
-add_library(${BWEAS_SLIB} STATIC ${FILE_SOURCE})
+find_package(BISON REQUIRED)
+find_package(FLEX REQUIRED)
+
+bison_target(BW_PARSER 
+             ${CMAKE_CURRENT_SOURCE_DIR}/bs/lang/parser.y 
+             ${CMAKE_CURRENT_BINARY_DIR}/parser.cpp
+             DEFINES_FILE ${CMAKE_CURRENT_BINARY_DIR}/parser.hpp)
+flex_target(BW_LEXER 
+            ${CMAKE_CURRENT_SOURCE_DIR}/bs/lang/lexer.l
+            ${CMAKE_CURRENT_BINARY_DIR}/lexer.cpp)
+add_flex_bison_dependency(BW_LEXER BW_PARSER)
+
+add_library(${BWEAS_SLIB} STATIC ${FILE_SOURCE} ${BISON_BW_PARSER_OUTPUTS} ${FLEX_BW_LEXER_OUTPUTS})
 
 # Build with vcpkg
 if(BWEAS_BUILD_VCPKG_N)
@@ -17,13 +25,8 @@ if(BWEAS_BUILD_VCPKG_N)
     find_package(nlohmann_json CONFIG REQUIRED)
     find_package(lz4 CONFIG REQUIRED)
 
-    if(WIN32)
-        find_path(DETOURS_INCLUDE_DIRS "detours/detours.h")
-        find_library(DETOURS_LIBRARY detours REQUIRED)
-    endif()
-
-    set(BWEAS_LIBS ${DETOURS_LIBRARY} ${LuaJIT_LIBRARIES} nlohmann_json::nlohmann_json lz4::lz4)
-    set(BWEAS_INCLUDE ${DETOURS_INCLUDE_DIRS} ${LuaJIT_INCLUDE_DIRS} CACHE STRING "All header-files for bweas")
+    set(BWEAS_LIBS ${LuaJIT_LIBRARIES} nlohmann_json::nlohmann_json lz4::lz4)
+    set(BWEAS_INCLUDE ${LuaJIT_INCLUDE_DIRS} CACHE STRING "All header-files for bweas")
 
     message(STATUS "Install package with vcpkg")
 else()
@@ -62,12 +65,7 @@ else()
     set(BWEAS_INCLUDE ${NLOHMANN_JSON_INCLUDE_INSTALL_DIR} ${LuaJIT_SRC_DIR} CACHE STRING "All header-files for bweas")
 endif()
 
-set(BWEAS_INCLUDE ${BWEAS_INCLUDE} "kernel/high_level")
+set(BWEAS_INCLUDE ${BWEAS_INCLUDE} "bs/")
 
 target_link_libraries(${BWEAS_SLIB} PRIVATE ${BWEAS_LIBS})
-include_directories(${BWEAS_INCLUDE})
-
-if(NOT WIN32)
-    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/kernel/high_level/hook_linux_lib)
-    target_link_libraries(${BWEAS_SLIB} PRIVATE bwhook_safe)
-endif()
+include_directories(${BWEAS_INCLUDE} ${CMAKE_CURRENT_BINARY_DIR})

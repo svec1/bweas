@@ -1,15 +1,20 @@
 #ifndef _SCOPE__H
 #define _SCOPE__H
 
-#include "../../kernel/high_level/bwtype.h"
-
-#include "../tools/bwexception.hpp"
-#include "../tools/call_cmd.hpp"
-#include "static_struct.hpp"
-#include "var.hpp"
-
 #include <string>
 #include <vector>
+
+#include <bwlogger.hpp>
+
+#include <lang/expression.hpp>
+#include <lang/static_struct.hpp>
+#include <lang/var.hpp>
+
+#include <tools/call_cmd.hpp>
+
+extern std::string get_current_loc();
+
+using namespace bweas;
 
 namespace var {
 
@@ -32,30 +37,18 @@ inline std::string type_var_to_str(u32t ind) {
         return "call component";
     else if (ind == 9)
         return "global external args";
+    else if (ind == 10)
+        return "function";
     return "undef";
 }
 
-class scope_excp : public ::bwexception::bweas_exception {
-  public:
-    scope_excp(std::string _what_hp, std::string number_err) : what_hp(_what_hp), bweas_exception("SCOP" + number_err) {
-    }
-    ~scope_excp() noexcept override final = default;
-
-  public:
-    const char *what() const noexcept override final {
-        return what_hp.c_str();
-    }
-
-  private:
-    std::string what_hp;
-};
-
 class scope {
   public:
-    inline scope();
+    scope(bweas::logger &__log) : _log(__log) {
+    }
 
     inline scope(const scope &) = default;
-    inline scope(scope &&) = default;
+    inline scope(scope &&)      = default;
 
     ~scope() = default;
 
@@ -72,23 +65,26 @@ class scope {
 
     inline void clear();
 
-    // 1 - int
-    // 2 - string
-    // 3 - vector<int>
-    // 4 - vector<string>
-    // 5 - project
-    // 6 - target
-    // 7 - template command
-    // 8 - call component
-    // 9 - global external args
-    // 0 - undefined
+    // 1  - int
+    // 2  - string
+    // 3  - vector<int>
+    // 4  - vector<string>
+    // 5  - project
+    // 6  - target
+    // 7  - template command
+    // 8  - call component
+    // 9  - global external args
+    // 10 - function
+    // 0  - undefined
     inline u32t what_type(std::string name_var);
 
   public:
-    tools::call_cmd_manager call_cmd;
+    call_cmd_manager call_cmd;
 
   private:
-    static inline bool init_glob{0};
+    logger &_log;
+
+    var::datatype_var<decl_func> funcs_v;
 
     var::datatype_var<i32t> int_v;
     var::datatype_var<std::string> str_v;
@@ -102,61 +98,50 @@ class scope {
     var::datatype_var<std::pair<std::string, std::string>> global_ext_args_v;
 };
 
-inline scope::scope() {
-    if (!init_glob) {
-        init_glob = 1;
-        assist.add_err("SCOP000", "The variable does not exist");
-        assist.add_err("SCOP001", "The variable has already been created(does exist)");
-        assist.add_err("SCOP002", "Unknown data type");
-    }
-}
-
 template <typename T> inline T &scope::create_var(std::string name_var, T val) {
     if constexpr (std::is_same_v<T, i32t>) {
-        if (int_v.create_var(name_var, val))
-            throw scope_excp("int(" + std::to_string(val) + ") <- " + name_var, "001");
-        return int_v.get_val_ref(name_var);
+        if (!int_v.create_var(name_var, val))
+            return int_v.get_val_ref(name_var);
     }
     else if constexpr (std::is_same_v<T, std::string>) {
-        if (str_v.create_var(name_var, val))
-            throw scope_excp("string(" + val + ") <- " + name_var, "001");
-        return str_v.get_val_ref(name_var);
+        if (!str_v.create_var(name_var, val))
+            return str_v.get_val_ref(name_var);
     }
     else if constexpr (std::is_same_v<T, struct_sb::project>) {
-        if (prj_v.create_var(name_var, val))
-            throw scope_excp("project(" + val.name_project + ") <- " + name_var, "001");
-        return prj_v.get_val_ref(name_var);
+        if (!prj_v.create_var(name_var, val))
+            return prj_v.get_val_ref(name_var);
     }
     else if constexpr (std::is_same_v<T, struct_sb::target>) {
-        if (trg_v.create_var(name_var, val))
-            throw scope_excp("target(" + val.name_target + ") <- " + name_var, "001");
-        return trg_v.get_val_ref(name_var);
+        if (!trg_v.create_var(name_var, val))
+            return trg_v.get_val_ref(name_var);
     }
     else if constexpr (std::is_same_v<T, std::vector<i32t>>) {
-        if (vec_int_v.create_var(name_var, val))
-            throw scope_excp("vector<int>(" + std::to_string(val[0]) + ", ..." + ") <- " + name_var, "001");
-        return vec_int_v.get_val_ref(name_var);
+        if (!vec_int_v.create_var(name_var, val))
+            return vec_int_v.get_val_ref(name_var);
     }
     else if constexpr (std::is_same_v<T, std::vector<std::string>>) {
-        if (vec_str_v.create_var(name_var, val))
-            throw scope_excp("vector<string>(" + val[0] + ", ..." + ") <- " + name_var, "001");
-        return vec_str_v.get_val_ref(name_var);
+        if (!vec_str_v.create_var(name_var, val))
+            return vec_str_v.get_val_ref(name_var);
     }
     else if constexpr (std::is_same_v<T, struct_sb::template_command>) {
-        if (tcmd_v.create_var(name_var, val))
-            throw scope_excp("template_command(" + val.name + ", ..." + ") <- " + name_var, "001");
-        return tcmd_v.get_val_ref(name_var);
+        if (!tcmd_v.create_var(name_var, val))
+            return tcmd_v.get_val_ref(name_var);
     }
     else if constexpr (std::is_same_v<T, struct_sb::call_component>) {
-        if (ccmp_v.create_var(name_var, val))
-            throw scope_excp("call_component(" + val.name + ", ..." + ") <- " + name_var, "001");
-        return ccmp_v.get_val_ref(name_var);
+        if (!ccmp_v.create_var(name_var, val))
+            return ccmp_v.get_val_ref(name_var);
     }
     else if constexpr (std::is_same_v<T, std::pair<std::string, std::string>>) {
-        if (global_ext_args_v.create_var(name_var, val))
-            throw scope_excp("global_external_args(" + val.first + ", ..." + ") <- " + name_var, "001");
-        return global_ext_args_v.get_val_ref(name_var);
+        if (!global_ext_args_v.create_var(name_var, val))
+            return global_ext_args_v.get_val_ref(name_var);
     }
+    else if constexpr (std::is_same_v<T, decl_func>) {
+        if (!funcs_v.create_var(name_var, val))
+            return funcs_v.get_val_ref(name_var);
+    }
+
+    (_log << bwtools::fatal) << (log_message(log_type::fatal)
+                                 << get_current_loc() << ": The " << name_var << " variable already exists");
 }
 
 template <typename T> inline bool scope::try_create_var(std::string name_var, T val) {
@@ -179,95 +164,84 @@ template <typename T> inline bool scope::try_create_var(std::string name_var, T 
         creates = ccmp_v.create_var(name_var, val);
     else if constexpr (std::is_same_v<T, std::pair<std::string, std::string>>)
         creates = global_ext_args_v.create_var(name_var, val);
+    else if constexpr (std::is_same_v<T, decl_func>)
+        creates = funcs_v.create_var(name_var, val);
 
     return !creates;
 }
 
 template <typename T> inline void scope::delete_var(std::string name_var) {
-    if constexpr (std::is_same_v<T, i32t>) {
-        if (int_v.delete_var(name_var))
-            throw scope_excp("int() <- " + name_var, "000");
-    }
-    else if constexpr (std::is_same_v<T, std::string>) {
-        if (str_v.delete_var(name_var))
-            throw scope_excp("string() <- " + name_var, "000");
-    }
-    else if constexpr (std::is_same_v<T, struct_sb::project>) {
-        if (prj_v.delete_var(name_var))
-            throw scope_excp("project() <- " + name_var, "000");
-    }
-    else if constexpr (std::is_same_v<T, struct_sb::target>) {
-        if (trg_v.delete_var(name_var))
-            throw scope_excp("target() <- " + name_var, "000");
-    }
-    else if constexpr (std::is_same_v<T, std::vector<i32t>>) {
-        if (vec_int_v.delete_var(name_var))
-            throw scope_excp("vector<int>() <- " + name_var, "000");
-    }
-    else if constexpr (std::is_same_v<T, std::vector<std::string>>) {
-        if (vec_str_v.delete_var(name_var))
-            throw scope_excp("vector<string>() <- " + name_var, "000");
-    }
-    else if constexpr (std::is_same_v<T, struct_sb::template_command>) {
-        if (tcmd_v.delete_var(name_var))
-            throw scope_excp("template_command() <- " + name_var, "000");
-    }
-    else if constexpr (std::is_same_v<T, struct_sb::call_component>) {
-        if (ccmp_v.delete_var(name_var))
-            throw scope_excp("call_component() <- " + name_var, "000");
-    }
-    else if constexpr (std::is_same_v<T, std::pair<std::string, std::string>>) {
-        if (global_ext_args_v.delete_var(name_var))
-            throw scope_excp("global_external_args() <- " + name_var, "000");
-    }
+    bool err_handling = 0;
+
+    if constexpr (std::is_same_v<T, i32t>)
+        err_handling = int_v.delete_var(name_var);
+    else if constexpr (std::is_same_v<T, std::string>)
+        err_handling = str_v.delete_var(name_var);
+    else if constexpr (std::is_same_v<T, struct_sb::project>)
+        err_handling = prj_v.delete_var(name_var);
+    else if constexpr (std::is_same_v<T, struct_sb::target>)
+        err_handling = trg_v.delete_var(name_var);
+    else if constexpr (std::is_same_v<T, std::vector<i32t>>)
+        err_handling = vec_int_v.delete_var(name_var);
+    else if constexpr (std::is_same_v<T, std::vector<std::string>>)
+        err_handling = vec_str_v.delete_var(name_var);
+    else if constexpr (std::is_same_v<T, struct_sb::template_command>)
+        err_handling = tcmd_v.delete_var(name_var);
+    else if constexpr (std::is_same_v<T, struct_sb::call_component>)
+        err_handling = ccmp_v.delete_var(name_var);
+    else if constexpr (std::is_same_v<T, std::pair<std::string, std::string>>)
+        err_handling = global_ext_args_v.delete_var(name_var);
+    else if constexpr (std::is_same_v<T, decl_func>)
+        err_handling = funcs_v.delete_var(name_var);
+
+    if (err_handling)
+        (_log << bwtools::error) << (log_message(log_type::error) << "The " << name_var << " variable does not exist");
 }
 
 template <typename T> inline T &scope::get_var_value(std::string name_var) {
     if constexpr (std::is_same_v<T, i32t>) {
-        if (!int_v.is_exist_var(name_var))
-            throw scope_excp("int() <- " + name_var, "000");
-        return int_v.get_val_ref(name_var);
+        if (int_v.is_exist_var(name_var))
+            return int_v.get_val_ref(name_var);
     }
     else if constexpr (std::is_same_v<T, std::string>) {
-        if (!str_v.is_exist_var(name_var))
-            throw scope_excp("string() <- " + name_var, "000");
-        return str_v.get_val_ref(name_var);
+        if (str_v.is_exist_var(name_var))
+            return str_v.get_val_ref(name_var);
     }
     else if constexpr (std::is_same_v<T, struct_sb::project>) {
-        if (!prj_v.is_exist_var(name_var))
-            throw scope_excp("project() <- " + name_var, "000");
-        return prj_v.get_val_ref(name_var);
+        if (prj_v.is_exist_var(name_var))
+            return prj_v.get_val_ref(name_var);
     }
     else if constexpr (std::is_same_v<T, struct_sb::target>) {
-        if (!trg_v.is_exist_var(name_var))
-            throw scope_excp("target() <- " + name_var, "000");
-        return trg_v.get_val_ref(name_var);
+        if (trg_v.is_exist_var(name_var))
+            return trg_v.get_val_ref(name_var);
     }
     else if constexpr (std::is_same_v<T, std::vector<i32t>>) {
-        if (!vec_int_v.is_exist_var(name_var))
-            throw scope_excp("vector<int>() <- " + name_var, "000");
-        return vec_int_v.get_val_ref(name_var);
+        if (vec_int_v.is_exist_var(name_var))
+            return vec_int_v.get_val_ref(name_var);
     }
     else if constexpr (std::is_same_v<T, std::vector<std::string>>) {
-        if (!vec_str_v.is_exist_var(name_var))
-            throw scope_excp("vector<string>() <- " + name_var, "000");
-        return vec_str_v.get_val_ref(name_var);
+        if (vec_str_v.is_exist_var(name_var))
+            return vec_str_v.get_val_ref(name_var);
     }
     else if constexpr (std::is_same_v<T, struct_sb::template_command>) {
-        if (!tcmd_v.is_exist_var(name_var))
-            throw scope_excp("template_command() <- " + name_var, "000");
-        return tcmd_v.get_val_ref(name_var);
+        if (tcmd_v.is_exist_var(name_var))
+            return tcmd_v.get_val_ref(name_var);
     }
     else if constexpr (std::is_same_v<T, struct_sb::call_component>) {
-        if (!ccmp_v.is_exist_var(name_var))
-            throw scope_excp("call_component() <- " + name_var, "000");
-        return ccmp_v.get_val_ref(name_var);
+        if (ccmp_v.is_exist_var(name_var))
+            return ccmp_v.get_val_ref(name_var);
     }
     else if constexpr (std::is_same_v<T, std::pair<std::string, std::string>>) {
-        if (!global_ext_args_v.is_exist_var(name_var))
-            throw scope_excp("global_external_args() <- " + name_var, "000");
-        return global_ext_args_v.get_val_ref(name_var);
+        if (global_ext_args_v.is_exist_var(name_var))
+            return global_ext_args_v.get_val_ref(name_var);
     }
+    else if constexpr (std::is_same_v<T, decl_func>) {
+        if (funcs_v.is_exist_var(name_var))
+            return funcs_v.get_val_ref(name_var);
+    }
+
+    (_log << bwtools::fatal) << (log_message(log_type::fatal)
+                                 << get_current_loc() << ": The " << name_var << " variable does not exist");
 }
 
 template <typename T> inline std::vector<std::pair<std::string, T>> &scope::get_vector_variables_t() {
@@ -289,12 +263,15 @@ template <typename T> inline std::vector<std::pair<std::string, T>> &scope::get_
         return ccmp_v.get_vector_variables();
     else if constexpr (std::is_same_v<T, std::pair<std::string, std::string>>)
         return global_ext_args_v.get_vector_variables();
+    else if constexpr (std::is_same_v<T, decl_func>)
+        return funcs_v.get_vector_variables();
 }
 
 inline bool scope::is_exist(std::string name_var) {
     if (int_v.is_exist_var(name_var) || str_v.is_exist_var(name_var) || vec_int_v.is_exist_var(name_var) ||
         vec_str_v.is_exist_var(name_var) || prj_v.is_exist_var(name_var) || trg_v.is_exist_var(name_var) ||
-        tcmd_v.is_exist_var(name_var) || ccmp_v.is_exist_var(name_var) || global_ext_args_v.is_exist_var(name_var))
+        tcmd_v.is_exist_var(name_var) || ccmp_v.is_exist_var(name_var) || global_ext_args_v.is_exist_var(name_var) ||
+        funcs_v.is_exist_var(name_var))
         return 1;
     return 0;
 }
@@ -317,6 +294,8 @@ inline u32t scope::what_type(std::string name_var) {
         return 8;
     else if (global_ext_args_v.is_exist_var(name_var))
         return 9;
+    else if (funcs_v.is_exist_var(name_var))
+        return 10;
     else
         return 0;
 }
@@ -331,6 +310,7 @@ inline void scope::clear() {
     tcmd_v.clear();
     ccmp_v.clear();
     global_ext_args_v.clear();
+    funcs_v.clear();
 }
 
 } // namespace var

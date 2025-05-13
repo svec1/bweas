@@ -11,16 +11,13 @@
 
 using namespace bweas;
 using namespace cache_api;
-using namespace bweas::bwexception;
+
+static logger _log{"BWCACHE[JSON]"};
 
 json_bwcache::json_bwcache(bw_context *const context) : base_bwcache(context) {
-    if (!init_glob_chjson) {
-        assist.add_err("BWS-CACHE000", "Incorrect json cache structure");
-
-        init_glob_chjson = 1;
-    }
+    if (!context)
+        (_log << bwtools::fatal) << (log_message(log_type::fatal) << "Bweas the context is not defined");
 }
-
 void json_bwcache::delete_cache() {
     delete this;
 }
@@ -79,29 +76,29 @@ void json_bwcache::extract_cache_data(std::string &&cache_str) {
             var::struct_sb::target_out target_o_tmp;
             target_o_tmp.name_target = target.key();
 
-            const auto &fields = target.value();
-            target_o_tmp.target_t = var::struct_sb::to_type_target(fields["type"]);
-            target_o_tmp.target_cfg = var::struct_sb::to_cfg(fields["configuration"]);
-            target_o_tmp.version_target = (std::string)fields["version"];
-            target_o_tmp.name_generator = fields["generator"];
+            const auto &fields           = target.value();
+            target_o_tmp.target_t        = var::struct_sb::to_type_target(fields["type"]);
+            target_o_tmp.target_cfg      = var::struct_sb::to_cfg(fields["configuration"]);
+            target_o_tmp.version_target  = (std::string)fields["version"];
+            target_o_tmp.name_generator  = fields["generator"];
             target_o_tmp.target_vec_libs = fields["dependencies"];
 
-            const auto &prj = fields["project"];
-            target_o_tmp.prj.name_project = prj["name"];
-            target_o_tmp.prj.version_project = (std::string)prj["version"];
-            target_o_tmp.prj.language = prj["lang"];
-            target_o_tmp.prj.path_compiler = prj["path_compiler"];
-            target_o_tmp.prj.path_linker = prj["path_linker"];
-            target_o_tmp.prj.rflags_compiler = prj["release_flags_compiler"];
-            target_o_tmp.prj.rflags_linker = prj["release_flags_linker"];
-            target_o_tmp.prj.dflags_compiler = prj["debug_flags_compiler"];
-            target_o_tmp.prj.dflags_linker = prj["debug_flags_linker"];
-            target_o_tmp.prj.standart_c = prj["std_c"];
-            target_o_tmp.prj.standart_cpp = prj["std_cpp"];
-            target_o_tmp.prj.src_files = prj["files"];
-            target_o_tmp.prj.include_paths = prj["include_paths"];
-            target_o_tmp.prj.use_it_templates = prj["use_it_templates"];
-            target_o_tmp.prj.vec_templates = prj["templates"];
+            const auto &prj                    = fields["project"];
+            target_o_tmp.prj.name_project      = prj["name"];
+            target_o_tmp.prj.version_project   = (std::string)prj["version"];
+            target_o_tmp.prj.language          = prj["lang"];
+            target_o_tmp.prj.path_compiler     = prj["path_compiler"];
+            target_o_tmp.prj.path_linker       = prj["path_linker"];
+            target_o_tmp.prj.rflags_compiler   = prj["release_flags_compiler"];
+            target_o_tmp.prj.rflags_linker     = prj["release_flags_linker"];
+            target_o_tmp.prj.dflags_compiler   = prj["debug_flags_compiler"];
+            target_o_tmp.prj.dflags_linker     = prj["debug_flags_linker"];
+            target_o_tmp.prj.standart_c        = prj["std_c"];
+            target_o_tmp.prj.standart_cpp      = prj["std_cpp"];
+            target_o_tmp.prj.src_files         = prj["files"];
+            target_o_tmp.prj.include_paths     = prj["include_paths"];
+            target_o_tmp.prj.use_it_templates  = prj["use_it_templates"];
+            target_o_tmp.prj.vec_templates     = prj["templates"];
             target_o_tmp.prj.custom_ext_fields = prj["custom_extension_fields"];
 
             context->out_targets.push_back(target_o_tmp);
@@ -111,10 +108,10 @@ void json_bwcache::extract_cache_data(std::string &&cache_str) {
             var::struct_sb::template_command template_tmp;
             template_tmp.name = _template.key();
 
-            const auto &fields = _template.value();
+            const auto &fields               = _template.value();
             template_tmp.name_call_component = fields["name_call_component"];
-            template_tmp.returnable = fields["returnable"];
-            template_tmp.name_accept_params = fields["accept_params"];
+            template_tmp.returnable          = fields["returnable"];
+            template_tmp.name_accept_params  = fields["accept_params"];
             for (const auto &arg : fields["args"])
                 template_tmp.args.push_back(var::struct_sb::template_command::arg(
                     arg["str"], (var::struct_sb::template_command::arg::type)arg["type"]));
@@ -126,8 +123,8 @@ void json_bwcache::extract_cache_data(std::string &&cache_str) {
             var::struct_sb::call_component call_component_tmp;
             call_component_tmp.name = call_component.key();
 
-            const auto &fields = call_component.value();
-            call_component_tmp.name_program = fields["name_program"];
+            const auto &fields                   = call_component.value();
+            call_component_tmp.name_program      = fields["name_program"];
             call_component_tmp.pattern_ret_files = fields["pattern_ret_files"];
 
             context->call_components.push_back(call_component_tmp);
@@ -137,6 +134,7 @@ void json_bwcache::extract_cache_data(std::string &&cache_str) {
             context->global_external_args.emplace_back(call_component.value()["name"], call_component.value()["value"]);
     }
     catch (std::exception &what) {
-        throw bwcache_excp(what.what(), "000");
+        (_log << bwtools::fatal) << (log_message(log_type::fatal)
+                                     << "Invalid structure of the bweas cache file: " << what.what());
     }
 }

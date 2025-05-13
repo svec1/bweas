@@ -85,10 +85,10 @@ class interface_generator {
 
 } // namespace gninterface
 
-using func_generator = gen_command (*)(data_transfer &);
+using func_generator                = gen_command (*)(data_transfer &);
 using func_build_graph_depends_file = std::unordered_set<std::string> (*)(std::string_view, std::string_view,
                                                                           std::string_view, std::vector<std::string>);
-using func_get_input_files = void (*)(data_transfer &);
+using func_get_input_files          = void (*)(data_transfer &);
 
 // An abstract class that defines the creation of generator classes and is also a generalization
 class base_generator : public gninterface::interface_generator {
@@ -139,8 +139,6 @@ class integral_generator : public base_generator {
     gen_command generate_command(data_transfer &data_t) override final;
 
   private:
-    static inline bool init_glob_gnint{0};
-
     func_generator generator_p;
     func_build_graph_depends_file build_graph_depends_file_p;
     func_get_input_files get_input_files_p;
@@ -164,8 +162,6 @@ class lua_generator : public base_generator {
     gen_command generate_command(data_transfer &data_t) override final;
 
   private:
-    static inline bool init_glob_gnlua{0};
-
     bwlua::lua lua;
 };
 

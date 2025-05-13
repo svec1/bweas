@@ -1,13 +1,13 @@
 #ifndef _STATIC_STRUCT__H
 #define _STATIC_STRUCT__H
 
-#include "../../kernel/high_level/bwtype.h"
-#include "../bwconf_var.hpp"
-
 #include <map>
 #include <memory>
 #include <string>
 #include <vector>
+
+#include <bwconf_var.hpp>
+#include <bwtype.h>
 
 // The name of a variable that, when set to 1,
 // will allow project functions and many target functions
@@ -87,7 +87,7 @@ enum class type_target {
     interpret
 };
 enum class configuration {
-    RELEASE,
+    RELEASE = 0,
     DEBUG
 };
 
@@ -254,7 +254,7 @@ struct template_command {
             features
         };
 
-        arg() = default;
+        arg()            = default;
         arg(const arg &) = default;
         arg(std::string _arg, type _arg_t) : str_arg(_arg), arg_t(_arg_t) {
         }

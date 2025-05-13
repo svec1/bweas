@@ -8,8 +8,8 @@
 #ifndef BWCACHE__H
 #define BWCACHE__H
 
-#include "bw_defs.hpp"
-#include "bwluatools.hpp"
+#include <bw_defs.hpp>
+#include <bwluatools.hpp>
 
 #define NAME_FUNCTION_GENERATE_CACHE_LUA "create_cache"
 #define DEFINITION_FUNCTION_GENERATE_CACHE_LUA                                                                         \
@@ -65,9 +65,6 @@ class fast_bwcache final : private base_bwcache {
     void extract_cache_data(std::string &&cache_str) override final;
 
     void delete_cache() override final;
-
-  private:
-    static inline bool init_glob_chfast{0};
 };
 
 // The second basic cache generator, which in turn has a human readable form,
@@ -81,9 +78,6 @@ class json_bwcache final : private base_bwcache {
     void extract_cache_data(std::string &&cache_str) override final;
 
     void delete_cache() override final;
-
-  private:
-    static inline bool init_glob_chjson{0};
 };
 
 // A class providing an API for creating cache generators in lua, based on the bwcache API
@@ -98,8 +92,6 @@ class lua_bwcache final : private base_bwcache {
     void delete_cache() override final;
 
   private:
-    static inline bool init_glob_chlua{0};
-
     bwlua::lua lua;
 };
 

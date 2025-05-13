@@ -8,14 +8,13 @@
 #ifndef BWLUATOOLS_H
 #define BWLUATOOLS_H
 
-#include "bwdepends_files.hpp"
-#include "bwgntools.hpp"
+#include <bwdepends_files.hpp>
+#include <bwgntools.hpp>
+#include <lang/scope.hpp>
+#include <lang/static_struct.hpp>
 
-#include "lang/scope.hpp"
-#include "lang/static_struct.hpp"
-
-#include "tools/bwfile.hpp"
-#include "tools/bwlua.hpp"
+#include <tools/bwfile.hpp>
+#include <tools/bwlua.hpp>
 
 namespace bweas {
 class bwluatools;
@@ -26,12 +25,12 @@ class bweas::bwluatools {
   public:
     template <typename T> using ref = bwlua::lua::ref<T>;
 
-    template <typename T> using array = bwlua::lua::array<T>;
+    template <typename T> using array                 = bwlua::lua::array<T>;
     template <typename K, typename V> using key_value = bwlua::lua::key_value<K, V>;
-    template <typename K, typename V> using table = bwlua::lua::table<K, V>;
+    template <typename K, typename V> using table     = bwlua::lua::table<K, V>;
 
     using integer = bwlua::lua::integer;
-    using number = bwlua::lua::number;
+    using number  = bwlua::lua::number;
 
     using nil = bwlua::lua::nil;
 
