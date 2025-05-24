@@ -19,22 +19,19 @@
 // the path of the working directory - "CURRENT_DIR")
 #define NAME_FUNCTION_GENERATE_COMMAND_LUA "generate"
 #define DEFINITION_FUNCTION_GENERATE_COMMAND_LUA                                                                       \
-    bwluatools::table<std::string, std::string>,                                                                       \
-        bwluatools::ref<bwluatools::table<std::string, bwluatools::array<std::string>>>
+    bwluatools::table<std::string, std::string>, bwluatools::table<std::string, bwluatools::array<std::string>>
 
 // Accepts a name file, directory work
 #define NAME_FUNCTION_BUILD_DEPENDS_LUA "build_graph_depends_file"
 #define DEFINITION_FUNCTION_BUILD_DEPENDS_LUA                                                                          \
-    bwluatools::array<std::string>, std::string_view, std::string_view, std::string_view,                              \
-        bwluatools::ref<std::vector<std::string>>
+    bwluatools::array<std::string>, std::string_view, std::string_view, std::string_view, std::vector<std::string>
 
 // Accepts a target, its templates, and a global list of file trees (It can also use the "CCMPS" global variable)
 #define NAME_FUNCTION_GET_INPUT_FILE_LUA "get_input_files"
 #define DEFINITION_FUNCTION_GET_INPUT_FILE_LUA                                                                         \
-    bwluatools::table<std::string, bwluatools::array<std::string>>,                                                    \
-        bwluatools::ref<bwluatools::table<std::string, std::any>>,                                                     \
-        bwluatools::ref<bwluatools::array<bwluatools::table<std::string, std::any>>>,                                  \
-        bwluatools::ref<bwluatools::table<std::string, bwluatools::array<std::string>>>
+    bwluatools::table<std::string, bwluatools::array<std::string>>, bwluatools::table<std::string, std::any>,          \
+        bwluatools::array<bwluatools::table<std::string, std::any>>,                                                   \
+        bwluatools::table<std::string, bwluatools::array<std::string>>
 
 namespace bweas {
 

@@ -31,7 +31,7 @@ void lua_bwcache::delete_cache() {
 std::string lua_bwcache::create_cache() {
     std::vector<bwluatools::table<std::string, std::any>> ltargets_o;
     std::vector<bwluatools::table<std::string, std::any>> ltcmd_s;
-    std::vector<bwluatools::table<std::string, std::any>> lccmp_s;
+    std::vector<bwluatools::table<std::string, std::string>> lccmp_s;
 
     for (const auto &ltarget_o : context->out_targets)
         ltargets_o.push_back(bwluatools::conv_to_table(ltarget_o));

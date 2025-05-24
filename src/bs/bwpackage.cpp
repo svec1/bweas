@@ -27,26 +27,22 @@ std::string bwpackage::create_data_package(data_bw_package _data) {
 std::string bwpackage::init(data_bw_package _data, bool is_create_pckg) {
     nlohmann::json config_json = nlohmann::json::parse(_data.json_config);
     if (!config_json.contains("package-name") || ((name_package = config_json["package-name"]) == ""))
-        (_log << bwtools::error) << (log_message(log_type::error) << "Bweas package name field is empty");
+        (_log << bwtools::fatal) << (log_message(log_type::fatal) << "Bweas package name field is empty");
     else if (!config_json.contains("bweas-version") ||
              ((bw_version = var::struct_sb::version(config_json["bweas-version"])) == "0.0.0"))
-        (_log << bwtools::error) << (log_message(log_type::error) << "Build system version field is empty");
-    else if (!config_json.contains("custom_fields_project") && !config_json["custom_fields_project"].is_structured())
-        (_log << bwtools::error)
-            << (log_message(log_type::error)
-                << "Definition of custom fields for the project must be in the form of key-value (string and string)");
-
-    cfg_package.custom_ext_fields_project = config_json["custom_fields_project"];
+        (_log << bwtools::fatal) << (log_message(log_type::fatal) << "Build system version field is empty");
+    else if (config_json.contains("custom_fields_project") && config_json["custom_fields_project"].is_object())
+        cfg_package.custom_ext_fields_project = config_json["custom_fields_project"];
 
     if (config_json.contains("cache-gn")) {
         nlohmann::json metainf_ch = config_json["cache-gn"];
         if (!metainf_ch.is_structured())
-            (_log << bwtools::error) << (log_message(log_type::error) << "The Cache field must be a structure");
+            (_log << bwtools::fatal) << (log_message(log_type::fatal) << "The Cache field must be a structure");
 
         else if (!metainf_ch.contains("name") || !metainf_ch["name"].is_string())
-            (_log << bwtools::error) << (log_message(log_type::error) << "Cache metadata must include its name");
+            (_log << bwtools::fatal) << (log_message(log_type::fatal) << "Cache metadata must include its name");
         else if (!metainf_ch.contains("src-luafile-cache") || !metainf_ch["src-luafile-cache"].is_string())
-            (_log << bwtools::error) << (log_message(log_type::error)
+            (_log << bwtools::fatal) << (log_message(log_type::fatal)
                                          << "Cache metadata must include the path to the lua source file");
 
         cfg_package.cache.name_cache = metainf_ch["name"];
@@ -59,10 +55,11 @@ std::string bwpackage::init(data_bw_package _data, bool is_create_pckg) {
         else
             cfg_package.cache.src_lua_cache = _data.src_lua_cache;
     }
+
     // reading lua script file
     if (config_json.contains("generators")) {
         if (!config_json["generators"].is_structured())
-            (_log << bwtools::error) << (log_message(log_type::error)
+            (_log << bwtools::fatal) << (log_message(log_type::fatal)
                                          << "The \"generators\" field must be of type json structure");
 
         u32t i = 0;
@@ -71,21 +68,19 @@ std::string bwpackage::init(data_bw_package _data, bool is_create_pckg) {
             nlohmann::json metainf_gn = generator.value();
 
             if (!metainf_gn.is_object())
-                (_log << bwtools::error) << (log_message(log_type::error)
+                (_log << bwtools::fatal) << (log_message(log_type::fatal)
                                              << "The generator meta information unit must be a json object");
             else if (!metainf_gn.contains("src-luafile-gen") || !metainf_gn["src-luafile-gen"].is_string())
-                (_log << bwtools::error)
-                    << (log_message(log_type::error)
+                (_log << bwtools::fatal)
+                    << (log_message(log_type::fatal)
                         << "Generator metadata must include the path to the lua (generator) source code file");
             else if (!metainf_gn.contains("features-generator") || !metainf_gn["features-generator"].is_array())
-                (_log << bwtools::error) << (log_message(log_type::error)
+                (_log << bwtools::fatal) << (log_message(log_type::fatal)
                                              << "Generator metadata should include a list of new generator features");
-            else if (config_json.contains("use_custom_search_dependencies") &&
-                     !config_json["use_custom_search_dependencies"].is_boolean())
-                (_log << bwtools::error)
-                    << (log_message(log_type::error)
-                        << "Definition of custom fields for the project must be in the form of key-value (string and "
-                           "string)");
+            else if (!metainf_gn.contains("use_custom_search_dependencies") ||
+                     !metainf_gn["use_custom_search_dependencies"].is_boolean())
+                (_log << bwtools::fatal) << (log_message(log_type::fatal)
+                                             << "Field - uses custom dependency lookup, expected boolean type");
             auto it_gnlua_script = bwtools::open_file((std::string)metainf_gn["src-luafile-gen"]);
             if (is_create_pckg) {
                 cfg_package.generators.emplace_back(generator.key(), metainf_gn["features-generator"],
@@ -104,16 +99,16 @@ std::string bwpackage::init(data_bw_package _data, bool is_create_pckg) {
     }
     if (config_json.contains("modules")) {
         if (!config_json["modules"].is_structured())
-            (_log << bwtools::error) << (log_message(log_type::error)
+            (_log << bwtools::fatal) << (log_message(log_type::fatal)
                                          << "The \"generators\" field must be of type json structure");
         for (const auto &module : config_json["modules"].items()) {
             nlohmann::json metainf_md = module.value();
             std::vector<decl_func> funcs;
-            if (!metainf_md.contains("lua source file") || !metainf_md["lua source file"].is_string())
-                (_log << bwtools::error) << (log_message(log_type::error)
+            if (!metainf_md.contains("src-luafile-md") || !metainf_md["src-luafile-md"].is_string())
+                (_log << bwtools::fatal) << (log_message(log_type::fatal)
                                              << "Module metadata must include the name of the lua source file");
             else if (!metainf_md.contains("functions") || !metainf_md["functions"].is_object())
-                (_log << bwtools::error) << (log_message(log_type::error)
+                (_log << bwtools::fatal) << (log_message(log_type::fatal)
                                              << "Module metadata must include the functions they provide for import");
 
             for (const auto &func : metainf_md["functions"].items()) {
@@ -123,8 +118,8 @@ std::string bwpackage::init(data_bw_package _data, bool is_create_pckg) {
                 for (const auto &field : it_func.items()) {
                     if (field.key() == "accepted") {
                         if (!field.value().is_array())
-                            (_log << bwtools::error)
-                                << (log_message(log_type::error)
+                            (_log << bwtools::fatal)
+                                << (log_message(log_type::fatal)
                                     << "The field for listing the types of function parameters must be an array");
                         for (u32t i = 0; i < field.value().size(); ++i) {
                             if (field.value()[i].is_string())
@@ -137,7 +132,7 @@ std::string bwpackage::init(data_bw_package _data, bool is_create_pckg) {
                 }
                 funcs.push_back(def_func_tmp);
             }
-            cfg_package.modules.emplace_back(module.key(), metainf_md["lua source file"], funcs);
+            cfg_package.modules.emplace_back(module.key(), metainf_md["src-luafile-md"], funcs);
         }
     }
 
@@ -149,11 +144,11 @@ std::string bwpackage::init(data_bw_package _data, bool is_create_pckg) {
 void bwpackage::load(std::string_view raw_data_package) {
     std::string data_pckg = bwlz4::decompress_data(raw_data_package, MAX_SIZE_BW_PACKAGE);
     if (data_pckg.size() == 0)
-        (_log << bwtools::error) << (log_message(log_type::error) << "Unsuccessful decompression of package bweas");
+        (_log << bwtools::fatal) << (log_message(log_type::fatal) << "Unsuccessful decompression of package bweas");
 
     if (data_pckg.find(BW_PACKAGE_PREFIX_BYTE) == data_pckg.npos &&
         data_pckg.find(BW_PACKAGE_SEPARATE_JSON_BYTES) == data_pckg.npos)
-        (_log << bwtools::error) << (log_message(log_type::error) << "Incorrect bweas package structure"
+        (_log << bwtools::fatal) << (log_message(log_type::fatal) << "Incorrect bweas package structure"
                                                                   << "[Package: " << data_pckg.size() << " bytes]");
 
     std::string prefix_package = data_pckg;
@@ -161,7 +156,7 @@ void bwpackage::load(std::string_view raw_data_package) {
     prefix_package.erase(BW_PACKAGE_VERSION_BWEAS_VERSION_LENGHT);
 
     if (var::struct_sb::version(prefix_package) < var::struct_sb::version(BW_PACKAGE_PREFIX_BYTE))
-        (_log << bwtools::error) << (log_message(log_type::error)
+        (_log << bwtools::fatal) << (log_message(log_type::fatal)
                                      << "The package of this version is not supported by the build system"
                                      << "[Package: " << data_pckg.size() << " bytes] Ver pckg: " << prefix_package);
     data_pckg.erase(0, BW_PACKAGE_START_BYTES_LENGHT);

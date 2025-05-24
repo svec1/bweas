@@ -20,19 +20,18 @@ bwluatools::table<std::string, std::any> bwluatools::conv_to_table(const var::st
         {PRJ_VAR_NAME_RFLAGS_L, prj.rflags_linker},
         {PRJ_VAR_NAME_DFLAGS_C, prj.dflags_compiler},
         {PRJ_VAR_NAME_DFLAGS_L, prj.dflags_linker},
-        {PRJ_VAR_NAME_STD_C, prj.standart_c},
-        {PRJ_VAR_NAME_STD_CPP, prj.standart_cpp},
+        {PRJ_VAR_NAME_STD_C, (bwluatools::integer)prj.standart_c},
+        {PRJ_VAR_NAME_STD_CPP, (bwluatools::integer)prj.standart_cpp},
         {PRJ_VAR_NAME_UITTEMPLATES, (bwlua::lua::integer)prj.use_it_templates},
         {PRJ_VAR_NAME_SRC_FILES, prj.src_files},
         {PRJ_VAR_NAME_UTEMPLATES, prj.vec_templates},
-        {PRJ_VAR_NAME_CUSTOM_EXT_FIELDS, prj.custom_ext_fields}};
+        {PRJ_VAR_NAME_CUSTOM_EXT_FIELDS, bwlua::lua::to_table(prj.custom_ext_fields)}};
 }
 
 bwluatools::array<std::any> bwluatools::conv_to_table(const std::vector<var::struct_sb::template_command::arg> &args) {
-    array<std::any> vec_args;
+    bwluatools::array<std::any> vec_args;
     for (const auto &arg : args)
-        vec_args.emplace_back(
-            bwlua::lua::key_value<std::string, bwlua::lua::integer>{arg.str_arg, (bwlua::lua::integer)arg.arg_t});
+        vec_args.emplace_back(bwluatools::array<std::any>{arg.str_arg, (bwlua::lua::integer)arg.arg_t});
     return vec_args;
 }
 
@@ -44,10 +43,11 @@ bwluatools::table<std::string, std::any> bwluatools::conv_to_table(const var::st
                                         {NAME_FIELD_TEMPLATE_COMMAND_RET, tmp_c.returnable}};
 }
 
-bwluatools::table<std::string, std::any> bwluatools::conv_to_table(const var::struct_sb::call_component &ccmp) {
-    return bwluatools::table<std::string, std::any>{{NAME_FIELD_CALL_COMPONENT_NAME, ccmp.name},
-                                                    {NAME_FIELD_CALL_COMPONENT_NAME_PROGRAM, ccmp.name_program},
-                                                    {NAME_FIELD_CALL_COMPONENT_PATTERN_FILES, ccmp.pattern_ret_files}};
+bwluatools::table<std::string, std::string> bwluatools::conv_to_table(const var::struct_sb::call_component &ccmp) {
+    return bwluatools::table<std::string, std::string>{
+        {NAME_FIELD_CALL_COMPONENT_NAME, ccmp.name},
+        {NAME_FIELD_CALL_COMPONENT_NAME_PROGRAM, ccmp.name_program},
+        {NAME_FIELD_CALL_COMPONENT_PATTERN_FILES, ccmp.pattern_ret_files}};
 }
 
 bwluatools::table<std::string, std::any> bwluatools::conv_to_table(const var::struct_sb::target &trg_o) {

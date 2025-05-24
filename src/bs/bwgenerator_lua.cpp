@@ -48,15 +48,14 @@ std::unordered_set<std::string> lua_generator::build_graph_depends_file(std::str
         return std::unordered_set<std::string>{dependencies.begin(), dependencies.end()};
     }
     catch (std::exception &what) {
-        (log << bwtools::fatal) << (log_message(log_type::fatal) << "Run-time error" << what.what());
+        (log << bwtools::fatal) << (log_message(log_type::fatal) << "Run-time error: " << what.what());
     }
 }
 
 void lua_generator::get_input_files(data_transfer &data_t) {
-    bwluatools::array<bwluatools::array<std::string>> ccmps;
+    bwluatools::array<bwluatools::table<std::string, std::string>> ccmps;
     for (const auto &call_component : data_t.context->call_components)
-        ccmps.emplace_back(bwluatools::array<std::string>{call_component.name, call_component.name_program,
-                                                          call_component.pattern_ret_files});
+        ccmps.emplace_back(bwluatools::conv_to_table(call_component));
     bwluatools::array<bwluatools::table<std::string, std::any>> tcmd_s_vec;
     for (const auto &_template : data_t.context->templates)
         tcmd_s_vec.emplace_back(bwluatools::conv_to_table(_template));
@@ -68,12 +67,11 @@ void lua_generator::get_input_files(data_transfer &data_t) {
             bwluatools::conv_to_table(data_t.dfiles)));
     }
     catch (std::exception &what) {
-        (log << bwtools::fatal) << (log_message(log_type::fatal) << "Run-time error" << what.what());
+        (log << bwtools::fatal) << (log_message(log_type::fatal) << "Run-time error: " << what.what());
     }
 }
 
 gen_command lua_generator::generate_command(data_transfer &data_t) {
-
     generator::tools::parse_basic_args(*data_t.context->current_target, data_t.context->templates,
                                        data_t.context->global_external_args);
 
@@ -90,6 +88,6 @@ gen_command lua_generator::generate_command(data_transfer &data_t) {
             NAME_FUNCTION_GENERATE_COMMAND_LUA, bwlua::lua::to_table(data_t.ifiles)));
     }
     catch (std::exception &what) {
-        (log << bwtools::fatal) << (log_message(log_type::fatal) << "Run-time error" << what.what());
+        (log << bwtools::fatal) << (log_message(log_type::fatal) << "Run-time error: " << what.what());
     }
 }

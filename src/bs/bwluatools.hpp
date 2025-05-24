@@ -38,10 +38,10 @@ class bweas::bwluatools {
   public:
     static table<std::string, std::any> conv_to_table(const var::struct_sb::project &prj);
 
-    static array<std::any> conv_to_table(const std::vector<var::struct_sb::template_command::arg> &args);
+    static bwluatools::array<std::any> conv_to_table(const std::vector<var::struct_sb::template_command::arg> &args);
     static table<std::string, std::any> conv_to_table(const var::struct_sb::template_command &tmp_c);
 
-    static table<std::string, std::any> conv_to_table(const var::struct_sb::call_component &ccmp);
+    static table<std::string, std::string> conv_to_table(const var::struct_sb::call_component &ccmp);
 
     static table<std::string, std::any> conv_to_table(const var::struct_sb::target &trg_o);
     static table<std::string, std::any> conv_to_table(const var::struct_sb::target_out &trg_o);

@@ -13,10 +13,10 @@
 
 #define NAME_FUNCTION_GENERATE_CACHE_LUA "create_cache"
 #define DEFINITION_FUNCTION_GENERATE_CACHE_LUA                                                                         \
-    std::string, bwluatools::ref<bwluatools::array<bwluatools::table<std::string, std::any>>>,                         \
-        bwluatools::ref<bwluatools::array<bwluatools::table<std::string, std::any>>>,                                  \
-        bwluatools::ref<bwluatools::array<bwluatools::table<std::string, std::any>>>,                                  \
-        bwluatools::ref<bwluatools::array<bwluatools::key_value<std::string, std::string>>>
+    std::string, bwluatools::array<bwluatools::table<std::string, std::any>>,                                          \
+        bwluatools::array<bwluatools::table<std::string, std::any>>,                                                   \
+        bwluatools::array<bwluatools::table<std::string, std::string>>,                                                \
+        bwluatools::array<bwluatools::key_value<std::string, std::string>>
 
 #define NAME_FUNCTION_GET_DATA_CACHE_LUA "get_cache_data"
 #define DEFINITION_FUNCTION_GET_DATA_CACHE_LUA void, bwluatools::nil

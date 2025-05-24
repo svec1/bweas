@@ -109,8 +109,8 @@ void bwbuilder::handle_args(std::vector<std::string> &args) {
 
                 u32t size_pckg = create_package(path_json_cfg_package);
 
-                (_log << bwtools::message) << (log_message(log_type::msg)
-                                               << "[Bweas-Package] Created: " + std::to_string(size_pckg) + " bytes");
+                (_log << bwtools::message)
+                    << (log_message(log_type::msg) << "Created: " + std::to_string(size_pckg) + " bytes");
             }
             else {
                 (_log << bwtools::error) << (log_message(log_type::error) << "Unknown argument: " + args[i]);
@@ -296,14 +296,14 @@ u32t bwbuilder::gen_cache_target() {
         return 0;
     }
 
-    (_log << bwtools::message) << (log_message(log_type::msg) << " - [BWEAS]: Generating a cache file...");
+    (_log << bwtools::message) << (log_message(log_type::msg) << "Generating a cache file...");
 
     file_it bweas_cache = bwtools::open_file(CACHE_FILE, mf::open::w);
 
     bwtools::write_file(bwtools::get_ref_file(bweas_cache), cache->create_cache(), mf::output::write_binary);
     bwtools::close_file(bweas_cache);
 
-    (_log << bwtools::success) << (log_message(log_type::msg) << " - [BWEAS]: Cache generation was successful!");
+    (_log << bwtools::success) << (log_message(log_type::msg) << "Cache generation was successful!");
 
     return 1;
 }
@@ -321,7 +321,7 @@ void bwbuilder::deserl_cache() {
 }
 
 void bwbuilder::build_targets() {
-    (_log << bwtools::message) << (log_message(log_type::msg) << " - [BWEAS]: Building targets...");
+    (_log << bwtools::message) << (log_message(log_type::msg) << "Building targets...");
 
     context.global_external_args.push_back(std::pair<std::string, std::string>("", ""));
 

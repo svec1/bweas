@@ -257,8 +257,8 @@ class lua {
   public:
     std::string get_string_stack() {
         std::string str = "STACK(" + std::to_string(lua_gettop(L)) + "):\n";
-        for (ptrdiff_t i = 0; i < lua_gettop(L); ++i) {
-            if (i < lua_gettop(L) - 1)
+        for (ptrdiff_t i = 1; i <= lua_gettop(L); ++i) {
+            if (i < lua_gettop(L))
                 str += "| " + std::to_string(lua_gettop(L) - i) + " ";
             else
                 str += "V " + std::to_string(lua_gettop(L) - i) + " ";
@@ -276,7 +276,7 @@ class lua {
             else
                 str += "???";
 
-            if (i < lua_gettop(L) - 1)
+            if (i < lua_gettop(L))
                 str += "\n";
         }
 
@@ -330,6 +330,7 @@ class lua {
     template <typename T, typename... Types> T call_function(std::string name_func, Types... param) {
         if (!is_created())
             return T{};
+        lua_settop(L, 0);
         lua_getglobal(L, name_func.data());
         try {
             return call_symbol<T, Types...>(param...);
@@ -387,15 +388,15 @@ class lua {
     inline bool is_function(std::string_view name_func) {
         if (!is_created())
             return 0;
-        else {
-            lua_getglobal(L, name_func.data());
+        lua_getglobal(L, name_func.data());
 
-            if (!lua_isfunction(L, -1)) {
-                lua_pop(L, 1);
-                return 0;
-            }
+        if (!lua_isfunction(L, -1)) {
             lua_pop(L, 1);
+            return 0;
         }
+
+        lua_pop(L, 1);
+
         return 1;
     }
 
@@ -403,12 +404,15 @@ class lua {
     inline bool is_var(std::string_view name_var) {
         if (!is_created())
             return 0;
-        else {
-            lua_getglobal(L, name_var.data());
+        lua_getglobal(L, name_var.data());
 
-            if (lua_isnoneornil(L, -1))
-                return 0;
+        if (lua_isnoneornil(L, -1) || lua_isfunction(L, -1)) {
+            lua_pop(L, 1);
+            return 0;
         }
+
+        lua_pop(L, 1);
+
         return 1;
     }
 
@@ -421,6 +425,8 @@ class lua {
             lua_pushinteger(L, param);
         else if constexpr (std::is_same_v<T, number>)
             lua_pushnumber(L, param);
+        else if constexpr (std::is_same_v<T, const char *>)
+            lua_pushstring(L, param);
         else if constexpr (std::is_same_v<T, std::string> || std::is_same_v<T, std::string_view>)
             lua_pushstring(L, param.data());
         else if constexpr (is_map<T>::value) {
@@ -446,13 +452,15 @@ class lua {
         }
         else if constexpr (std::is_same_v<T, std::any>) {
             if (param.type() == typeid(integer))
-                lua_pushinteger(L, std::any_cast<integer>(param));
+                push_stack_param(std::any_cast<integer>(param));
             else if (param.type() == typeid(number))
-                lua_pushnumber(L, std::any_cast<number>(param));
+                push_stack_param(std::any_cast<number>(param));
             else if (param.type() == typeid(std::string))
-                lua_pushstring(L, std::any_cast<std::string>(param).c_str());
+                push_stack_param(std::any_cast<std::string>(param));
             else if (param.type() == typeid(std::string_view))
-                lua_pushstring(L, std::any_cast<std::string_view>(param).data());
+                push_stack_param(std::any_cast<std::string_view>(param));
+            else if (param.type() == typeid(const char *))
+                push_stack_param(std::string_view(std::any_cast<const char *>(param)));
 
             else if (param.type() == typeid(std::vector<integer>))
                 push_stack_param(std::any_cast<std::vector<integer>>(param));
@@ -610,10 +618,12 @@ class lua {
     template <typename T, typename... Types> T call_symbol(Types... param) {
         std::tuple<Types...> params(param...);
         size_t count_params = std::tuple_size<decltype(params)>::value;
+        if (count_params == 1 && std::is_same_v<std::tuple_element_t<0, std::tuple<Types...>>, nil>)
+            count_params = 0;
+        else
+            pre_init_stack(params, std::index_sequence_for<Types...>{});
 
-        pre_init_stack(params, std::index_sequence_for<Types...>{});
-
-        if (!lua_isfunction(L, -count_params))
+        if (!lua_isfunction(L, -count_params - 1))
             throw std::runtime_error(LUA_FUNCTION_NFOUND);
 
         if constexpr (!std::is_same_v<T, void> && !std::is_same_v<T, nil>) {
@@ -624,7 +634,7 @@ class lua {
             LUA_EXCEPTION()
 
         if constexpr (std::is_same_v<T, void> || std::is_same_v<T, nil>)
-            return;
+            lua_pop(L, 1);
         else
             return get_valsymbol<T>();
     }
@@ -632,7 +642,7 @@ class lua {
     // call symbol(function) in top of stack
     // Assumes that the user parameters are already on the stack
     template <typename T> T call_symbol(int count_params) {
-        if (!lua_isfunction(L, -count_params))
+        if (!lua_isfunction(L, -count_params - 1))
             throw std::runtime_error(LUA_FUNCTION_NFOUND);
 
         if constexpr (!std::is_same_v<T, void> && !std::is_same_v<T, nil>) {
