@@ -9,17 +9,29 @@
 #define BWFILE__H
 
 #include <algorithm>
+#include <filesystem>
 #include <string>
 #include <vector>
 
 #include <bwtype.h>
 
-namespace bwfile {
+class bwfile {
+  public:
+    bwfile() = delete;
 
-// Creates an array of file names based on the mask
-// passed to the function and an array of all files.
-// ### The syntax is fully compliant with the glob() standard.
-static std::vector<std::string> file_slc_mask(std::string mask, const std::vector<std::string> &files) {
+  public:
+    // Creates an array of file names based on the mask
+    // passed to the function and an array of all files.
+    // ### The syntax is fully compliant with the glob() standard.
+    static inline std::vector<std::string> file_slc_mask(std::string mask, const std::vector<std::string> &files);
+
+    // Returns the absolute path to an existing file, considering the current directory.
+    static inline std::string get_path_file(std::string name_file);
+    // Returns the absolute path to an existing file, considering all possible paths, including the current directory.
+    static inline std::string get_path_file(std::string name_file, const std::vector<std::string> &possible_paths);
+};
+
+std::vector<std::string> bwfile::file_slc_mask(std::string mask, const std::vector<std::string> &files) {
     std::vector<std::string> slc_files;
     std::vector<std::string> masks;
 
@@ -94,6 +106,33 @@ static std::vector<std::string> file_slc_mask(std::string mask, const std::vecto
     return slc_files;
 }
 
-} // namespace bwfile
+std::string bwfile::get_path_file(std::string name_file) {
+    if (auto path_file = std::filesystem::weakly_canonical(std::filesystem::current_path() / name_file);
+        std::filesystem::is_regular_file(path_file))
+        return path_file.string();
+
+    return {};
+}
+
+std::string bwfile::get_path_file(std::string name_file, const std::vector<std::string> &possible_paths) {
+    if (auto path_file = get_path_file(name_file); !path_file.empty())
+        return path_file;
+
+    std::filesystem::path current_path_tmp = std::filesystem::current_path();
+    std::filesystem::path find_path_file;
+
+    for (const auto &path : possible_paths) {
+        std::filesystem::current_path(std::filesystem::weakly_canonical(path));
+        if (auto path_file = std::filesystem::weakly_canonical(std::filesystem::current_path() / name_file);
+            std::filesystem::is_regular_file(path_file)) {
+            find_path_file = path_file;
+            break;
+        }
+    }
+
+    std::filesystem::current_path(current_path_tmp);
+
+    return find_path_file.string();
+}
 
 #endif

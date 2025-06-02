@@ -102,8 +102,8 @@ class base_generator : public gninterface::interface_generator {
     }
 
   public:
-    static inline base_generator *create_generator_int(func_generator, func_build_graph_depends_file,
-                                                       func_get_input_files);
+    static inline base_generator *create_generator_int(func_build_graph_depends_file, func_get_input_files,
+                                                       func_generator);
     static inline base_generator *create_generator_lua(std::string);
 
   public:
@@ -119,11 +119,11 @@ class base_generator : public gninterface::interface_generator {
 
 // The class defines the API for internal generators, i.e. built into bweas as basic
 class integral_generator : public base_generator {
-    friend base_generator *base_generator::create_generator_int(func_generator, func_build_graph_depends_file,
-                                                                func_get_input_files);
+    friend base_generator *base_generator::create_generator_int(func_build_graph_depends_file, func_get_input_files,
+                                                                func_generator);
 
   private:
-    integral_generator(func_generator, func_build_graph_depends_file, func_get_input_files);
+    integral_generator(func_build_graph_depends_file, func_get_input_files, func_generator);
     ~integral_generator() = default;
 
   public:
@@ -136,9 +136,9 @@ class integral_generator : public base_generator {
     gen_command generate_command(data_transfer &data_t) override final;
 
   private:
-    func_generator generator_p;
     func_build_graph_depends_file build_graph_depends_file_p;
     func_get_input_files get_input_files_p;
+    func_generator generate_p;
 };
 
 // The class defines the API for generators written in lua and presented in bweas packages
@@ -162,10 +162,9 @@ class lua_generator : public base_generator {
     bwlua::lua lua;
 };
 
-base_generator *base_generator::create_generator_int(func_generator generator,
-                                                     func_build_graph_depends_file build_graph_depends_file,
-                                                     func_get_input_files get_input_files) {
-    return (base_generator *)new integral_generator(generator, build_graph_depends_file, get_input_files);
+base_generator *base_generator::create_generator_int(func_build_graph_depends_file build_graph_depends_file,
+                                                     func_get_input_files get_input_files, func_generator generate) {
+    return (base_generator *)new integral_generator(build_graph_depends_file, get_input_files, generate);
 }
 base_generator *base_generator::create_generator_lua(std::string src_lua) {
     return (base_generator *)new lua_generator(src_lua);

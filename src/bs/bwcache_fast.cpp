@@ -236,8 +236,13 @@ void fast_bwcache::extract_cache_data(std::string &&cache_str) {
                     }
                 }
                 else {
-                    if (count_word == 1)
+                    if (count_word == 1) {
+                        trg_tmp.prj.include_paths.clear();
+                        trg_tmp.prj.vec_templates.clear();
+                        trg_tmp.prj.custom_ext_fields.clear();
+                        trg_tmp.target_vec_libs.clear();
                         size_src_files = std::stoi(str_tmp);
+                    }
                     else if (count_word == 2)
                         size_include_paths = std::stoi(str_tmp);
                     else if (count_word == 3)

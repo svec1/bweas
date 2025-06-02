@@ -16,17 +16,16 @@
 #include <bwlogger.hpp>
 
 #include <lang/interpreter.hpp>
-#include <tools/bwexception.hpp>
 
 #include <algorithm>
 #include <memory>
 #include <vector>
 
-#define BWEAS_VERSION_STR "0.1.0"
+#define BWEAS_VERSION_STR "0.1.1"
 
 #define BWEAS_VERSION_MAJOR "0"
 #define BWEAS_VERSION_MINOR "1"
-#define BWEAS_VERSION_PATCH "0"
+#define BWEAS_VERSION_PATCH "1"
 
 #define BWEAS_INFO "bweas version " BWEAS_VERSION_STR "\nrep on github - https://github.com/svec1/bweas"
 

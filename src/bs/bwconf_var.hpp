@@ -35,6 +35,7 @@
 #define DEBUG_FLAGS_LINKER_CXX "-fuse-ld=lld"
 
 #define DEFAULT_COMPILER_C "clang"
+#define DEFAULT_COMPILER_CPP "clang++"
 
 #define PATH_TO_COMPILER_WIN1 "null"
 
@@ -55,6 +56,7 @@
 #define DEBUG_FLAGS_LINKER_CXX "-fuse-ld=lld"
 
 #define DEFAULT_COMPILER_C "clang"
+#define DEFAULT_COMPILER_CPP "clang++"
 
 #define PATH_TO_COMPILER_UNIX_CL1 "null"
 

@@ -9,7 +9,7 @@
 
 using namespace bweas;
 
-std::string generator::tools::get_name_output_file(std::string pattern_file, u32t index, std::string dir_work_endv) {
+std::string generator_tools::get_name_output_file(std::string pattern_file, u32t index, std::string dir_work_endv) {
     if (pattern_file.find(".") == pattern_file.npos)
         return dir_work_endv + "/" + pattern_file + std::to_string(index);
     std::string name_output_file_curr = pattern_file, extension_output_file_curr = pattern_file;
@@ -20,8 +20,23 @@ std::string generator::tools::get_name_output_file(std::string pattern_file, u32
     return dir_work_endv + "/" + name_output_file_curr + extension_output_file_curr;
 }
 
-void generator::tools::parse_basic_args(const var::struct_sb::target_out &target,
-                                        bwqueue_templates &target_queue_templates, const bwargs &global_extern_args) {
+bool generator_tools::should_uses_src_file(std::string_view src_file, std::string_view output_file,
+                                           const std::unordered_set<std::string> &dfiles) {
+    if (std::filesystem::last_write_time(CACHE_FILE) > std::filesystem::last_write_time(output_file))
+        return 1;
+    else if (!std::filesystem::is_regular_file(output_file) ||
+             std::filesystem::last_write_time(output_file) < std::filesystem::last_write_time(src_file))
+        return 1;
+
+    for (const auto &dfile : dfiles)
+        if (std::filesystem::last_write_time(output_file) < std::filesystem::last_write_time(dfile))
+            return 1;
+
+    return 0;
+}
+
+void generator_tools::parse_basic_args(const var::struct_sb::target_out &target,
+                                       bwqueue_templates &target_queue_templates, const bwargs &global_extern_args) {
     for (auto &trg_template : target_queue_templates) {
         for (u32t i = 0; i < trg_template.args.size(); ++i) {
             var::struct_sb::template_command::arg &current_arg = trg_template.args[i];

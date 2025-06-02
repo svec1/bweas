@@ -216,11 +216,11 @@ void bwbuilder::init() {
         }
     }
 
-    generators.emplace("bwgenerator", std::shared_ptr<generator_api::base_generator>(
-                                          generator_api::base_generator::create_generator_int(
-                                              generator::bwgenerator, generator::bwbuild_graph_depends_file,
-                                              generator::bwget_input_files),
-                                          [](generator_api::base_generator *ptr) { ptr->_delete(); }));
+    generators.emplace("bwgenerator",
+                       std::shared_ptr<generator_api::base_generator>(
+                           generator_api::base_generator::create_generator_int(
+                               nullptr, integral_generator::get_input_files, integral_generator::generate),
+                           [](generator_api::base_generator *ptr) { ptr->_delete(); }));
 
     for (const auto &package : loaded_packages)
         for (const auto &generator : package.cfg_package.generators) {
@@ -359,37 +359,41 @@ void bwbuilder::build_targets() {
         else
             depends_files = std::make_unique<bwdepends_integral>(target.prj.language, dir_target);
 
+        depends_files->set_include_paths(target.prj.include_paths);
+
         for (const auto &name_file : target.prj.src_files) {
             std::string name_depends_file = name_file + DEPENDS_FILE_POSTFIX;
             if (bwtools::exist_file(name_depends_file))
                 depends_files->build_graph_depends_file_string(
                     name_file, bwtools::read_file(bwtools::get_ref_file(bwtools::open_file(name_depends_file))));
-            else
+            else {
+                depends_files->build_graphs_depends_file_v(name_file);
                 bwtools::write_file(bwtools::get_ref_file(bwtools::open_file(name_depends_file, mf::open::w)),
                                     depends_files->get_string_depends_file(name_file));
+            }
         }
 
-        depends_files->build_graphs_depends_files(target.prj.src_files, target.prj.include_paths);
+        depends_files->build_graphs_depends_files(target.prj.src_files);
         data_t.dfiles = depends_files->get_graphs_depends_files();
 
         (_log << bwtools::message) << (log_message(log_type::msg) << "Build {" << target.name_target << "}");
 
         current_generator->get_input_files(data_t);
+
         auto cmd_s = current_generator->generate_command(data_t);
 
         for (const auto &cmd : cmd_s) {
+            build_state += 1.f / (double)cmd_s.size() * 100;
 
             (_log << bwtools::message)
                 << (log_message(log_type::msg)
-                    << "[" << std::to_string(build_state).erase(std::to_string((u32t)build_state).size() + 3, 4)
-                    << "%]Compile - " << cmd.first);
+                    << "[" << std::to_string(build_state).erase(std::to_string((u32t)build_state).size() + 2, 5)
+                    << "%] " << cmd.first);
 
             if (system(cmd.second.c_str()))
                 (_log << bwtools::warning)
                     << (log_message(log_type::warning) << "Failed build. Command execution error: \n"
                                                        << cmd.second);
-
-            build_state += 1.f / (double)cmd_s.size() * 100;
         }
     }
 }

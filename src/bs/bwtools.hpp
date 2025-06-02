@@ -37,6 +37,9 @@ extern bwtools _bwtools;
 // A base class that implements many auxiliary functions
 class bweas::bwtools {
   public:
+    bwtools() = delete;
+
+  public:
     struct file {
         struct mode_file {
           private:

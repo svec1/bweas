@@ -22,13 +22,12 @@ class bwdepends_integral : public bwdepends_files {
     ~bwdepends_integral() = default;
 
   public:
-    std::unordered_set<std::string> build_graph_depends_file(
-        std::string_view name_file, const std::vector<std::string> &include_paths) override final;
+    std::unordered_set<std::string> build_graph_depends_file(std::string_view name_file) override final;
+
+  private:
+    static std::unordered_set<std::string> build_graph_depends_file_c_cpp(
+        std::string_view name_file, const std::vector<std::string> &include_paths);
 };
 } // namespace bweas
-
-std::unordered_set<std::string> bweas::bwdepends_integral::build_graph_depends_file(
-    std::string_view name_file, const std::vector<std::string> &include_paths) {
-}
 
 #endif

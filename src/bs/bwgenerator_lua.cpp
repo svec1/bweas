@@ -72,8 +72,8 @@ void lua_generator::get_input_files(data_transfer &data_t) {
 }
 
 gen_command lua_generator::generate_command(data_transfer &data_t) {
-    generator::tools::parse_basic_args(*data_t.context->current_target, data_t.context->templates,
-                                       data_t.context->global_external_args);
+    generator_tools::parse_basic_args(*data_t.context->current_target, data_t.context->templates,
+                                      data_t.context->global_external_args);
 
     std::vector<bwluatools::table<std::string, std::any>> tcmd_s_vec;
     for (const auto &_template : data_t.context->templates)

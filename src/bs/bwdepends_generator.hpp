@@ -22,15 +22,13 @@ class bwdepends_generator : public bweas::bwdepends_files {
     ~bwdepends_generator() = default;
 
   public:
-    std::unordered_set<std::string> build_graph_depends_file(
-        std::string_view name_file, const std::vector<std::string> &include_paths) override final;
+    std::unordered_set<std::string> build_graph_depends_file(std::string_view name_file) override final;
 
   private:
     std::shared_ptr<generator_api::base_generator> generator;
 };
 
-std::unordered_set<std::string> bweas::bwdepends_generator::build_graph_depends_file(
-    std::string_view name_file, const std::vector<std::string> &include_paths) {
+std::unordered_set<std::string> bweas::bwdepends_generator::build_graph_depends_file(std::string_view name_file) {
     return generator->build_graph_depends_file(language, name_file, work_directory, include_paths);
 }
 } // namespace bweas

@@ -77,8 +77,6 @@ template <typename T> inline T call_function(lua_State *L, int count_param);
 
 // A wrapper class for luajit.
 // It contains basic functions for interacting with lua scripts.
-// The class is thread safe provided that you do not use __mutex functions.
-// All functions without the __nmutex prefix block the RAII-style mutex.
 // If an error occurs in any function, an exception is thrown, which at best should be handled!
 // If a function (any) sees that lua_state is not defined, it will not do anything.
 class lua {
@@ -330,7 +328,6 @@ class lua {
     template <typename T, typename... Types> T call_function(std::string name_func, Types... param) {
         if (!is_created())
             return T{};
-        lua_settop(L, 0);
         lua_getglobal(L, name_func.data());
         try {
             return call_symbol<T, Types...>(param...);

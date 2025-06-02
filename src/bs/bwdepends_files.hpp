@@ -32,24 +32,27 @@ class bwdepends_files {
     using depends_map  = std::unordered_map<typename depends_file::first_type, typename depends_file::second_type>;
 
     // Dependency graphs of source files are built
-    depends_map &build_graphs_depends_files(const std::vector<std::string> &src_files,
-                                            const std::vector<std::string> &include_paths);
+    depends_map &build_graphs_depends_files(const std::vector<std::string> &src_files);
+    depends_map &build_graphs_depends_file_v(const std::string &name_file);
+
     // depends_file - list of file dependencies(name_file)
     depends_map &build_graph_depends_file_string(std::string name_file, std::string depends_file);
 
-    depends_map &get_graphs_depends_files();
-
   public:
+    depends_map &get_graphs_depends_files();
     // Returns all dependent files of the transmitted file as a string
     std::string get_string_depends_file(std::string name_file);
 
+    void set_include_paths(const std::vector<std::string> _include_paths);
+
   protected:
-    virtual std::unordered_set<std::string> build_graph_depends_file(std::string_view name_file,
-                                                                     const std::vector<std::string> &include_paths) = 0;
+    virtual std::unordered_set<std::string> build_graph_depends_file(std::string_view name_file) = 0;
 
   protected:
     std::string language;
     std::string work_directory;
+
+    std::vector<std::string> include_paths;
 
   private:
     depends_map mdepends;

@@ -23,6 +23,9 @@ class bwluatools;
 // A class providing tools for simplified interaction between bweas and lua structures
 class bweas::bwluatools {
   public:
+    bwluatools() = delete;
+
+  public:
     template <typename T> using ref = bwlua::lua::ref<T>;
 
     template <typename T> using array                 = bwlua::lua::array<T>;

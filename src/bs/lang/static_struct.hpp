@@ -196,7 +196,7 @@ struct project {
 
     std::string language;
 
-    std::string path_compiler{DEFAULT_COMPILER_C}, path_linker{DEFAULT_COMPILER_C};
+    std::string path_compiler{DEFAULT_COMPILER_CPP}, path_linker{DEFAULT_COMPILER_CPP};
     std::string rflags_compiler{RELEASE_FLAGS_COMPILER_CPP}, rflags_linker{RELEASE_FLAGS_LINKER_CXX};
     std::string dflags_compiler{DEBUG_FLAGS_COMPILER_CPP}, dflags_linker{DEBUG_FLAGS_LINKER_CXX};
     i32t standart_c{98}, standart_cpp{14};
@@ -204,7 +204,7 @@ struct project {
     bool use_it_templates{0};
 
     std::vector<std::string> src_files;
-    std::vector<std::string> include_paths{"null"};
+    std::vector<std::string> include_paths{"/usr/include", "/usr/local/include"};
     std::vector<std::string> vec_templates{"null"};
 
     std::map<std::string, std::string> custom_ext_fields{{"null", ""}};

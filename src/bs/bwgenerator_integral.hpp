@@ -14,15 +14,17 @@
 #include "bwgenerator_api.hpp"
 
 namespace bweas {
-namespace generator {
+class integral_generator {
+  public:
+    integral_generator() = delete;
 
-extern std::unordered_set<std::string> bwbuild_graph_depends_file(std::string_view, std::string_view, std::string_view,
-                                                                  std::vector<std::string>);
+  public:
+    static void get_input_files(bweas::generator_api::data_transfer &data_t);
+    // First and basic template-based command generator
+    static generator_api::gen_command generate(bweas::generator_api::data_transfer &data_t);
 
-extern void bwget_input_files(bweas::generator_api::data_transfer &);
-// First and basic template-based command generator
-extern bweas::generator_api::gen_command bwgenerator(bweas::generator_api::data_transfer &);
-} // namespace generator
+  public:
+};
 } // namespace bweas
 
 #endif
