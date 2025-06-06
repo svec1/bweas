@@ -1,0 +1,182 @@
+\doxysection{bwgenerator\+\_\+api.\+hpp}
+\hypertarget{bwgenerator__api_8hpp_source}{}\label{bwgenerator__api_8hpp_source}\index{src/bs/bwgenerator\_api.hpp@{src/bs/bwgenerator\_api.hpp}}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{comment}{//}}
+\DoxyCodeLine{00002\ \textcolor{comment}{//\ BWEAS\ is\ distributed\ under\ the\ gnu\ general\ public\ license\ 2.0\ (gpl-\/2.0).}}
+\DoxyCodeLine{00003\ \textcolor{comment}{//\ you\ can\ view\ the\ license\ text\ at\ the\ link:}}
+\DoxyCodeLine{00004\ \textcolor{comment}{//\ \ \ \ \ <https://www.gnu.org/licenses>}}
+\DoxyCodeLine{00005\ \textcolor{comment}{//\ -\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/}}
+\DoxyCodeLine{00006\ \textcolor{comment}{//}}
+\DoxyCodeLine{00007\ }
+\DoxyCodeLine{00008\ \textcolor{preprocessor}{\#ifndef\ BWGENERATOR\_\_H}}
+\DoxyCodeLine{00009\ \textcolor{preprocessor}{\#define\ BWGENERATOR\_\_H}}
+\DoxyCodeLine{00010\ }
+\DoxyCodeLine{00011\ \textcolor{preprocessor}{\#include\ <string\_view>}}
+\DoxyCodeLine{00012\ }
+\DoxyCodeLine{00013\ \textcolor{preprocessor}{\#include\ "{}bw\_defs.hpp"{}}}
+\DoxyCodeLine{00014\ \textcolor{preprocessor}{\#include\ "{}bwdepends\_files.hpp"{}}}
+\DoxyCodeLine{00015\ \textcolor{preprocessor}{\#include\ "{}bwluatools.hpp"{}}}
+\DoxyCodeLine{00016\ }
+\DoxyCodeLine{00017\ \textcolor{comment}{//\ Accepts\ only\ an\ array\ of\ input\ files.\ However,\ the\ bass\ generator\ API\ creates\ global\ configuration\ variables\ that\ the}}
+\DoxyCodeLine{00018\ \textcolor{comment}{//\ function\ can\ access\ (target\ -\/\ "{}CURRENT\_TARGET"{},\ templates\ -\/\ "{}CURRENT\_QUEUE\_TEMPLATES"{},\ call\ components\ -\/\ "{}CCMPS"{},\ and}}
+\DoxyCodeLine{00019\ \textcolor{comment}{//\ the\ path\ of\ the\ working\ directory\ -\/\ "{}CURRENT\_DIR"{})}}
+\DoxyCodeLine{00020\ \textcolor{preprocessor}{\#define\ NAME\_FUNCTION\_GENERATE\_COMMAND\_LUA\ "{}generate"{}}}
+\DoxyCodeLine{00021\ \textcolor{preprocessor}{\#define\ DEFINITION\_FUNCTION\_GENERATE\_COMMAND\_LUA\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \(\backslash\)}}
+\DoxyCodeLine{00022\ \textcolor{preprocessor}{\ \ \ \ bwluatools::table<std::string,\ std::string>,\ bwluatools::table<std::string,\ bwluatools::array<std::string>>}}
+\DoxyCodeLine{00023\ }
+\DoxyCodeLine{00024\ \textcolor{comment}{//\ Accepts\ a\ name\ file,\ directory\ work}}
+\DoxyCodeLine{00025\ \textcolor{preprocessor}{\#define\ NAME\_FUNCTION\_BUILD\_DEPENDS\_LUA\ "{}build\_graph\_depends\_file"{}}}
+\DoxyCodeLine{00026\ \textcolor{preprocessor}{\#define\ DEFINITION\_FUNCTION\_BUILD\_DEPENDS\_LUA\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \(\backslash\)}}
+\DoxyCodeLine{00027\ \textcolor{preprocessor}{\ \ \ \ bwluatools::array<std::string>,\ std::string\_view,\ std::string\_view,\ std::string\_view,\ std::vector<std::string>}}
+\DoxyCodeLine{00028\ }
+\DoxyCodeLine{00029\ \textcolor{comment}{//\ Accepts\ a\ target,\ its\ templates,\ and\ a\ global\ list\ of\ file\ trees\ (It\ can\ also\ use\ the\ "{}CCMPS"{}\ global\ variable)}}
+\DoxyCodeLine{00030\ \textcolor{preprocessor}{\#define\ NAME\_FUNCTION\_GET\_INPUT\_FILE\_LUA\ "{}get\_input\_files"{}}}
+\DoxyCodeLine{00031\ \textcolor{preprocessor}{\#define\ DEFINITION\_FUNCTION\_GET\_INPUT\_FILE\_LUA\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \(\backslash\)}}
+\DoxyCodeLine{00032\ \textcolor{preprocessor}{\ \ \ \ bwluatools::table<std::string,\ bwluatools::array<std::string>>,\ bwluatools::table<std::string,\ std::any>,\ \ \ \ \ \ \ \ \ \ \(\backslash\)}}
+\DoxyCodeLine{00033\ \textcolor{preprocessor}{\ \ \ \ \ \ \ \ bwluatools::array<bwluatools::table<std::string,\ std::any>>,\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \(\backslash\)}}
+\DoxyCodeLine{00034\ \textcolor{preprocessor}{\ \ \ \ \ \ \ \ bwluatools::table<std::string,\ bwluatools::array<std::string>>}}
+\DoxyCodeLine{00035\ }
+\DoxyCodeLine{00036\ \textcolor{keyword}{namespace\ }bweas\ \{}
+\DoxyCodeLine{00037\ }
+\DoxyCodeLine{00038\ \textcolor{keyword}{namespace\ }generator\_api\ \{}
+\DoxyCodeLine{00039\ }
+\DoxyCodeLine{00040\ \textcolor{comment}{//\ name\_templates,\ name\ files}}
+\DoxyCodeLine{00041\ \textcolor{keyword}{using\ }files\_input\ =\ std::map<std::string,\ std::vector<std::string>>;}
+\DoxyCodeLine{00042\ \textcolor{comment}{//\ name\_input\_file,\ command}}
+\DoxyCodeLine{00043\ \textcolor{keyword}{using\ }gen\_command\ =\ std::map<std::string,\ std::string>;}
+\DoxyCodeLine{00044\ }
+\DoxyCodeLine{00045\ \textcolor{comment}{//\ A\ temporary\ structure\ that\ allows\ you\ to\ transfer\ data\ to\ the\ generator\ and\ its\ sub-\/functions}}
+\DoxyCodeLine{00046\ \textcolor{keyword}{struct\ }data\_transfer\ \{}
+\DoxyCodeLine{00047\ \ \ \ \ data\_transfer(\mbox{\hyperlink{structbweas_1_1bw__context}{bw\_context}}\ *\textcolor{keyword}{const}\ \_context,\ std::string\ \_work\_directory)}
+\DoxyCodeLine{00048\ \ \ \ \ \ \ \ \ :\ context(\_context),\ work\_directory(\_work\_directory)\ \{}
+\DoxyCodeLine{00049\ \ \ \ \ \}}
+\DoxyCodeLine{00050\ }
+\DoxyCodeLine{00051\ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00052\ \ \ \ \ \mbox{\hyperlink{structbweas_1_1bw__context}{bw\_context}}\ *\textcolor{keyword}{const}\ context;}
+\DoxyCodeLine{00053\ }
+\DoxyCodeLine{00054\ \ \ \ \ bwdepends\_files::depends\_map\ dfiles;}
+\DoxyCodeLine{00055\ \ \ \ \ files\_input\ ifiles;}
+\DoxyCodeLine{00056\ \ \ \ \ std::string\ work\_directory;}
+\DoxyCodeLine{00057\ \};}
+\DoxyCodeLine{00058\ }
+\DoxyCodeLine{00059\ \textcolor{keyword}{namespace\ }gninterface\ \{}
+\DoxyCodeLine{00060\ }
+\DoxyCodeLine{00061\ \textcolor{comment}{//\ Interface\ class\ that\ defines\ the\ structure\ of\ generator\ classes}}
+\DoxyCodeLine{00062\ \textcolor{keyword}{class\ }\mbox{\hyperlink{classbweas_1_1generator__api_1_1gninterface_1_1interface__generator}{interface\_generator}}\ \{}
+\DoxyCodeLine{00063\ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00064\ \ \ \ \ \mbox{\hyperlink{classbweas_1_1generator__api_1_1gninterface_1_1interface__generator}{interface\_generator}}\ \&operator=(\textcolor{keyword}{const}\ \mbox{\hyperlink{classbweas_1_1generator__api_1_1gninterface_1_1interface__generator}{interface\_generator}}\ \&)\ =\ \textcolor{keyword}{delete};}
+\DoxyCodeLine{00065\ }
+\DoxyCodeLine{00066\ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00067\ \ \ \ \ \textcolor{keyword}{virtual}\ \textcolor{keywordtype}{void}\ \_delete()\ =\ 0;}
+\DoxyCodeLine{00068\ \ \ \ \ \textcolor{comment}{//\ Generator\ initialization\ function}}
+\DoxyCodeLine{00069\ \ \ \ \ \textcolor{keyword}{virtual}\ \textcolor{keywordtype}{void}\ init()\ =\ 0;}
+\DoxyCodeLine{00070\ \ \ \ \ \textcolor{comment}{//\ Implementing\ a\ function\ for\ the\ file\ dependency\ system,\ returns\ a\ list\ of\ dependent\ files(graph)}}
+\DoxyCodeLine{00071\ \ \ \ \ \textcolor{keyword}{virtual}\ std::unordered\_set<std::string>\ build\_graph\_depends\_file(std::string\_view,\ std::string\_view,}
+\DoxyCodeLine{00072\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ std::string\_view,\ std::vector<std::string>)\ =\ 0;}
+\DoxyCodeLine{00073\ \ \ \ \ \textcolor{comment}{//\ Initializes(defines)\ files\ that\ should\ be\ compiled\ (recompiled)\ for\ the\ current\ target}}
+\DoxyCodeLine{00074\ \ \ \ \ \textcolor{keyword}{virtual}\ \textcolor{keywordtype}{void}\ get\_input\_files(\mbox{\hyperlink{structbweas_1_1generator__api_1_1data__transfer}{data\_transfer}}\ \&)\ =\ 0;}
+\DoxyCodeLine{00075\ \ \ \ \ \textcolor{comment}{//\ The\ generator\ function\ returns\ the\ commands\ generated\ by\ it\ in\ the\ order\ of\ the\ templates\ used\ for\ the}}
+\DoxyCodeLine{00076\ \ \ \ \ \textcolor{comment}{//\ transmitted\ target}}
+\DoxyCodeLine{00077\ \ \ \ \ \textcolor{keyword}{virtual}\ gen\_command\ generate\_command(\mbox{\hyperlink{structbweas_1_1generator__api_1_1data__transfer}{data\_transfer}}\ \&)\ =\ 0;}
+\DoxyCodeLine{00078\ }
+\DoxyCodeLine{00079\ \ \ \textcolor{keyword}{protected}:}
+\DoxyCodeLine{00080\ \ \ \ \ \textcolor{keyword}{virtual}\ \mbox{\hyperlink{classbweas_1_1generator__api_1_1gninterface_1_1interface__generator}{\string~interface\_generator}}()\ =\ \textcolor{keywordflow}{default};}
+\DoxyCodeLine{00081\ \};}
+\DoxyCodeLine{00082\ }
+\DoxyCodeLine{00083\ \}\ \textcolor{comment}{//\ namespace\ gninterface}}
+\DoxyCodeLine{00084\ }
+\DoxyCodeLine{00085\ \textcolor{keyword}{using\ }func\_generator\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ =\ gen\_command\ (*)(\mbox{\hyperlink{structbweas_1_1generator__api_1_1data__transfer}{data\_transfer}}\ \&);}
+\DoxyCodeLine{00086\ \textcolor{keyword}{using\ }func\_build\_graph\_depends\_file\ =\ std::unordered\_set<std::string>\ (*)(std::string\_view,\ std::string\_view,}
+\DoxyCodeLine{00087\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ std::string\_view,\ std::vector<std::string>);}
+\DoxyCodeLine{00088\ \textcolor{keyword}{using\ }func\_get\_input\_files\ \ \ \ \ \ \ \ \ \ =\ void\ (*)(\mbox{\hyperlink{structbweas_1_1generator__api_1_1data__transfer}{data\_transfer}}\ \&);}
+\DoxyCodeLine{00089\ }
+\DoxyCodeLine{00090\ \textcolor{comment}{//\ An\ abstract\ class\ that\ defines\ the\ creation\ of\ generator\ classes\ and\ is\ also\ a\ generalization}}
+\DoxyCodeLine{00091\ \textcolor{keyword}{class\ }\mbox{\hyperlink{classbweas_1_1generator__api_1_1base__generator}{base\_generator}}\ :\ \textcolor{keyword}{public}\ \mbox{\hyperlink{classbweas_1_1generator__api_1_1gninterface_1_1interface__generator}{gninterface::interface\_generator}}\ \{}
+\DoxyCodeLine{00092\ \ \ \textcolor{keyword}{protected}:}
+\DoxyCodeLine{00093\ \ \ \ \ \mbox{\hyperlink{classbweas_1_1generator__api_1_1base__generator}{\string~base\_generator}}()\ =\ \textcolor{keywordflow}{default};}
+\DoxyCodeLine{00094\ }
+\DoxyCodeLine{00095\ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00096\ \ \ \ \ \textcolor{keywordtype}{void}\ set\_use\_build\_graph\_depends()\ \{}
+\DoxyCodeLine{00097\ \ \ \ \ \ \ \ \ use\_build\_graph\_depends\ =\ 1;}
+\DoxyCodeLine{00098\ \ \ \ \ \}}
+\DoxyCodeLine{00099\ }
+\DoxyCodeLine{00100\ \ \ \ \ \textcolor{keywordtype}{bool}\ has\_build\_graph\_depends()\ \{}
+\DoxyCodeLine{00101\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ use\_build\_graph\_depends;}
+\DoxyCodeLine{00102\ \ \ \ \ \}}
+\DoxyCodeLine{00103\ }
+\DoxyCodeLine{00104\ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00105\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \mbox{\hyperlink{classbweas_1_1generator__api_1_1base__generator}{base\_generator}}\ *create\_generator\_int(func\_build\_graph\_depends\_file,\ func\_get\_input\_files,}
+\DoxyCodeLine{00106\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ func\_generator);}
+\DoxyCodeLine{00107\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \mbox{\hyperlink{classbweas_1_1generator__api_1_1base__generator}{base\_generator}}\ *create\_generator\_lua(std::string);}
+\DoxyCodeLine{00108\ }
+\DoxyCodeLine{00109\ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00110\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{bool}\ is\_exist(\mbox{\hyperlink{classbweas_1_1generator__api_1_1base__generator}{base\_generator}}\ *generator)\ \{}
+\DoxyCodeLine{00111\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (!generator)}
+\DoxyCodeLine{00112\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ 0;}
+\DoxyCodeLine{00113\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ 1;}
+\DoxyCodeLine{00114\ \ \ \ \ \}}
+\DoxyCodeLine{00115\ }
+\DoxyCodeLine{00116\ \ \ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00117\ \ \ \ \ \textcolor{keywordtype}{bool}\ use\_build\_graph\_depends\{0\};}
+\DoxyCodeLine{00118\ \};}
+\DoxyCodeLine{00119\ }
+\DoxyCodeLine{00120\ \textcolor{comment}{//\ The\ class\ defines\ the\ API\ for\ internal\ generators,\ i.e.\ built\ into\ bweas\ as\ basic}}
+\DoxyCodeLine{00121\ \textcolor{keyword}{class\ }integral\_generator\ :\ \textcolor{keyword}{public}\ \mbox{\hyperlink{classbweas_1_1generator__api_1_1base__generator}{base\_generator}}\ \{}
+\DoxyCodeLine{00122\ \ \ \ \ \textcolor{keyword}{friend}\ \mbox{\hyperlink{classbweas_1_1generator__api_1_1base__generator}{base\_generator}}\ *base\_generator::create\_generator\_int(func\_build\_graph\_depends\_file,\ func\_get\_input\_files,}
+\DoxyCodeLine{00123\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ func\_generator);}
+\DoxyCodeLine{00124\ }
+\DoxyCodeLine{00125\ \ \ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00126\ \ \ \ \ integral\_generator(func\_build\_graph\_depends\_file,\ func\_get\_input\_files,\ func\_generator);}
+\DoxyCodeLine{00127\ \ \ \ \ \string~integral\_generator()\ =\ \textcolor{keywordflow}{default};}
+\DoxyCodeLine{00128\ }
+\DoxyCodeLine{00129\ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00130\ \ \ \ \ \textcolor{keywordtype}{void}\ init()\ \textcolor{keyword}{override}\ \textcolor{keyword}{final};}
+\DoxyCodeLine{00131\ \ \ \ \ \textcolor{keywordtype}{void}\ \_delete()\ \textcolor{keyword}{override}\ \textcolor{keyword}{final};}
+\DoxyCodeLine{00132\ \ \ \ \ std::unordered\_set<std::string>\ build\_graph\_depends\_file(std::string\_view\ language,\ std::string\_view\ name\_file,}
+\DoxyCodeLine{00133\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ std::string\_view\ work\_directory,}
+\DoxyCodeLine{00134\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ std::vector<std::string>\ include\_paths)\ \textcolor{keyword}{override}\ \textcolor{keyword}{final};}
+\DoxyCodeLine{00135\ \ \ \ \ \textcolor{keywordtype}{void}\ get\_input\_files(\mbox{\hyperlink{structbweas_1_1generator__api_1_1data__transfer}{data\_transfer}}\ \&data\_t)\ \textcolor{keyword}{override}\ \textcolor{keyword}{final};}
+\DoxyCodeLine{00136\ \ \ \ \ gen\_command\ generate\_command(\mbox{\hyperlink{structbweas_1_1generator__api_1_1data__transfer}{data\_transfer}}\ \&data\_t)\ \textcolor{keyword}{override}\ \textcolor{keyword}{final};}
+\DoxyCodeLine{00137\ }
+\DoxyCodeLine{00138\ \ \ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00139\ \ \ \ \ func\_build\_graph\_depends\_file\ build\_graph\_depends\_file\_p;}
+\DoxyCodeLine{00140\ \ \ \ \ func\_get\_input\_files\ get\_input\_files\_p;}
+\DoxyCodeLine{00141\ \ \ \ \ func\_generator\ generate\_p;}
+\DoxyCodeLine{00142\ \};}
+\DoxyCodeLine{00143\ }
+\DoxyCodeLine{00144\ \textcolor{comment}{//\ The\ class\ defines\ the\ API\ for\ generators\ written\ in\ lua\ and\ presented\ in\ bweas\ packages}}
+\DoxyCodeLine{00145\ \textcolor{keyword}{class\ }lua\_generator\ :\ \textcolor{keyword}{public}\ \mbox{\hyperlink{classbweas_1_1generator__api_1_1base__generator}{base\_generator}}\ \{}
+\DoxyCodeLine{00146\ \ \ \ \ \textcolor{keyword}{friend}\ \mbox{\hyperlink{classbweas_1_1generator__api_1_1base__generator}{base\_generator}}\ *base\_generator::create\_generator\_lua(std::string);}
+\DoxyCodeLine{00147\ }
+\DoxyCodeLine{00148\ \ \ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00149\ \ \ \ \ lua\_generator(std::string);}
+\DoxyCodeLine{00150\ \ \ \ \ \string~lua\_generator()\ =\ \textcolor{keywordflow}{default};}
+\DoxyCodeLine{00151\ }
+\DoxyCodeLine{00152\ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00153\ \ \ \ \ \textcolor{keywordtype}{void}\ init()\ \textcolor{keyword}{override}\ \textcolor{keyword}{final};}
+\DoxyCodeLine{00154\ \ \ \ \ \textcolor{keywordtype}{void}\ \_delete()\ \textcolor{keyword}{override}\ \textcolor{keyword}{final};}
+\DoxyCodeLine{00155\ \ \ \ \ std::unordered\_set<std::string>\ build\_graph\_depends\_file(std::string\_view\ language,\ std::string\_view\ name\_file,}
+\DoxyCodeLine{00156\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ std::string\_view\ work\_directory,}
+\DoxyCodeLine{00157\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ std::vector<std::string>\ include\_paths)\ \textcolor{keyword}{override}\ \textcolor{keyword}{final};}
+\DoxyCodeLine{00158\ \ \ \ \ \textcolor{keywordtype}{void}\ get\_input\_files(\mbox{\hyperlink{structbweas_1_1generator__api_1_1data__transfer}{data\_transfer}}\ \&data\_t)\ \textcolor{keyword}{override}\ \textcolor{keyword}{final};}
+\DoxyCodeLine{00159\ \ \ \ \ gen\_command\ generate\_command(\mbox{\hyperlink{structbweas_1_1generator__api_1_1data__transfer}{data\_transfer}}\ \&data\_t)\ \textcolor{keyword}{override}\ \textcolor{keyword}{final};}
+\DoxyCodeLine{00160\ }
+\DoxyCodeLine{00161\ \ \ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00162\ \ \ \ \ bwlua::lua\ lua;}
+\DoxyCodeLine{00163\ \};}
+\DoxyCodeLine{00164\ }
+\DoxyCodeLine{00165\ \mbox{\hyperlink{classbweas_1_1generator__api_1_1base__generator}{base\_generator}}\ *base\_generator::create\_generator\_int(func\_build\_graph\_depends\_file\ build\_graph\_depends\_file,}
+\DoxyCodeLine{00166\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ func\_get\_input\_files\ get\_input\_files,\ func\_generator\ generate)\ \{}
+\DoxyCodeLine{00167\ \ \ \ \ \textcolor{keywordflow}{return}\ (\mbox{\hyperlink{classbweas_1_1generator__api_1_1base__generator}{base\_generator}}\ *)\textcolor{keyword}{new}\ \mbox{\hyperlink{classbweas_1_1generator__api_1_1integral__generator}{integral\_generator}}(build\_graph\_depends\_file,\ get\_input\_files,\ generate);}
+\DoxyCodeLine{00168\ \}}
+\DoxyCodeLine{00169\ base\_generator\ *base\_generator::create\_generator\_lua(std::string\ src\_lua)\ \{}
+\DoxyCodeLine{00170\ \ \ \ \ \textcolor{keywordflow}{return}\ (base\_generator\ *)\textcolor{keyword}{new}\ lua\_generator(src\_lua);}
+\DoxyCodeLine{00171\ \}}
+\DoxyCodeLine{00172\ \}\ \textcolor{comment}{//\ namespace\ generator\_api}}
+\DoxyCodeLine{00173\ }
+\DoxyCodeLine{00174\ \}\ \textcolor{comment}{//\ namespace\ bweas}}
+\DoxyCodeLine{00175\ }
+\DoxyCodeLine{00176\ \textcolor{preprocessor}{\#endif}}
+
+\end{DoxyCode}

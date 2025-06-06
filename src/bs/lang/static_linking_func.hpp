@@ -95,9 +95,6 @@ extern "C++"
 
     // Adds the name of the template that will be used when generating commands
     void use_templates(const expressions &expr_s, var::scope &current_scope);
-
-    // Sets the flag of the passed project, whether to use templates for generating commands
-    void use_it_template(const expressions &expr_s, var::scope &current_scope);
 }
 
 } // namespace sl_func

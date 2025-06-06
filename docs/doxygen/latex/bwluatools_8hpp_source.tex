@@ -1,0 +1,79 @@
+\doxysection{bwluatools.\+hpp}
+\hypertarget{bwluatools_8hpp_source}{}\label{bwluatools_8hpp_source}\index{src/bs/bwluatools.hpp@{src/bs/bwluatools.hpp}}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{comment}{//}}
+\DoxyCodeLine{00002\ \textcolor{comment}{//\ BWEAS\ is\ distributed\ under\ the\ gnu\ general\ public\ license\ 2.0\ (gpl-\/2.0).}}
+\DoxyCodeLine{00003\ \textcolor{comment}{//\ you\ can\ view\ the\ license\ text\ at\ the\ link:}}
+\DoxyCodeLine{00004\ \textcolor{comment}{//\ \ \ \ \ <https://www.gnu.org/licenses>}}
+\DoxyCodeLine{00005\ \textcolor{comment}{//\ -\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/}}
+\DoxyCodeLine{00006\ \textcolor{comment}{//}}
+\DoxyCodeLine{00007\ }
+\DoxyCodeLine{00008\ \textcolor{preprocessor}{\#ifndef\ BWLUATOOLS\_H}}
+\DoxyCodeLine{00009\ \textcolor{preprocessor}{\#define\ BWLUATOOLS\_H}}
+\DoxyCodeLine{00010\ }
+\DoxyCodeLine{00011\ \textcolor{preprocessor}{\#include\ <bwdepends\_files.hpp>}}
+\DoxyCodeLine{00012\ \textcolor{preprocessor}{\#include\ <bwgntools.hpp>}}
+\DoxyCodeLine{00013\ \textcolor{preprocessor}{\#include\ <lang/scope.hpp>}}
+\DoxyCodeLine{00014\ \textcolor{preprocessor}{\#include\ <lang/static\_struct.hpp>}}
+\DoxyCodeLine{00015\ }
+\DoxyCodeLine{00016\ \textcolor{preprocessor}{\#include\ <tools/bwfile.hpp>}}
+\DoxyCodeLine{00017\ \textcolor{preprocessor}{\#include\ <tools/bwlua.hpp>}}
+\DoxyCodeLine{00018\ }
+\DoxyCodeLine{00019\ \textcolor{keyword}{namespace\ }bweas\ \{}
+\DoxyCodeLine{00020\ \textcolor{keyword}{class\ }\mbox{\hyperlink{classbweas_1_1bwluatools}{bwluatools}};}
+\DoxyCodeLine{00021\ \}\ \textcolor{comment}{//\ namespace\ bweas}}
+\DoxyCodeLine{00022\ }
+\DoxyCodeLine{00023\ \textcolor{comment}{//\ A\ class\ providing\ tools\ for\ simplified\ interaction\ between\ bweas\ and\ lua\ structures}}
+\DoxyCodeLine{00024\ \textcolor{keyword}{class\ }\mbox{\hyperlink{classbweas_1_1bwluatools}{bweas::bwluatools}}\ \{}
+\DoxyCodeLine{00025\ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00026\ \ \ \ \ bwluatools()\ =\ \textcolor{keyword}{delete};}
+\DoxyCodeLine{00027\ }
+\DoxyCodeLine{00028\ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00029\ \ \ \ \ \textcolor{keyword}{template}\ <\textcolor{keyword}{typename}\ T>\ \textcolor{keyword}{using\ }ref\ =\ bwlua::lua::ref<T>;}
+\DoxyCodeLine{00030\ }
+\DoxyCodeLine{00031\ \ \ \ \ \textcolor{keyword}{template}\ <\textcolor{keyword}{typename}\ T>\ \textcolor{keyword}{using\ }array\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ =\ bwlua::lua::array<T>;}
+\DoxyCodeLine{00032\ \ \ \ \ \textcolor{keyword}{template}\ <\textcolor{keyword}{typename}\ K,\ \textcolor{keyword}{typename}\ V>\ \textcolor{keyword}{using\ }key\_value\ =\ bwlua::lua::key\_value<K,\ V>;}
+\DoxyCodeLine{00033\ \ \ \ \ \textcolor{keyword}{template}\ <\textcolor{keyword}{typename}\ K,\ \textcolor{keyword}{typename}\ V>\ \textcolor{keyword}{using\ }table\ \ \ \ \ =\ bwlua::lua::table<K,\ V>;}
+\DoxyCodeLine{00034\ }
+\DoxyCodeLine{00035\ \ \ \ \ \textcolor{keyword}{using\ }integer\ =\ bwlua::lua::integer;}
+\DoxyCodeLine{00036\ \ \ \ \ \textcolor{keyword}{using\ }number\ \ =\ bwlua::lua::number;}
+\DoxyCodeLine{00037\ }
+\DoxyCodeLine{00038\ \ \ \ \ \textcolor{keyword}{using\ }nil\ =\ bwlua::lua::nil;}
+\DoxyCodeLine{00039\ }
+\DoxyCodeLine{00040\ \ \ \ \ \textcolor{comment}{//\ Functions\ for\ converting\ standard\ bweas\ structures\ into\ appropriate\ containers\ for\ lua}}
+\DoxyCodeLine{00041\ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00042\ \ \ \ \ \textcolor{keyword}{static}\ table<std::string,\ std::any>\ conv\_to\_table(\textcolor{keyword}{const}\ var::struct\_sb::project\ \&prj);}
+\DoxyCodeLine{00043\ }
+\DoxyCodeLine{00044\ \ \ \ \ \textcolor{keyword}{static}\ bwluatools::array<std::any>\ conv\_to\_table(\textcolor{keyword}{const}\ std::vector<var::struct\_sb::template\_command::arg>\ \&args);}
+\DoxyCodeLine{00045\ \ \ \ \ \textcolor{keyword}{static}\ table<std::string,\ std::any>\ conv\_to\_table(\textcolor{keyword}{const}\ var::struct\_sb::template\_command\ \&tmp\_c);}
+\DoxyCodeLine{00046\ }
+\DoxyCodeLine{00047\ \ \ \ \ \textcolor{keyword}{static}\ table<std::string,\ std::string>\ conv\_to\_table(\textcolor{keyword}{const}\ var::struct\_sb::call\_component\ \&ccmp);}
+\DoxyCodeLine{00048\ }
+\DoxyCodeLine{00049\ \ \ \ \ \textcolor{keyword}{static}\ table<std::string,\ std::any>\ conv\_to\_table(\textcolor{keyword}{const}\ var::struct\_sb::target\ \&trg\_o);}
+\DoxyCodeLine{00050\ \ \ \ \ \textcolor{keyword}{static}\ table<std::string,\ std::any>\ conv\_to\_table(\textcolor{keyword}{const}\ var::struct\_sb::target\_out\ \&trg\_o);}
+\DoxyCodeLine{00051\ }
+\DoxyCodeLine{00052\ \ \ \ \ \textcolor{keyword}{static}\ table<std::string,\ array<std::string>>\ conv\_to\_table(\textcolor{keyword}{const}\ bweas::bwdepends\_files::depends\_map\ \&dfiles);}
+\DoxyCodeLine{00053\ }
+\DoxyCodeLine{00054\ \ \ \ \ \textcolor{comment}{//\ Functions\ for\ converting\ containers\ for\ lua\ to\ the\ corresponding\ bweas\ structures}}
+\DoxyCodeLine{00055\ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00056\ \ \ \ \ \textcolor{keyword}{static}\ var::struct\_sb::project\ conv\_to\_project(table<std::string,\ std::any>\ prj\_t);}
+\DoxyCodeLine{00057\ }
+\DoxyCodeLine{00058\ \ \ \ \ \textcolor{keyword}{static}\ std::vector<var::struct\_sb::template\_command::arg>\ conv\_to\_args(array<array<std::any>>\ args);}
+\DoxyCodeLine{00059\ \ \ \ \ \textcolor{keyword}{static}\ var::struct\_sb::template\_command\ conv\_to\_template(table<std::string,\ std::any>\ \&tcmd);}
+\DoxyCodeLine{00060\ }
+\DoxyCodeLine{00061\ \ \ \ \ \textcolor{keyword}{static}\ var::struct\_sb::call\_component\ conv\_to\_call\_components(table<std::string,\ std::any>\ \&ccmp);}
+\DoxyCodeLine{00062\ }
+\DoxyCodeLine{00063\ \ \ \ \ \textcolor{keyword}{static}\ var::struct\_sb::target\_out\ conv\_to\_target(table<std::string,\ std::any>\ \&trg\_o\_t);}
+\DoxyCodeLine{00064\ }
+\DoxyCodeLine{00065\ \ \ \ \ \textcolor{comment}{//\ Auxiliary\ functions\ for\ lua\ scripts\ for\ interacting\ with\ bweas\ (wrappers\ over\ bweas\ functions)}}
+\DoxyCodeLine{00066\ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00067\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{int}\ get\_var(lua\_State\ *L);}
+\DoxyCodeLine{00068\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{int}\ set\_var(lua\_State\ *L);}
+\DoxyCodeLine{00069\ }
+\DoxyCodeLine{00070\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{int}\ get\_name\_output\_file\_lua(lua\_State\ *L);}
+\DoxyCodeLine{00071\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{int}\ file\_slc\_mask\_lua(lua\_State\ *L);}
+\DoxyCodeLine{00072\ \};}
+\DoxyCodeLine{00073\ \textcolor{preprocessor}{\#endif}}
+
+\end{DoxyCode}

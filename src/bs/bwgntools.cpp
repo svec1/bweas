@@ -9,19 +9,21 @@
 
 using namespace bweas;
 
-std::string generator_tools::get_name_output_file(std::string pattern_file, u32t index, std::string dir_work_endv) {
+string generator_tools::get_name_output_file(string pattern_file, size_t index, string dir_work_endv) {
     if (pattern_file.find(".") == pattern_file.npos)
         return dir_work_endv + "/" + pattern_file + std::to_string(index);
-    std::string name_output_file_curr = pattern_file, extension_output_file_curr = pattern_file;
+
+    string name_output_file_curr = pattern_file, extension_output_file_curr = pattern_file;
+
     name_output_file_curr.erase(name_output_file_curr.find("."), name_output_file_curr.size());
     extension_output_file_curr.erase(0, extension_output_file_curr.find("."));
+
     if (index != 0)
         return dir_work_endv + "/" + name_output_file_curr + std::to_string(index) + extension_output_file_curr;
     return dir_work_endv + "/" + name_output_file_curr + extension_output_file_curr;
 }
 
-bool generator_tools::should_uses_src_file(std::string_view src_file, std::string_view output_file,
-                                           const std::unordered_set<std::string> &dfiles) {
+bool generator_tools::should_uses_src_file(string_v src_file, string_v output_file, const uset<string> &dfiles) {
     if (std::filesystem::last_write_time(CACHE_FILE) > std::filesystem::last_write_time(output_file))
         return 1;
     else if (!std::filesystem::is_regular_file(output_file) ||
@@ -36,20 +38,20 @@ bool generator_tools::should_uses_src_file(std::string_view src_file, std::strin
 }
 
 void generator_tools::parse_basic_args(const var::struct_sb::target_out &target,
-                                       bwqueue_templates &target_queue_templates, const bwargs &global_extern_args) {
+                                       vec<var::struct_sb::template_command> &target_queue_templates,
+                                       const vec<pair<string, string>> &global_extern_args) {
     for (auto &trg_template : target_queue_templates) {
-        for (u32t i = 0; i < trg_template.args.size(); ++i) {
+        for (size_t i = 0; i < trg_template.args.size(); ++i) {
             var::struct_sb::template_command::arg &current_arg = trg_template.args[i];
             if (current_arg.arg_t == var::struct_sb::template_command::arg::type::string ||
                 current_arg.arg_t == var::struct_sb::template_command::arg::type::features ||
                 current_arg.arg_t == var::struct_sb::template_command::arg::type::internal)
                 continue;
             else if (current_arg.arg_t == var::struct_sb::template_command::arg::type::extglobal) {
-                const auto &extern_arg =
-                    std::find_if(global_extern_args.begin(), global_extern_args.end(),
-                                 [current_arg](const std::pair<std::string, std::string> extern_arg_tmp) {
-                                     return extern_arg_tmp.first == current_arg.str_arg;
-                                 });
+                const auto &extern_arg = std::find_if(global_extern_args.begin(), global_extern_args.end(),
+                                                      [current_arg](const std::pair<string, string> extern_arg_tmp) {
+                                                          return extern_arg_tmp.first == current_arg.str_arg;
+                                                      });
                 if (extern_arg == global_extern_args.end())
                     throw "[" + trg_template.name + "] The specified external parameter does not exist - " +
                         current_arg.str_arg;
@@ -61,7 +63,7 @@ void generator_tools::parse_basic_args(const var::struct_sb::target_out &target,
                     current_arg.str_arg = target.name_target;
                 else if (current_arg.str_arg == NAME_FIELD_TARGET_LIBS) {
                     current_arg.str_arg = "";
-                    for (u32t k = 0; k < target.target_vec_libs.size(); ++k) {
+                    for (size_t k = 0; k < target.target_vec_libs.size(); ++k) {
                         current_arg.str_arg += target.target_vec_libs[k];
                         if (k < target.target_vec_libs.size() - 1)
                             current_arg.str_arg += " ";

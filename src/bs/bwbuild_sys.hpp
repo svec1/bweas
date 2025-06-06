@@ -5,10 +5,8 @@
 // ------------------------------------------
 //
 
-#ifndef BWBUILD_SYS__H
-#define BWBUILD_SYS__H
-
-#include <stack>
+#ifndef BWBUILD_SYS_HPP
+#define BWBUILD_SYS_HPP
 
 #include "bw_defs.hpp"
 
@@ -17,73 +15,101 @@
 #include "bwmodule.hpp"
 #include "bwpackage.hpp"
 
+/*
+ * \brief Main namespace bweas
+ */
 namespace bweas {
 
-// Builder class. It is a holistic program. It has operating modes (mode_working), which itself determines by passing
-// parameters to it when launching programs
-class bwbuilder final {
+/**
+ *  \brief The main class of the target program, which describes all its logic.
+ *
+ *  The logic of the class depends on the current mode, which is determined based on the values passed to its
+ * constructor.
+ */
+class builder final {
   public:
-    bwbuilder(int argv, char **args);
+    /**
+     * \brief Constructor.
+     *
+     * The constructor defines the mode of operation of the bweas assembly system, based on the passed parameters. After
+     * that, the init() function is called.
+     *
+     * \param [in] argc The number of parameters in the argv array.
+     * \param [in] argv Pointer to an array of parameters.
+     */
+    builder(size_t argc, char **argv);
 
-    bwbuilder()                             = delete;
-    bwbuilder(const bwbuilder &)            = delete;
-    bwbuilder &operator=(const bwbuilder &) = delete;
+    builder()                           = delete;
+    builder(const builder &)            = delete;
+    builder &operator=(const builder &) = delete;
 
-    ~bwbuilder() = default;
+    ~builder() = default;
 
   public:
-    // all possible bweas operating modes
+    /// \brief All possible bweas operating modes
     enum mode_working {
-        collect_cfg = 0,
-        build,
-        collect_cfg_w_build,
-        build_package,
+        collect_cfg = 0,     ///< [--cfg]: Interpreting a configuration file and creating a cache file based on it.
+        build,               ///< [--build]: Building targets based on a cache file.
+        collect_cfg_w_build, /*!< [--cfg --build]: Collaborative mode, in which, after the interpretation process,
+                              * context bweas is initialized, without reading the cache file.
+                              */
+        build_package,       ///< [--package]: Package creation mode based on the transmitted json file.
         undef
     };
 
-    // returns the current operating mode of bweas
+    /** \brief Returns the current build system mode. */
     mode_working get_current_mode();
 
-    // Depending on the existence of the cache file and its parameters that were transferred when the program was
-    // launched, the build begins.
-    // ----
-    // - If the option: --build was passed to the builder, the builder (if a cache file exists) will begin building the
-    // targets by deselecting the bwcache file.
-    // However, the parameter: --cfg will force the build system to interpret bweasconf.txt, creating a cache file
-    // (bwcache) based on it and also building targets.
-    // - If the parameter is specified: --package. The builder will generate a bweas package based on two files passed
-    // to it (package_config.json - the name can be anything, lua_generator.lua - the name can be anything). Details:
-    // after specifying --package you must list two files: package configuration and lua generator, respectively
+  public:
+    /** \brief Starts the build system.
+     *
+     * Depending on the presence of a cache file and its parameters passed when the program is launched, it reproduces
+     * processes inherent to bweas.
+     *
+     *
+     *
+     */
     void start();
 
   protected:
-    // Controls how bweas works, depending on the arguments provided.
-    // -----
-    // ### Struct of call bweas:
-    // #### <arg1>(mode), <arg2>(path_depending)...
-    // #### <arg1>(path_to_config)
-    // --------------------------------------------------------------
-    // arg1 (starts with --):
-    //  --cfg - executes the configuration file if it has been changed and creates a new cache file
-    //
-    //  --build - builds the project (either by executing the configuration file or deserializing the cache file if
-    //            it exists)
-    //  --package - creates a bweas package based on the transferred files (json config, lua - generator script)
-    //
-    void handle_args(std::vector<std::string> &args);
-    // Creates a bweas package based on the provided package configuration json file
-    u32t create_package(std::string path_json_config_package);
-    // loads the bweas json config
+    /**
+     * \brief Controls how bweas works, depending on the arguments provided.
+     *
+     * The following parameters can be expected:
+     * --cfg - sets the collect_cfg mode.
+     * --build - sets the build mode.
+     * --package - sets the build_package mode.
+     *
+     * \param [in] args Vector of parameters.
+     *
+     * \warning If a vector with size 0 has been passed (i.e. without the parameters of the bweas call), bweas will
+     * finish its work with the output of BWEAS_HELP.
+     */
+    void handle_args(vec<string> &args);
+
+    /** \brief Creates a package based on the json package configuration file.
+     *
+     *  \param [in] path_json_config_package The path to the package configuration json file.
+     *  \return The packet size in bytes.
+     */
+    size_t create_package(string path_json_config_package);
+
+    /// \brief Loads the bweas json config.
     void init();
 
-    // running the interpreter with the configuration
+    /// \brief Running the interpreter with the configuration.
     void run_interpreter();
 
-    // generates a cache file of all targets that were created by the interpreter
-    u32t gen_cache_target();
+    /** \brief Generates a cache file of all targets that were created by the interpreter.
+     *
+     *  \return 1 - if the cache file is generated, 0 - otherwise.
+     */
+    size_t gen_cache_target();
 
   private:
-    // Collects projects(out_targets) by initializing the generator and calling(bwIGenerator::gen_commands)
+    /** \brief Collects projects(out_targets) by initializing the generator and calling(bwIGenerator::gen_commands)
+     *
+     */
     void build_targets();
 
     // Deserializes the bweas cache file
@@ -91,30 +117,34 @@ class bwbuilder final {
 
   private:
     // Creates a stack of templates for the correct sequential generation of commands(for every targets)
-    bwqueue_templates create_queue_target_templates(const var::struct_sb::target_out &target);
+    vec<var::struct_sb::template_command> create_queue_target_templates(const var::struct_sb::target_out &target);
 
     // Recursive function, for create_stack_target_templates
-    void recovery_queue_target_templates(std::vector<var::struct_sb::template_command> &vec_templates,
-                                         const std::string &name_internal_param,
-                                         bwqueue_templates &queue_target_templates);
+    void recovery_queue_target_templates(vec<var::struct_sb::template_command> &vec_templates,
+                                         const string &name_internal_param,
+                                         vec<var::struct_sb::template_command> &queue_target_templates);
+
+  protected:
+    /**
+     * \brief The state of the entire build system.
+     */
+    bw_context context;
 
   private:
     std::unique_ptr<cache_api::base_bwcache> cache;
-    std::map<std::string, std::shared_ptr<generator_api::base_generator>> generators;
+    map<string, std::shared_ptr<generator_api::base_generator>> generators;
 
-    std::vector<bwpackage> loaded_packages;
+  private:
+    vec<bwpackage> loaded_packages;
 
     bwmodule_mg module_manager;
-    std::vector<decl_func> external_modules_funcs;
+    vec<decl_func> external_modules_funcs;
 
-    bw_context context;
-
-    std::string name_bweas_prg;
-    std::string path_bweas_config, path_bweas_to_build{DIRWORK_ENV};
-
+  private:
+    var::struct_sb::version bwbuilde_ver{VERSION_FULL_STR};
     mode_working mode_bweas{mode_working::undef};
 
-    var::struct_sb::version bwbuilde_ver{BWEAS_VERSION_STR};
+    string path_bweas_config, path_bweas_to_build{DIRWORK_ENV};
 };
 } // namespace bweas
 

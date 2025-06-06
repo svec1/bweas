@@ -1,0 +1,118 @@
+\doxysection{bwcache\+\_\+api.\+hpp}
+\hypertarget{bwcache__api_8hpp_source}{}\label{bwcache__api_8hpp_source}\index{src/bs/bwcache\_api.hpp@{src/bs/bwcache\_api.hpp}}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{comment}{//}}
+\DoxyCodeLine{00002\ \textcolor{comment}{//\ BWEAS\ is\ distributed\ under\ the\ gnu\ general\ public\ license\ 2.0\ (gpl-\/2.0).}}
+\DoxyCodeLine{00003\ \textcolor{comment}{//\ you\ can\ view\ the\ license\ text\ at\ the\ link:}}
+\DoxyCodeLine{00004\ \textcolor{comment}{//\ \ \ \ \ <https://www.gnu.org/licenses>}}
+\DoxyCodeLine{00005\ \textcolor{comment}{//\ -\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/}}
+\DoxyCodeLine{00006\ \textcolor{comment}{//}}
+\DoxyCodeLine{00007\ }
+\DoxyCodeLine{00008\ \textcolor{preprocessor}{\#ifndef\ BWCACHE\_\_H}}
+\DoxyCodeLine{00009\ \textcolor{preprocessor}{\#define\ BWCACHE\_\_H}}
+\DoxyCodeLine{00010\ }
+\DoxyCodeLine{00011\ \textcolor{preprocessor}{\#include\ <bw\_defs.hpp>}}
+\DoxyCodeLine{00012\ \textcolor{preprocessor}{\#include\ <bwluatools.hpp>}}
+\DoxyCodeLine{00013\ }
+\DoxyCodeLine{00014\ \textcolor{preprocessor}{\#define\ NAME\_FUNCTION\_GENERATE\_CACHE\_LUA\ "{}create\_cache"{}}}
+\DoxyCodeLine{00015\ \textcolor{preprocessor}{\#define\ DEFINITION\_FUNCTION\_GENERATE\_CACHE\_LUA\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \(\backslash\)}}
+\DoxyCodeLine{00016\ \textcolor{preprocessor}{\ \ \ \ std::string,\ bwluatools::array<bwluatools::table<std::string,\ std::any>>,\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \(\backslash\)}}
+\DoxyCodeLine{00017\ \textcolor{preprocessor}{\ \ \ \ \ \ \ \ bwluatools::array<bwluatools::table<std::string,\ std::any>>,\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \(\backslash\)}}
+\DoxyCodeLine{00018\ \textcolor{preprocessor}{\ \ \ \ \ \ \ \ bwluatools::array<bwluatools::table<std::string,\ std::string>>,\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \(\backslash\)}}
+\DoxyCodeLine{00019\ \textcolor{preprocessor}{\ \ \ \ \ \ \ \ bwluatools::array<bwluatools::key\_value<std::string,\ std::string>>}}
+\DoxyCodeLine{00020\ }
+\DoxyCodeLine{00021\ \textcolor{preprocessor}{\#define\ NAME\_FUNCTION\_GET\_DATA\_CACHE\_LUA\ "{}get\_cache\_data"{}}}
+\DoxyCodeLine{00022\ \textcolor{preprocessor}{\#define\ DEFINITION\_FUNCTION\_GET\_DATA\_CACHE\_LUA\ void,\ bwluatools::nil}}
+\DoxyCodeLine{00023\ }
+\DoxyCodeLine{00024\ \textcolor{preprocessor}{\#define\ NAME\_VARIABLE\_TARGETS\_F\_EXTERN\_LUA\ "{}targets"{}}}
+\DoxyCodeLine{00025\ \textcolor{preprocessor}{\#define\ NAME\_VARIABLE\_TEMPLATES\_F\_EXTERN\_LUA\ "{}templates"{}}}
+\DoxyCodeLine{00026\ \textcolor{preprocessor}{\#define\ NAME\_VARIABLE\_CCOMPONENTS\_F\_EXTERN\_LUA\ "{}call\_components"{}}}
+\DoxyCodeLine{00027\ \textcolor{preprocessor}{\#define\ NAME\_VARIABLE\_GEARGS\_F\_EXTERN\_LUA\ "{}global\_external\_args"{}}}
+\DoxyCodeLine{00028\ }
+\DoxyCodeLine{00029\ \textcolor{keyword}{namespace\ }bweas\ \{}
+\DoxyCodeLine{00030\ }
+\DoxyCodeLine{00031\ \textcolor{keyword}{namespace\ }cache\_api\ \{}
+\DoxyCodeLine{00032\ }
+\DoxyCodeLine{00033\ \textcolor{comment}{//\ Abstract\ class\ that\ bases\ API\ for\ creating\ cache\ generators}}
+\DoxyCodeLine{00034\ \textcolor{keyword}{class\ }base\_bwcache\ \{}
+\DoxyCodeLine{00035\ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00036\ \ \ \ \ base\_bwcache(\mbox{\hyperlink{structbweas_1_1bw__context}{bw\_context}}\ *\textcolor{keyword}{const}\ \_context)\ :\ context(\_context)\ \{\};}
+\DoxyCodeLine{00037\ }
+\DoxyCodeLine{00038\ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00039\ \ \ \ \ \textcolor{comment}{//\ A\ function\ that\ must\ be\ defined\ in\ a\ child\ class,\ and\ return\ a\ cache\ of\ data}}
+\DoxyCodeLine{00040\ \ \ \ \ \textcolor{keyword}{virtual}\ std::string\ create\_cache()\ =\ 0;}
+\DoxyCodeLine{00041\ }
+\DoxyCodeLine{00042\ \ \ \ \ \textcolor{comment}{//\ A\ function\ that\ must\ be\ defined\ in\ a\ child\ class\ and\ return\ cache\ data}}
+\DoxyCodeLine{00043\ \ \ \ \ \textcolor{keyword}{virtual}\ \textcolor{keywordtype}{void}\ extract\_cache\_data(std::string\ \&\&cache\_str)\ =\ 0;}
+\DoxyCodeLine{00044\ }
+\DoxyCodeLine{00045\ \ \ \ \ \textcolor{keyword}{virtual}\ \textcolor{keywordtype}{void}\ delete\_cache()\ =\ 0;}
+\DoxyCodeLine{00046\ }
+\DoxyCodeLine{00047\ \ \ \ \ \textcolor{comment}{//\ A\ number\ of\ factory\ functions\ to\ create\ all\ possible\ child\ classes\ that\ implement\ the\ bwcache\ cache\ generator}}
+\DoxyCodeLine{00048\ \ \ \ \ \textcolor{comment}{//\ based\ on\ the\ bwcache\ API}}
+\DoxyCodeLine{00049\ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00050\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ base\_bwcache\ *create\_fast\_bwcache(\mbox{\hyperlink{structbweas_1_1bw__context}{bw\_context}}\ *\textcolor{keyword}{const}\ \_context);}
+\DoxyCodeLine{00051\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ base\_bwcache\ *create\_json\_bwcache(\mbox{\hyperlink{structbweas_1_1bw__context}{bw\_context}}\ *\textcolor{keyword}{const}\ \_context);}
+\DoxyCodeLine{00052\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ base\_bwcache\ *create\_lua\_bwcache(\mbox{\hyperlink{structbweas_1_1bw__context}{bw\_context}}\ *\textcolor{keyword}{const}\ \_context,\ std::string\ src\_lua);}
+\DoxyCodeLine{00053\ }
+\DoxyCodeLine{00054\ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00055\ \ \ \ \ \mbox{\hyperlink{structbweas_1_1bw__context}{bw\_context}}\ *\textcolor{keyword}{const}\ context;}
+\DoxyCodeLine{00056\ \};}
+\DoxyCodeLine{00057\ }
+\DoxyCodeLine{00058\ \textcolor{comment}{//\ A\ basic\ cache\ generator\ that\ is\ fast\ but\ also\ creates\ a\ hard-\/to-\/read\ cache\ for\ humans\ to\ use}}
+\DoxyCodeLine{00059\ \textcolor{keyword}{class\ }fast\_bwcache\ final\ :\ \textcolor{keyword}{private}\ base\_bwcache\ \{}
+\DoxyCodeLine{00060\ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00061\ \ \ \ \ fast\_bwcache(\mbox{\hyperlink{structbweas_1_1bw__context}{bw\_context}}\ *\textcolor{keyword}{const});}
+\DoxyCodeLine{00062\ }
+\DoxyCodeLine{00063\ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00064\ \ \ \ \ std::string\ create\_cache()\ \textcolor{keyword}{override}\ \textcolor{keyword}{final};}
+\DoxyCodeLine{00065\ \ \ \ \ \textcolor{keywordtype}{void}\ extract\_cache\_data(std::string\ \&\&cache\_str)\ \textcolor{keyword}{override}\ \textcolor{keyword}{final};}
+\DoxyCodeLine{00066\ }
+\DoxyCodeLine{00067\ \ \ \ \ \textcolor{keywordtype}{void}\ delete\_cache()\ \textcolor{keyword}{override}\ \textcolor{keyword}{final};}
+\DoxyCodeLine{00068\ \};}
+\DoxyCodeLine{00069\ }
+\DoxyCodeLine{00070\ \textcolor{comment}{//\ The\ second\ basic\ cache\ generator,\ which\ in\ turn\ has\ a\ human\ readable\ form,}}
+\DoxyCodeLine{00071\ \textcolor{comment}{//\ but\ is\ also\ slow\ compared\ to\ fast\_bwcache}}
+\DoxyCodeLine{00072\ \textcolor{keyword}{class\ }json\_bwcache\ final\ :\ \textcolor{keyword}{private}\ base\_bwcache\ \{}
+\DoxyCodeLine{00073\ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00074\ \ \ \ \ json\_bwcache(\mbox{\hyperlink{structbweas_1_1bw__context}{bw\_context}}\ *\textcolor{keyword}{const});}
+\DoxyCodeLine{00075\ }
+\DoxyCodeLine{00076\ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00077\ \ \ \ \ std::string\ create\_cache()\ \textcolor{keyword}{override}\ \textcolor{keyword}{final};}
+\DoxyCodeLine{00078\ \ \ \ \ \textcolor{keywordtype}{void}\ extract\_cache\_data(std::string\ \&\&cache\_str)\ \textcolor{keyword}{override}\ \textcolor{keyword}{final};}
+\DoxyCodeLine{00079\ }
+\DoxyCodeLine{00080\ \ \ \ \ \textcolor{keywordtype}{void}\ delete\_cache()\ \textcolor{keyword}{override}\ \textcolor{keyword}{final};}
+\DoxyCodeLine{00081\ \};}
+\DoxyCodeLine{00082\ }
+\DoxyCodeLine{00083\ \textcolor{comment}{//\ A\ class\ providing\ an\ API\ for\ creating\ cache\ generators\ in\ lua,\ based\ on\ the\ bwcache\ API}}
+\DoxyCodeLine{00084\ \textcolor{keyword}{class\ }lua\_bwcache\ final\ :\ \textcolor{keyword}{private}\ base\_bwcache\ \{}
+\DoxyCodeLine{00085\ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00086\ \ \ \ \ lua\_bwcache(\mbox{\hyperlink{structbweas_1_1bw__context}{bw\_context}}\ *\textcolor{keyword}{const},\ std::string);}
+\DoxyCodeLine{00087\ }
+\DoxyCodeLine{00088\ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00089\ \ \ \ \ std::string\ create\_cache()\ \textcolor{keyword}{override}\ \textcolor{keyword}{final};}
+\DoxyCodeLine{00090\ \ \ \ \ \textcolor{keywordtype}{void}\ extract\_cache\_data(std::string\ \&\&cache\_str)\ \textcolor{keyword}{override}\ \textcolor{keyword}{final};}
+\DoxyCodeLine{00091\ }
+\DoxyCodeLine{00092\ \ \ \ \ \textcolor{keywordtype}{void}\ delete\_cache()\ \textcolor{keyword}{override}\ \textcolor{keyword}{final};}
+\DoxyCodeLine{00093\ }
+\DoxyCodeLine{00094\ \ \ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00095\ \ \ \ \ bwlua::lua\ lua;}
+\DoxyCodeLine{00096\ \};}
+\DoxyCodeLine{00097\ }
+\DoxyCodeLine{00098\ \mbox{\hyperlink{classbweas_1_1cache__api_1_1base__bwcache}{base\_bwcache}}\ *base\_bwcache::create\_fast\_bwcache(\mbox{\hyperlink{structbweas_1_1bw__context}{bw\_context}}\ *\textcolor{keyword}{const}\ \_context)\ \{}
+\DoxyCodeLine{00099\ \ \ \ \ \textcolor{keywordflow}{return}\ (\mbox{\hyperlink{classbweas_1_1cache__api_1_1base__bwcache}{base\_bwcache}}\ *)\textcolor{keyword}{new}\ \mbox{\hyperlink{classbweas_1_1cache__api_1_1fast__bwcache}{fast\_bwcache}}(\_context);}
+\DoxyCodeLine{00100\ \}}
+\DoxyCodeLine{00101\ base\_bwcache\ *base\_bwcache::create\_json\_bwcache(\mbox{\hyperlink{structbweas_1_1bw__context}{bw\_context}}\ *\textcolor{keyword}{const}\ \_context)\ \{}
+\DoxyCodeLine{00102\ \ \ \ \ \textcolor{keywordflow}{return}\ (base\_bwcache\ *)\textcolor{keyword}{new}\ json\_bwcache(\_context);}
+\DoxyCodeLine{00103\ \}}
+\DoxyCodeLine{00104\ base\_bwcache\ *base\_bwcache::create\_lua\_bwcache(bw\_context\ *\textcolor{keyword}{const}\ \_context,\ std::string\ src\_lua)\ \{}
+\DoxyCodeLine{00105\ \ \ \ \ \textcolor{keywordflow}{return}\ (base\_bwcache\ *)\textcolor{keyword}{new}\ lua\_bwcache(\_context,\ src\_lua);}
+\DoxyCodeLine{00106\ \}}
+\DoxyCodeLine{00107\ }
+\DoxyCodeLine{00108\ \}\ \textcolor{comment}{//\ namespace\ cache\_api}}
+\DoxyCodeLine{00109\ }
+\DoxyCodeLine{00110\ \}\ \textcolor{comment}{//\ namespace\ bweas}}
+\DoxyCodeLine{00111\ }
+\DoxyCodeLine{00112\ \textcolor{preprocessor}{\#endif}}
+
+\end{DoxyCode}

@@ -5,8 +5,8 @@
 // ------------------------------------------
 //
 
-#ifndef BWGENERATOR_INTEGRAL__H
-#define BWGENERATOR_INTEGRAL__H
+#ifndef BWGENERATOR_INTEGRAL_HPP
+#define BWGENERATOR_INTEGRAL_HPP
 
 #include <map>
 

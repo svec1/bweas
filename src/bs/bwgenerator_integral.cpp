@@ -27,9 +27,9 @@ void generator_api::integral_generator::_delete() {
     delete this;
 }
 
-std::unordered_set<std::string> generator_api::integral_generator::build_graph_depends_file(
-    std::string_view language, std::string_view name_file, std::string_view work_directory,
-    std::vector<std::string> include_paths) {
+uset<string> generator_api::integral_generator::build_graph_depends_file(string_v language, string_v name_file,
+                                                                         string_v work_directory,
+                                                                         vec<string> include_paths) {
     return build_graph_depends_file_p(language, name_file, work_directory, include_paths);
 }
 
@@ -59,8 +59,8 @@ void integral_generator::get_input_files(generator_api::data_transfer &data_t) {
             for (auto &arg : current_template->args) {
                 if (arg.arg_t == var::struct_sb::template_command::arg::type::trgfield &&
                     arg.str_arg.find(NAME_FIELD_PROJECT_SRC_FILES) == 0) {
-                    std::string mask;
-                    u32t it_str = arg.str_arg.find(":");
+                    string mask;
+                    size_t it_str = arg.str_arg.find(":");
                     if (it_str != arg.str_arg.npos) {
                         mask = arg.str_arg;
                         mask.erase(0, it_str + 1);
@@ -68,7 +68,7 @@ void integral_generator::get_input_files(generator_api::data_transfer &data_t) {
 
                     if (std::atoll(mask.c_str()) != 0) {
                         if (std::atoll(mask.c_str()) == 1) {
-                            for (u32t i = 0;
+                            for (size_t i = 0;
                                  i < target.prj.src_files.size() &&
                                  std::find(data_t.ifiles[current_template->name].begin(),
                                            data_t.ifiles[current_template->name].end(),
@@ -78,7 +78,7 @@ void integral_generator::get_input_files(generator_api::data_transfer &data_t) {
                             arg.str_arg = "single";
                         }
                         else {
-                            for (u32t k = 0;
+                            for (size_t k = 0;
                                  k < target.prj.src_files.size() && k < std::atoll(mask.c_str()) &&
                                  std::find(data_t.ifiles[current_template->name].begin(),
                                            data_t.ifiles[current_template->name].end(),
@@ -89,11 +89,11 @@ void integral_generator::get_input_files(generator_api::data_transfer &data_t) {
                         }
                     }
                     else {
-                        std::vector<std::string> slc_files = bwfile::file_slc_mask(mask, target.prj.src_files);
-                        for (u32t i = 0; i < slc_files.size() &&
-                                         std::find(data_t.ifiles[current_template->name].begin(),
-                                                   data_t.ifiles[current_template->name].end(),
-                                                   slc_files[i]) == data_t.ifiles[current_template->name].end();
+                        vec<string> slc_files = bwfile::file_slc_mask(mask, target.prj.src_files);
+                        for (size_t i = 0; i < slc_files.size() &&
+                                           std::find(data_t.ifiles[current_template->name].begin(),
+                                                     data_t.ifiles[current_template->name].end(),
+                                                     slc_files[i]) == data_t.ifiles[current_template->name].end();
                              ++i)
                             data_t.ifiles[current_template->name].push_back(target.prj.src_files[i]);
                         arg.str_arg = "all";
@@ -101,10 +101,11 @@ void integral_generator::get_input_files(generator_api::data_transfer &data_t) {
                 }
                 else if (arg.arg_t == var::struct_sb::template_command::arg::type::features &&
                          arg.str_arg.find(FEATURE_FIELD_BS_CURRENT_IF) == 0) {
-                    for (u32t i = 0; i < target.prj.src_files.size() &&
-                                     std::find(data_t.ifiles[current_template->name].begin(),
-                                               data_t.ifiles[current_template->name].end(),
-                                               target.prj.src_files[i]) == data_t.ifiles[current_template->name].end();
+                    for (size_t i = 0;
+                         i < target.prj.src_files.size() &&
+                         std::find(data_t.ifiles[current_template->name].begin(),
+                                   data_t.ifiles[current_template->name].end(),
+                                   target.prj.src_files[i]) == data_t.ifiles[current_template->name].end();
                          ++i)
 
                         data_t.ifiles[current_template->name].push_back(target.prj.src_files[i]);
@@ -115,15 +116,15 @@ void integral_generator::get_input_files(generator_api::data_transfer &data_t) {
 generator_api::gen_command integral_generator::generate(generator_api::data_transfer &data_t) {
     generator_api::gen_command command_s;
 
-    std::map<std::string, std::vector<std::string>> internal_args_stack_tmp;
+    map<string, vec<string>> internal_args_stack_tmp;
 
     bool generate_for_single_file = 0;
 
     for (const auto &target : data_t.context->out_targets) {
-        u32t count_use_ifiles = 0;
-        u32t i                = 0;
+        size_t count_use_ifiles = 0;
+        size_t i                = 0;
 
-        for (u32t j = 0; j < target.prj.vec_templates.size() || generate_for_single_file;) {
+        for (size_t j = 0; j < target.prj.vec_templates.size() || generate_for_single_file;) {
             const auto &current_template_name = target.prj.vec_templates[j];
             const auto &current_template =
                 std::find_if(data_t.context->templates.begin(), data_t.context->templates.end(),
@@ -136,8 +137,8 @@ generator_api::gen_command integral_generator::generate(generator_api::data_tran
                                  return call_component.name == current_template->name_call_component;
                              });
 
-            std::string command = target.prj.path_compiler + " ";
-            std::string output_file =
+            string command = target.prj.path_compiler + " ";
+            string output_file =
                 generator_tools::get_name_output_file(call_component->pattern_ret_files, i, data_t.work_directory);
 
             for (auto &arg : current_template->args) {
@@ -182,7 +183,7 @@ generator_api::gen_command integral_generator::generate(generator_api::data_tran
                             command += output_file;
                         }
                         else
-                            for (u32t k = 0; k < count_use_ifiles; ++k) {
+                            for (size_t k = 0; k < count_use_ifiles; ++k) {
                                 internal_args_stack_tmp[current_template->returnable].push_back(
                                     generator_tools::get_name_output_file(call_component->pattern_ret_files, k,
                                                                           data_t.work_directory));
@@ -195,7 +196,7 @@ generator_api::gen_command integral_generator::generate(generator_api::data_tran
                     ++i;
                 }
                 else if (arg.arg_t == var::struct_sb::template_command::arg::type::internal)
-                    for (u32t k = 0; k < internal_args_stack_tmp[arg.str_arg].size(); ++k)
+                    for (size_t k = 0; k < internal_args_stack_tmp[arg.str_arg].size(); ++k)
                         command += internal_args_stack_tmp[arg.str_arg][k] + " ";
                 else if (arg.arg_t == var::struct_sb::template_command::arg::type::string)
                     command += arg.str_arg;

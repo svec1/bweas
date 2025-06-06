@@ -22,7 +22,7 @@ void json_bwcache::delete_cache() {
     delete this;
 }
 
-std::string json_bwcache::create_cache() {
+string json_bwcache::create_cache() {
     nlohmann::json cache_data;
 
     for (const auto &target : context->out_targets)
@@ -45,7 +45,6 @@ std::string json_bwcache::create_cache() {
                                                        {"std_cpp", target.prj.standart_cpp},
                                                        {"files", target.prj.src_files},
                                                        {"include_paths", target.prj.include_paths},
-                                                       {"use_it_templates", target.prj.use_it_templates},
                                                        {"templates", target.prj.vec_templates},
                                                        {"custom_extension_fields", target.prj.custom_ext_fields}}}};
 
@@ -68,7 +67,7 @@ std::string json_bwcache::create_cache() {
     return cache_data.dump(4);
 }
 
-void json_bwcache::extract_cache_data(std::string &&cache_str) {
+void json_bwcache::extract_cache_data(string &&cache_str) {
     try {
         nlohmann::json cache_data = nlohmann::json::parse(cache_str);
 
@@ -79,13 +78,13 @@ void json_bwcache::extract_cache_data(std::string &&cache_str) {
             const auto &fields           = target.value();
             target_o_tmp.target_t        = var::struct_sb::to_type_target(fields["type"]);
             target_o_tmp.target_cfg      = var::struct_sb::to_cfg(fields["configuration"]);
-            target_o_tmp.version_target  = (std::string)fields["version"];
+            target_o_tmp.version_target  = (string)fields["version"];
             target_o_tmp.name_generator  = fields["generator"];
             target_o_tmp.target_vec_libs = fields["dependencies"];
 
             const auto &prj                    = fields["project"];
             target_o_tmp.prj.name_project      = prj["name"];
-            target_o_tmp.prj.version_project   = (std::string)prj["version"];
+            target_o_tmp.prj.version_project   = (string)prj["version"];
             target_o_tmp.prj.language          = prj["lang"];
             target_o_tmp.prj.path_compiler     = prj["path_compiler"];
             target_o_tmp.prj.path_linker       = prj["path_linker"];
@@ -97,7 +96,6 @@ void json_bwcache::extract_cache_data(std::string &&cache_str) {
             target_o_tmp.prj.standart_cpp      = prj["std_cpp"];
             target_o_tmp.prj.src_files         = prj["files"];
             target_o_tmp.prj.include_paths     = prj["include_paths"];
-            target_o_tmp.prj.use_it_templates  = prj["use_it_templates"];
             target_o_tmp.prj.vec_templates     = prj["templates"];
             target_o_tmp.prj.custom_ext_fields = prj["custom_extension_fields"];
 

@@ -1,0 +1,112 @@
+\chapter{bweas}
+\hypertarget{md_README}{}\label{md_README}\index{bweas@{bweas}}
+\label{md_README_autotoc_md0}%
+\Hypertarget{md_README_autotoc_md0}%
+
+
+\begin{quote}
+{\itshape system build} \end{quote}
+
+
+$<$image src="{}/dev/bweas\+\_\+logo.\+png"{} width=156 height=128$>$$>$
+
+\href{https://github.com/svec1/bweas/blob/main/docs/en/main_page.md}{\texttt{ Documentation of the internal device}}\hypertarget{md_README_autotoc_md1}{}\doxysection{\texorpdfstring{Install}{Install}}\label{md_README_autotoc_md1}
+\begin{quote}
+{\ttfamily git clone \href{https://github.com/svec1/bweas.git}{\texttt{ https\+://github.\+com/svec1/bweas.\+git}}} \end{quote}
+
+
+\begin{DoxyNote}{Note}
+Globally required\+: CMake
+\end{DoxyNote}
+\hypertarget{md_README_autotoc_md2}{}\doxysubsection{\texorpdfstring{Build on Linux}{Build on Linux}}\label{md_README_autotoc_md2}
+Before building, you should install the Lua\+Jit and nlohmann-\/json libraries. \hypertarget{md_README_autotoc_md3}{}\doxysubsubsubsection{\texorpdfstring{{\itshape debian based(for example)}}{{\itshape debian based(for example)}}}\label{md_README_autotoc_md3}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{sudo\ apt\ install\ luajit\ nlohmann-\/json3-\/dev\ liblz4-\/dev}
+
+\end{DoxyCode}
+ \hypertarget{md_README_autotoc_md4}{}\doxysubsubsection{\texorpdfstring{Default build with cmake\+:}{Default build with cmake\+:}}\label{md_README_autotoc_md4}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{mkdir\ build}
+\DoxyCodeLine{cd\ build}
+\DoxyCodeLine{cmake\ ..}
+\DoxyCodeLine{cmake\ -\/-\/build\ .}
+
+\end{DoxyCode}
+ \DoxyHorRuler{0}
+ \hypertarget{md_README_autotoc_md5}{}\doxysubsubsection{\texorpdfstring{Build with clone rep of libraries}{Build with clone rep of libraries}}\label{md_README_autotoc_md5}
+You can also clone the Lua\+Jit or nlohmann/json repositories and follow these steps\+: \begin{DoxyNote}{Note}
+For Lua\+Jit\+: Required\+: Make 
+\begin{DoxyCode}{0}
+\DoxyCodeLine{cd\ external}
+\DoxyCodeLine{git\ clone\ https://github.com/LuaJIT/LuaJIT}
+\DoxyCodeLine{cd\ LuaJIT}
+\DoxyCodeLine{sudo\ make\ install}
+
+\end{DoxyCode}
+ {\bfseries{For lz4 and nlohmann-\/json}} 
+\begin{DoxyCode}{0}
+\DoxyCodeLine{cd\ external}
+\DoxyCodeLine{git\ clone\ https://github.com/lz4/lz4}
+\DoxyCodeLine{git\ clone\ https://github.com/nlohmann/json}
+
+\end{DoxyCode}
+ \mbox{[}!\+IMPORTANT\mbox{]} You don\textquotesingle{}t need to compile it yourself(nlohmann-\/json and lz4), the cmake call will do it for you next..
+\end{DoxyNote}
+\begin{DoxyRemark}{Remarks}
+If you did this, then you need to set the appropriate options for cmake when building\+: 
+\begin{DoxyCode}{0}
+\DoxyCodeLine{cmake\ -\/DUSER\_BUILD\_LUA=ON\ -\/DUSER\_BUILD\_JSON=ON\ ..}
+\DoxyCodeLine{cmake\ -\/-\/build\ .}
+
+\end{DoxyCode}
+ \DoxyHorRuler{0}
+
+\end{DoxyRemark}
+\hypertarget{md_README_autotoc_md6}{}\doxysubsection{\texorpdfstring{Build on Windows}{Build on Windows}}\label{md_README_autotoc_md6}
+{\itshape starting from the source folder} \begin{DoxyNote}{Note}
+Required\+: CMake, VCPKG 
+\begin{DoxyCode}{0}
+\DoxyCodeLine{git\ clone\ https://github.com/microsoft/vcpkg.git}
+\DoxyCodeLine{vcpkg\(\backslash\)bootstrap-\/vcpkg.bat}
+\DoxyCodeLine{vcpkg\(\backslash\)vcpkg\ integrate\ install}
+\DoxyCodeLine{mkdir\ build}
+\DoxyCodeLine{cd\ build}
+\DoxyCodeLine{cmake\ -\/DBWEAS\_BUILD\_VCPKG=ON\ ..}
+\DoxyCodeLine{cmake\ -\/-\/build\ .}
+
+\end{DoxyCode}
+ \mbox{[}!\+TIP\mbox{]} To build tests, pass -\/DBWEAS\+\_\+\+TEST=ON as an option to cmake
+\end{DoxyNote}
+~\newline
+
+
+ \hypertarget{md_README_autotoc_md7}{}\doxysection{\texorpdfstring{Examples}{Examples}}\label{md_README_autotoc_md7}
+Simple configurations for assembly will be described here. These examples are for informational purposes only and do not include complex structures and new features.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\#\ For\ example(how\ create\ variable)}
+\DoxyCodeLine{set(VAR,\ 1)}
+\DoxyCodeLine{}
+\DoxyCodeLine{\#\ We\ create\ a\ call\ component\ -\/\ what\ will\ be\ called}
+\DoxyCodeLine{\#\ This\ also\ stores\ the\ name\ pattern\ of\ files\ that\ the\ current\ calling\ component\ may\ create.}
+\DoxyCodeLine{create\_call\_component(CC,\ "{}clang++"{},\ "{}program.exe"{})}
+\DoxyCodeLine{}
+\DoxyCodeLine{\#\ Create\ a\ command\ template.\ You\ can\ use\ the\ capabilities\ that\ the\ current\ generator}
+\DoxyCodeLine{\#\ provides\ (in\ this\ case,\ a\ file\ will\ be\ substituted\ for\ FBS\_CURRENT\_OUTPUT\_FILE\ -\/\ because\ filter\ 1\ was\ selected)}
+\DoxyCodeLine{create\_templates(template,\ "{}CC(NULL)\ -\/>\ EXECUTABLE:\ <[T\_PROJECT\_SRC\_FILES]>,\ <'-\/o'>,\ FBS\_CURRENT\_OUTPUT\_FILE:1"{})}
+\DoxyCodeLine{}
+\DoxyCodeLine{\#\ Creating\ a\ project\ (there\ can\ be\ as\ many\ of\ them\ as\ you\ like)}
+\DoxyCodeLine{\#\ The\ number\ 1\ as\ the\ second\ parameter\ indicates\ the\ programming\ language\ number}
+\DoxyCodeLine{project(test,\ 1,\ "{}main.cpp"{})}
+\DoxyCodeLine{}
+\DoxyCodeLine{\#\ We\ indicate\ that\ the\ project\ will\ use\ template\ command\ generation}
+\DoxyCodeLine{use\_templates(test,\ "{}template"{})}
+\DoxyCodeLine{}
+\DoxyCodeLine{\#\ create\ a\ target\ in\ the\ form\ of\ an\ executable\ file\ (there\ can\ be\ as\ many\ of\ them\ as\ you\ like)}
+\DoxyCodeLine{executable(test\_program,\ RELEASE,\ test)}
+
+\end{DoxyCode}
+ 

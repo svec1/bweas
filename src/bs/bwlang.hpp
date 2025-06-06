@@ -5,8 +5,8 @@
 // ------------------------------------------
 //
 
-#ifndef BWLANG__H
-#define BWLANG__H
+#ifndef BWLANG_HPP
+#define BWLANG_HPP
 
 #include "bw_defs.hpp"
 
@@ -14,15 +14,15 @@
 
 namespace bweas {
 
-// A wrapper around the bwlang interpreter that installs all
+// A wrapper around the lang interpreter that installs all
 // the standard bweas functions and also provides interaction with the global scope
-class bwlang {
+class lang {
   public:
-    bwlang(std::string_view bwconf_file = MAIN_FILE);
+    lang(string_v bwconf_file = CONFIG_FILE);
 
-    bwlang(bwlang &&)            = delete;
-    bwlang(const bwlang &)       = delete;
-    bwlang &operator=(bwlang &&) = delete;
+    lang(lang &&)            = delete;
+    lang(const lang &)       = delete;
+    lang &operator=(lang &&) = delete;
 
   private:
     // Sets standard functions and keyword operators corresponding to the bweas specification
@@ -33,40 +33,40 @@ class bwlang {
     void execute();
 
     // Loads external functions (passed into this function) into the interpreter (semantic analyzer)
-    inline void init_external_funcs(std::vector<decl_func> funcs);
+    inline void init_external_funcs(vec<decl_func> funcs);
 
     // Sets custom extension fields for projects
-    inline void set_custom_ext_fields_project(std::map<std::string, std::string> custom_ext_fields);
+    inline void set_custom_ext_fields_project(map<string, string> custom_ext_fields);
 
-    template <typename T> inline bool create_global_var(std::string name_var, T val = {}) {
+    template <typename T> inline bool create_global_var(string name_var, T val = {}) {
         return _interpreter.get_current_scope().try_create_var(name_var, val);
     }
-    template <typename T> inline T get_global_var(std::string name_var) {
+    template <typename T> inline T get_global_var(string name_var) {
         return _interpreter.get_current_scope().get_var_value<T>(name_var);
     }
 
     var::scope &get_global_scope();
-    template <typename T> std::vector<std::pair<std::string, T>> &get_class_variables();
+    template <typename T> vec<pair<string, T>> &get_class_variables();
 
     bw_context get_context();
 
   private:
-    std::vector<var::struct_sb::target_out> get_targets();
-    std::vector<var::struct_sb::template_command> get_templates();
-    std::vector<var::struct_sb::call_component> get_call_components();
-    std::vector<std::pair<std::string, std::string>> get_global_external_args();
+    vec<var::struct_sb::target_out> get_targets();
+    vec<var::struct_sb::template_command> get_templates();
+    vec<var::struct_sb::call_component> get_call_components();
+    vec<pair<string, string>> get_global_external_args();
 
   private:
     interpreter _interpreter;
     bw_context context;
 };
-bwlang::bwlang(std::string_view bwconf_file) : _interpreter(bwconf_file) {
+lang::lang(string_v bwconf_file) : _interpreter(bwconf_file) {
     init_scope();
 }
 
-void bwlang::init_scope() {
-    _interpreter.get_current_scope().create_var<i32t>("DEBUG", 0);
-    _interpreter.get_current_scope().create_var<i32t>("RELEASE", 1);
+void lang::init_scope() {
+    _interpreter.get_current_scope().create_var<pdiff>("DEBUG", 0);
+    _interpreter.get_current_scope().create_var<pdiff>("RELEASE", 1);
 
     _interpreter.create_function(
         "set", sl_func::set,
@@ -118,22 +118,20 @@ void bwlang::init_scope() {
                                  {param_type::FUTURE_VAR_ID, param_type::VAR_ID});
     _interpreter.create_function("use_templates", sl_func::use_templates,
                                  {param_type::VAR_STRUCT_ID, param_type::LSTR_OR_ID_VAR, param_type::NEXT_TOO});
-    _interpreter.create_function("use_it_template", sl_func::use_it_template,
-                                 {param_type::VAR_STRUCT_ID, param_type::LNUM_OR_ID_VAR});
 }
 
-void bwlang::execute() {
+void lang::execute() {
     _interpreter.interpret();
 }
-void bwlang::init_external_funcs(std::vector<decl_func> funcs) {
+void lang::init_external_funcs(vec<decl_func> funcs) {
     for (const auto &func : funcs)
         _interpreter.create_function(func);
 }
-void bwlang::set_custom_ext_fields_project(std::map<std::string, std::string> custom_ext_fields) {
+void lang::set_custom_ext_fields_project(map<string, string> custom_ext_fields) {
     var::struct_sb::project::preset_ext_fields.merge(custom_ext_fields);
 }
 
-bw_context bwlang::get_context() {
+bw_context lang::get_context() {
     context.out_targets          = get_targets();
     context.templates            = get_templates();
     context.call_components      = get_call_components();
@@ -142,13 +140,13 @@ bw_context bwlang::get_context() {
     return context;
 }
 
-std::vector<var::struct_sb::target_out> bwlang::get_targets() {
-    std::vector<var::struct_sb::target> targets = _interpreter.export_targets();
+vec<var::struct_sb::target_out> lang::get_targets() {
+    vec<var::struct_sb::target> targets = _interpreter.export_targets();
 
-    std::vector<var::struct_sb::target_out> targets_o;
+    vec<var::struct_sb::target_out> targets_o;
     var::struct_sb::target_out target_tmp;
 
-    for (u32t i = 0; i < targets.size(); ++i) {
+    for (size_t i = 0; i < targets.size(); ++i) {
         target_tmp.name_target     = targets[i].name_target;
         target_tmp.target_t        = targets[i].target_t;
         target_tmp.target_cfg      = targets[i].target_cfg;
@@ -163,43 +161,43 @@ std::vector<var::struct_sb::target_out> bwlang::get_targets() {
     return targets_o;
 }
 
-std::vector<var::struct_sb::template_command> bwlang::get_templates() {
-    std::vector<std::pair<std::string, var::struct_sb::template_command>> templates =
+vec<var::struct_sb::template_command> lang::get_templates() {
+    vec<pair<string, var::struct_sb::template_command>> templates =
         _interpreter.get_current_scope().get_vector_variables_t<var::struct_sb::template_command>();
 
-    std::vector<var::struct_sb::template_command> templates_out;
+    vec<var::struct_sb::template_command> templates_out;
     for (const auto &_template : templates)
         templates_out.emplace_back(_template.second);
 
     return templates_out;
 }
 
-std::vector<var::struct_sb::call_component> bwlang::get_call_components() {
-    std::vector<std::pair<std::string, var::struct_sb::call_component>> call_components =
+vec<var::struct_sb::call_component> lang::get_call_components() {
+    vec<pair<string, var::struct_sb::call_component>> call_components =
         _interpreter.get_current_scope().get_vector_variables_t<var::struct_sb::call_component>();
 
-    std::vector<var::struct_sb::call_component> call_components_out;
+    vec<var::struct_sb::call_component> call_components_out;
     for (const auto &_template : call_components)
         call_components_out.emplace_back(_template.second);
 
     return call_components_out;
 }
 
-std::vector<std::pair<std::string, std::string>> bwlang::get_global_external_args() {
-    std::vector<std::pair<std::string, std::pair<std::string, std::string>>> global_external_args =
-        _interpreter.get_current_scope().get_vector_variables_t<std::pair<std::string, std::string>>();
+vec<pair<string, string>> lang::get_global_external_args() {
+    vec<pair<string, pair<string, string>>> global_external_args =
+        _interpreter.get_current_scope().get_vector_variables_t<pair<string, string>>();
 
-    std::vector<std::pair<std::string, std::string>> global_external_args_out;
+    vec<pair<string, string>> global_external_args_out;
     for (const auto &global_external_arg : global_external_args)
         global_external_args_out.emplace_back(global_external_arg.second);
 
     return global_external_args_out;
 }
 
-var::scope &bwlang::get_global_scope() {
+var::scope &lang::get_global_scope() {
     return _interpreter.get_current_scope();
 }
-template <typename T> std::vector<std::pair<std::string, T>> &bwlang::get_class_variables() {
+template <typename T> vec<pair<string, T>> &lang::get_class_variables() {
     return _interpreter.get_current_scope().get_vector_variables_t<T>();
 }
 

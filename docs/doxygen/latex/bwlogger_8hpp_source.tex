@@ -1,0 +1,93 @@
+\doxysection{bwlogger.\+hpp}
+\hypertarget{bwlogger_8hpp_source}{}\label{bwlogger_8hpp_source}\index{src/bs/bwlogger.hpp@{src/bs/bwlogger.hpp}}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{comment}{//}}
+\DoxyCodeLine{00002\ \textcolor{comment}{//\ BWEAS\ is\ distributed\ under\ the\ gnu\ general\ public\ license\ 2.0\ (gpl-\/2.0).}}
+\DoxyCodeLine{00003\ \textcolor{comment}{//\ you\ can\ view\ the\ license\ text\ at\ the\ link:}}
+\DoxyCodeLine{00004\ \textcolor{comment}{//\ \ \ \ \ <https://www.gnu.org/licenses>}}
+\DoxyCodeLine{00005\ \textcolor{comment}{//\ -\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/}}
+\DoxyCodeLine{00006\ \textcolor{comment}{//}}
+\DoxyCodeLine{00007\ }
+\DoxyCodeLine{00008\ \textcolor{preprocessor}{\#ifndef\ LOGGER\_\_H}}
+\DoxyCodeLine{00009\ \textcolor{preprocessor}{\#define\ LOGGER\_\_H}}
+\DoxyCodeLine{00010\ }
+\DoxyCodeLine{00011\ \textcolor{preprocessor}{\#include\ <functional>}}
+\DoxyCodeLine{00012\ \textcolor{preprocessor}{\#include\ <sstream>}}
+\DoxyCodeLine{00013\ }
+\DoxyCodeLine{00014\ \textcolor{preprocessor}{\#include\ <bwtools.hpp>}}
+\DoxyCodeLine{00015\ }
+\DoxyCodeLine{00016\ \textcolor{preprocessor}{\#define\ LOG\_FILE\ "{}bweas-\/last.log"{}\ }\textcolor{comment}{//\ The\ file\ in\ which\ all\ actions\ of\ the\ build\ system\ will\ be\ logged}}
+\DoxyCodeLine{00017\ }
+\DoxyCodeLine{00018\ \textcolor{keyword}{namespace\ }bweas\ \{}
+\DoxyCodeLine{00019\ \textcolor{keyword}{enum\ class}\ log\_type;}
+\DoxyCodeLine{00020\ \textcolor{keyword}{class\ }\mbox{\hyperlink{classbweas_1_1log__message}{log\_message}};}
+\DoxyCodeLine{00021\ \textcolor{keyword}{class\ }\mbox{\hyperlink{classbweas_1_1logger}{logger}};}
+\DoxyCodeLine{00022\ \}\ \textcolor{comment}{//\ namespace\ bweas}}
+\DoxyCodeLine{00023\ }
+\DoxyCodeLine{00024\ \textcolor{keyword}{enum\ class}\ bweas::log\_type\ \{}
+\DoxyCodeLine{00025\ \ \ \ \ msg\ =\ 0,}
+\DoxyCodeLine{00026\ \ \ \ \ warning,}
+\DoxyCodeLine{00027\ \ \ \ \ error,}
+\DoxyCodeLine{00028\ \ \ \ \ fatal}
+\DoxyCodeLine{00029\ \};}
+\DoxyCodeLine{00030\ }
+\DoxyCodeLine{00031\ \textcolor{comment}{//\ The\ message\ that\ the\ logger\ accepts}}
+\DoxyCodeLine{00032\ \textcolor{keyword}{class\ }\mbox{\hyperlink{classbweas_1_1log__message}{bweas::log\_message}}\ \{}
+\DoxyCodeLine{00033\ \ \ \ \ \textcolor{keyword}{friend}\ \mbox{\hyperlink{classbweas_1_1logger}{bweas::logger}};}
+\DoxyCodeLine{00034\ }
+\DoxyCodeLine{00035\ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00036\ \ \ \ \ log\_message(log\_type);}
+\DoxyCodeLine{00037\ }
+\DoxyCodeLine{00038\ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00039\ \ \ \ \ \textcolor{keyword}{template}\ <\textcolor{keyword}{typename}\ T>\ log\_message\ \&operator<<(\textcolor{keyword}{const}\ T\ \&obj);}
+\DoxyCodeLine{00040\ }
+\DoxyCodeLine{00041\ \ \ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00042\ \ \ \ \ std::stringstream\ ss;}
+\DoxyCodeLine{00043\ \ \ \ \ bweas::log\_type\ log\_t;}
+\DoxyCodeLine{00044\ \};}
+\DoxyCodeLine{00045\ }
+\DoxyCodeLine{00046\ \textcolor{comment}{//\ A\ class\ for\ logging\ status}}
+\DoxyCodeLine{00047\ \textcolor{keyword}{class\ }\mbox{\hyperlink{classbweas_1_1logger}{bweas::logger}}\ \{}
+\DoxyCodeLine{00048\ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00049\ \ \ \ \ \textcolor{keyword}{using\ }handle\_func\_t\ =\ void(std::string\_view);}
+\DoxyCodeLine{00050\ }
+\DoxyCodeLine{00051\ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00052\ \ \ \ \ logger(std::string\_view\ \_owner)\ :\ owner(\_owner)\ \{}
+\DoxyCodeLine{00053\ \ \ \ \ \ \ \ \ file\_log\ =\ bwtools::open\_file(LOG\_FILE,\ bwtools::file::mode\_file::open::w);}
+\DoxyCodeLine{00054\ \ \ \ \ \}}
+\DoxyCodeLine{00055\ }
+\DoxyCodeLine{00056\ \ \ \ \ logger(\textcolor{keyword}{const}\ logger\ \&)\ \ \ \ \ \ \ \ \ \ \ \ =\ \textcolor{keyword}{delete};}
+\DoxyCodeLine{00057\ \ \ \ \ logger\ \&operator=(\textcolor{keyword}{const}\ logger\ \&)\ =\ \textcolor{keyword}{delete};}
+\DoxyCodeLine{00058\ }
+\DoxyCodeLine{00059\ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00060\ \ \ \ \ \textcolor{keywordtype}{void}\ set\_global\_status();}
+\DoxyCodeLine{00061\ }
+\DoxyCodeLine{00062\ \ \ \ \ bweas::log\_type\ get\_status();}
+\DoxyCodeLine{00063\ \ \ \ \ \textcolor{keywordtype}{void}\ dump\_status();}
+\DoxyCodeLine{00064\ }
+\DoxyCodeLine{00065\ \ \ \ \ \textcolor{keywordtype}{bool}\ error\_status();}
+\DoxyCodeLine{00066\ }
+\DoxyCodeLine{00067\ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00068\ \ \ \ \ logger\ \&operator<<(std::function<handle\_func\_t>\ handle\_func\_callback);}
+\DoxyCodeLine{00069\ \ \ \ \ \textcolor{keywordtype}{void}\ operator<<(\textcolor{keyword}{const}\ \mbox{\hyperlink{classbweas_1_1log__message}{bweas::log\_message}}\ \&obj);}
+\DoxyCodeLine{00070\ }
+\DoxyCodeLine{00071\ \ \ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00072\ \ \ \ \ \textcolor{keyword}{static}\ bwtools::file\_it\ file\_log;}
+\DoxyCodeLine{00073\ \ \ \ \ \textcolor{keyword}{static}\ bweas::log\_type\ global\_status;}
+\DoxyCodeLine{00074\ }
+\DoxyCodeLine{00075\ \ \ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00076\ \ \ \ \ std::string\_view\ owner;}
+\DoxyCodeLine{00077\ \ \ \ \ bweas::log\_type\ status;}
+\DoxyCodeLine{00078\ }
+\DoxyCodeLine{00079\ \ \ \ \ std::function<handle\_func\_t>\ handle\_func;}
+\DoxyCodeLine{00080\ \};}
+\DoxyCodeLine{00081\ }
+\DoxyCodeLine{00082\ \textcolor{keyword}{template}\ <\textcolor{keyword}{typename}\ T>\ \mbox{\hyperlink{classbweas_1_1log__message}{bweas::log\_message}}\ \&bweas::log\_message::operator<<(\textcolor{keyword}{const}\ T\ \&obj)\ \{}
+\DoxyCodeLine{00083\ \ \ \ \ ss\ <<\ obj;}
+\DoxyCodeLine{00084\ \ \ \ \ \textcolor{keywordflow}{return}\ *\textcolor{keyword}{this};}
+\DoxyCodeLine{00085\ \}}
+\DoxyCodeLine{00086\ }
+\DoxyCodeLine{00087\ \textcolor{preprocessor}{\#endif}}
+
+\end{DoxyCode}

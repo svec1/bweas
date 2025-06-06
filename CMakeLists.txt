@@ -18,6 +18,7 @@ option(USER_BUILD_LUA "Rep LuaJit on external" OFF)
 option(BWEAS_TEST "Build of bweas test" OFF)
 
 set(CMAKE_CXX_STANDARD 17)
+
 set(BWEAS_SLIB slbweas)
 
 add_subdirectory(src/)

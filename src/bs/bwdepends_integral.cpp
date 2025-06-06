@@ -13,20 +13,20 @@ using namespace bweas;
 
 static logger log{"BWDEPENDS_FILES_SYSTEM[INTEGRAL]"};
 
-std::unordered_set<std::string> bweas::bwdepends_integral::build_graph_depends_file(std::string_view name_file) {
+uset<string> bweas::bwdepends_integral::build_graph_depends_file(string_v name_file) {
     return build_graph_depends_file_c_cpp(name_file, include_paths);
 }
 
-std::unordered_set<std::string> bweas::bwdepends_integral::build_graph_depends_file_c_cpp(
-    std::string_view name_file, const std::vector<std::string> &include_paths) {
-    std::unordered_set<std::string> graph_depends_file;
+uset<string> bweas::bwdepends_integral::build_graph_depends_file_c_cpp(string_v name_file,
+                                                                       const vec<string> &include_paths) {
+    uset<string> graph_depends_file;
 
     try {
         bwtools::file_it file = bwtools::open_file(name_file);
-        std::string src_file  = bwtools::read_file(bwtools::get_ref_file(file));
+        string src_file       = bwtools::read_file(bwtools::get_ref_file(file));
         bool is_system_header = 0;
 
-        i32t pos_include = 0;
+        pdiff pos_include = 0;
 
         src_file = std::regex_replace(src_file, std::regex{" "}, "");
 
@@ -35,7 +35,7 @@ std::unordered_set<std::string> bweas::bwdepends_integral::build_graph_depends_f
                 if (src_file[pos_path++] == '<')
                     is_system_header = 1;
 
-                std::string include_file_path;
+                string include_file_path;
                 while (pos_path < src_file.size() && src_file[pos_path] != '\"' && src_file[pos_path] != '>')
                     include_file_path += src_file[pos_path++];
 
@@ -60,7 +60,7 @@ std::unordered_set<std::string> bweas::bwdepends_integral::build_graph_depends_f
         bwtools::close_file(file);
     }
     catch (std::exception &excp) {
-        throw std::runtime_error(name_file.data() + std::string("->") + excp.what());
+        throw std::runtime_error(name_file.data() + string("->") + excp.what());
     }
 
     return graph_depends_file;

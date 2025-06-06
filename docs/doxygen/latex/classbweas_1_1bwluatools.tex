@@ -1,0 +1,83 @@
+\doxysection{bweas\+::bwluatools Class Reference}
+\hypertarget{classbweas_1_1bwluatools}{}\label{classbweas_1_1bwluatools}\index{bweas::bwluatools@{bweas::bwluatools}}
+\doxysubsubsection*{Public Types}
+\begin{DoxyCompactItemize}
+\item 
+\Hypertarget{classbweas_1_1bwluatools_afbbf896afdbd02238ee027fee9f36925}\label{classbweas_1_1bwluatools_afbbf896afdbd02238ee027fee9f36925} 
+{\footnotesize template$<$typename T$>$ }\\using {\bfseries ref} = bwlua\+::lua\+::ref$<$T$>$
+\item 
+\Hypertarget{classbweas_1_1bwluatools_af2495427cf18626a8edc13a8b221d4f0}\label{classbweas_1_1bwluatools_af2495427cf18626a8edc13a8b221d4f0} 
+{\footnotesize template$<$typename T$>$ }\\using {\bfseries array} = bwlua\+::lua\+::array$<$T$>$
+\item 
+\Hypertarget{classbweas_1_1bwluatools_a1118ac679762c499adcdb4986658c583}\label{classbweas_1_1bwluatools_a1118ac679762c499adcdb4986658c583} 
+{\footnotesize template$<$typename K, typename V$>$ }\\using {\bfseries key\+\_\+value} = bwlua\+::lua\+::key\+\_\+value$<$K, V$>$
+\item 
+\Hypertarget{classbweas_1_1bwluatools_acbc30bcad3614db651fad9450e3b1509}\label{classbweas_1_1bwluatools_acbc30bcad3614db651fad9450e3b1509} 
+{\footnotesize template$<$typename K, typename V$>$ }\\using {\bfseries table} = bwlua\+::lua\+::table$<$K, V$>$
+\item 
+\Hypertarget{classbweas_1_1bwluatools_a54fe1086501fe9667fc2b9fbd5e72cf3}\label{classbweas_1_1bwluatools_a54fe1086501fe9667fc2b9fbd5e72cf3} 
+using {\bfseries integer} = bwlua\+::lua\+::integer
+\item 
+\Hypertarget{classbweas_1_1bwluatools_ad9513f6531b5f684e20ce680d5bb56e4}\label{classbweas_1_1bwluatools_ad9513f6531b5f684e20ce680d5bb56e4} 
+using {\bfseries number} = bwlua\+::lua\+::number
+\item 
+\Hypertarget{classbweas_1_1bwluatools_ac53d0815315c82f6bdcde289b91d4db3}\label{classbweas_1_1bwluatools_ac53d0815315c82f6bdcde289b91d4db3} 
+using {\bfseries nil} = bwlua\+::lua\+::nil
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Static Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\Hypertarget{classbweas_1_1bwluatools_a4326c6cb70c600520375e210c85af49e}\label{classbweas_1_1bwluatools_a4326c6cb70c600520375e210c85af49e} 
+static table$<$ std\+::string, std\+::any $>$ {\bfseries conv\+\_\+to\+\_\+table} (const var\+::struct\+\_\+sb\+::project \&prj)
+\item 
+\Hypertarget{classbweas_1_1bwluatools_a6a0c281955121e792b56bacce8241447}\label{classbweas_1_1bwluatools_a6a0c281955121e792b56bacce8241447} 
+static bwluatools\+::array$<$ std\+::any $>$ {\bfseries conv\+\_\+to\+\_\+table} (const std\+::vector$<$ var\+::struct\+\_\+sb\+::template\+\_\+command\+::arg $>$ \&args)
+\item 
+\Hypertarget{classbweas_1_1bwluatools_a051bb092581dd03e16b2febf6902beb0}\label{classbweas_1_1bwluatools_a051bb092581dd03e16b2febf6902beb0} 
+static table$<$ std\+::string, std\+::any $>$ {\bfseries conv\+\_\+to\+\_\+table} (const var\+::struct\+\_\+sb\+::template\+\_\+command \&tmp\+\_\+c)
+\item 
+\Hypertarget{classbweas_1_1bwluatools_a763379e9bdb1d1e7fbb03f34fa4f790b}\label{classbweas_1_1bwluatools_a763379e9bdb1d1e7fbb03f34fa4f790b} 
+static table$<$ std\+::string, std\+::string $>$ {\bfseries conv\+\_\+to\+\_\+table} (const var\+::struct\+\_\+sb\+::call\+\_\+component \&ccmp)
+\item 
+\Hypertarget{classbweas_1_1bwluatools_acd9ac000900a27eea445694cddba41c9}\label{classbweas_1_1bwluatools_acd9ac000900a27eea445694cddba41c9} 
+static table$<$ std\+::string, std\+::any $>$ {\bfseries conv\+\_\+to\+\_\+table} (const var\+::struct\+\_\+sb\+::target \&trg\+\_\+o)
+\item 
+\Hypertarget{classbweas_1_1bwluatools_a69a4e6803f70c2fa40c43c2e3b38a409}\label{classbweas_1_1bwluatools_a69a4e6803f70c2fa40c43c2e3b38a409} 
+static table$<$ std\+::string, std\+::any $>$ {\bfseries conv\+\_\+to\+\_\+table} (const var\+::struct\+\_\+sb\+::target\+\_\+out \&trg\+\_\+o)
+\item 
+\Hypertarget{classbweas_1_1bwluatools_a06a2ffb0759d2c2eb336d21fba5fa49a}\label{classbweas_1_1bwluatools_a06a2ffb0759d2c2eb336d21fba5fa49a} 
+static table$<$ std\+::string, array$<$ std\+::string $>$ $>$ {\bfseries conv\+\_\+to\+\_\+table} (const bweas\+::bwdepends\+\_\+files\+::depends\+\_\+map \&dfiles)
+\item 
+\Hypertarget{classbweas_1_1bwluatools_a514b1d7213076602edf7dfb78977f4b5}\label{classbweas_1_1bwluatools_a514b1d7213076602edf7dfb78977f4b5} 
+static var\+::struct\+\_\+sb\+::project {\bfseries conv\+\_\+to\+\_\+project} (table$<$ std\+::string, std\+::any $>$ prj\+\_\+t)
+\item 
+\Hypertarget{classbweas_1_1bwluatools_a4ea96c8309c30ae921ab7ccf08845984}\label{classbweas_1_1bwluatools_a4ea96c8309c30ae921ab7ccf08845984} 
+static std\+::vector$<$ var\+::struct\+\_\+sb\+::template\+\_\+command\+::arg $>$ {\bfseries conv\+\_\+to\+\_\+args} (array$<$ array$<$ std\+::any $>$ $>$ args)
+\item 
+\Hypertarget{classbweas_1_1bwluatools_a74ccbcda65fafcb38925a3de1a8165f0}\label{classbweas_1_1bwluatools_a74ccbcda65fafcb38925a3de1a8165f0} 
+static var\+::struct\+\_\+sb\+::template\+\_\+command {\bfseries conv\+\_\+to\+\_\+template} (table$<$ std\+::string, std\+::any $>$ \&tcmd)
+\item 
+\Hypertarget{classbweas_1_1bwluatools_adc06a94b0f6b2d3650fddac754eab365}\label{classbweas_1_1bwluatools_adc06a94b0f6b2d3650fddac754eab365} 
+static var\+::struct\+\_\+sb\+::call\+\_\+component {\bfseries conv\+\_\+to\+\_\+call\+\_\+components} (table$<$ std\+::string, std\+::any $>$ \&ccmp)
+\item 
+\Hypertarget{classbweas_1_1bwluatools_ac909301afef9f64a513f8fde625b48a5}\label{classbweas_1_1bwluatools_ac909301afef9f64a513f8fde625b48a5} 
+static var\+::struct\+\_\+sb\+::target\+\_\+out {\bfseries conv\+\_\+to\+\_\+target} (table$<$ std\+::string, std\+::any $>$ \&trg\+\_\+o\+\_\+t)
+\item 
+\Hypertarget{classbweas_1_1bwluatools_a9475c797ef54178bbb5e409a1faef833}\label{classbweas_1_1bwluatools_a9475c797ef54178bbb5e409a1faef833} 
+static int {\bfseries get\+\_\+var} (lua\+\_\+\+State \texorpdfstring{$\ast$}{*}L)
+\item 
+\Hypertarget{classbweas_1_1bwluatools_a03322257b63c6371f684aea54f546f52}\label{classbweas_1_1bwluatools_a03322257b63c6371f684aea54f546f52} 
+static int {\bfseries set\+\_\+var} (lua\+\_\+\+State \texorpdfstring{$\ast$}{*}L)
+\item 
+\Hypertarget{classbweas_1_1bwluatools_ab72f163eaa70bef79fc6c2b8f93b4925}\label{classbweas_1_1bwluatools_ab72f163eaa70bef79fc6c2b8f93b4925} 
+static int {\bfseries get\+\_\+name\+\_\+output\+\_\+file\+\_\+lua} (lua\+\_\+\+State \texorpdfstring{$\ast$}{*}L)
+\item 
+\Hypertarget{classbweas_1_1bwluatools_ae4efbce10951a9a4be5d6739db314af4}\label{classbweas_1_1bwluatools_ae4efbce10951a9a4be5d6739db314af4} 
+static int {\bfseries file\+\_\+slc\+\_\+mask\+\_\+lua} (lua\+\_\+\+State \texorpdfstring{$\ast$}{*}L)
+\end{DoxyCompactItemize}
+
+
+The documentation for this class was generated from the following files\+:\begin{DoxyCompactItemize}
+\item 
+src/bs/bwluatools.\+hpp\item 
+src/bs/bwluatools.\+cpp\end{DoxyCompactItemize}

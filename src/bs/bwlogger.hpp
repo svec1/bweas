@@ -5,15 +5,13 @@
 // ------------------------------------------
 //
 
-#ifndef LOGGER__H
-#define LOGGER__H
+#ifndef BWLOGGER_HPP
+#define BWLOGGER_HPP
 
 #include <functional>
 #include <sstream>
 
 #include <bwtools.hpp>
-
-#define LOG_FILE "bweas-last.log" // The file in which all actions of the build system will be logged
 
 namespace bweas {
 enum class log_type;
@@ -46,11 +44,11 @@ class bweas::log_message {
 // A class for logging status
 class bweas::logger {
   public:
-    using handle_func_t = void(std::string_view);
+    using handle_func_t = void(string_v);
 
   public:
-    logger(std::string_view _owner) : owner(_owner) {
-        file_log = bwtools::open_file(LOG_FILE, bwtools::file::mode_file::open::w);
+    logger(string_v _owner) : owner(_owner) {
+        file_log = bwtools::open_file("bweas-last.log", bwtools::file::mode_file::open::w);
     }
 
     logger(const logger &)            = delete;
@@ -73,7 +71,7 @@ class bweas::logger {
     static bweas::log_type global_status;
 
   private:
-    std::string_view owner;
+    string_v owner;
     bweas::log_type status;
 
     std::function<handle_func_t> handle_func;

@@ -1,0 +1,39 @@
+\doxysection{bwdepends\+\_\+integral.\+hpp}
+\hypertarget{bwdepends__integral_8hpp_source}{}\label{bwdepends__integral_8hpp_source}\index{src/bs/bwdepends\_integral.hpp@{src/bs/bwdepends\_integral.hpp}}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{comment}{//}}
+\DoxyCodeLine{00002\ \textcolor{comment}{//\ BWEAS\ is\ distributed\ under\ the\ gnu\ general\ public\ license\ 2.0\ (gpl-\/2.0).}}
+\DoxyCodeLine{00003\ \textcolor{comment}{//\ you\ can\ view\ the\ license\ text\ at\ the\ link:}}
+\DoxyCodeLine{00004\ \textcolor{comment}{//\ \ \ \ \ <https://www.gnu.org/licenses>}}
+\DoxyCodeLine{00005\ \textcolor{comment}{//\ -\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/}}
+\DoxyCodeLine{00006\ \textcolor{comment}{//}}
+\DoxyCodeLine{00007\ }
+\DoxyCodeLine{00008\ \textcolor{preprocessor}{\#ifndef\ BWDEPENDS\_INTEGRAL\_\_H}}
+\DoxyCodeLine{00009\ \textcolor{preprocessor}{\#define\ BWDEPENDS\_INTEGRAL\_\_H}}
+\DoxyCodeLine{00010\ }
+\DoxyCodeLine{00011\ \textcolor{preprocessor}{\#include\ "{}bwdepends\_files.hpp"{}}}
+\DoxyCodeLine{00012\ \textcolor{preprocessor}{\#include\ "{}bwgenerator\_integral.hpp"{}}}
+\DoxyCodeLine{00013\ }
+\DoxyCodeLine{00014\ \textcolor{keyword}{namespace\ }bweas\ \{}
+\DoxyCodeLine{00015\ }
+\DoxyCodeLine{00016\ \textcolor{comment}{//\ Implementing\ an\ internal\ file\ dependency\ system}}
+\DoxyCodeLine{00017\ \textcolor{keyword}{class\ }bwdepends\_integral\ :\ \textcolor{keyword}{public}\ bwdepends\_files\ \{}
+\DoxyCodeLine{00018\ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00019\ \ \ \ \ bwdepends\_integral(\textcolor{keyword}{const}\ std::string\_view\ language,\ \textcolor{keyword}{const}\ std::string\_view\ work\_directory)}
+\DoxyCodeLine{00020\ \ \ \ \ \ \ \ \ :\ bwdepends\_files(language,\ work\_directory)\ \{}
+\DoxyCodeLine{00021\ \ \ \ \ \}}
+\DoxyCodeLine{00022\ \ \ \ \ \string~bwdepends\_integral()\ =\ \textcolor{keywordflow}{default};}
+\DoxyCodeLine{00023\ }
+\DoxyCodeLine{00024\ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00025\ \ \ \ \ std::unordered\_set<std::string>\ build\_graph\_depends\_file(std::string\_view\ name\_file)\ \textcolor{keyword}{override}\ \textcolor{keyword}{final};}
+\DoxyCodeLine{00026\ }
+\DoxyCodeLine{00027\ \ \ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00028\ \ \ \ \ \textcolor{keyword}{static}\ std::unordered\_set<std::string>\ build\_graph\_depends\_file\_c\_cpp(}
+\DoxyCodeLine{00029\ \ \ \ \ \ \ \ \ std::string\_view\ name\_file,\ \textcolor{keyword}{const}\ std::vector<std::string>\ \&include\_paths);}
+\DoxyCodeLine{00030\ \};}
+\DoxyCodeLine{00031\ \}\ \textcolor{comment}{//\ namespace\ bweas}}
+\DoxyCodeLine{00032\ }
+\DoxyCodeLine{00033\ \textcolor{preprocessor}{\#endif}}
+
+\end{DoxyCode}

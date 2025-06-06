@@ -13,7 +13,7 @@
 #include <string>
 #include <vector>
 
-#include <bwtype.h>
+#include <bwaliases.hpp>
 
 class bwfile {
   public:
@@ -23,20 +23,20 @@ class bwfile {
     // Creates an array of file names based on the mask
     // passed to the function and an array of all files.
     // ### The syntax is fully compliant with the glob() standard.
-    static inline std::vector<std::string> file_slc_mask(std::string mask, const std::vector<std::string> &files);
+    static inline vec<string> file_slc_mask(string mask, const vec<string> &files);
 
     // Returns the absolute path to an existing file, considering the current directory.
-    static inline std::string get_path_file(std::string name_file);
+    static inline string get_path_file(string name_file);
     // Returns the absolute path to an existing file, considering all possible paths, including the current directory.
-    static inline std::string get_path_file(std::string name_file, const std::vector<std::string> &possible_paths);
+    static inline string get_path_file(string name_file, const vec<string> &possible_paths);
 };
 
-std::vector<std::string> bwfile::file_slc_mask(std::string mask, const std::vector<std::string> &files) {
-    std::vector<std::string> slc_files;
-    std::vector<std::string> masks;
+vec<string> bwfile::file_slc_mask(string mask, const vec<string> &files) {
+    vec<string> slc_files;
+    vec<string> masks;
 
-    std::string mask_tmp;
-    for (u32t i = 0; i < mask.size() + 1; ++i) {
+    string mask_tmp;
+    for (uint i = 0; i < mask.size() + 1; ++i) {
         if (mask[i] == '|' || i == mask.size()) {
             if (mask_tmp.empty())
                 continue;
@@ -48,14 +48,14 @@ std::vector<std::string> bwfile::file_slc_mask(std::string mask, const std::vect
         mask_tmp += mask[i];
     }
 
-    for (u32t i = 0; i < masks.size(); ++i) {
+    for (uint i = 0; i < masks.size(); ++i) {
         mask = masks[i];
-        for (u32t j = 0; j < files.size(); ++j) {
-            std::string mask_tmp{mask};
+        for (uint j = 0; j < files.size(); ++j) {
+            string mask_tmp{mask};
             bool success_file = 1;
 
-            u32t sym_file = 0;
-            for (u32t sym = 0; sym < mask_tmp.size(); ++sym, ++sym_file) {
+            uint sym_file = 0;
+            for (uint sym = 0; sym < mask_tmp.size(); ++sym, ++sym_file) {
                 if (mask_tmp[sym] == files[j][sym_file] ||
                     (mask_tmp[sym] == '\\' || mask_tmp[sym] == '/') &&
                         (files[j][sym_file] == '\\' || files[j][sym_file] == '/'))
@@ -106,7 +106,7 @@ std::vector<std::string> bwfile::file_slc_mask(std::string mask, const std::vect
     return slc_files;
 }
 
-std::string bwfile::get_path_file(std::string name_file) {
+string bwfile::get_path_file(string name_file) {
     if (auto path_file = std::filesystem::weakly_canonical(std::filesystem::current_path() / name_file);
         std::filesystem::is_regular_file(path_file))
         return path_file.string();
@@ -114,7 +114,7 @@ std::string bwfile::get_path_file(std::string name_file) {
     return {};
 }
 
-std::string bwfile::get_path_file(std::string name_file, const std::vector<std::string> &possible_paths) {
+string bwfile::get_path_file(string name_file, const vec<string> &possible_paths) {
     if (auto path_file = get_path_file(name_file); !path_file.empty())
         return path_file;
 

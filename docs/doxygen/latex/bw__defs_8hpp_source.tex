@@ -1,0 +1,82 @@
+\doxysection{bw\+\_\+defs.\+hpp}
+\hypertarget{bw__defs_8hpp_source}{}\label{bw__defs_8hpp_source}\index{src/bs/bw\_defs.hpp@{src/bs/bw\_defs.hpp}}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{comment}{//}}
+\DoxyCodeLine{00002\ \textcolor{comment}{//\ BWEAS\ is\ distributed\ under\ the\ GNU\ General\ Public\ License\ 2.0\ (GPL-\/2.0).}}
+\DoxyCodeLine{00003\ \textcolor{comment}{//\ you\ can\ view\ the\ license\ text\ at\ the\ link:}}
+\DoxyCodeLine{00004\ \textcolor{comment}{//\ \ \ \ \ <https://www.gnu.org/licenses>}}
+\DoxyCodeLine{00005\ \textcolor{comment}{//\ -\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/}}
+\DoxyCodeLine{00006\ \textcolor{comment}{//}}
+\DoxyCodeLine{00007\ }
+\DoxyCodeLine{00008\ \textcolor{preprocessor}{\#ifndef\ BWDEFS\_\_H}}
+\DoxyCodeLine{00009\ \textcolor{preprocessor}{\#define\ BWDEFS\_\_H}}
+\DoxyCodeLine{00010\ }
+\DoxyCodeLine{00011\ \textcolor{comment}{//\ bweas\ main\ header\ file}}
+\DoxyCodeLine{00012\ }
+\DoxyCodeLine{00013\ \textcolor{preprocessor}{\#include\ <bwmacros\_platform.h>}}
+\DoxyCodeLine{00014\ \textcolor{preprocessor}{\#include\ <bwtype.h>}}
+\DoxyCodeLine{00015\ }
+\DoxyCodeLine{00016\ \textcolor{preprocessor}{\#include\ <bwlogger.hpp>}}
+\DoxyCodeLine{00017\ }
+\DoxyCodeLine{00018\ \textcolor{preprocessor}{\#include\ <lang/interpreter.hpp>}}
+\DoxyCodeLine{00019\ }
+\DoxyCodeLine{00020\ \textcolor{preprocessor}{\#include\ <algorithm>}}
+\DoxyCodeLine{00021\ \textcolor{preprocessor}{\#include\ <memory>}}
+\DoxyCodeLine{00022\ \textcolor{preprocessor}{\#include\ <vector>}}
+\DoxyCodeLine{00023\ }
+\DoxyCodeLine{00024\ \textcolor{preprocessor}{\#define\ BWEAS\_VERSION\_STR\ "{}0.1.1"{}}}
+\DoxyCodeLine{00025\ }
+\DoxyCodeLine{00026\ \textcolor{preprocessor}{\#define\ BWEAS\_VERSION\_MAJOR\ "{}0"{}}}
+\DoxyCodeLine{00027\ \textcolor{preprocessor}{\#define\ BWEAS\_VERSION\_MINOR\ "{}1"{}}}
+\DoxyCodeLine{00028\ \textcolor{preprocessor}{\#define\ BWEAS\_VERSION\_PATCH\ "{}1"{}}}
+\DoxyCodeLine{00029\ }
+\DoxyCodeLine{00030\ \textcolor{preprocessor}{\#define\ BWEAS\_INFO\ "{}bweas\ version\ "{}\ BWEAS\_VERSION\_STR\ "{}\(\backslash\)nrep\ on\ github\ -\/\ https://github.com/svec1/bweas"{}}}
+\DoxyCodeLine{00031\ }
+\DoxyCodeLine{00032\ \textcolor{preprocessor}{\#define\ BWEAS\_HELP\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \(\backslash\)}}
+\DoxyCodeLine{00033\ \textcolor{preprocessor}{\ \ \ \ "{}bweas-\/call:\ \(\backslash\)n\ \ \ bweas\ <parameter>...\ path\_depending\(\backslash\)n\ \ \ bweas\ path\_bweas\_config\ <parameter>..."{}\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \(\backslash\)}}
+\DoxyCodeLine{00034\ \textcolor{preprocessor}{\ \ \ \ "{}\(\backslash\)nAcceptable\ parameters:"{}\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \(\backslash\)}}
+\DoxyCodeLine{00035\ \textcolor{preprocessor}{\ \ \ \ "{}\(\backslash\)n\ \ \ -\/-\/build\ -\/\ builds\ the\ project\ (either\ by\ executing\ the\ configuration\ file\ or\ deserializing\ the\ cache\ file\ "{}\ \ \ \(\backslash\)}}
+\DoxyCodeLine{00036\ \textcolor{preprocessor}{\ \ \ \ "{}if\ it\ exists)"{}\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \(\backslash\)}}
+\DoxyCodeLine{00037\ \textcolor{preprocessor}{\ \ \ \ "{}\(\backslash\)n\ \ \ -\/-\/cfg\ -\/\ executes\ the\ configuration\ file\ if\ it\ has\ been\ changed\ and\ creates\ a\ new\ cache\ file"{}\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \(\backslash\)}}
+\DoxyCodeLine{00038\ \textcolor{preprocessor}{\ \ \ \ "{}\(\backslash\)n\ \ \ -\/-\/package\ -\/\ creates\ a\ bweas\ package\ based\ on\ the\ transferred\ json\ file(json\ config)"{}\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \(\backslash\)}}
+\DoxyCodeLine{00039\ \textcolor{preprocessor}{\ \ \ \ "{}\(\backslash\)n\ \ \ -\/-\/help\ -\/\ outputs\ the\ syntax\ of\ the\ bweas\ call\ as\ well\ as\ its\ possible\ functions"{}\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \(\backslash\)}}
+\DoxyCodeLine{00040\ \textcolor{preprocessor}{\ \ \ \ "{}\(\backslash\)n\ \ \ -\/-\/version\ -\/\ outputs\ the\ version\ of\ bweas"{}}}
+\DoxyCodeLine{00041\ }
+\DoxyCodeLine{00042\ \textcolor{preprocessor}{\#define\ JSON\_CONFIG\_FILE\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \(\backslash\)}}
+\DoxyCodeLine{00043\ \textcolor{preprocessor}{\ \ \ \ "{}bweas-\/config.json"{}\ \ \ \ \ \ \ \ \ \ \ }\textcolor{comment}{//\ Bweas\ configuration\ file,\ defines\ all\ packages\ that\ should\ be\ loaded\ by\ the\ builder}}
+\DoxyCodeLine{00044\ \textcolor{preprocessor}{\#define\ MAIN\_FILE\ "{}bweasconf.txt"{}\ }\textcolor{comment}{//\ The\ current\ file\ of\ a\ project.\ It\ defines\ all\ target\ information}}
+\DoxyCodeLine{00045\ \textcolor{preprocessor}{\#define\ CACHE\_FILE\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \(\backslash\)}}
+\DoxyCodeLine{00046\ \textcolor{preprocessor}{\ \ \ \ "{}bwcache"{}\ }\textcolor{comment}{/*\ Cache\ file,\ all\ information\ about\ all\ targets\ is\ saved\ there\ for\ quick\ access,\ which\ makes\ it\ \ \ \ \ \ \ \ \ \(\backslash\)}}
+\DoxyCodeLine{00047\ \textcolor{comment}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ possible\ not\ to\ reinterpret\ bweasconf.txt*/}\textcolor{preprocessor}{}}
+\DoxyCodeLine{00048\ \textcolor{preprocessor}{\#define\ BW\_FORMAT\_PACKAGE\ "{}.bweas-\/package"{}\ }\textcolor{comment}{//\ Package\ expansion}}
+\DoxyCodeLine{00049\ \textcolor{preprocessor}{\#define\ DIRWORK\_ENV\ "{}.bweas"{}\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }\textcolor{comment}{//\ The\ name\ of\ the\ directory\ where\ the\ build\ files\ will\ be\ created}}
+\DoxyCodeLine{00050\ \textcolor{preprocessor}{\#define\ DEPENDS\_FILE\_POSTFIX\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \(\backslash\)}}
+\DoxyCodeLine{00051\ \textcolor{preprocessor}{\ \ \ \ "{}.d"{}\ }\textcolor{comment}{//\ A\ postfix\ (extension)\ to\ the\ file\ name\ containing\ the\ names\ of\ the\ source\ file\ dependencies}}
+\DoxyCodeLine{00052\ }
+\DoxyCodeLine{00053\ \textcolor{keyword}{namespace\ }bweas\ \{}
+\DoxyCodeLine{00054\ }
+\DoxyCodeLine{00055\ \textcolor{keyword}{using\ }bwarg\ \ \ \ \ \ \ \ \ \ \ \ \ =\ std::pair<std::string,\ std::string>;}
+\DoxyCodeLine{00056\ \textcolor{keyword}{using\ }bwargs\ \ \ \ \ \ \ \ \ \ \ \ =\ std::vector<bwarg>;}
+\DoxyCodeLine{00057\ \textcolor{keyword}{using\ }bwarg\_files\ \ \ \ \ \ \ =\ std::pair<std::string,\ std::vector<std::string>>;}
+\DoxyCodeLine{00058\ \textcolor{keyword}{using\ }bwargs\_files\ \ \ \ \ \ =\ std::vector<bwarg\_files>;}
+\DoxyCodeLine{00059\ \textcolor{keyword}{using\ }bwqueue\_templates\ =\ std::vector<var::struct\_sb::template\_command>;}
+\DoxyCodeLine{00060\ }
+\DoxyCodeLine{00061\ \textcolor{keyword}{using\ }command\ \ =\ std::string;}
+\DoxyCodeLine{00062\ \textcolor{keyword}{using\ }commands\ =\ std::vector<command>;}
+\DoxyCodeLine{00063\ }
+\DoxyCodeLine{00064\ \textcolor{comment}{//\ The\ structure\ defining\ the\ main\ data\ for\ the\ build}}
+\DoxyCodeLine{00065\ \textcolor{keyword}{struct\ }\mbox{\hyperlink{structbweas_1_1bw__context}{bw\_context}}\ \{}
+\DoxyCodeLine{00066\ \ \ \ \ std::vector<var::struct\_sb::target\_out>\ out\_targets;}
+\DoxyCodeLine{00067\ \ \ \ \ std::vector<var::struct\_sb::template\_command>\ templates;}
+\DoxyCodeLine{00068\ \ \ \ \ std::vector<var::struct\_sb::call\_component>\ call\_components;}
+\DoxyCodeLine{00069\ \ \ \ \ std::vector<std::pair<std::string,\ std::string>>\ global\_external\_args;}
+\DoxyCodeLine{00070\ }
+\DoxyCodeLine{00071\ \ \ \ \ var::struct\_sb::target\_out\ *current\_target;}
+\DoxyCodeLine{00072\ \};}
+\DoxyCodeLine{00073\ }
+\DoxyCodeLine{00074\ \}\ \textcolor{comment}{//\ namespace\ bweas}}
+\DoxyCodeLine{00075\ }
+\DoxyCodeLine{00076\ \textcolor{preprocessor}{\#endif}}
+
+\end{DoxyCode}

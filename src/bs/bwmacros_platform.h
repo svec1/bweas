@@ -5,8 +5,8 @@
 // ------------------------------------------
 //
 
-#ifndef BWMACROS__H_
-#define BWMACROS__H_
+#ifndef BWMACROS_HPP
+#define BWMACROS_HPP
 
 // macro set
 

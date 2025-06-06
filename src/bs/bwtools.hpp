@@ -5,16 +5,13 @@
 // ------------------------------------------
 //
 
-#ifndef _BWTOOLS__H_
-#define _BWTOOLS__H_
+#ifndef BWTOOLS_HPP
+#define BWTOOLS_HPP
 
-#include <bwtype.h>
+#include <bwaliases.hpp>
 
 #include <filesystem>
 #include <fstream>
-#include <string>
-#include <string_view>
-#include <vector>
 
 #ifndef _DEBUG
 #define FATAL(str)                                                                                                     \
@@ -147,7 +144,7 @@ class bweas::bwtools {
     };
 
   public:
-    using file_it = u32t;
+    using file_it = size_t;
 
     static void message(std::string_view str);
     static void success(std::string_view str);

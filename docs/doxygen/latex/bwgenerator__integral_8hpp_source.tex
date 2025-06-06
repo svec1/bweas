@@ -1,0 +1,36 @@
+\doxysection{bwgenerator\+\_\+integral.\+hpp}
+\hypertarget{bwgenerator__integral_8hpp_source}{}\label{bwgenerator__integral_8hpp_source}\index{src/bs/bwgenerator\_integral.hpp@{src/bs/bwgenerator\_integral.hpp}}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{comment}{//}}
+\DoxyCodeLine{00002\ \textcolor{comment}{//\ BWEAS\ is\ distributed\ under\ the\ gnu\ general\ public\ license\ 2.0\ (gpl-\/2.0).}}
+\DoxyCodeLine{00003\ \textcolor{comment}{//\ you\ can\ view\ the\ license\ text\ at\ the\ link:}}
+\DoxyCodeLine{00004\ \textcolor{comment}{//\ \ \ \ \ <https://www.gnu.org/licenses>}}
+\DoxyCodeLine{00005\ \textcolor{comment}{//\ -\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/}}
+\DoxyCodeLine{00006\ \textcolor{comment}{//}}
+\DoxyCodeLine{00007\ }
+\DoxyCodeLine{00008\ \textcolor{preprocessor}{\#ifndef\ BWGENERATOR\_INTEGRAL\_\_H}}
+\DoxyCodeLine{00009\ \textcolor{preprocessor}{\#define\ BWGENERATOR\_INTEGRAL\_\_H}}
+\DoxyCodeLine{00010\ }
+\DoxyCodeLine{00011\ \textcolor{preprocessor}{\#include\ <map>}}
+\DoxyCodeLine{00012\ }
+\DoxyCodeLine{00013\ \textcolor{preprocessor}{\#include\ "{}bw\_defs.hpp"{}}}
+\DoxyCodeLine{00014\ \textcolor{preprocessor}{\#include\ "{}bwgenerator\_api.hpp"{}}}
+\DoxyCodeLine{00015\ }
+\DoxyCodeLine{00016\ \textcolor{keyword}{namespace\ }bweas\ \{}
+\DoxyCodeLine{00017\ \textcolor{keyword}{class\ }integral\_generator\ \{}
+\DoxyCodeLine{00018\ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00019\ \ \ \ \ integral\_generator()\ =\ \textcolor{keyword}{delete};}
+\DoxyCodeLine{00020\ }
+\DoxyCodeLine{00021\ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00022\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{void}\ get\_input\_files(\mbox{\hyperlink{structbweas_1_1generator__api_1_1data__transfer}{bweas::generator\_api::data\_transfer}}\ \&data\_t);}
+\DoxyCodeLine{00023\ \ \ \ \ \textcolor{comment}{//\ First\ and\ basic\ template-\/based\ command\ generator}}
+\DoxyCodeLine{00024\ \ \ \ \ \textcolor{keyword}{static}\ generator\_api::gen\_command\ generate(\mbox{\hyperlink{structbweas_1_1generator__api_1_1data__transfer}{bweas::generator\_api::data\_transfer}}\ \&data\_t);}
+\DoxyCodeLine{00025\ }
+\DoxyCodeLine{00026\ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00027\ \};}
+\DoxyCodeLine{00028\ \}\ \textcolor{comment}{//\ namespace\ bweas}}
+\DoxyCodeLine{00029\ }
+\DoxyCodeLine{00030\ \textcolor{preprocessor}{\#endif}}
+
+\end{DoxyCode}

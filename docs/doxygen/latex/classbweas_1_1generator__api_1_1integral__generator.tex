@@ -1,0 +1,108 @@
+\doxysection{bweas\+::generator\+\_\+api\+::integral\+\_\+generator Class Reference}
+\hypertarget{classbweas_1_1generator__api_1_1integral__generator}{}\label{classbweas_1_1generator__api_1_1integral__generator}\index{bweas::generator\_api::integral\_generator@{bweas::generator\_api::integral\_generator}}
+Inheritance diagram for bweas\+::generator\+\_\+api\+::integral\+\_\+generator\+:\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=3.000000cm]{classbweas_1_1generator__api_1_1integral__generator}
+\end{center}
+\end{figure}
+\doxysubsubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \mbox{\hyperlink{classbweas_1_1generator__api_1_1integral__generator_a29a13e4bfb9c9d1df9591bbe10c75037}{init}} () override final
+\item 
+void \mbox{\hyperlink{classbweas_1_1generator__api_1_1integral__generator_ab63fc5e9e01749090872ca85afdfcfc7}{\+\_\+delete}} () override final
+\item 
+std\+::unordered\+\_\+set$<$ std\+::string $>$ \mbox{\hyperlink{classbweas_1_1generator__api_1_1integral__generator_ac611917ca23e24a68cb21684b89808ec}{build\+\_\+graph\+\_\+depends\+\_\+file}} (std\+::string\+\_\+view language, std\+::string\+\_\+view name\+\_\+file, std\+::string\+\_\+view work\+\_\+directory, std\+::vector$<$ std\+::string $>$ include\+\_\+paths) override final
+\item 
+void \mbox{\hyperlink{classbweas_1_1generator__api_1_1integral__generator_a09bc66d7568bf0fb8ecbe55aa7de7522}{get\+\_\+input\+\_\+files}} (\mbox{\hyperlink{structbweas_1_1generator__api_1_1data__transfer}{data\+\_\+transfer}} \&data\+\_\+t) override final
+\item 
+gen\+\_\+command \mbox{\hyperlink{classbweas_1_1generator__api_1_1integral__generator_aa74b40f38642b9a67d2adc34db27e16e}{generate\+\_\+command}} (\mbox{\hyperlink{structbweas_1_1generator__api_1_1data__transfer}{data\+\_\+transfer}} \&data\+\_\+t) override final
+\end{DoxyCompactItemize}
+\doxysubsection*{Public Member Functions inherited from \mbox{\hyperlink{classbweas_1_1generator__api_1_1base__generator}{bweas\+::generator\+\_\+api\+::base\+\_\+generator}}}
+\begin{DoxyCompactItemize}
+\item 
+void {\bfseries set\+\_\+use\+\_\+build\+\_\+graph\+\_\+depends} ()
+\item 
+bool {\bfseries has\+\_\+build\+\_\+graph\+\_\+depends} ()
+\end{DoxyCompactItemize}
+\doxysubsection*{Public Member Functions inherited from \mbox{\hyperlink{classbweas_1_1generator__api_1_1gninterface_1_1interface__generator}{bweas\+::generator\+\_\+api\+::gninterface\+::interface\+\_\+generator}}}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classbweas_1_1generator__api_1_1gninterface_1_1interface__generator}{interface\+\_\+generator}} \& {\bfseries operator=} (const \mbox{\hyperlink{classbweas_1_1generator__api_1_1gninterface_1_1interface__generator}{interface\+\_\+generator}} \&)=delete
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Friends}
+\begin{DoxyCompactItemize}
+\item 
+\Hypertarget{classbweas_1_1generator__api_1_1integral__generator_a26779d1ae34288d2790ebb1fa2e158b1}\label{classbweas_1_1generator__api_1_1integral__generator_a26779d1ae34288d2790ebb1fa2e158b1} 
+\mbox{\hyperlink{classbweas_1_1generator__api_1_1base__generator}{base\+\_\+generator}} \texorpdfstring{$\ast$}{*} {\bfseries base\+\_\+generator\+::create\+\_\+generator\+\_\+int} (func\+\_\+build\+\_\+graph\+\_\+depends\+\_\+file, func\+\_\+get\+\_\+input\+\_\+files, func\+\_\+generator)
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Additional Inherited Members}
+\doxysubsection*{Static Public Member Functions inherited from \mbox{\hyperlink{classbweas_1_1generator__api_1_1base__generator}{bweas\+::generator\+\_\+api\+::base\+\_\+generator}}}
+\begin{DoxyCompactItemize}
+\item 
+static \mbox{\hyperlink{classbweas_1_1generator__api_1_1base__generator}{base\+\_\+generator}} \texorpdfstring{$\ast$}{*} {\bfseries create\+\_\+generator\+\_\+int} (func\+\_\+build\+\_\+graph\+\_\+depends\+\_\+file, func\+\_\+get\+\_\+input\+\_\+files, func\+\_\+generator)
+\item 
+static \mbox{\hyperlink{classbweas_1_1generator__api_1_1base__generator}{base\+\_\+generator}} \texorpdfstring{$\ast$}{*} {\bfseries create\+\_\+generator\+\_\+lua} (std\+::string)
+\item 
+static bool {\bfseries is\+\_\+exist} (\mbox{\hyperlink{classbweas_1_1generator__api_1_1base__generator}{base\+\_\+generator}} \texorpdfstring{$\ast$}{*}generator)
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Member Function Documentation}
+\Hypertarget{classbweas_1_1generator__api_1_1integral__generator_ab63fc5e9e01749090872ca85afdfcfc7}\index{bweas::generator\_api::integral\_generator@{bweas::generator\_api::integral\_generator}!\_delete@{\_delete}}
+\index{\_delete@{\_delete}!bweas::generator\_api::integral\_generator@{bweas::generator\_api::integral\_generator}}
+\doxysubsubsection{\texorpdfstring{\_delete()}{\_delete()}}
+{\footnotesize\ttfamily \label{classbweas_1_1generator__api_1_1integral__generator_ab63fc5e9e01749090872ca85afdfcfc7} 
+void generator\+\_\+api\+::integral\+\_\+generator\+::\+\_\+delete (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [final]}, {\ttfamily [override]}, {\ttfamily [virtual]}}
+
+
+
+Implements \mbox{\hyperlink{classbweas_1_1generator__api_1_1gninterface_1_1interface__generator}{bweas\+::generator\+\_\+api\+::gninterface\+::interface\+\_\+generator}}.
+
+\Hypertarget{classbweas_1_1generator__api_1_1integral__generator_ac611917ca23e24a68cb21684b89808ec}\index{bweas::generator\_api::integral\_generator@{bweas::generator\_api::integral\_generator}!build\_graph\_depends\_file@{build\_graph\_depends\_file}}
+\index{build\_graph\_depends\_file@{build\_graph\_depends\_file}!bweas::generator\_api::integral\_generator@{bweas::generator\_api::integral\_generator}}
+\doxysubsubsection{\texorpdfstring{build\_graph\_depends\_file()}{build\_graph\_depends\_file()}}
+{\footnotesize\ttfamily \label{classbweas_1_1generator__api_1_1integral__generator_ac611917ca23e24a68cb21684b89808ec} 
+std\+::unordered\+\_\+set$<$ std\+::string $>$ generator\+\_\+api\+::integral\+\_\+generator\+::build\+\_\+graph\+\_\+depends\+\_\+file (\begin{DoxyParamCaption}\item[{std\+::string\+\_\+view}]{language}{, }\item[{std\+::string\+\_\+view}]{name\+\_\+file}{, }\item[{std\+::string\+\_\+view}]{work\+\_\+directory}{, }\item[{std\+::vector$<$ std\+::string $>$}]{include\+\_\+paths}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [final]}, {\ttfamily [override]}, {\ttfamily [virtual]}}
+
+
+
+Implements \mbox{\hyperlink{classbweas_1_1generator__api_1_1gninterface_1_1interface__generator}{bweas\+::generator\+\_\+api\+::gninterface\+::interface\+\_\+generator}}.
+
+\Hypertarget{classbweas_1_1generator__api_1_1integral__generator_aa74b40f38642b9a67d2adc34db27e16e}\index{bweas::generator\_api::integral\_generator@{bweas::generator\_api::integral\_generator}!generate\_command@{generate\_command}}
+\index{generate\_command@{generate\_command}!bweas::generator\_api::integral\_generator@{bweas::generator\_api::integral\_generator}}
+\doxysubsubsection{\texorpdfstring{generate\_command()}{generate\_command()}}
+{\footnotesize\ttfamily \label{classbweas_1_1generator__api_1_1integral__generator_aa74b40f38642b9a67d2adc34db27e16e} 
+generator\+\_\+api\+::gen\+\_\+command generator\+\_\+api\+::integral\+\_\+generator\+::generate\+\_\+command (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{structbweas_1_1generator__api_1_1data__transfer}{generator\+\_\+api\+::data\+\_\+transfer}} \&}]{data\+\_\+t}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [final]}, {\ttfamily [override]}, {\ttfamily [virtual]}}
+
+
+
+Implements \mbox{\hyperlink{classbweas_1_1generator__api_1_1gninterface_1_1interface__generator}{bweas\+::generator\+\_\+api\+::gninterface\+::interface\+\_\+generator}}.
+
+\Hypertarget{classbweas_1_1generator__api_1_1integral__generator_a09bc66d7568bf0fb8ecbe55aa7de7522}\index{bweas::generator\_api::integral\_generator@{bweas::generator\_api::integral\_generator}!get\_input\_files@{get\_input\_files}}
+\index{get\_input\_files@{get\_input\_files}!bweas::generator\_api::integral\_generator@{bweas::generator\_api::integral\_generator}}
+\doxysubsubsection{\texorpdfstring{get\_input\_files()}{get\_input\_files()}}
+{\footnotesize\ttfamily \label{classbweas_1_1generator__api_1_1integral__generator_a09bc66d7568bf0fb8ecbe55aa7de7522} 
+void generator\+\_\+api\+::integral\+\_\+generator\+::get\+\_\+input\+\_\+files (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{structbweas_1_1generator__api_1_1data__transfer}{generator\+\_\+api\+::data\+\_\+transfer}} \&}]{data\+\_\+t}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [final]}, {\ttfamily [override]}, {\ttfamily [virtual]}}
+
+
+
+Implements \mbox{\hyperlink{classbweas_1_1generator__api_1_1gninterface_1_1interface__generator}{bweas\+::generator\+\_\+api\+::gninterface\+::interface\+\_\+generator}}.
+
+\Hypertarget{classbweas_1_1generator__api_1_1integral__generator_a29a13e4bfb9c9d1df9591bbe10c75037}\index{bweas::generator\_api::integral\_generator@{bweas::generator\_api::integral\_generator}!init@{init}}
+\index{init@{init}!bweas::generator\_api::integral\_generator@{bweas::generator\_api::integral\_generator}}
+\doxysubsubsection{\texorpdfstring{init()}{init()}}
+{\footnotesize\ttfamily \label{classbweas_1_1generator__api_1_1integral__generator_a29a13e4bfb9c9d1df9591bbe10c75037} 
+void generator\+\_\+api\+::integral\+\_\+generator\+::init (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [final]}, {\ttfamily [override]}, {\ttfamily [virtual]}}
+
+
+
+Implements \mbox{\hyperlink{classbweas_1_1generator__api_1_1gninterface_1_1interface__generator}{bweas\+::generator\+\_\+api\+::gninterface\+::interface\+\_\+generator}}.
+
+
+
+The documentation for this class was generated from the following files\+:\begin{DoxyCompactItemize}
+\item 
+src/bs/bwgenerator\+\_\+api.\+hpp\item 
+src/bs/bwgenerator\+\_\+integral.\+cpp\end{DoxyCompactItemize}

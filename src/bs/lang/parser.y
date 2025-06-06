@@ -31,7 +31,7 @@ void init_statement(const decl_func* dfunc){
     current_params.clear();
 }
 
-std::string get_current_loc(){
+string get_current_loc(){
     return "[" +  std::to_string(last_line) + ":" + std::to_string(last_column) + "]";   
 }
 %}
@@ -39,7 +39,7 @@ std::string get_current_loc(){
 %locations
 
 %union {
-    i32t number;
+    pdiff number;
     char* string;
 }
 
@@ -115,7 +115,7 @@ num_expr: OPEN_BR num_expr CLOSE_BR          { $$ = $2; }
 ;
 
 str_expr: str_expr PLUS str_term             { 
-                                                $$ = strdup((std::string($1)+ $3).data());
+                                                $$ = strdup((string($1)+ $3).data());
                                                 free($1);
                                                 free($3);
                                              }

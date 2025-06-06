@@ -1,0 +1,65 @@
+\doxysection{bweas\+::bwdepends\+\_\+files Class Reference}
+\hypertarget{classbweas_1_1bwdepends__files}{}\label{classbweas_1_1bwdepends__files}\index{bweas::bwdepends\_files@{bweas::bwdepends\_files}}
+Inheritance diagram for bweas\+::bwdepends\+\_\+files\+:\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=2.000000cm]{classbweas_1_1bwdepends__files}
+\end{center}
+\end{figure}
+\doxysubsubsection*{Public Types}
+\begin{DoxyCompactItemize}
+\item 
+\Hypertarget{classbweas_1_1bwdepends__files_a74817aba8a418043b8f2878b871d2761}\label{classbweas_1_1bwdepends__files_a74817aba8a418043b8f2878b871d2761} 
+using {\bfseries depends\+\_\+file} = std\+::pair$<$std\+::string, std\+::unordered\+\_\+set$<$std\+::string$>$$>$
+\item 
+\Hypertarget{classbweas_1_1bwdepends__files_abb938e98683d9dca414e86a1fac465a7}\label{classbweas_1_1bwdepends__files_abb938e98683d9dca414e86a1fac465a7} 
+using {\bfseries depends\+\_\+map} = std\+::unordered\+\_\+map$<$typename depends\+\_\+file\+::first\+\_\+type, typename depends\+\_\+file\+::second\+\_\+type$>$
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\Hypertarget{classbweas_1_1bwdepends__files_a3fd90766c91a7e70e66b8148fae106bc}\label{classbweas_1_1bwdepends__files_a3fd90766c91a7e70e66b8148fae106bc} 
+{\bfseries bwdepends\+\_\+files} (const std\+::string\+\_\+view \+\_\+language, const std\+::string\+\_\+view \+\_\+work\+\_\+directory)
+\item 
+\Hypertarget{classbweas_1_1bwdepends__files_abd7e9588fdb1b94b37faf1f44402312b}\label{classbweas_1_1bwdepends__files_abd7e9588fdb1b94b37faf1f44402312b} 
+depends\+\_\+map \& {\bfseries build\+\_\+graphs\+\_\+depends\+\_\+files} (const std\+::vector$<$ std\+::string $>$ \&src\+\_\+files)
+\item 
+\Hypertarget{classbweas_1_1bwdepends__files_a08ed067f1ac100d021a2bf02bd1fdcd0}\label{classbweas_1_1bwdepends__files_a08ed067f1ac100d021a2bf02bd1fdcd0} 
+depends\+\_\+map \& {\bfseries build\+\_\+graphs\+\_\+depends\+\_\+file\+\_\+v} (const std\+::string \&name\+\_\+file)
+\item 
+\Hypertarget{classbweas_1_1bwdepends__files_adcd5f450c7b73b73f5a9b82259cc6cad}\label{classbweas_1_1bwdepends__files_adcd5f450c7b73b73f5a9b82259cc6cad} 
+depends\+\_\+map \& {\bfseries build\+\_\+graph\+\_\+depends\+\_\+file\+\_\+string} (std\+::string name\+\_\+file, std\+::string depends\+\_\+file)
+\item 
+\Hypertarget{classbweas_1_1bwdepends__files_a0e94dc884d8b5906c5109b8324b47ad1}\label{classbweas_1_1bwdepends__files_a0e94dc884d8b5906c5109b8324b47ad1} 
+depends\+\_\+map \& {\bfseries get\+\_\+graphs\+\_\+depends\+\_\+files} ()
+\item 
+\Hypertarget{classbweas_1_1bwdepends__files_ab0b758e26f046663fef6322631772550}\label{classbweas_1_1bwdepends__files_ab0b758e26f046663fef6322631772550} 
+std\+::string {\bfseries get\+\_\+string\+\_\+depends\+\_\+file} (std\+::string name\+\_\+file)
+\item 
+\Hypertarget{classbweas_1_1bwdepends__files_a0d8dfbc80a172fced5c4d1da7b7cd942}\label{classbweas_1_1bwdepends__files_a0d8dfbc80a172fced5c4d1da7b7cd942} 
+void {\bfseries set\+\_\+include\+\_\+paths} (const std\+::vector$<$ std\+::string $>$ \+\_\+include\+\_\+paths)
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Protected Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\Hypertarget{classbweas_1_1bwdepends__files_a44e496ce5cc25c5a0c4a6ed5f4b35359}\label{classbweas_1_1bwdepends__files_a44e496ce5cc25c5a0c4a6ed5f4b35359} 
+virtual std\+::unordered\+\_\+set$<$ std\+::string $>$ {\bfseries build\+\_\+graph\+\_\+depends\+\_\+file} (std\+::string\+\_\+view name\+\_\+file)=0
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Protected Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\Hypertarget{classbweas_1_1bwdepends__files_aeb36d5298405f8d6c36aaaa51e4ef3bc}\label{classbweas_1_1bwdepends__files_aeb36d5298405f8d6c36aaaa51e4ef3bc} 
+std\+::string {\bfseries language}
+\item 
+\Hypertarget{classbweas_1_1bwdepends__files_a3b892e09f977628a04a347a74d9f8000}\label{classbweas_1_1bwdepends__files_a3b892e09f977628a04a347a74d9f8000} 
+std\+::string {\bfseries work\+\_\+directory}
+\item 
+\Hypertarget{classbweas_1_1bwdepends__files_a199959a7ba62a1e983e11aebca7f823f}\label{classbweas_1_1bwdepends__files_a199959a7ba62a1e983e11aebca7f823f} 
+std\+::vector$<$ std\+::string $>$ {\bfseries include\+\_\+paths}
+\end{DoxyCompactItemize}
+
+
+The documentation for this class was generated from the following files\+:\begin{DoxyCompactItemize}
+\item 
+src/bs/bwdepends\+\_\+files.\+hpp\item 
+src/bs/bwdepends\+\_\+files.\+cpp\end{DoxyCompactItemize}

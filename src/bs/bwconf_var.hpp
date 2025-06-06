@@ -5,8 +5,8 @@
 // ------------------------------------------
 //
 
-#ifndef BWCONF_VAR__H
-#define BWCONF_VAR__H
+#ifndef BWCONF_VAR_HPP
+#define BWCONF_VAR_HPP
 
 #include <bwmacros_platform.h>
 

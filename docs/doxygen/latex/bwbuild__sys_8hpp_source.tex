@@ -1,0 +1,103 @@
+\doxysection{bwbuild\+\_\+sys.\+hpp}
+\hypertarget{bwbuild__sys_8hpp_source}{}\label{bwbuild__sys_8hpp_source}\index{src/bs/bwbuild\_sys.hpp@{src/bs/bwbuild\_sys.hpp}}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{comment}{//}}
+\DoxyCodeLine{00002\ \textcolor{comment}{//\ BWEAS\ is\ distributed\ under\ the\ GNU\ General\ Public\ License\ 2.0\ (GPL-\/2.0).}}
+\DoxyCodeLine{00003\ \textcolor{comment}{//\ you\ can\ view\ the\ license\ text\ at\ the\ link:}}
+\DoxyCodeLine{00004\ \textcolor{comment}{//\ \ \ \ \ <https://www.gnu.org/licenses>}}
+\DoxyCodeLine{00005\ \textcolor{comment}{//\ -\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/}}
+\DoxyCodeLine{00006\ \textcolor{comment}{//}}
+\DoxyCodeLine{00007\ }
+\DoxyCodeLine{00008\ \textcolor{preprocessor}{\#ifndef\ BWBUILD\_SYS\_\_H}}
+\DoxyCodeLine{00009\ \textcolor{preprocessor}{\#define\ BWBUILD\_SYS\_\_H}}
+\DoxyCodeLine{00010\ }
+\DoxyCodeLine{00011\ \textcolor{preprocessor}{\#include\ <stack>}}
+\DoxyCodeLine{00012\ }
+\DoxyCodeLine{00013\ \textcolor{preprocessor}{\#include\ "{}bw\_defs.hpp"{}}}
+\DoxyCodeLine{00014\ }
+\DoxyCodeLine{00015\ \textcolor{preprocessor}{\#include\ "{}bwcache\_api.hpp"{}}}
+\DoxyCodeLine{00016\ \textcolor{preprocessor}{\#include\ "{}bwgenerator\_api.hpp"{}}}
+\DoxyCodeLine{00017\ \textcolor{preprocessor}{\#include\ "{}bwmodule.hpp"{}}}
+\DoxyCodeLine{00018\ \textcolor{preprocessor}{\#include\ "{}bwpackage.hpp"{}}}
+\DoxyCodeLine{00019\ }
+\DoxyCodeLine{00020\ \textcolor{comment}{/*}}
+\DoxyCodeLine{00021\ \textcolor{comment}{\ *\ \(\backslash\)brief\ Main\ namespace\ bweas}}
+\DoxyCodeLine{00022\ \textcolor{comment}{\ */}}
+\DoxyCodeLine{00023\ \textcolor{keyword}{namespace\ }bweas\ \{}
+\DoxyCodeLine{00024\ }
+\DoxyCodeLine{00031\ \textcolor{keyword}{class\ }\mbox{\hyperlink{classbweas_1_1bwbuilder_a1f9d553c9cb22801b675b3ca2f7a1fca}{bwbuilder}}\ final\ \{}
+\DoxyCodeLine{00032\ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00042\ \ \ \ \ \mbox{\hyperlink{classbweas_1_1bwbuilder_a1f9d553c9cb22801b675b3ca2f7a1fca}{bwbuilder}}(\textcolor{keywordtype}{int}\ argc,\ \textcolor{keywordtype}{char}\ **argv);}
+\DoxyCodeLine{00043\ }
+\DoxyCodeLine{00044\ \ \ \ \ \mbox{\hyperlink{classbweas_1_1bwbuilder_a1f9d553c9cb22801b675b3ca2f7a1fca}{bwbuilder}}()\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ =\ \textcolor{keyword}{delete};}
+\DoxyCodeLine{00045\ \ \ \ \ \mbox{\hyperlink{classbweas_1_1bwbuilder_a1f9d553c9cb22801b675b3ca2f7a1fca}{bwbuilder}}(\textcolor{keyword}{const}\ \mbox{\hyperlink{classbweas_1_1bwbuilder_a1f9d553c9cb22801b675b3ca2f7a1fca}{bwbuilder}}\ \&)\ \ \ \ \ \ \ \ \ \ \ \ =\ \textcolor{keyword}{delete};}
+\DoxyCodeLine{00046\ \ \ \ \ \mbox{\hyperlink{classbweas_1_1bwbuilder_a1f9d553c9cb22801b675b3ca2f7a1fca}{bwbuilder}}\ \&operator=(\textcolor{keyword}{const}\ \mbox{\hyperlink{classbweas_1_1bwbuilder_a1f9d553c9cb22801b675b3ca2f7a1fca}{bwbuilder}}\ \&)\ =\ \textcolor{keyword}{delete};}
+\DoxyCodeLine{00047\ }
+\DoxyCodeLine{00048\ \ \ \ \ \mbox{\hyperlink{classbweas_1_1bwbuilder_a1f9d553c9cb22801b675b3ca2f7a1fca}{\string~bwbuilder}}()\ =\ \textcolor{keywordflow}{default};}
+\DoxyCodeLine{00049\ }
+\DoxyCodeLine{00050\ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00052\ \ \ \ \ \textcolor{keyword}{enum}\ \mbox{\hyperlink{classbweas_1_1bwbuilder_a131b34a56daaf13ecb4fc63d4a8a1ad5}{mode\_working}}\ \{}
+\DoxyCodeLine{00053\ \ \ \ \ \ \ \ \ \mbox{\hyperlink{classbweas_1_1bwbuilder_a131b34a56daaf13ecb4fc63d4a8a1ad5a07222aa8425a12013148ce86544d9e3a}{collect\_cfg}}\ =\ 0,\ \ \ \ \ }
+\DoxyCodeLine{00054\ \ \ \ \ \ \ \ \ \mbox{\hyperlink{classbweas_1_1bwbuilder_a131b34a56daaf13ecb4fc63d4a8a1ad5accfc5d78875577476bf577cde0967bab}{build}},\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00055\ \ \ \ \ \ \ \ \ \mbox{\hyperlink{classbweas_1_1bwbuilder_a131b34a56daaf13ecb4fc63d4a8a1ad5aaa2e58224df752494613adf62e62dc75}{collect\_cfg\_w\_build}},\ }
+\DoxyCodeLine{00058\ \ \ \ \ \ \ \ \ \mbox{\hyperlink{classbweas_1_1bwbuilder_a131b34a56daaf13ecb4fc63d4a8a1ad5a2ca73ace5f148c052c36472dffd1b4cf}{build\_package}},\ \ \ \ \ \ \ }
+\DoxyCodeLine{00059\ \ \ \ \ \ \ \ \ undef}
+\DoxyCodeLine{00060\ \ \ \ \ \};}
+\DoxyCodeLine{00061\ }
+\DoxyCodeLine{00063\ \ \ \ \ \mbox{\hyperlink{classbweas_1_1bwbuilder_a131b34a56daaf13ecb4fc63d4a8a1ad5}{mode\_working}}\ \mbox{\hyperlink{classbweas_1_1bwbuilder_aa563f1d7326676808b55e41454883f7f}{get\_current\_mode}}();}
+\DoxyCodeLine{00064\ }
+\DoxyCodeLine{00065\ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00074\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classbweas_1_1bwbuilder_ac9b48c8b4cd6d41c02285806de806277}{start}}();}
+\DoxyCodeLine{00075\ }
+\DoxyCodeLine{00076\ \ \ \textcolor{keyword}{protected}:}
+\DoxyCodeLine{00090\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classbweas_1_1bwbuilder_acb8c3d44974c88912dfd2d9494292a4b}{handle\_args}}(std::vector<std::string>\ \&args);}
+\DoxyCodeLine{00091\ }
+\DoxyCodeLine{00097\ \ \ \ \ u32t\ \mbox{\hyperlink{classbweas_1_1bwbuilder_aa34d4a4d82c632c38f6b07cfba4131ee}{create\_package}}(std::string\ path\_json\_config\_package);}
+\DoxyCodeLine{00098\ }
+\DoxyCodeLine{00100\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classbweas_1_1bwbuilder_a3030dc3e9ca2178b1639f83cbfb32773}{init}}();}
+\DoxyCodeLine{00101\ }
+\DoxyCodeLine{00103\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classbweas_1_1bwbuilder_aea2c191abda9009c6b1145bb50ff96bf}{run\_interpreter}}();}
+\DoxyCodeLine{00104\ }
+\DoxyCodeLine{00109\ \ \ \ \ u32t\ \mbox{\hyperlink{classbweas_1_1bwbuilder_aeac0397a44a84732a9787e58be27d11e}{gen\_cache\_target}}();}
+\DoxyCodeLine{00110\ }
+\DoxyCodeLine{00111\ \ \ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00112\ \ \ \ \ \textcolor{comment}{//\ Collects\ projects(out\_targets)\ by\ initializing\ the\ generator\ and\ calling(bwIGenerator::gen\_commands)}}
+\DoxyCodeLine{00113\ \ \ \ \ \textcolor{keywordtype}{void}\ build\_targets();}
+\DoxyCodeLine{00114\ }
+\DoxyCodeLine{00115\ \ \ \ \ \textcolor{comment}{//\ Deserializes\ the\ bweas\ cache\ file}}
+\DoxyCodeLine{00116\ \ \ \ \ \textcolor{keywordtype}{void}\ deserl\_cache();}
+\DoxyCodeLine{00117\ }
+\DoxyCodeLine{00118\ \ \ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00119\ \ \ \ \ \textcolor{comment}{//\ Creates\ a\ stack\ of\ templates\ for\ the\ correct\ sequential\ generation\ of\ commands(for\ every\ targets)}}
+\DoxyCodeLine{00120\ \ \ \ \ bwqueue\_templates\ create\_queue\_target\_templates(\textcolor{keyword}{const}\ var::struct\_sb::target\_out\ \&target);}
+\DoxyCodeLine{00121\ }
+\DoxyCodeLine{00122\ \ \ \ \ \textcolor{comment}{//\ Recursive\ function,\ for\ create\_stack\_target\_templates}}
+\DoxyCodeLine{00123\ \ \ \ \ \textcolor{keywordtype}{void}\ recovery\_queue\_target\_templates(std::vector<var::struct\_sb::template\_command>\ \&vec\_templates,}
+\DoxyCodeLine{00124\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ std::string\ \&name\_internal\_param,}
+\DoxyCodeLine{00125\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ bwqueue\_templates\ \&queue\_target\_templates);}
+\DoxyCodeLine{00126\ }
+\DoxyCodeLine{00127\ \ \ \textcolor{keyword}{protected}:}
+\DoxyCodeLine{00131\ \ \ \ \ \mbox{\hyperlink{structbweas_1_1bw__context}{bw\_context}}\ \mbox{\hyperlink{classbweas_1_1bwbuilder_a7900552a1df6815f8f8acdbb188a8da1}{context}};}
+\DoxyCodeLine{00132\ }
+\DoxyCodeLine{00133\ \ \ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00134\ \ \ \ \ std::unique\_ptr<cache\_api::base\_bwcache>\ cache;}
+\DoxyCodeLine{00135\ \ \ \ \ std::map<std::string,\ std::shared\_ptr<generator\_api::base\_generator>>\ generators;}
+\DoxyCodeLine{00136\ }
+\DoxyCodeLine{00137\ \ \ \ \ std::vector<bwpackage>\ loaded\_packages;}
+\DoxyCodeLine{00138\ }
+\DoxyCodeLine{00139\ \ \ \ \ \mbox{\hyperlink{classbweas_1_1bwmodule__mg}{bwmodule\_mg}}\ module\_manager;}
+\DoxyCodeLine{00140\ \ \ \ \ std::vector<decl\_func>\ external\_modules\_funcs;}
+\DoxyCodeLine{00141\ }
+\DoxyCodeLine{00142\ \ \ \ \ std::string\ name\_bweas\_prg;}
+\DoxyCodeLine{00143\ \ \ \ \ std::string\ path\_bweas\_config,\ path\_bweas\_to\_build\{DIRWORK\_ENV\};}
+\DoxyCodeLine{00144\ }
+\DoxyCodeLine{00145\ \ \ \ \ \mbox{\hyperlink{classbweas_1_1bwbuilder_a131b34a56daaf13ecb4fc63d4a8a1ad5}{mode\_working}}\ mode\_bweas\{mode\_working::undef\};}
+\DoxyCodeLine{00146\ }
+\DoxyCodeLine{00147\ \ \ \ \ var::struct\_sb::version\ bwbuilde\_ver\{BWEAS\_VERSION\_STR\};}
+\DoxyCodeLine{00148\ \};}
+\DoxyCodeLine{00149\ \}\ \textcolor{comment}{//\ namespace\ bweas}}
+\DoxyCodeLine{00150\ }
+\DoxyCodeLine{00151\ \textcolor{preprocessor}{\#endif}}
+
+\end{DoxyCode}

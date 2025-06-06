@@ -6,7 +6,6 @@
 #include <cstdlib>
 #include <string.h>
 
-#include <bwtype.h>
 #include <lang/scope.hpp>
 
 #include "parser.hpp"
@@ -44,13 +43,13 @@ extern var::scope* current_scope;
 [0-9]+             { yylval.number = std::stoi(yytext); return NUMBER; }
 
 \"[^"\\]+\"                   { 
-                                std::string str_tmp = yytext;
+                                string str_tmp = yytext;
                                 str_tmp.erase(0, 1).erase(str_tmp.size()-1, 1);
                                 yylval.string = strdup(str_tmp.data()); 
                                 return STRING;
                               }
 [a-zA-Z_][a-zA-Z0-9_]+        { 
-                                std::string str_tmp = yytext;
+                                string str_tmp = yytext;
 
                                 if(str_tmp.find("VAR_") == 0){
                                     str_tmp.erase(0, 4);
@@ -58,13 +57,13 @@ extern var::scope* current_scope;
                                     return ID;
                                 }
                                 else{
-                                    u32t type = current_scope->what_type(str_tmp); 
+                                    size_t type = current_scope->what_type(str_tmp); 
                                     if(type == 1){
-                                        yylval.number = current_scope->get_var_value<i32t>(str_tmp);
+                                        yylval.number = current_scope->get_var_value<pdiff>(str_tmp);
                                         return NUMBER;
                                     }
                                     else if(type == 2){
-                                        yylval.string = strdup(current_scope->get_var_value<std::string>(str_tmp).data()); 
+                                        yylval.string = strdup(current_scope->get_var_value<string>(str_tmp).data()); 
                                         return STRING;    
                                     }       
                                 

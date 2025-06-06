@@ -1,0 +1,69 @@
+\doxysection{bweas\+::bwdepends\+\_\+integral Class Reference}
+\hypertarget{classbweas_1_1bwdepends__integral}{}\label{classbweas_1_1bwdepends__integral}\index{bweas::bwdepends\_integral@{bweas::bwdepends\_integral}}
+Inheritance diagram for bweas\+::bwdepends\+\_\+integral\+:\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=2.000000cm]{classbweas_1_1bwdepends__integral}
+\end{center}
+\end{figure}
+\doxysubsubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\Hypertarget{classbweas_1_1bwdepends__integral_ab9c09a5cf52c7fcc7a6fd5dfbca6c147}\label{classbweas_1_1bwdepends__integral_ab9c09a5cf52c7fcc7a6fd5dfbca6c147} 
+{\bfseries bwdepends\+\_\+integral} (const std\+::string\+\_\+view language, const std\+::string\+\_\+view work\+\_\+directory)
+\item 
+std\+::unordered\+\_\+set$<$ std\+::string $>$ \mbox{\hyperlink{classbweas_1_1bwdepends__integral_a6b2b5663ee2fa303494d185b0f693f16}{build\+\_\+graph\+\_\+depends\+\_\+file}} (std\+::string\+\_\+view name\+\_\+file) override final
+\end{DoxyCompactItemize}
+\doxysubsection*{Public Member Functions inherited from \mbox{\hyperlink{classbweas_1_1bwdepends__files}{bweas\+::bwdepends\+\_\+files}}}
+\begin{DoxyCompactItemize}
+\item 
+{\bfseries bwdepends\+\_\+files} (const std\+::string\+\_\+view \+\_\+language, const std\+::string\+\_\+view \+\_\+work\+\_\+directory)
+\item 
+depends\+\_\+map \& {\bfseries build\+\_\+graphs\+\_\+depends\+\_\+files} (const std\+::vector$<$ std\+::string $>$ \&src\+\_\+files)
+\item 
+depends\+\_\+map \& {\bfseries build\+\_\+graphs\+\_\+depends\+\_\+file\+\_\+v} (const std\+::string \&name\+\_\+file)
+\item 
+depends\+\_\+map \& {\bfseries build\+\_\+graph\+\_\+depends\+\_\+file\+\_\+string} (std\+::string name\+\_\+file, std\+::string depends\+\_\+file)
+\item 
+depends\+\_\+map \& {\bfseries get\+\_\+graphs\+\_\+depends\+\_\+files} ()
+\item 
+std\+::string {\bfseries get\+\_\+string\+\_\+depends\+\_\+file} (std\+::string name\+\_\+file)
+\item 
+void {\bfseries set\+\_\+include\+\_\+paths} (const std\+::vector$<$ std\+::string $>$ \+\_\+include\+\_\+paths)
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Additional Inherited Members}
+\doxysubsection*{Public Types inherited from \mbox{\hyperlink{classbweas_1_1bwdepends__files}{bweas\+::bwdepends\+\_\+files}}}
+\begin{DoxyCompactItemize}
+\item 
+using {\bfseries depends\+\_\+file} = std\+::pair$<$std\+::string, std\+::unordered\+\_\+set$<$std\+::string$>$$>$
+\item 
+using {\bfseries depends\+\_\+map} = std\+::unordered\+\_\+map$<$typename depends\+\_\+file\+::first\+\_\+type, typename depends\+\_\+file\+::second\+\_\+type$>$
+\end{DoxyCompactItemize}
+\doxysubsection*{Protected Attributes inherited from \mbox{\hyperlink{classbweas_1_1bwdepends__files}{bweas\+::bwdepends\+\_\+files}}}
+\begin{DoxyCompactItemize}
+\item 
+std\+::string {\bfseries language}
+\item 
+std\+::string {\bfseries work\+\_\+directory}
+\item 
+std\+::vector$<$ std\+::string $>$ {\bfseries include\+\_\+paths}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Member Function Documentation}
+\Hypertarget{classbweas_1_1bwdepends__integral_a6b2b5663ee2fa303494d185b0f693f16}\index{bweas::bwdepends\_integral@{bweas::bwdepends\_integral}!build\_graph\_depends\_file@{build\_graph\_depends\_file}}
+\index{build\_graph\_depends\_file@{build\_graph\_depends\_file}!bweas::bwdepends\_integral@{bweas::bwdepends\_integral}}
+\doxysubsubsection{\texorpdfstring{build\_graph\_depends\_file()}{build\_graph\_depends\_file()}}
+{\footnotesize\ttfamily \label{classbweas_1_1bwdepends__integral_a6b2b5663ee2fa303494d185b0f693f16} 
+std\+::unordered\+\_\+set$<$ std\+::string $>$ bweas\+::bwdepends\+\_\+integral\+::build\+\_\+graph\+\_\+depends\+\_\+file (\begin{DoxyParamCaption}\item[{std\+::string\+\_\+view}]{name\+\_\+file}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [final]}, {\ttfamily [override]}, {\ttfamily [virtual]}}
+
+
+
+Implements \mbox{\hyperlink{classbweas_1_1bwdepends__files}{bweas\+::bwdepends\+\_\+files}}.
+
+
+
+The documentation for this class was generated from the following files\+:\begin{DoxyCompactItemize}
+\item 
+src/bs/bwdepends\+\_\+integral.\+hpp\item 
+src/bs/bwdepends\+\_\+integral.\+cpp\end{DoxyCompactItemize}

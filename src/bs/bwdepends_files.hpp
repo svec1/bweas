@@ -5,14 +5,8 @@
 // ------------------------------------------
 //
 
-#ifndef BWDEPENDS_FILES__H
-#define BWDEPENDS_FILES__H
-
-#include <string>
-#include <string_view>
-
-#include <unordered_map>
-#include <unordered_set>
+#ifndef BWDEPENDS_FILES_HPP
+#define BWDEPENDS_FILES_HPP
 
 #include <bw_defs.hpp>
 
@@ -21,41 +15,42 @@ namespace bweas {
 // File dependency system interface, defines specific functions
 class bwdepends_files {
   public:
-    bwdepends_files(const std::string_view _language, const std::string_view _work_directory)
+    bwdepends_files(const string_v _language, const string_v _work_directory)
         : language(_language), work_directory(_work_directory) {
     }
     ~bwdepends_files() = default;
 
   public:
     // file, dependencies
-    using depends_file = std::pair<std::string, std::unordered_set<std::string>>;
-    using depends_map  = std::unordered_map<typename depends_file::first_type, typename depends_file::second_type>;
+    using depends_file = pair<string, uset<string>>;
+    using depends_map  = umap<typename depends_file::first_type, typename depends_file::second_type>;
 
     // Dependency graphs of source files are built
-    depends_map &build_graphs_depends_files(const std::vector<std::string> &src_files);
-    depends_map &build_graphs_depends_file_v(const std::string &name_file);
+    depends_map &build_graphs_depends_files(const vec<string> &src_files);
+    depends_map &build_graphs_depends_file_v(const string &name_file);
 
     // depends_file - list of file dependencies(name_file)
-    depends_map &build_graph_depends_file_string(std::string name_file, std::string depends_file);
+    depends_map &build_graph_depends_file_string(string name_file, string depends_file);
 
   public:
     depends_map &get_graphs_depends_files();
     // Returns all dependent files of the transmitted file as a string
-    std::string get_string_depends_file(std::string name_file);
+    string get_string_depends_file(string name_file);
 
-    void set_include_paths(const std::vector<std::string> _include_paths);
-
-  protected:
-    virtual std::unordered_set<std::string> build_graph_depends_file(std::string_view name_file) = 0;
+    void set_include_paths(const vec<string> _include_paths);
 
   protected:
-    std::string language;
-    std::string work_directory;
+    virtual uset<string> build_graph_depends_file(string_v name_file) = 0;
 
-    std::vector<std::string> include_paths;
+  protected:
+    string language;
+    string work_directory;
+
+    vec<string> include_paths;
 
   private:
     depends_map mdepends;
 };
 } // namespace bweas
+
 #endif

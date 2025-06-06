@@ -1,0 +1,67 @@
+\doxysection{bwdepends\+\_\+files.\+hpp}
+\hypertarget{bwdepends__files_8hpp_source}{}\label{bwdepends__files_8hpp_source}\index{src/bs/bwdepends\_files.hpp@{src/bs/bwdepends\_files.hpp}}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{comment}{//}}
+\DoxyCodeLine{00002\ \textcolor{comment}{//\ BWEAS\ is\ distributed\ under\ the\ gnu\ general\ public\ license\ 2.0\ (gpl-\/2.0).}}
+\DoxyCodeLine{00003\ \textcolor{comment}{//\ you\ can\ view\ the\ license\ text\ at\ the\ link:}}
+\DoxyCodeLine{00004\ \textcolor{comment}{//\ \ \ \ \ <https://www.gnu.org/licenses>}}
+\DoxyCodeLine{00005\ \textcolor{comment}{//\ -\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/}}
+\DoxyCodeLine{00006\ \textcolor{comment}{//}}
+\DoxyCodeLine{00007\ }
+\DoxyCodeLine{00008\ \textcolor{preprocessor}{\#ifndef\ BWDEPENDS\_FILES\_\_H}}
+\DoxyCodeLine{00009\ \textcolor{preprocessor}{\#define\ BWDEPENDS\_FILES\_\_H}}
+\DoxyCodeLine{00010\ }
+\DoxyCodeLine{00011\ \textcolor{preprocessor}{\#include\ <string>}}
+\DoxyCodeLine{00012\ \textcolor{preprocessor}{\#include\ <string\_view>}}
+\DoxyCodeLine{00013\ }
+\DoxyCodeLine{00014\ \textcolor{preprocessor}{\#include\ <unordered\_map>}}
+\DoxyCodeLine{00015\ \textcolor{preprocessor}{\#include\ <unordered\_set>}}
+\DoxyCodeLine{00016\ }
+\DoxyCodeLine{00017\ \textcolor{preprocessor}{\#include\ <bw\_defs.hpp>}}
+\DoxyCodeLine{00018\ }
+\DoxyCodeLine{00019\ \textcolor{keyword}{namespace\ }bweas\ \{}
+\DoxyCodeLine{00020\ }
+\DoxyCodeLine{00021\ \textcolor{comment}{//\ File\ dependency\ system\ interface,\ defines\ specific\ functions}}
+\DoxyCodeLine{00022\ \textcolor{keyword}{class\ }bwdepends\_files\ \{}
+\DoxyCodeLine{00023\ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00024\ \ \ \ \ bwdepends\_files(\textcolor{keyword}{const}\ std::string\_view\ \_language,\ \textcolor{keyword}{const}\ std::string\_view\ \_work\_directory)}
+\DoxyCodeLine{00025\ \ \ \ \ \ \ \ \ :\ language(\_language),\ work\_directory(\_work\_directory)\ \{}
+\DoxyCodeLine{00026\ \ \ \ \ \}}
+\DoxyCodeLine{00027\ \ \ \ \ \string~bwdepends\_files()\ =\ \textcolor{keywordflow}{default};}
+\DoxyCodeLine{00028\ }
+\DoxyCodeLine{00029\ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00030\ \ \ \ \ \textcolor{comment}{//\ file,\ dependencies}}
+\DoxyCodeLine{00031\ \ \ \ \ \textcolor{keyword}{using\ }depends\_file\ =\ std::pair<std::string,\ std::unordered\_set<std::string>>;}
+\DoxyCodeLine{00032\ \ \ \ \ \textcolor{keyword}{using\ }depends\_map\ \ =\ std::unordered\_map<typename\ depends\_file::first\_type,\ typename\ depends\_file::second\_type>;}
+\DoxyCodeLine{00033\ }
+\DoxyCodeLine{00034\ \ \ \ \ \textcolor{comment}{//\ Dependency\ graphs\ of\ source\ files\ are\ built}}
+\DoxyCodeLine{00035\ \ \ \ \ depends\_map\ \&build\_graphs\_depends\_files(\textcolor{keyword}{const}\ std::vector<std::string>\ \&src\_files);}
+\DoxyCodeLine{00036\ \ \ \ \ depends\_map\ \&build\_graphs\_depends\_file\_v(\textcolor{keyword}{const}\ std::string\ \&name\_file);}
+\DoxyCodeLine{00037\ }
+\DoxyCodeLine{00038\ \ \ \ \ \textcolor{comment}{//\ depends\_file\ -\/\ list\ of\ file\ dependencies(name\_file)}}
+\DoxyCodeLine{00039\ \ \ \ \ depends\_map\ \&build\_graph\_depends\_file\_string(std::string\ name\_file,\ std::string\ depends\_file);}
+\DoxyCodeLine{00040\ }
+\DoxyCodeLine{00041\ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00042\ \ \ \ \ depends\_map\ \&get\_graphs\_depends\_files();}
+\DoxyCodeLine{00043\ \ \ \ \ \textcolor{comment}{//\ Returns\ all\ dependent\ files\ of\ the\ transmitted\ file\ as\ a\ string}}
+\DoxyCodeLine{00044\ \ \ \ \ std::string\ get\_string\_depends\_file(std::string\ name\_file);}
+\DoxyCodeLine{00045\ }
+\DoxyCodeLine{00046\ \ \ \ \ \textcolor{keywordtype}{void}\ set\_include\_paths(\textcolor{keyword}{const}\ std::vector<std::string>\ \_include\_paths);}
+\DoxyCodeLine{00047\ }
+\DoxyCodeLine{00048\ \ \ \textcolor{keyword}{protected}:}
+\DoxyCodeLine{00049\ \ \ \ \ \textcolor{keyword}{virtual}\ std::unordered\_set<std::string>\ build\_graph\_depends\_file(std::string\_view\ name\_file)\ =\ 0;}
+\DoxyCodeLine{00050\ }
+\DoxyCodeLine{00051\ \ \ \textcolor{keyword}{protected}:}
+\DoxyCodeLine{00052\ \ \ \ \ std::string\ language;}
+\DoxyCodeLine{00053\ \ \ \ \ std::string\ work\_directory;}
+\DoxyCodeLine{00054\ }
+\DoxyCodeLine{00055\ \ \ \ \ std::vector<std::string>\ include\_paths;}
+\DoxyCodeLine{00056\ }
+\DoxyCodeLine{00057\ \ \ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00058\ \ \ \ \ depends\_map\ mdepends;}
+\DoxyCodeLine{00059\ \};}
+\DoxyCodeLine{00060\ \}\ \textcolor{comment}{//\ namespace\ bweas}}
+\DoxyCodeLine{00061\ \textcolor{preprocessor}{\#endif}}
+
+\end{DoxyCode}

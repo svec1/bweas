@@ -49,10 +49,10 @@ logger &logger::operator<<(std::function<logger::handle_func_t> handle_func_call
 void logger::operator<<(const log_message &obj) {
     status = obj.log_t;
     bwtools::write_file(bwtools::get_ref_file(file_log),
-                        std::string("[") + owner.data() + std::string("]: ") + obj.ss.str() + "\n");
+                        string("[") + owner.data() + string("]: ") + obj.ss.str() + "\n");
 
     if (handle_func) {
-        handle_func(std::string("[") + owner.data() + std::string("]: ") + obj.ss.str());
+        handle_func(string("[") + owner.data() + string("]: ") + obj.ss.str());
         handle_func = nullptr;
     }
 }

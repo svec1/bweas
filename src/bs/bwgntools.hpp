@@ -5,11 +5,8 @@
 // ------------------------------------------
 //
 
-#ifndef BWGNTOOLS__H
-#define BWGNTOOLS__H
-
-#include <map>
-#include <unordered_set>
+#ifndef BWGNTOOLS_HPP
+#define BWGNTOOLS_HPP
 
 #include <bw_defs.hpp>
 
@@ -21,19 +18,19 @@ class generator_tools {
 
   public:
     // Generates a file name based on the pattern and the passed index of the given file.
-    static std::string get_name_output_file(std::string pattern_file, u32t index, std::string dir_work_endv);
+    static string get_name_output_file(string pattern_file, size_t index, string dir_work_endv);
 
     // Determines, based on the time of creation or modification of the file and its dependencies, whether it should be
     // passed to the generator.
-    static bool should_uses_src_file(std::string_view src_file, std::string_view output_file,
-                                     const std::unordered_set<std::string> &dfiles);
+    static bool should_uses_src_file(string_v src_file, string_v output_file, const uset<string> &dfiles);
 
     // Parses all the basic arguments for further template command generation.
     // Types of arguments that will be parsed:
     //  1. extglobal
     //  2. trgfield(except T_PROJECT_SRC_FILES)
-    static void parse_basic_args(const var::struct_sb::target_out &target, bwqueue_templates &target_queue_templates,
-                                 const bwargs &global_extern_args);
+    static void parse_basic_args(const var::struct_sb::target_out &target,
+                                 vec<var::struct_sb::template_command> &target_queue_templates,
+                                 const vec<pair<string, string>> &global_extern_args);
 };
 
 } // namespace bweas

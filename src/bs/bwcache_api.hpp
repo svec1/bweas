@@ -5,26 +5,11 @@
 // ------------------------------------------
 //
 
-#ifndef BWCACHE__H
-#define BWCACHE__H
+#ifndef BWCACHE_API_HPP
+#define BWCACHE_API_HPP
 
 #include <bw_defs.hpp>
 #include <bwluatools.hpp>
-
-#define NAME_FUNCTION_GENERATE_CACHE_LUA "create_cache"
-#define DEFINITION_FUNCTION_GENERATE_CACHE_LUA                                                                         \
-    std::string, bwluatools::array<bwluatools::table<std::string, std::any>>,                                          \
-        bwluatools::array<bwluatools::table<std::string, std::any>>,                                                   \
-        bwluatools::array<bwluatools::table<std::string, std::string>>,                                                \
-        bwluatools::array<bwluatools::key_value<std::string, std::string>>
-
-#define NAME_FUNCTION_GET_DATA_CACHE_LUA "get_cache_data"
-#define DEFINITION_FUNCTION_GET_DATA_CACHE_LUA void, bwluatools::nil
-
-#define NAME_VARIABLE_TARGETS_F_EXTERN_LUA "targets"
-#define NAME_VARIABLE_TEMPLATES_F_EXTERN_LUA "templates"
-#define NAME_VARIABLE_CCOMPONENTS_F_EXTERN_LUA "call_components"
-#define NAME_VARIABLE_GEARGS_F_EXTERN_LUA "global_external_args"
 
 namespace bweas {
 
@@ -37,10 +22,10 @@ class base_bwcache {
 
   public:
     // A function that must be defined in a child class, and return a cache of data
-    virtual std::string create_cache() = 0;
+    virtual string create_cache() = 0;
 
     // A function that must be defined in a child class and return cache data
-    virtual void extract_cache_data(std::string &&cache_str) = 0;
+    virtual void extract_cache_data(string &&cache_str) = 0;
 
     virtual void delete_cache() = 0;
 
@@ -49,7 +34,7 @@ class base_bwcache {
   public:
     static inline base_bwcache *create_fast_bwcache(bw_context *const _context);
     static inline base_bwcache *create_json_bwcache(bw_context *const _context);
-    static inline base_bwcache *create_lua_bwcache(bw_context *const _context, std::string src_lua);
+    static inline base_bwcache *create_lua_bwcache(bw_context *const _context, string_v src_lua);
 
   public:
     bw_context *const context;
@@ -61,8 +46,8 @@ class fast_bwcache final : private base_bwcache {
     fast_bwcache(bw_context *const);
 
   public:
-    std::string create_cache() override final;
-    void extract_cache_data(std::string &&cache_str) override final;
+    string create_cache() override final;
+    void extract_cache_data(string &&cache_str) override final;
 
     void delete_cache() override final;
 };
@@ -74,8 +59,8 @@ class json_bwcache final : private base_bwcache {
     json_bwcache(bw_context *const);
 
   public:
-    std::string create_cache() override final;
-    void extract_cache_data(std::string &&cache_str) override final;
+    string create_cache() override final;
+    void extract_cache_data(string &&cache_str) override final;
 
     void delete_cache() override final;
 };
@@ -83,11 +68,11 @@ class json_bwcache final : private base_bwcache {
 // A class providing an API for creating cache generators in lua, based on the bwcache API
 class lua_bwcache final : private base_bwcache {
   public:
-    lua_bwcache(bw_context *const, std::string);
+    lua_bwcache(bw_context *const, string_v);
 
   public:
-    std::string create_cache() override final;
-    void extract_cache_data(std::string &&cache_str) override final;
+    string create_cache() override final;
+    void extract_cache_data(string &&cache_str) override final;
 
     void delete_cache() override final;
 
@@ -101,7 +86,7 @@ base_bwcache *base_bwcache::create_fast_bwcache(bw_context *const _context) {
 base_bwcache *base_bwcache::create_json_bwcache(bw_context *const _context) {
     return (base_bwcache *)new json_bwcache(_context);
 }
-base_bwcache *base_bwcache::create_lua_bwcache(bw_context *const _context, std::string src_lua) {
+base_bwcache *base_bwcache::create_lua_bwcache(bw_context *const _context, string_v src_lua) {
     return (base_bwcache *)new lua_bwcache(_context, src_lua);
 }
 

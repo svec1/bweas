@@ -94,7 +94,6 @@ create_templates(template, "CC(NULL) -> EXECUTABLE: <[T_PROJECT_SRC_FILES]>, <'-
 project(test, 1, "main.cpp")
 
 # We indicate that the project will use template command generation
-use_it_template(test, TRUE)
 use_templates(test, "template")
 
 # create a target in the form of an executable file (there can be as many of them as you like)

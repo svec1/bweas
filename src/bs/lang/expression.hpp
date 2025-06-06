@@ -9,11 +9,8 @@
 #define EXPRESSION__H
 
 #include <functional>
-#include <string>
-#include <string_view>
-#include <vector>
 
-#include <bwtype.h>
+#include <bwaliases.hpp>
 
 namespace var {
 class scope;
@@ -60,7 +57,7 @@ enum class param_type {
 };
 
 struct param {
-    param(param_type _type, std::string_view _default_val = "") : type(_type), default_val(_default_val) {
+    param(param_type _type, string_v _default_val = "") : type(_type), default_val(_default_val) {
     }
 
     inline bool decl_default_val() const {
@@ -68,14 +65,14 @@ struct param {
     }
 
     param_type type;
-    std::string default_val;
+    string default_val;
 };
 
 struct statement;
 struct expression;
 
-using expressions = std::vector<expression>;
-using statements  = std::vector<statement>;
+using expressions = vec<expression>;
+using statements  = vec<statement>;
 
 // the notion of a function, which contains a reference
 // to the function itself, the parameters that it expects when called,
@@ -85,30 +82,30 @@ struct decl_func {
 
   public:
     decl_func() = default;
-    explicit decl_func(std::string_view _name_func, func_t _func, std::vector<param> _expected_params)
+    explicit decl_func(string_v _name_func, func_t _func, vec<param> _expected_params)
         : name_func(_name_func), func(_func), expected_params(_expected_params) {
     }
 
   public:
-    inline u32t count_default_param() const;
+    inline size_t count_default_param() const;
 
   public:
-    std::string name_func;
+    string name_func;
 
     func_t func;
-    std::vector<param> expected_params;
+    vec<param> expected_params;
 };
 
 // structure is a representation of a single function call
 struct statement {
   public:
     statement() = default;
-    explicit statement(const decl_func *_expr_func, expressions _expr_s, u32t _line = 0, u32t _column = 0)
+    explicit statement(const decl_func *_expr_func, expressions _expr_s, size_t _line = 0, size_t _column = 0)
         : expr_func(_expr_func), expr_s(_expr_s), line(_line), column(_column) {
     }
 
   public:
-    std::string get_location() const {
+    string get_location() const {
         return "[" + std::to_string(line) + ":" + std::to_string(column) + "]";
     }
 
@@ -116,7 +113,7 @@ struct statement {
     const decl_func *expr_func;
     expressions expr_s;
 
-    u32t line, column;
+    size_t line, column;
 };
 
 // structure is a list of parameters passed
@@ -133,19 +130,19 @@ struct expression {
 
   public:
     expression() = default;
-    explicit expression(std::string_view _value, expression_t _type, u32t line = 0, u32t column = 0)
+    explicit expression(string_v _value, expression_t _type, size_t line = 0, size_t column = 0)
         : value(_value), type(_type) {
     }
 
   public:
     expression_t type;
-    std::string value;
+    string value;
 
-    u32t line, column;
+    size_t line, column;
 };
 
-inline u32t decl_func::count_default_param() const {
-    u32t count_dp = 0;
+inline size_t decl_func::count_default_param() const {
+    size_t count_dp = 0;
     for (const param &_param : expected_params)
         if (!_param.default_val.empty())
             ++count_dp;
@@ -170,7 +167,7 @@ static inline bool operator==(expression::expression_t e_type, param_type p_type
     return false;
 }
 
-static inline const char *get_string_expr_type(expression::expression_t type) {
+static inline string_v get_string_expr_type(expression::expression_t type) {
     if (type == expression::expression_t::NUMBER)
         return "NUMBER";
     else if (type == expression::expression_t::STRING)
@@ -180,7 +177,7 @@ static inline const char *get_string_expr_type(expression::expression_t type) {
     return "UNDEFINED";
 }
 
-static inline param_type get_string_param_type(std::string_view str) {
+static inline param_type get_string_param_type(string_v str) {
     if (str == "FUTURE_VAR_ID")
         return param_type::FUTURE_VAR_ID;
     else if (str == "VAR_ID")

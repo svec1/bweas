@@ -7,8 +7,8 @@
 
 #include "bs/bwbuild_sys.hpp"
 
-int main(int argv, char **args) {
-    bweas::bwbuilder bw(argv, args);
+int main(int argc, char **argv) {
+    bweas::builder bw(argc, argv);
     bw.start();
 
     return 0;

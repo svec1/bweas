@@ -119,7 +119,7 @@ bwtools::file &bwtools::get_ref_file(file_it file) {
 std::string bwtools::read_file(file &file, file::mode_file::input mode) {
     std::string data_file;
     if (mode == file::mode_file::input::read_binary) {
-        u32t size_file;
+        size_t size_file;
         file.stream.seekg(0, std::ios::end);
         size_file = file.stream.tellg();
         file.stream.seekg(0, std::ios::beg);

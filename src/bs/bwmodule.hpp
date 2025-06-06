@@ -5,8 +5,8 @@
 // ------------------------------------------
 //
 
-#ifndef BWMODULE__H
-#define BWMODULE__H
+#ifndef BWMODULE_HPP
+#define BWMODULE_HPP
 
 #include <bw_defs.hpp>
 #include <bwluatools.hpp>
@@ -35,9 +35,6 @@ class bwmodule_mg {
   public:
     // Initializes lua modules functions for subsequent calls
     std::vector<decl_func> init_mfuncs(modules &mds);
-
-  private:
-    static std::unordered_map<std::string, bwlua::lua> lua_stream_s;
 };
 } // namespace bweas
 

@@ -5,9 +5,11 @@ build_linux/
 external/LuaJIT/
 external/json/
 external/lz4/
+dev/doxygen
 vcpkg_installed/
 vcpkg/
 
+dev/doxygen-awesome.css
 folder-alias.json
 
 result
