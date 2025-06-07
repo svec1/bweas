@@ -7,7 +7,8 @@
 
 #include <regex>
 
-#include "bwdepends_integral.hpp"
+#include <bwdepends_integral.hpp>
+#include <tools/bwfile.hpp>
 
 using namespace bweas;
 

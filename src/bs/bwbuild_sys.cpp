@@ -18,18 +18,33 @@
 #include "bwdepends_integral.hpp"
 #include "bwgenerator_integral.hpp"
 #include "bwlang.hpp"
+#include "bwprocesses_handler.hpp"
 #include "lang/static_struct.hpp"
 
 #include <nlohmann/json.hpp>
 
 using namespace bweas;
 
-using mf      = bwtools::file::mode_file;
-using file_it = bwtools::file_it;
+static const string INFO_STR =
+    "bweas version " + std::string(VERSION_FULL_STR) + "\nrep on github - https://github.com/svec1/bweas";
+
+static constexpr auto HELP_STR =
+    "bweas-call: \n   bweas <parameter>... path_depending\n   bweas path_bweas_config <parameter>..."
+    "\nAcceptable parameters:"
+    "\n   --build - builds the project (either by executing the configuration file or deserializing the cache file "
+    "if it exists)"
+    "\n   --cfg - executes the configuration file if it has been changed and creates a new cache file"
+    "\n   --package - creates a bweas package based on the transferred json file(json config)"
+    "\n   --help - outputs the syntax of the bweas call as well as its possible functions"
+    "\n   --version - outputs the version of bweas";
+
+static constexpr auto JSON_CONFIG_FILE     = "bweas-config.json";
+static constexpr auto DIRWORK_ENV          = ".bweas";
+static constexpr auto DEPENDS_FILE_POSTFIX = ".d";
 
 static logger _log{"BWEAS"};
 
-builder::builder(size_t argv, char **args) {
+builder::builder(size_t argv, char **args) : path_bweas_to_build(DIRWORK_ENV) {
     vec<string> vec_args;
     for (size_t i = 0; i < argv; ++i)
         vec_args.push_back(args[i]);
@@ -215,18 +230,16 @@ void builder::init() {
         }
     }
 
-    generators.emplace("bwgenerator",
-                       std::shared_ptr<generator_api::base_generator>(
-                           generator_api::base_generator::create_generator_int(
-                               nullptr, integral_generator::get_input_files, integral_generator::generate),
-                           [](generator_api::base_generator *ptr) { ptr->_delete(); }));
+    generators.emplace(
+        "bwgenerator",
+        std::shared_ptr<generator_api::base_generator>(generator_api::base_generator::create_generator_int(
+            nullptr, integral_generator::get_input_files, integral_generator::generate)));
 
     for (const auto &package : loaded_packages)
         for (const auto &generator : package.cfg_package.generators) {
             generators.emplace(generator.name_generator,
                                std::shared_ptr<generator_api::base_generator>(
-                                   generator_api::base_generator::create_generator_lua(generator.src_lua_generator),
-                                   [](generator_api::base_generator *ptr) { ptr->_delete(); }));
+                                   generator_api::base_generator::create_generator_lua(generator.src_lua_generator)));
             if (generator.use_custom_build_graph_depends)
                 generators[generator.name_generator]->set_use_build_graph_depends();
         }
@@ -338,16 +351,14 @@ void builder::build_targets() {
                                          << "There are no templates for the target - " << target.name_target);
             return;
         }
-        string dir_target  = path_bweas_to_build + "/" + target.name_target;
-        double build_state = 0.f;
-
-        vec<var::struct_sb::template_command> bw_tcmd = create_queue_target_templates(target);
+        string dir_target = path_bweas_to_build + "/" + target.name_target;
 
         auto &current_generator = generators[target.name_generator];
         std::unique_ptr<bwdepends_files> depends_files;
 
         context.current_target = &target;
         bweas::generator_api::data_transfer data_t{&context, dir_target};
+        vec<var::struct_sb::template_command> bw_tcmd = create_queue_target_templates(target);
 
         if (!std::filesystem::is_directory(dir_target))
             std::filesystem::create_directories(dir_target);
@@ -380,20 +391,32 @@ void builder::build_targets() {
 
         current_generator->get_input_files(data_t);
 
-        auto cmd_s = current_generator->generate_command(data_t);
+        generator_api::commands cmd_s = current_generator->generate_commands(data_t);
+        processes_handler p_handler(cmd_s, 4);
 
-        for (const auto &cmd : cmd_s) {
-            build_state += 1.f / (double)cmd_s.size() * 100;
+        auto user_indicate = [&cmd_s, &_log](const generator_api::command &cmd) {
+            static double build_state = 0.f;
 
-            (_log << bwtools::message)
-                << (log_message(log_type::msg)
-                    << "[" << std::to_string(build_state).erase(std::to_string((size_t)build_state).size() + 2, 5)
-                    << "%] " << cmd.first);
+            if (!cmd.success)
+                (_log << bwtools::fatal) << (log_message(log_type::fatal)
+                                             << "Command execution failed: compile " << cmd.name_used_file);
+            else {
+                build_state += 1.f / (double)cmd_s.size() * 100;
+                (_log << bwtools::message)
+                    << (log_message(log_type::msg)
+                        << "[" << std::to_string(build_state).erase(std::to_string((size_t)build_state).size() + 2, 5)
+                        << "%] " << cmd.name_used_file);
+            }
+        };
 
-            if (system(cmd.second.c_str()))
-                (_log << bwtools::warning)
-                    << (log_message(log_type::warning) << "Failed build. Command execution error: \n"
-                                                       << cmd.second);
+        p_handler.start(user_indicate);
+
+        size_t pid_completed_process;
+        while ((pid_completed_process = p_handler.wait_process()) && pid_completed_process + 1 != 0) {
+            user_indicate(
+                *std::find_if(cmd_s.begin(), cmd_s.end(), [pid_completed_process](const generator_api::command &cmd) {
+                    return cmd.pid_execute_process == pid_completed_process;
+                }));
         }
     }
 }

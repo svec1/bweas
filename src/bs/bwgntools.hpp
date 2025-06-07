@@ -9,6 +9,7 @@
 #define BWGNTOOLS_HPP
 
 #include <bw_defs.hpp>
+#include <bwgenerator_api.hpp>
 
 namespace bweas {
 
@@ -31,6 +32,9 @@ class generator_tools {
     static void parse_basic_args(const var::struct_sb::target_out &target,
                                  vec<var::struct_sb::template_command> &target_queue_templates,
                                  const vec<pair<string, string>> &global_extern_args);
+
+  public:
+    static string build_string_command(const generator_api::command &cmd);
 };
 
 } // namespace bweas

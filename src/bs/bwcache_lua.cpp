@@ -34,10 +34,6 @@ lua_bwcache::lua_bwcache(bw_context *const _context, string_v src_lua) : base_bw
         (_log << bwtools::fatal) << (log_message(log_type::fatal) << "No entry function for get data of cache");
 }
 
-void lua_bwcache::delete_cache() {
-    delete this;
-}
-
 string lua_bwcache::create_cache() {
     lua_tools::param_targets ltargets_o;
     lua_tools::param_templates ltcmd_s;

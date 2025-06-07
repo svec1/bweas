@@ -9,11 +9,8 @@
 #define BWLUATOOLS_HPP
 
 #include <bwdepends_files.hpp>
-#include <bwgntools.hpp>
-#include <lang/scope.hpp>
-#include <lang/static_struct.hpp>
 
-#include <tools/bwfile.hpp>
+#include <lang/static_struct.hpp>
 #include <tools/bwlua.hpp>
 
 namespace bweas {

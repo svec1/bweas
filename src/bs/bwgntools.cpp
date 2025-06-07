@@ -24,7 +24,8 @@ string generator_tools::get_name_output_file(string pattern_file, size_t index, 
 }
 
 bool generator_tools::should_uses_src_file(string_v src_file, string_v output_file, const uset<string> &dfiles) {
-    if (std::filesystem::last_write_time(CACHE_FILE) > std::filesystem::last_write_time(output_file))
+    if (std::filesystem::is_regular_file(output_file) &&
+        std::filesystem::last_write_time(CACHE_FILE) > std::filesystem::last_write_time(output_file))
         return 1;
     else if (!std::filesystem::is_regular_file(output_file) ||
              std::filesystem::last_write_time(output_file) < std::filesystem::last_write_time(src_file))
@@ -106,4 +107,14 @@ void generator_tools::parse_basic_args(const var::struct_sb::target_out &target,
             current_arg.arg_t = var::struct_sb::template_command::arg::type::string;
         }
     }
+}
+
+string generator_tools::build_string_command(const generator_api::command &cmd) {
+    string cmd_str = cmd.name_program + " ";
+    for (const auto &arg : cmd.args)
+        cmd_str += arg + " ";
+
+    cmd_str.erase(cmd_str.size() - 1); // remove charected of space
+
+    return cmd_str;
 }

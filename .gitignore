@@ -9,7 +9,6 @@ dev/doxygen
 vcpkg_installed/
 vcpkg/
 
-dev/doxygen-awesome.css
 folder-alias.json
 
 result

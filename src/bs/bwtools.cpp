@@ -37,14 +37,14 @@ void bwtools::warning(std::string_view str_warn) {
     fprintf(stderr, "%s\e[0m\n", str_warn.data());
 }
 void bwtools::error(std::string_view str_err) {
-    fprintf(stderr, "\e[1;31m bweas error: ");
+    fprintf(stderr, "\e[1;31m");
     if (str_err.empty())
         fprintf(stderr, "%s\e[0m\n", std::strerror(errno));
     else
         fprintf(stderr, "%s\e[0m\n", str_err.data());
 }
 void bwtools::fatal(std::string_view str_err) {
-    fprintf(stderr, "\e[1;31m bweas fatal error: ");
+    fprintf(stderr, "\e[1;31m");
     if (str_err.empty())
         fprintf(stderr, "%s\e[0m\n", std::strerror(errno));
     else

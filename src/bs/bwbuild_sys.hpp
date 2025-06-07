@@ -144,7 +144,7 @@ class builder final {
     var::struct_sb::version bwbuilde_ver{VERSION_FULL_STR};
     mode_working mode_bweas{mode_working::undef};
 
-    string path_bweas_config, path_bweas_to_build{DIRWORK_ENV};
+    string path_bweas_config, path_bweas_to_build;
 };
 } // namespace bweas
 

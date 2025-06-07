@@ -7,6 +7,10 @@
 
 #include "bwluatools.hpp"
 
+#include <bwgntools.hpp>
+#include <lang/scope.hpp>
+#include <tools/bwfile.hpp>
+
 using namespace bweas;
 
 lua_tools::table<string_v, any> lua_tools::conv_to_table(const var::struct_sb::project &prj) {

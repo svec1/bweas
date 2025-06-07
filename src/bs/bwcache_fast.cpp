@@ -19,10 +19,6 @@ fast_bwcache::fast_bwcache(bw_context *const _context) : base_bwcache(_context) 
         (_log << bwtools::fatal) << (log_message(log_type::fatal) << "Bweas the context is not defined");
 }
 
-void fast_bwcache::delete_cache() {
-    delete this;
-}
-
 string fast_bwcache::create_cache() {
     string serel_target_tmp;
 

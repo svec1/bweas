@@ -18,9 +18,6 @@ json_bwcache::json_bwcache(bw_context *const context) : base_bwcache(context) {
     if (!context)
         (_log << bwtools::fatal) << (log_message(log_type::fatal) << "Bweas the context is not defined");
 }
-void json_bwcache::delete_cache() {
-    delete this;
-}
 
 string json_bwcache::create_cache() {
     nlohmann::json cache_data;

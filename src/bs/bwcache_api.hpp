@@ -27,8 +27,6 @@ class base_bwcache {
     // A function that must be defined in a child class and return cache data
     virtual void extract_cache_data(string &&cache_str) = 0;
 
-    virtual void delete_cache() = 0;
-
     // A number of factory functions to create all possible child classes that implement the bwcache cache generator
     // based on the bwcache API
   public:
@@ -37,57 +35,69 @@ class base_bwcache {
     static inline base_bwcache *create_lua_bwcache(bw_context *const _context, string_v src_lua);
 
   public:
+    virtual ~base_bwcache() = default;
+
+  public:
     bw_context *const context;
 };
 
 // A basic cache generator that is fast but also creates a hard-to-read cache for humans to use
 class fast_bwcache final : private base_bwcache {
-  public:
+    friend base_bwcache *base_bwcache::create_fast_bwcache(bw_context *const);
+
+  private:
     fast_bwcache(bw_context *const);
 
   public:
-    string create_cache() override final;
-    void extract_cache_data(string &&cache_str) override final;
+    ~fast_bwcache() = default;
 
-    void delete_cache() override final;
+  public:
+    string create_cache() override;
+    void extract_cache_data(string &&cache_str) override;
 };
 
 // The second basic cache generator, which in turn has a human readable form,
 // but is also slow compared to fast_bwcache
 class json_bwcache final : private base_bwcache {
-  public:
+    friend base_bwcache *base_bwcache::create_json_bwcache(bw_context *const);
+
+  private:
     json_bwcache(bw_context *const);
 
   public:
-    string create_cache() override final;
-    void extract_cache_data(string &&cache_str) override final;
+    ~json_bwcache() = default;
 
-    void delete_cache() override final;
+  public:
+    string create_cache() override;
+    void extract_cache_data(string &&cache_str) override;
 };
 
 // A class providing an API for creating cache generators in lua, based on the bwcache API
 class lua_bwcache final : private base_bwcache {
-  public:
+    friend base_bwcache *base_bwcache::create_lua_bwcache(bw_context *const, string_v src_lua);
+
+  private:
     lua_bwcache(bw_context *const, string_v);
 
   public:
-    string create_cache() override final;
-    void extract_cache_data(string &&cache_str) override final;
+    ~lua_bwcache() = default;
 
-    void delete_cache() override final;
+  public:
+    string create_cache() override;
+    void extract_cache_data(string &&cache_str) override;
 
   private:
     bwlua::lua lua;
 };
 
 base_bwcache *base_bwcache::create_fast_bwcache(bw_context *const _context) {
-    return (base_bwcache *)new fast_bwcache(_context);
+    return dynamic_cast<base_bwcache *>(new fast_bwcache(_context));
 }
 base_bwcache *base_bwcache::create_json_bwcache(bw_context *const _context) {
-    return (base_bwcache *)new json_bwcache(_context);
+    return dynamic_cast<base_bwcache *>(new json_bwcache(_context));
 }
 base_bwcache *base_bwcache::create_lua_bwcache(bw_context *const _context, string_v src_lua) {
-    return (base_bwcache *)new lua_bwcache(_context, src_lua);
+    return dynamic_cast<base_bwcache *>(new lua_bwcache(_context, src_lua));
 }
 
 } // namespace cache_api
