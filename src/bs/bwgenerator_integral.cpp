@@ -114,7 +114,7 @@ generator_api::commands integral_generator::generate(generator_api::data_transfe
     generator_api::commands cmd_s;
 
     umap<string, vec<string>> internal_args_stack_tmp;
-    umap<string, vec<string>> internal_args_refer_templates;
+    umap<string, vec<string>> commands_execute_template;
 
     bool generate_for_single_file = 0;
 
@@ -157,7 +157,6 @@ generator_api::commands integral_generator::generate(generator_api::data_transfe
                             cmd.args.push_back(data_t.ifiles[current_template_name][count_use_ifiles++]);
                         else {
                             internal_args_stack_tmp[current_template->returnable].push_back(output_file);
-                            internal_args_refer_templates[current_template->returnable].push_back(cmd.name);
 
                             ++count_use_ifiles;
 
@@ -182,7 +181,6 @@ generator_api::commands integral_generator::generate(generator_api::data_transfe
                     else {
                         if (generate_for_single_file) {
                             internal_args_stack_tmp[current_template->returnable].push_back(output_file);
-                            internal_args_refer_templates[current_template->returnable].push_back(cmd.name);
 
                             cmd.args.push_back(output_file);
                         }
@@ -191,7 +189,6 @@ generator_api::commands integral_generator::generate(generator_api::data_transfe
                                 internal_args_stack_tmp[current_template->returnable].push_back(
                                     generator_tools::get_name_output_file(call_component->pattern_ret_files, k,
                                                                           data_t.work_directory));
-                                internal_args_refer_templates[current_template->returnable].push_back(cmd.name);
 
                                 cmd.args.push_back(
                                     internal_args_stack_tmp
@@ -205,8 +202,15 @@ generator_api::commands integral_generator::generate(generator_api::data_transfe
                     for (size_t k = 0; k < internal_args_stack_tmp[arg.str_arg].size(); ++k)
                         cmd.args.push_back(internal_args_stack_tmp[arg.str_arg][k]);
 
-                    for (const auto &_template : internal_args_refer_templates[arg.str_arg])
-                        cmd.depends_command.push_back(_template);
+                    for (const auto &_template : data_t.context->templates) {
+                        if (_template.name == current_template->name)
+                            break;
+
+                        if (_template.returnable == arg.str_arg)
+                            cmd.depends_command.insert(cmd.depends_command.end(),
+                                                       commands_execute_template[_template.name].begin(),
+                                                       commands_execute_template[_template.name].end());
+                    }
                 }
                 else if (arg.arg_t == var::struct_sb::template_command::arg::type::string)
                     cmd.args.push_back(arg.str_arg);
@@ -217,6 +221,8 @@ generator_api::commands integral_generator::generate(generator_api::data_transfe
                 cmd.name_used_file = output_file;
                 cmd.name_program   = call_component->name_program;
                 cmd_s.push_back(cmd);
+
+                commands_execute_template[current_template_name].push_back(cmd.name);
 
                 log << (log_message(log_type::msg)
                         << "The command has been generated: " << generator_tools::build_string_command(cmd));

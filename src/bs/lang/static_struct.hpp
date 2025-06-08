@@ -9,7 +9,7 @@
 #include <bwaliases.hpp>
 #include <bwconf_var.hpp>
 
-#include <tools/bwtemplates.hpp>
+#include "template_command.hpp"
 
 // The name of a variable that, when set to 1,
 // will allow project functions and many target functions
