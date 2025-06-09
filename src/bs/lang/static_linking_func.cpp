@@ -555,7 +555,7 @@ void sl_func::add_param_template(const expressions &expr_s, var::scope &current_
 
 void sl_func::create_templates(const expressions &expr_s, var::scope &current_scope) {
     try {
-        auto tcmd_tmp = template_command::create_template_command(expr_s[0].value, expr_s[1].value);
+        auto tcmd_tmp = var::struct_sb::template_command::create_template_command(expr_s[0].value, expr_s[1].value);
         current_scope.create_var<var::struct_sb::template_command>(expr_s[0].value, tcmd_tmp);
     }
     catch (std::runtime_error &excp) {

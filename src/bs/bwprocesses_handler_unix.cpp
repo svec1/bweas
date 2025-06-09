@@ -1,13 +1,6 @@
 #include <bwprocesses_handler.hpp>
 
-#include <cstring>
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <unistd.h>
-
 using namespace bweas;
-
-static logger _log{"BWPROCESS"};
 
 void processes_handler::start(std::function<void(const generator_api::command &cmd)> do_more_func) {
     for (size_t i = 0; i < cmd_s.size(); ++i) {
@@ -26,37 +19,41 @@ void processes_handler::start(std::function<void(const generator_api::command &c
             (void)wait_process(cmd_dependence->pid_execute_process);
             do_more_func(*cmd_dependence);
         }
-        process p(cmd_s[i]);
+        create_process(cmd_s[i]);
     }
 }
 
-size_t processes_handler::wait_process(size_t process_pid) {
+#if defined(UNIX)
+
+static logger _log{"BWPROCESS[UNIX]"};
+
+size_t processes_handler::wait_process(size_t pid) {
     int pstatus = 0;
-    if (process_pid)
-        waitpid(process_pid, &pstatus, 0);
+    if (pid)
+        waitpid(pid, &pstatus, 0);
     else
-        process_pid = wait(&pstatus);
+        pid = wait(&pstatus);
 
-    if (process_pid + 1) {
+    if (pid + 1) {
         if (WIFEXITED(pstatus))
-            _log << (log_message(log_type::msg)
-                     << "Process closed(" << process_pid << "): returned " << WEXITSTATUS(pstatus));
+            _log << (log_message(log_type::msg) << "Process closed(" << pid << "): returned " << WEXITSTATUS(pstatus));
         else
-            _log << (log_message(log_type::msg) << "Process aborted(" << process_pid << ")");
+            _log << (log_message(log_type::msg) << "Process aborted(" << pid << ")");
 
-        std::find_if(cmd_s.begin(), cmd_s.end(), [process_pid](const generator_api::command &cmd) {
-            return cmd.pid_execute_process == process_pid;
+        std::find_if(cmd_s.begin(), cmd_s.end(), [pid](const generator_api::command &cmd) {
+            return cmd.pid_execute_process == pid;
         })->success = !WEXITSTATUS(pstatus);
     }
 
-    return process_pid;
+    return pid;
 }
 
-process::process(generator_api::command &cmd) {
-    pid_t process_pid;
-    if ((process_pid = fork()) == -1)
-        _log << bwtools::fatal << (log_message(log_type::fatal) << "Process cannot be created");
-    else if (!process_pid) {
+void processes_handler::create_process(generator_api::command &cmd) {
+    pid_t pid;
+    if ((pid = fork()) == -1)
+        _log << bwtools::fatal
+             << (log_message(log_type::fatal) << "Process cannot be created" << " [" << std::strerror(errno) << "]");
+    else if (!pid) {
         cmd.args.emplace(cmd.args.begin(), cmd.name_program);
 
         char **args = new char *[cmd.args.size() + 1];
@@ -71,7 +68,9 @@ process::process(generator_api::command &cmd) {
                      << "Execution error: " << cmd.name_program << " [" << std::strerror(errno) << "]");
         exit(0);
     }
-    cmd.pid_execute_process = process_pid;
+    cmd.pid_execute_process = pid;
 
-    _log << (log_message(log_type::msg) << "Process created(" << process_pid << ")");
+    _log << (log_message(log_type::msg) << "Process created(" << pid << ")");
 }
+
+#endif

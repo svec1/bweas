@@ -11,6 +11,7 @@
 // bweas main header file
 
 #include <algorithm>
+#include <cstring>
 #include <memory>
 
 #include <bwaliases.hpp>

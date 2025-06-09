@@ -18,17 +18,19 @@ class bweas::processes_handler {
 
   public:
     void start(std::function<void(const generator_api::command &cmd)> do_more_func = NULL);
-    size_t wait_process(size_t process_pid = 0);
+    size_t wait_process(size_t pid = 0);
+
+  private:
+    void create_process(generator_api::command &cmd);
 
   private:
     generator_api::commands &cmd_s;
 
     size_t max_processes;
-};
 
-class bweas::process {
-  public:
-    process(generator_api::command &cmd);
+#if defined(WIN)
+    vec<PROCESS_INFORMATION> pids_win;
+#endif
 };
 
 #endif

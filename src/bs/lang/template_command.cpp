@@ -2,9 +2,9 @@
 #include <array>
 #include <regex>
 
-#include <bwtools.hpp>
+#include "static_struct.hpp"
 
-#include "template_command.hpp"
+using namespace var::struct_sb;
 
 template_command template_command::create_template_command(string_v template_name, const string &template_str) {
     static const std::array<string, 17> name_field_target = {
@@ -85,7 +85,7 @@ template_command template_command::create_template_command(string_v template_nam
     }
     else
         throw std::runtime_error(
-            "Invalid syntax. Expected: call_component(PARAM1 PARAM2 ...) -> returnable: ARG_FEATURE "
+            "Invalid syntax. Expected: call_component(PARAM1, PARAM2, ...) -> returnable: ARG_FEATURE "
             "<ARG_EXTERNAL> <'ARG_STRING'> <{ARG_PARAM}> <[ARG_TARGET_FIELD]>");
 
     return tcmd_tmp;

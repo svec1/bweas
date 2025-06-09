@@ -14,14 +14,21 @@
 
 #if defined(__unix__) || defined(__unix) || (defined(__APPLE__) && defined(__MACH__))
 #define UNIX
+
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
+
 #if defined(__linux__)
 #define _linux
 #elif defined(__APPLE__) && defined(__MACH__)
 #define APPLE_OS
 #endif
 #elif defined(_WIN32) || defined(_WIN64)
+
 #define WIN
 #include <Windows.h>
+
 #endif
 
 #if defined(__LP64__) || defined(_M_IA64) || defined(_WIN64)
