@@ -66,7 +66,6 @@ void processes_handler::create_process(generator_api::command &cmd) {
             _log << bwtools::fatal
                  << (log_message(log_type::fatal)
                      << "Execution error: " << cmd.name_program << " [" << std::strerror(errno) << "]");
-        exit(0);
     }
     cmd.pid_execute_process = pid;
 

@@ -105,7 +105,7 @@ class bweas::bwtools {
 
         void open(mode_file::open _mode_open, std::filesystem::path _path_to = {}) {
             if (!_path_to.empty())
-                path_to   = _path_to;
+                path_to = _path_to;
             mode_open = _mode_open;
             open();
         }

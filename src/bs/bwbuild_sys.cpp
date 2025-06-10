@@ -260,7 +260,7 @@ void builder::start() {
     else if (!bwtools::exist_file((path_bweas_config + "/") + CONFIG_FILE))
         (_log << bwtools::fatal) << (log_message(log_type::fatal)
                                      << "Unable to open configuration file \'bweasconf.txt\'");
-    
+
     if (mode_bweas == mode_working::build) {
         string cache_file = bwtools::get_current_path() + "/" + CACHE_FILE;
         if (!bwtools::exist_file(cache_file))

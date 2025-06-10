@@ -3,7 +3,7 @@ project(bweas_slib LANGUAGES CXX C)
 file(GLOB_RECURSE FILE_SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
 list(REMOVE_ITEM FILE_SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/bweas.cpp)
 
-if(!WIN32 AND !BWEAS_BUILD_VCPKG)
+if(NOT WIN32)
     find_package(BISON REQUIRED) 
     find_package(FLEX REQUIRED)
 
@@ -18,7 +18,6 @@ if(!WIN32 AND !BWEAS_BUILD_VCPKG)
     add_flex_bison_dependency(BW_LEXER BW_PARSER)
 
 else()
-
     set(FLEX_EXECUTABLE "${CMAKE_BINARY_DIR}/winflexbison-bin/win_flex.exe")
     set(BISON_EXECUTABLE "${CMAKE_BINARY_DIR}/winflexbison-bin/win_bison.exe")
 

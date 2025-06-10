@@ -20,11 +20,13 @@
 #if defined(UNIX)
 #include <linux/limits.h>
 #include <unistd.h>
+#else
+
+static HANDLE STD_HANDLE = GetStdHandle(STD_OUTPUT_HANDLE);
+
 #endif
 
 using namespace bweas;
-
-static HANDLE STD_HANDLE = GetStdHandle(STD_OUTPUT_HANDLE);
 
 std::vector<bwtools::file> bwtools::files;
 
@@ -115,7 +117,10 @@ std::string bwtools::get_current_path() {
 }
 bwtools::file_it bwtools::open_file(std::string_view name_file, file::mode_file::open mode) {
     file_it it = get_iterator_file(name_file);
-    if (exist_file(it) && !(files.begin() + it)->file_opened) {
+    if (exist_file(it)) {
+        if ((files.begin() + it)->file_opened)
+            return it;
+
         files[it].open(mode);
         return it;
     }
@@ -129,7 +134,7 @@ void bwtools::close_file(bwtools::file_it file) {
     files.erase(files.begin() + file);
 }
 bool bwtools::exist_file(file_it file) {
-    if ((files.begin() + file) == files.end() || !(files.begin() + file)->file_opened)
+    if ((files.begin() + file) == files.end())
         return 0;
     return 1;
 }

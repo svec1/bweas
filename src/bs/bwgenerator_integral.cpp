@@ -120,7 +120,7 @@ generator_api::commands integral_generator::generate(generator_api::data_transfe
 
     for (const auto &target : data_t.context->out_targets) {
         size_t count_use_ifiles = 0, real_count_use_ifiles = 0;
-        size_t i                = 0;
+        size_t i = 0;
 
         for (size_t j = 0; j < target.prj.vec_templates.size() || generate_for_single_file;) {
             const auto &current_template_name = target.prj.vec_templates[j];
@@ -229,7 +229,7 @@ generator_api::commands integral_generator::generate(generator_api::data_transfe
                 commands_execute_template[current_template_name].push_back(cmd.name);
 
                 _log << (log_message(log_type::msg)
-                        << "The command has been generated: " << generator_tools::build_string_command(cmd));
+                         << "The command has been generated: " << generator_tools::build_string_command(cmd));
             }
 
             if (generate_for_single_file && count_use_ifiles < data_t.ifiles[current_template_name].size())

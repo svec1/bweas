@@ -9,6 +9,8 @@
 #include <unordered_set>
 #include <vector>
 
+#include <bwmacros_platform.h>
+
 template <typename T> using vec              = std::vector<T>;
 template <typename T> using uset             = std::unordered_set<T>;
 template <typename K, typename V> using pair = std::pair<K, V>;

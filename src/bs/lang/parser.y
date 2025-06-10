@@ -2,7 +2,10 @@
 
 #include <cstdio>
 #include <cstring>
+
+#if defined(WIN)
 #include <io.h>
+#endif
 
 #include <lang/scope.hpp>
 
