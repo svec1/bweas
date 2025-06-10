@@ -98,7 +98,7 @@ void generator_tools::parse_basic_args(const var::struct_sb::target_out &target,
                     current_arg.str_arg = std::to_string(target.prj.standart_c);
                 else if (current_arg.str_arg == NAME_FIELD_PROJECT_STD_CPP)
                     current_arg.str_arg = std::to_string(target.prj.standart_cpp);
-                else if (current_arg.str_arg.find(NAME_FIELD_PROJECT_SRC_FILES) == 0)
+                else if (current_arg.str_arg == "single" || current_arg.str_arg == "all")
                     continue;
                 else
                     throw "[" + trg_template.name + "] There is no such parameter - " + current_arg.str_arg;

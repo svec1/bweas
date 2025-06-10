@@ -111,7 +111,7 @@ string fast_bwcache::create_cache() {
         const auto &ref_call_component = find_if(
             call_components.begin(), call_components.end(),
             [call_component](const var::struct_sb::call_component &ccmp) { return ccmp.name == call_component; });
-        serel_target_tmp += ref_call_component->name + " " + ref_call_component->name_program + " " +
+        serel_target_tmp += ref_call_component->name + " \"" + ref_call_component->name_program + "\" " +
                             ref_call_component->pattern_ret_files + " ";
     }
 
@@ -155,10 +155,7 @@ void fast_bwcache::extract_cache_data(string &&cache_str) {
     try {
         for (pdiff i = 0; i < cache_str.size(); ++i) {
             if (cache_str[i] == '\"') {
-                if (!open_sk)
-                    open_sk = 1;
-                else
-                    open_sk = 0;
+                open_sk = !open_sk;
                 continue;
             }
 

@@ -7,7 +7,7 @@
 
 #include "bwdepends_files.hpp"
 
-static bweas::logger log{"BWDEPENDS_FILES_SYSTEM"};
+static bweas::logger _log{"BWDEPENDS_FILES_SYSTEM"};
 
 bweas::bwdepends_files::depends_map &bweas::bwdepends_files::build_graphs_depends_files(const vec<string> &src_files) {
     for (const auto &file : src_files) {
@@ -16,7 +16,7 @@ bweas::bwdepends_files::depends_map &bweas::bwdepends_files::build_graphs_depend
                 mdepends[file] = build_graph_depends_file(file);
         }
         catch (std::exception &excp) {
-            log << bwtools::fatal
+            _log<< bwtools::fatal
                 << (log_message(log_type::fatal) << "Failed to build a graph of file dependencies: " << excp.what());
         }
     }
@@ -27,7 +27,7 @@ bweas::bwdepends_files::depends_map &bweas::bwdepends_files::build_graphs_depend
         mdepends[name_file] = build_graph_depends_file(name_file);
     }
     catch (std::exception &excp) {
-        log << bwtools::fatal
+        _log << bwtools::fatal
             << (log_message(log_type::fatal) << "Failed to build a graph of file dependencies: " << excp.what());
     }
 

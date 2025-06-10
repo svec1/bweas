@@ -30,12 +30,12 @@ class call_cmd_manager {
 
   protected:
     void call_bef() {
-        for (uint i = 0; i < before_build.size(); ++i) {
+        for (size_t i = 0; i < before_build.size(); ++i) {
             system(before_build[i].c_str());
         }
     }
     void call_after() {
-        for (uint i = 0; i < after_build.size(); ++i) {
+        for (size_t i = 0; i < after_build.size(); ++i) {
             system(after_build[i].c_str());
         }
     }

@@ -52,18 +52,8 @@ template_command template_command::create_template_command(string_v template_nam
                         arg_tmp.arg_t = template_command::arg::type::string;
                     else if (str_arg[0] == '{')
                         arg_tmp.arg_t = template_command::arg::type::internal;
-                    else if (str_arg[0] == '[') {
+                    else if (str_arg[0] == '[')
                         arg_tmp.arg_t = template_command::arg::type::trgfield;
-
-                        string internal_arg = str_arg;
-                        if (tmp_param.find(":") != tmp_param.npos)
-                            internal_arg.erase(internal_arg.find(":"));
-
-                        if (std::find(name_field_target.begin(), name_field_target.end(), internal_arg) ==
-                            name_field_target.end())
-                            throw std::runtime_error("Field does not exist in target structure(" + str_arg +
-                                                     "): " + template_str);
-                    }
                     else
                         throw std::runtime_error("Unexpected type of arg(" + str_arg + "): " + template_str);
 
@@ -74,6 +64,16 @@ template_command template_command::create_template_command(string_v template_nam
                             tcmd_tmp.name_accept_params.end())
                         throw std::runtime_error("Template argument does not exist internally(" + str_arg +
                                                  "): " + template_str);
+                    else if (arg_tmp.arg_t == template_command::arg::type::trgfield) {
+                        string internal_arg = str_arg;
+                        if (tmp_param.find(":") != tmp_param.npos)
+                            internal_arg.erase(internal_arg.find(":"));
+
+                        if (std::find(name_field_target.begin(), name_field_target.end(), internal_arg) ==
+                            name_field_target.end())
+                            throw std::runtime_error("Field does not exist in target structure(" + str_arg +
+                                                     "): " + template_str);
+                    }
                 }
             }
             else

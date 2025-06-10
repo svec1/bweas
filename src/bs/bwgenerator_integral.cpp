@@ -11,7 +11,7 @@
 
 using namespace bweas;
 
-static logger log{"BWGENERATOR[INTERNAL]"};
+static logger _log{"BWGENERATOR[INTERNAL]"};
 
 generator_api::integral_generator::integral_generator(func_build_graph_depends_file _build_graph_depends_file_p,
                                                       func_get_input_files _get_input_files_p,
@@ -119,7 +119,7 @@ generator_api::commands integral_generator::generate(generator_api::data_transfe
     bool generate_for_single_file = 0;
 
     for (const auto &target : data_t.context->out_targets) {
-        size_t count_use_ifiles = 0;
+        size_t count_use_ifiles = 0, real_count_use_ifiles = 0;
         size_t i                = 0;
 
         for (size_t j = 0; j < target.prj.vec_templates.size() || generate_for_single_file;) {
@@ -153,8 +153,10 @@ generator_api::commands integral_generator::generate(generator_api::data_transfe
                                 data_t.ifiles[current_template_name][count_use_ifiles],
                                 generator_tools::get_name_output_file(call_component->pattern_ret_files,
                                                                       count_use_ifiles, data_t.work_directory),
-                                data_t.dfiles[data_t.ifiles[current_template_name][count_use_ifiles]]))
+                                data_t.dfiles[data_t.ifiles[current_template_name][count_use_ifiles]])) {
                             cmd.args.push_back(data_t.ifiles[current_template_name][count_use_ifiles++]);
+                            ++real_count_use_ifiles;
+                        }
                         else {
                             internal_args_stack_tmp[current_template->returnable].push_back(output_file);
 
@@ -171,8 +173,10 @@ generator_api::commands integral_generator::generate(generator_api::data_transfe
                                     data_t.ifiles[current_template_name][count_use_ifiles],
                                     generator_tools::get_name_output_file(call_component->pattern_ret_files,
                                                                           count_use_ifiles, data_t.work_directory),
-                                    data_t.dfiles[data_t.ifiles[current_template_name][count_use_ifiles]]))
+                                    data_t.dfiles[data_t.ifiles[current_template_name][count_use_ifiles]])) {
                                 cmd.args.push_back(data_t.ifiles[current_template_name][count_use_ifiles]);
+                                ++real_count_use_ifiles;
+                            }
                 }
                 else if (arg.arg_t == var::struct_sb::template_command::arg::type::features &&
                          arg.str_arg.find(FEATURE_FIELD_BS_CURRENT_OF) == 0) {
@@ -215,8 +219,8 @@ generator_api::commands integral_generator::generate(generator_api::data_transfe
                 else if (arg.arg_t == var::struct_sb::template_command::arg::type::string)
                     cmd.args.push_back(arg.str_arg);
             }
-            if (cmd.args.empty())
-                log << (log_message(log_type::msg) << "Skipped command generation for the file: " << output_file);
+            if (cmd.args.empty() || !real_count_use_ifiles)
+                _log << (log_message(log_type::msg) << "Skipped command generation for the file: " << output_file);
             else {
                 cmd.name_used_file = output_file;
                 cmd.name_program   = call_component->name_program;
@@ -224,7 +228,7 @@ generator_api::commands integral_generator::generate(generator_api::data_transfe
 
                 commands_execute_template[current_template_name].push_back(cmd.name);
 
-                log << (log_message(log_type::msg)
+                _log << (log_message(log_type::msg)
                         << "The command has been generated: " << generator_tools::build_string_command(cmd));
             }
 

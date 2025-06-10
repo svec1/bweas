@@ -8,7 +8,7 @@ endif()
 
 set(BW_NAME_PRJ bweas)
 
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.5 FATAL_ERROR)
 
 project(${BW_NAME_PRJ} LANGUAGES CXX C)
 

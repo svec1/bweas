@@ -15,24 +15,24 @@ static constexpr const char *NAME_FUNCTION_GENERATE       = "generate";
 static constexpr const char *NAME_FUNCTION_BUILD_DEPENDS  = "build_graph_depends_file";
 static constexpr const char *NAME_FUNCTION_GET_INPUT_FILE = "get_input_files";
 
-static logger log{"BWGENERATOR[LUA]"};
+static logger _log{"BWGENERATOR[LUA]"};
 
 generator_api::lua_generator::lua_generator(string_v src_lua) {
     try {
         lua.create(src_lua.data());
     }
     catch (std::exception &excp) {
-        (log << bwtools::fatal) << (log_message(log_type::fatal) << "Couldn't load lua code");
+        (_log<< bwtools::fatal) << (log_message(log_type::fatal) << "Couldn't load lua code");
     }
 }
 
 void generator_api::lua_generator::init() {
     if (!lua.is_created())
-        (log << bwtools::fatal) << (log_message(log_type::fatal) << "Lua script not loaded");
+        (_log<< bwtools::fatal) << (log_message(log_type::fatal) << "Lua script not loaded");
     else if (!lua.is_function(NAME_FUNCTION_GENERATE))
-        (log << bwtools::fatal) << (log_message(log_type::fatal) << "No entry function for generator");
+        (_log<< bwtools::fatal) << (log_message(log_type::fatal) << "No entry function for generator");
     else if (!lua.is_function(NAME_FUNCTION_GET_INPUT_FILE))
-        (log << bwtools::fatal) << (log_message(log_type::fatal) << "No entry function for get input files");
+        (_log<< bwtools::fatal) << (log_message(log_type::fatal) << "No entry function for get input files");
 
     lua["get_name_output_file_lua"] << lua_tools::get_name_output_file_lua;
     lua["file_slc_mask"] << lua_tools::file_slc_mask_lua;
@@ -47,7 +47,7 @@ uset<string> generator_api::lua_generator::build_graph_depends_file(string_v lan
         return uset<string>{dependencies.begin(), dependencies.end()};
     }
     catch (std::exception &what) {
-        (log << bwtools::fatal) << (log_message(log_type::fatal) << "Run-time error: " << what.what());
+        (_log<< bwtools::fatal) << (log_message(log_type::fatal) << "Run-time error: " << what.what());
     }
 
     return {};
@@ -71,7 +71,7 @@ void generator_api::lua_generator::get_input_files(data_transfer &data_t) {
             NAME_FUNCTION_GET_INPUT_FILE, lua_tools::conv_to_table(data_t.dfiles)));
     }
     catch (std::exception &what) {
-        (log << bwtools::fatal) << (log_message(log_type::fatal) << "Run-time error: " << what.what());
+        (_log<< bwtools::fatal) << (log_message(log_type::fatal) << "Run-time error: " << what.what());
     }
 }
 
@@ -100,7 +100,7 @@ generator_api::commands generator_api::lua_generator::generate_commands(data_tra
         return cmd_s;
     }
     catch (std::exception &what) {
-        (log << bwtools::fatal) << (log_message(log_type::fatal) << "Run-time error: " << what.what());
+        (_log<< bwtools::fatal) << (log_message(log_type::fatal) << "Run-time error: " << what.what());
     }
 
     return {};

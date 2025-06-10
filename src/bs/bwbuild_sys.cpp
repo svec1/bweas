@@ -260,7 +260,7 @@ void builder::start() {
     else if (!bwtools::exist_file((path_bweas_config + "/") + CONFIG_FILE))
         (_log << bwtools::fatal) << (log_message(log_type::fatal)
                                      << "Unable to open configuration file \'bweasconf.txt\'");
-
+    
     if (mode_bweas == mode_working::build) {
         string cache_file = bwtools::get_current_path() + "/" + CACHE_FILE;
         if (!bwtools::exist_file(cache_file))
@@ -394,7 +394,8 @@ void builder::build_targets() {
         generator_api::commands cmd_s = current_generator->generate_commands(data_t);
         processes_handler p_handler(cmd_s, 4);
 
-        auto user_indicate = [&cmd_s, &_log](const generator_api::command &cmd) {
+        auto user_indicate = [&cmd_s](const generator_api::command &cmd) {
+            static logger _log{"BWBUILDER"};
             static double build_state = 0.f;
 
             if (!cmd.success)
@@ -402,7 +403,7 @@ void builder::build_targets() {
                                              << "Command execution failed: compile " << cmd.name_used_file);
             else {
                 build_state += 1.f / (double)cmd_s.size() * 100;
-                (_log << bwtools::message)
+                (_log << bwtools::success)
                     << (log_message(log_type::msg)
                         << "[" << std::to_string(build_state).erase(std::to_string((size_t)build_state).size() + 2, 5)
                         << "%] " << cmd.name_used_file);

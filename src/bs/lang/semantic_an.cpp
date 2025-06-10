@@ -28,7 +28,7 @@ void semantic_analyzer::analysis(statements &stm_s, var::scope &current_scope) {
 }
 
 void semantic_analyzer::smt_first_pass(statements &st_s, var::scope &current_scope) {
-    for (uint i = 0; i < st_s.size(); ++i) {
+    for (size_t i = 0; i < st_s.size(); ++i) {
         if (st_s[i].expr_func->expected_params.size() != st_s[i].expr_s.size()) {
             if (st_s[i].expr_func->expected_params.size() != 0 &&
                     st_s[i].expr_func->expected_params[st_s[i].expr_func->expected_params.size() - 1].type ==
@@ -46,7 +46,7 @@ void semantic_analyzer::smt_first_pass(statements &st_s, var::scope &current_sco
             continue;
 
     check_valid_exp_type:
-        for (uint j = 0, current_expected_param = 0;
+        for (size_t j = 0, current_expected_param = 0;
              j < st_s[i].expr_s.size() || current_expected_param < st_s[i].expr_func->expected_params.size();
              ++j, ++current_expected_param) {
             if (st_s[i].expr_func->expected_params[current_expected_param].decl_default_val()) {
@@ -80,7 +80,7 @@ void semantic_analyzer::smt_first_pass(statements &st_s, var::scope &current_sco
                              << st_s[i].get_location() << ": "
                              << "Incorrect definition of function parameter types was observed Expected: [VAR ID] - "
                              << st_s[i].expr_s[j].value);
-                for (uint b = j; b < st_s[i].expr_s.size(); ++b) {
+                for (size_t b = j; b < st_s[i].expr_s.size(); ++b) {
                     if ((st_s[i].expr_func->expected_params[current_expected_param - 1].type ==
                              param_type::FUTURE_VAR_ID ||
                          st_s[i].expr_func->expected_params[current_expected_param - 1].type == param_type::VAR_ID ||
@@ -192,14 +192,14 @@ void semantic_analyzer::smt_second_pass(statements &st_s, var::scope &current_sc
     // <0 - if_skip, 1 - else_skip; 0 - current if, 1- current else>
     std::vector<std::pair<bool, bool>> branch_s;
 
-    uint nested_if = 0;
+    size_t nested_if = 0;
 
     bool skip = 0;
 
-    for (uint i = 0; i < st_s.size(); ++i) {
+    for (size_t i = 0; i < st_s.size(); ++i) {
         param_type before_nextt_param = param_type::SIZE_ENUM_PARAMS;
-        uint index_before_nextt_param = 0;
-        for (uint j = 0; j < st_s[i].expr_s.size(); ++j) {
+        size_t index_before_nextt_param = 0;
+        for (size_t j = 0; j < st_s[i].expr_s.size(); ++j) {
             if (st_s[i].expr_s.size() == 0 || st_s[i].expr_s[0].value.size() == 0)
                 continue;
             else if (before_nextt_param == param_type::SIZE_ENUM_PARAMS &&
@@ -210,7 +210,7 @@ void semantic_analyzer::smt_second_pass(statements &st_s, var::scope &current_sc
             }
             if (before_nextt_param != param_type::SIZE_ENUM_PARAMS) {
                 if (before_nextt_param == param_type::FUTURE_VAR_ID) {
-                    uint index_type = current_scope.what_type(st_s[i].expr_s[j].value);
+                    size_t index_type = current_scope.what_type(st_s[i].expr_s[j].value);
                     if (index_type != 0)
                         _log << bwtools::fatal
                              << (log_message(log_type::fatal)
@@ -220,7 +220,7 @@ void semantic_analyzer::smt_second_pass(statements &st_s, var::scope &current_sc
                 else if (before_nextt_param == param_type::NCHECK_VAR_ID)
                     continue;
                 else if (before_nextt_param == param_type::VAR_STRUCT_ID) {
-                    uint index_type = current_scope.what_type(st_s[i].expr_s[j].value);
+                    size_t index_type = current_scope.what_type(st_s[i].expr_s[j].value);
                     if (index_type != 5 && index_type != 6)
                         _log << bwtools::fatal
                              << (log_message(log_type::fatal)
@@ -231,7 +231,7 @@ void semantic_analyzer::smt_second_pass(statements &st_s, var::scope &current_sc
                     if (st_s[i].expr_s[index_before_nextt_param].type == expression::expression_t::NUMBER &&
                         st_s[i].expr_s[j].type != expression::expression_t::NUMBER) {
                         if (st_s[i].expr_s[j].type == expression::expression_t::ID) {
-                            uint index_type = current_scope.what_type(st_s[i].expr_s[j].value);
+                            size_t index_type = current_scope.what_type(st_s[i].expr_s[j].value);
                             if (index_type == 1 || index_type == 3)
                                 continue;
                         }
@@ -243,7 +243,7 @@ void semantic_analyzer::smt_second_pass(statements &st_s, var::scope &current_sc
                     else if (st_s[i].expr_s[index_before_nextt_param].type == expression::expression_t::STRING &&
                              st_s[i].expr_s[j].type != expression::expression_t::STRING) {
                         if (st_s[i].expr_s[j].type == expression::expression_t::ID) {
-                            uint index_type = current_scope.what_type(st_s[i].expr_s[j].value);
+                            size_t index_type = current_scope.what_type(st_s[i].expr_s[j].value);
                             if (index_type == 2 || index_type == 4)
                                 continue;
                         }
@@ -253,11 +253,11 @@ void semantic_analyzer::smt_second_pass(statements &st_s, var::scope &current_sc
                                  << " Expected: [STRING] - " << st_s[i].expr_s[j].value);
                     }
                     else if (st_s[i].expr_s[index_before_nextt_param].type == expression::expression_t::ID) {
-                        uint index_type = current_scope.what_type(st_s[i].expr_s[index_before_nextt_param].value);
+                        size_t index_type = current_scope.what_type(st_s[i].expr_s[index_before_nextt_param].value);
                         if ((index_type == 1 || index_type == 3) &&
                             st_s[i].expr_s[j].type != expression::expression_t::NUMBER) {
                             if (st_s[i].expr_s[j].type == expression::expression_t::ID) {
-                                uint index_type = current_scope.what_type(st_s[i].expr_s[j].value);
+                                size_t index_type = current_scope.what_type(st_s[i].expr_s[j].value);
                                 if (index_type == 1 || index_type == 3)
                                     continue;
                             }
@@ -269,7 +269,7 @@ void semantic_analyzer::smt_second_pass(statements &st_s, var::scope &current_sc
                         else if ((index_type == 2 || index_type == 4) &&
                                  st_s[i].expr_s[j].type != expression::expression_t::STRING) {
                             if (st_s[i].expr_s[j].type == expression::expression_t::ID) {
-                                uint index_type = current_scope.what_type(st_s[i].expr_s[j].value);
+                                size_t index_type = current_scope.what_type(st_s[i].expr_s[j].value);
                                 if (index_type == 2 || index_type == 4)
                                     continue;
                             }
@@ -281,7 +281,7 @@ void semantic_analyzer::smt_second_pass(statements &st_s, var::scope &current_sc
                     }
                 }
                 else if (st_s[i].expr_s[j].type == expression::expression_t::ID) {
-                    uint index_type = current_scope.what_type(st_s[i].expr_s[j].value);
+                    size_t index_type = current_scope.what_type(st_s[i].expr_s[j].value);
                     if (before_nextt_param == param_type::VAR_ID && index_type == 0)
                         _log << bwtools::fatal
                              << (log_message(log_type::fatal)
@@ -304,7 +304,7 @@ void semantic_analyzer::smt_second_pass(statements &st_s, var::scope &current_sc
                 }
             }
             else if (st_s[i].expr_func->expected_params[j].type == param_type::FUTURE_VAR_ID) {
-                uint index_type = current_scope.what_type(st_s[i].expr_s[j].value);
+                size_t index_type = current_scope.what_type(st_s[i].expr_s[j].value);
                 if (index_type != 0)
                     _log << bwtools::fatal
                          << (log_message(log_type::fatal) << st_s[i].get_location() << ": " << EXPECTED_NEW_SYMBOL
@@ -313,7 +313,7 @@ void semantic_analyzer::smt_second_pass(statements &st_s, var::scope &current_sc
             else if (st_s[i].expr_func->expected_params[j].type == param_type::NCHECK_VAR_ID)
                 continue;
             else if (st_s[i].expr_func->expected_params[j].type == param_type::VAR_STRUCT_ID) {
-                uint index_type = current_scope.what_type(st_s[i].expr_s[j].value);
+                size_t index_type = current_scope.what_type(st_s[i].expr_s[j].value);
                 if (index_type != 5 && index_type != 6)
                     _log << bwtools::fatal
                          << (log_message(log_type::fatal)
@@ -321,7 +321,7 @@ void semantic_analyzer::smt_second_pass(statements &st_s, var::scope &current_sc
                              << " Expected: [VAR STRUCT ID] - " << st_s[i].expr_s[j].value);
             }
             else if (st_s[i].expr_s[j].type == expression::expression_t::ID) {
-                uint index_type = current_scope.what_type(st_s[i].expr_s[j].value);
+                size_t index_type = current_scope.what_type(st_s[i].expr_s[j].value);
                 if (index_type == 0)
                     _log << bwtools::fatal
                          << (log_message(log_type::fatal)
@@ -359,7 +359,7 @@ void semantic_analyzer::smt_second_pass(statements &st_s, var::scope &current_sc
                              << " Expected: [VAR ID->([NUMBER] or [STRING])] - " << st_s[i].expr_s[j].value);
             }
         }
-        for (uint j = 0, b = 0; j < st_s[i].expr_s.size(); ++j, ++b) {
+        for (size_t j = 0, b = 0; j < st_s[i].expr_s.size(); ++j, ++b) {
             if (b >= st_s[i].expr_func->expected_params.size() && before_nextt_param != param_type::SIZE_ENUM_PARAMS) {
                 parse_expr_param(
                     st_s[i].expr_s[j], st_s[i].expr_s, j, current_scope,
@@ -389,7 +389,7 @@ void semantic_analyzer::smt_second_pass(statements &st_s, var::scope &current_sc
         }
         // keyword handler(if, else, endif)
         if (st_s[i].expr_func->name_func == STR_KEYWORD_IF) {
-            uint val = std::stoi(st_s[i].expr_s[0].value);
+            size_t val = std::stoi(st_s[i].expr_s[0].value);
             if (!val) {
                 skip = 1;
                 branch_s.push_back(std::pair<bool, bool>(0, 0));
@@ -429,13 +429,13 @@ void semantic_analyzer::smt_second_pass(statements &st_s, var::scope &current_sc
     if (branch_s.size())
         _log << bwtools::fatal << (log_message(log_type::fatal) << "End of statements: " << EXPECTED_ENDIF);
 }
-void semantic_analyzer::parse_expr_param(expression &expr, expressions &expr_s, uint &pos_expr_in_vec,
+void semantic_analyzer::parse_expr_param(expression &expr, expressions &expr_s, size_t &pos_expr_in_vec,
                                          var::scope &current_scope, param_type expected_param) {
     expression parse_expr, tmp_parse_expr;
     if (expr.type == expression::expression_t::ID &&
         (expected_param != param_type::VAR_ID && expected_param != param_type::FUTURE_VAR_ID &&
          expected_param != param_type::NCHECK_VAR_ID)) {
-        uint index_var = current_scope.what_type(expr.value);
+        size_t index_var = current_scope.what_type(expr.value);
         if (index_var == 1) {
             parse_expr.type  = expression::expression_t::NUMBER;
             parse_expr.value = std::to_string(current_scope.get_var_value<pdiff>(expr.value));
@@ -449,14 +449,14 @@ void semantic_analyzer::parse_expr_param(expression &expr, expressions &expr_s, 
             expression tmp_expr;
             tmp_expr.type                       = expression::expression_t::NUMBER;
             const std::vector<pdiff> vec_int_id = current_scope.get_var_value<std::vector<pdiff>>(expr.value);
-            for (uint i = 0; i < pos_expr_in_vec; ++i)
+            for (size_t i = 0; i < pos_expr_in_vec; ++i)
                 new_expr_s.push_back(expr_s[i]);
-            for (uint i = 0; i < vec_int_id.size(); ++i) {
+            for (size_t i = 0; i < vec_int_id.size(); ++i) {
                 tmp_expr.value = std::to_string(vec_int_id[i]);
                 new_expr_s.push_back(tmp_expr);
                 tmp_expr.value = "";
             }
-            for (uint i = pos_expr_in_vec + 1; i < expr_s.size(); ++i)
+            for (size_t i = pos_expr_in_vec + 1; i < expr_s.size(); ++i)
                 new_expr_s.push_back(expr_s[i]);
             pos_expr_in_vec += vec_int_id.size() - 1;
             expr_s = new_expr_s;
@@ -467,14 +467,14 @@ void semantic_analyzer::parse_expr_param(expression &expr, expressions &expr_s, 
             tmp_expr.type = expression::expression_t::STRING;
             const std::vector<std::string> vec_str_id =
                 current_scope.get_var_value<std::vector<std::string>>(expr.value);
-            for (uint i = 0; i < pos_expr_in_vec; ++i)
+            for (size_t i = 0; i < pos_expr_in_vec; ++i)
                 new_expr_s.push_back(expr_s[i]);
-            for (uint i = 0; i < vec_str_id.size(); ++i) {
+            for (size_t i = 0; i < vec_str_id.size(); ++i) {
                 tmp_expr.value = vec_str_id[i];
                 new_expr_s.push_back(tmp_expr);
                 tmp_expr.value = "";
             }
-            for (uint i = pos_expr_in_vec + 1; i < expr_s.size(); ++i)
+            for (size_t i = pos_expr_in_vec + 1; i < expr_s.size(); ++i)
                 new_expr_s.push_back(expr_s[i]);
             pos_expr_in_vec += vec_str_id.size() - 1;
             expr_s = new_expr_s;

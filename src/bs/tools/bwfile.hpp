@@ -32,11 +32,14 @@ class bwfile {
 };
 
 vec<string> bwfile::file_slc_mask(string mask, const vec<string> &files) {
+    if (mask.empty())
+        return files;
+
     vec<string> slc_files;
     vec<string> masks;
 
     string mask_tmp;
-    for (uint i = 0; i < mask.size() + 1; ++i) {
+    for (size_t i = 0; i < mask.size() + 1; ++i) {
         if (mask[i] == '|' || i == mask.size()) {
             if (mask_tmp.empty())
                 continue;
@@ -48,14 +51,14 @@ vec<string> bwfile::file_slc_mask(string mask, const vec<string> &files) {
         mask_tmp += mask[i];
     }
 
-    for (uint i = 0; i < masks.size(); ++i) {
+    for (size_t i = 0; i < masks.size(); ++i) {
         mask = masks[i];
-        for (uint j = 0; j < files.size(); ++j) {
+        for (size_t j = 0; j < files.size(); ++j) {
             string mask_tmp{mask};
             bool success_file = 1;
 
-            uint sym_file = 0;
-            for (uint sym = 0; sym < mask_tmp.size(); ++sym, ++sym_file) {
+            size_t sym_file = 0;
+            for (size_t sym = 0; sym < mask_tmp.size(); ++sym, ++sym_file) {
                 if (mask_tmp[sym] == files[j][sym_file] ||
                     (mask_tmp[sym] == '\\' || mask_tmp[sym] == '/') &&
                         (files[j][sym_file] == '\\' || files[j][sym_file] == '/'))

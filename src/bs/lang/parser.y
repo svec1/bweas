@@ -2,6 +2,7 @@
 
 #include <cstdio>
 #include <cstring>
+#include <io.h>
 
 #include <lang/scope.hpp>
 

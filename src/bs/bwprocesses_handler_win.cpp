@@ -1,36 +1,45 @@
-#if defined(WIN)
 
 #include <bwprocesses_handler.hpp>
+
+#if defined(WIN)
 
 static logger _log{"BWPROCESS[WIN]"};
 
 size_t processes_handler::wait_process(size_t pid) {
     if (!pids_win.size() ||
-        (pid && std::find_if(pids_win.begin(), pids_win.end(), [process_pid](const PROCESS_INFORMATION &pi) {
-                    return pid.hProcess == pid;
+        (pid && std::find_if(pids_win.begin(), pids_win.end(),
+                             [pid](const PROCESS_INFORMATION &pi) {
+                    return pi.dwProcessId == pid;
                 }) == pids_win.end()))
         return SIZE_MAX;
 
+    PROCESS_INFORMATION pid_tmp;
+
     if (pid) {
-        WaitForSingleObject(pid, INFINITE);
-
         const auto &it_pid = std::find_if(pids_win.begin(), pids_win.end(),
-                                          [process_pid](const PROCESS_INFORMATION &pi) { return pid.hProcess == pid; });
-
-        CloseHandle(pid);
-        CloseHandle(it_pid->hThread);
-
+                                          [pid](const PROCESS_INFORMATION &pi) { return pi.dwProcessId == pid; });
+        
+        pid_tmp = *it_pid;
         pids_win.erase(it_pid);
     }
     else {
-        WaitForSingleObject(pids_win[0].hThread, INFINITE);
+        pid_tmp = pids_win[0];
 
-        CloseHandle(pids_win[0].hProcess);
-        CloseHandle(pids_win[0].hThread);
-
-        pid = pids_win[0].hProcess;
+        pid = pids_win[0].dwProcessId;
         pids_win.erase(pids_win.begin());
     }
+
+    WaitForSingleObject(pid_tmp.hProcess, INFINITE);
+
+    DWORD returned = 0;
+    GetExitCodeProcess(pid_tmp.hProcess, &returned);
+
+    std::find_if(cmd_s.begin(), cmd_s.end(), [pid](const generator_api::command &cmd) {
+        return cmd.pid_execute_process == pid;
+    })->success = !returned;
+
+    CloseHandle(pid_tmp.hProcess);
+    CloseHandle(pid_tmp.hThread);
 
     _log << (log_message(log_type::msg) << "Process closed(" << pid << ")");
 
@@ -45,21 +54,21 @@ void processes_handler::create_process(generator_api::command &cmd) {
     si.cb = sizeof(si);
     ZeroMemory(&pi, sizeof(pi));
 
+    string str_args;
+    for (const auto &arg : cmd.args)
+        str_args += arg + " ";
+    str_args.erase(str_args.size()-1, 1);
+
+    if (!CreateProcess(NULL, ("\"" + cmd.name_program + "\" " + str_args).data(), NULL, NULL, FALSE, 0, NULL, NULL, &si,
+                      &pi)) {
+        if (GetLastError() == 2)
+            _log << bwtools::fatal << (log_message(log_type::fatal) << "No such file exists: " << cmd.name_program);
+        else
+            _log << bwtools::fatal << (log_message(log_type::fatal) << "Process cannot be created: " << GetLastError());
+    }
+
     pids_win.push_back(pi);
-
-    cmd.args.emplace(cmd.args.begin(), cmd.name_program);
-
-    char **args = new char *[cmd.args.size() + 1];
-    for (size_t i = 0; i < cmd.args.size(); ++i)
-        args[i] = cmd.args[i].data();
-
-    args[cmd.args.size()] = NULL;
-
-    if (!CreateProcess(cmd.name_program.c_str(), args, NULL, NULL, FALSE, 0, NULL, 1, &si,
-                       &pids_win[pids_win.size() - 1]))
-        _log << bwtools::fatal << (log_message(log_type::fatal) << "Process cannot be created: " << GetLastError());
-
-    cmd.pid_execute_process = pi.hProcess;
+    cmd.pid_execute_process = pi.dwProcessId;
 }
 
 #endif

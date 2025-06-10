@@ -38,7 +38,7 @@ static inline std::string compress_data(std::string_view data) {
 
 // Decompresses data based on lz4. In case of failure, expected_size = 0 or >= LZ4_MAX_INPUT_SIZE, an empty string is
 // returned.
-static inline std::string decompress_data(std::string_view compress_data, uint expected_size = 2 MB) {
+static inline std::string decompress_data(std::string_view compress_data, size_t expected_size = 2 MB) {
     if (compress_data.size() >= LZ4_MAX_INPUT_SIZE || compress_data.size() == 0)
         return "";
     char *decomp_data = (char *)malloc(expected_size);

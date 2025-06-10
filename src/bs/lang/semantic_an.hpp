@@ -43,7 +43,7 @@ class semantic_analyzer {
   private:
     // Parses a subexpression if it has not token the type
     // INT, STRING, or VAR_STRUCT_ID after parsing at the AEF construction
-    void parse_expr_param(expression &expr, expressions &expr_s, uint &pos_expr_in_vec, var::scope &current_scope,
+    void parse_expr_param(expression &expr, expressions &expr_s, size_t &pos_expr_in_vec, var::scope &current_scope,
                           param_type expected_param);
 
   private:

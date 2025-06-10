@@ -21,12 +21,12 @@ template <typename T> class datatype_var {
 
   public:
     const pair<string, T> &create_var_r(string name_var, T value = {});
-    uint create_var(string name_var, T value = NULL);
+    size_t create_var(string name_var, T value = NULL);
 
-    uint delete_var(string name_var);
+    size_t delete_var(string name_var);
 
     // ret: 0 - succes; 1 - name_var doesn't exist; 2 - name_var_src doesn't exist
-    uint copy(string name_var, string name_var_src);
+    size_t copy(string name_var, string name_var_src);
 
     T get_value(string name_var);
 
@@ -40,7 +40,7 @@ template <typename T> class datatype_var {
     void clear();
 
   private:
-    uint find_var_ind(string name_var);
+    size_t find_var_ind(string name_var);
 
     vec<pair<string, T>> variable_s;
 };
@@ -49,16 +49,16 @@ template <typename T> datatype_var<T> &datatype_var<T>::operator=(const datatype
     variable_s = dt_var.variable_s;
     return *this;
 }
-template <typename T> uint datatype_var<T>::find_var_ind(string name_var) {
-    for (uint i = 0; i < variable_s.size(); ++i) {
+template <typename T> size_t datatype_var<T>::find_var_ind(string name_var) {
+    for (size_t i = 0; i < variable_s.size(); ++i) {
         if (variable_s[i].first == name_var)
             return i;
     }
-    return UINT32_MAX;
+    return SIZE_MAX;
 }
 
 template <typename T> bool datatype_var<T>::is_exist_var(string name_var) {
-    if (find_var_ind(name_var) != UINT32_MAX)
+    if (find_var_ind(name_var) != SIZE_MAX)
         return 1;
     return 0;
 }
@@ -70,21 +70,21 @@ template <typename T> const pair<string, T> &datatype_var<T>::create_var_r(strin
     return variable_s[variable_s.size() - 1];
 }
 
-template <typename T> uint datatype_var<T>::create_var(string name_var, T value) {
+template <typename T> size_t datatype_var<T>::create_var(string name_var, T value) {
     if (is_exist_var(name_var))
         return 1;
     variable_s.emplace_back(name_var, value);
     return 0;
 }
 
-template <typename T> uint datatype_var<T>::delete_var(string name_var) {
+template <typename T> size_t datatype_var<T>::delete_var(string name_var) {
     if (!is_exist_var(name_var))
         return 1;
     variable_s.erase(variable_s.begin() + find_var_ind(name_var));
     return 0;
 }
 
-template <typename T> uint datatype_var<T>::copy(string name_var, string name_var_src) {
+template <typename T> size_t datatype_var<T>::copy(string name_var, string name_var_src) {
     if (!is_exist_var(name_var))
         return 1;
     else if (!is_exist_var(name_var_src))
