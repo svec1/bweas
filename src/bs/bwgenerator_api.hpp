@@ -22,6 +22,11 @@ namespace generator_api {
 struct data_transfer;
 struct command;
 
+class interface_generator;
+class base_generator;
+class integral_generator;
+class lua_generator;
+
 // name_templates, name files
 using files_input = map<string, vec<string>>;
 // name_input_file, command
@@ -31,8 +36,11 @@ using func_generator                = std::function<commands(data_transfer &)>;
 using func_build_graph_depends_file = std::function<uset<string>(string_v, string_v, string_v, vec<string>)>;
 using func_get_input_files          = std::function<void(data_transfer &)>;
 
+} // namespace generator_api
+} // namespace bweas
+
 // A temporary structure that allows you to transfer data to the generator and its sub-functions
-struct data_transfer {
+struct bweas::generator_api::data_transfer {
     data_transfer(bw_context *const _context, string _work_directory)
         : context(_context), work_directory(_work_directory) {
     }
@@ -40,12 +48,12 @@ struct data_transfer {
   public:
     bw_context *const context;
 
-    bwdepends_files::depends_map dfiles;
+    depends_files::depends_map dfiles;
     files_input ifiles;
     string work_directory;
 };
 
-struct command {
+struct bweas::generator_api::command {
   public:
     command() = default;
     command(string_v _name_used_file, string_v _name_program, vec<string> _args)
@@ -66,7 +74,7 @@ struct command {
 };
 
 // Interface class that defines the structure of generator classes
-class interface_generator {
+class bweas::generator_api::interface_generator {
   private:
     interface_generator &operator=(const interface_generator &) = delete;
 
@@ -87,7 +95,7 @@ class interface_generator {
 };
 
 // An abstract class that defines the creation of generator classes and is also a generalization
-class base_generator : public interface_generator {
+class bweas::generator_api::base_generator : public bweas::generator_api::interface_generator {
   public:
     ~base_generator() = default;
 
@@ -117,7 +125,7 @@ class base_generator : public interface_generator {
 };
 
 // The class defines the API for internal generators, i.e. built into bweas as basic
-class integral_generator final : public base_generator {
+class bweas::generator_api::integral_generator final : public bweas::generator_api::base_generator {
     friend base_generator *base_generator::create_generator_int(func_build_graph_depends_file, func_get_input_files,
                                                                 func_generator);
 
@@ -142,7 +150,7 @@ class integral_generator final : public base_generator {
 };
 
 // The class defines the API for generators written in lua and presented in bweas packages
-class lua_generator final : public base_generator {
+class bweas::generator_api::lua_generator final : public bweas::generator_api::base_generator {
     friend base_generator *base_generator::create_generator_lua(string_v);
 
   private:
@@ -162,16 +170,13 @@ class lua_generator final : public base_generator {
   private:
     bwlua::lua lua;
 };
-
-base_generator *base_generator::create_generator_int(func_build_graph_depends_file build_graph_depends_file,
-                                                     func_get_input_files get_input_files, func_generator generate) {
+bweas::generator_api::base_generator *bweas::generator_api::base_generator::create_generator_int(
+    func_build_graph_depends_file build_graph_depends_file, func_get_input_files get_input_files,
+    func_generator generate) {
     return dynamic_cast<base_generator *>(new integral_generator(build_graph_depends_file, get_input_files, generate));
 }
-base_generator *base_generator::create_generator_lua(string_v src_lua) {
+bweas::generator_api::base_generator *bweas::generator_api::base_generator::create_generator_lua(string_v src_lua) {
     return dynamic_cast<base_generator *>(new lua_generator(src_lua));
 }
-} // namespace generator_api
-
-} // namespace bweas
 
 #endif

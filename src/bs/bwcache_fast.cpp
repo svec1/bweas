@@ -14,12 +14,12 @@ using namespace cache_api;
 
 static logger _log{"BWCACHE[FAST]"};
 
-fast_bwcache::fast_bwcache(bw_context *const _context) : base_bwcache(_context) {
+fast_cache::fast_cache(bw_context *const _context) : base_cache(_context) {
     if (!context)
         (_log << bwtools::fatal) << (log_message(log_type::fatal) << "Bweas the context is not defined");
 }
 
-string fast_bwcache::create_cache() {
+string fast_cache::create_cache() {
     string serel_target_tmp;
 
     uset<string> used_templates;
@@ -127,7 +127,7 @@ string fast_bwcache::create_cache() {
     return serel_target_tmp;
 }
 
-void fast_bwcache::extract_cache_data(string &&cache_str) {
+void fast_cache::extract_cache_data(string &&cache_str) {
     var::struct_sb::target_out trg_tmp;
     var::struct_sb::template_command tcmd_tmp;
     var::struct_sb::template_command::arg arg_tmp;

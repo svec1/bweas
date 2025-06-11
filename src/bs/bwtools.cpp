@@ -32,58 +32,58 @@ std::vector<bwtools::file> bwtools::files;
 
 #if defined(UNIX)
 void bwtools::message(std::string_view str) {
-    fprintf(stdout, "%s\n", str.data());
+    std::fprintf(stdout, "%s\n", str.data());
 }
 void bwtools::success(std::string_view str) {
-    fprintf(stdout, "\e[1;32m%s\e[0m\n", str.data());
+    std::fprintf(stdout, "\e[1;32m%s\e[0m\n", str.data());
 }
 void bwtools::warning(std::string_view str_warn) {
-    fprintf(stderr, "\e[1;33m%s\e[0m\n", str_warn.data());
+    std::fprintf(stderr, "\e[1;33m%s\e[0m\n", str_warn.data());
 }
 void bwtools::error(std::string_view str_err) {
-    fprintf(stderr, "\e[1;31m");
+    std::fprintf(stderr, "\e[1;31m");
     if (str_err.empty())
-        fprintf(stderr, "%s\e[0m\n", std::strerror(errno));
+        std::fprintf(stderr, "%s\e[0m\n", std::strerror(errno));
     else
-        fprintf(stderr, "%s\e[0m\n", str_err.data());
+        std::fprintf(stderr, "%s\e[0m\n", str_err.data());
 }
 void bwtools::fatal(std::string_view str_err) {
-    fprintf(stderr, "\e[1;31m");
+    std::fprintf(stderr, "\e[1;31m");
     if (str_err.empty())
-        fprintf(stderr, "%s\e[0m\n", std::strerror(errno));
+        std::fprintf(stderr, "%s\e[0m\n", std::strerror(errno));
     else
-        fprintf(stderr, "%s\e[0m\n", str_err.data());
+        std::fprintf(stderr, "%s\e[0m\n", str_err.data());
 
     exit(FATAL_ERROR);
 }
 #else
 void bwtools::message(std::string_view str) {
-    fprintf(stdout, "%s\n", str.data());
+    std::fprintf(stdout, "%s\n", str.data());
 }
 void bwtools::success(std::string_view str) {
     SetConsoleTextAttribute(STD_HANDLE, 10);
-    fprintf(stdout, "%s\n", str.data());
+    std::fprintf(stdout, "%s\n", str.data());
     SetConsoleTextAttribute(STD_HANDLE, 15);
 }
 void bwtools::warning(std::string_view str_warn) {
     SetConsoleTextAttribute(STD_HANDLE, 14);
-    fprintf(stderr, "%s\n", str_warn.data());
+    std::fprintf(stderr, "%s\n", str_warn.data());
     SetConsoleTextAttribute(STD_HANDLE, 15);
 }
 void bwtools::error(std::string_view str_err) {
     SetConsoleTextAttribute(STD_HANDLE, 12);
     if (str_err.empty())
-        fprintf(stderr, "%s\n", std::strerror(errno));
+        std::fprintf(stderr, "%s\n", std::strerror(errno));
     else
-        fprintf(stderr, "%s\n", str_err.data());
+        std::fprintf(stderr, "%s\n", str_err.data());
     SetConsoleTextAttribute(STD_HANDLE, 15);
 }
 void bwtools::fatal(std::string_view str_err) {
     SetConsoleTextAttribute(STD_HANDLE, 12);
     if (str_err.empty())
-        fprintf(stderr, "%s\n", std::strerror(errno));
+        std::fprintf(stderr, "%s\n", std::strerror(errno));
     else
-        fprintf(stderr, "%s\n", str_err.data());
+        std::fprintf(stderr, "%s\n", str_err.data());
     SetConsoleTextAttribute(STD_HANDLE, 15);
 
     ExitProcess(FATAL_ERROR);
@@ -94,8 +94,9 @@ std::string bwtools::get_time() {
     auto time    = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
     tm *time_now = std::localtime(&time);
 
-    return std::to_string(time_now->tm_mon) + "." + std::to_string(time_now->tm_mday) + " " +
-           std::to_string(time_now->tm_hour) + ":" + std::to_string(time_now->tm_min);
+    return (time_now->tm_mon < 10 ? "0" + std::to_string(time_now->tm_mon) : std::to_string(time_now->tm_mon)) + "." +
+           (time_now->tm_mday < 10 ? "0" + std::to_string(time_now->tm_mday) : std::to_string(time_now->tm_mday)) +
+           " " + std::to_string(time_now->tm_hour) + ":" + std::to_string(time_now->tm_min);
 }
 
 std::string bwtools::get_path_program() {

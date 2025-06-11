@@ -29,7 +29,7 @@ static constexpr char VERSION_MAJOR_C = '0';
 static constexpr char VERSION_MINOR_C = '1';
 static constexpr char VERSION_PATCH_C = '1';
 
-static constexpr char VERSION_FULL_STR[5] = {VERSION_MAJOR_C, '.', VERSION_MINOR_C, '.', VERSION_PATCH_C};
+static constexpr string VERSION_FULL_STR = {VERSION_MAJOR_C, '.', VERSION_MINOR_C, '.', VERSION_PATCH_C};
 
 static constexpr auto CONFIG_FILE    = "bweasconf.txt";
 static constexpr auto CACHE_FILE     = "bwcache";

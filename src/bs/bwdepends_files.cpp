@@ -9,32 +9,32 @@
 
 static bweas::logger _log{"BWDEPENDS_FILES_SYSTEM"};
 
-bweas::bwdepends_files::depends_map &bweas::bwdepends_files::build_graphs_depends_files(const vec<string> &src_files) {
+bweas::depends_files::depends_map &bweas::depends_files::build_graphs_depends_files(const vec<string> &src_files) {
     for (const auto &file : src_files) {
         try {
             if (mdepends.find(file) == mdepends.end())
                 mdepends[file] = build_graph_depends_file(file);
         }
         catch (std::exception &excp) {
-            _log<< bwtools::fatal
-                << (log_message(log_type::fatal) << "Failed to build a graph of file dependencies: " << excp.what());
+            _log << bwtools::fatal
+                 << (log_message(log_type::fatal) << "Failed to build a graph of file dependencies: " << excp.what());
         }
     }
     return mdepends;
 }
-bweas::bwdepends_files::depends_map &bweas::bwdepends_files::build_graphs_depends_file_v(const string &name_file) {
+bweas::depends_files::depends_map &bweas::depends_files::build_graphs_depends_file_v(const string &name_file) {
     try {
         mdepends[name_file] = build_graph_depends_file(name_file);
     }
     catch (std::exception &excp) {
         _log << bwtools::fatal
-            << (log_message(log_type::fatal) << "Failed to build a graph of file dependencies: " << excp.what());
+             << (log_message(log_type::fatal) << "Failed to build a graph of file dependencies: " << excp.what());
     }
 
     return mdepends;
 }
-bweas::bwdepends_files::depends_map &bweas::bwdepends_files::build_graph_depends_file_string(string name_file,
-                                                                                             string depends_file) {
+bweas::depends_files::depends_map &bweas::depends_files::build_graph_depends_file_string(string name_file,
+                                                                                         string depends_file) {
     auto it_depends_file = mdepends.find(mdepends[name_file].size() ? name_file : name_file);
     pdiff it             = 0;
     while ((it = depends_file.find("\n")) != depends_file.npos) {
@@ -46,17 +46,17 @@ bweas::bwdepends_files::depends_map &bweas::bwdepends_files::build_graph_depends
     }
     return mdepends;
 }
-bweas::bwdepends_files::depends_map &bweas::bwdepends_files::get_graphs_depends_files() {
+bweas::depends_files::depends_map &bweas::depends_files::get_graphs_depends_files() {
     return mdepends;
 }
-string bweas::bwdepends_files::get_string_depends_file(string name_file) {
+string bweas::depends_files::get_string_depends_file(string name_file) {
     string str;
     for (const auto &dependence : mdepends[name_file])
         str += dependence + "\n";
 
     return str;
 }
-void bweas::bwdepends_files::set_include_paths(const vec<string> _include_paths) {
+void bweas::depends_files::set_include_paths(const vec<string> _include_paths) {
     include_paths = _include_paths;
 }
 

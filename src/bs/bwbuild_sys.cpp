@@ -53,7 +53,7 @@ builder::builder(size_t argv, char **args) : path_bweas_to_build(DIRWORK_ENV) {
 
     if (mode_bweas != mode_working::build_package && mode_bweas != mode_working::undef) {
         (_log << bwtools::message) << (log_message(log_type::msg)
-                                       << "Initializing system build - bweas " + bwbuilde_ver.get_str_version());
+                                       << "Initializing system build - bweas " + version.get_str_version());
         init();
     }
 }
@@ -137,7 +137,7 @@ void builder::handle_args(vec<string> &args) {
 }
 
 size_t builder::create_package(string path_json_config_package) {
-    bwpackage::data_bw_package data_package;
+    package::data_bw_package data_package;
     const file_it &json_config_package = bwtools::open_file(path_json_config_package, mf::open::r);
 
     if (!bwtools::exist_file(json_config_package)) {
@@ -148,7 +148,7 @@ size_t builder::create_package(string path_json_config_package) {
     data_package.json_config = bwtools::read_file(bwtools::get_ref_file(json_config_package), mf::input::read_default);
     bwtools::close_file(json_config_package);
 
-    bweas::bwpackage loaded_package;
+    package loaded_package;
     string pckg = loaded_package.init(data_package, 1);
     if (_log.error_status()) {
         (_log << bwtools::error) << (log_message(log_type::error) << "Failed to create a bweas package");
@@ -186,12 +186,12 @@ void builder::init() {
             return;
         }
         if (config_json["cache-gn"] == "fast_bwcache")
-            cache = std::unique_ptr<cache_api::base_bwcache>(cache_api::base_bwcache::create_fast_bwcache(&context));
+            cache = std::unique_ptr<cache_api::base_cache>(cache_api::base_cache::create_fast_cache(&context));
         else if (config_json["cache-gn"] == "json_bwcache")
-            cache = std::unique_ptr<cache_api::base_bwcache>(cache_api::base_bwcache::create_json_bwcache(&context));
+            cache = std::unique_ptr<cache_api::base_cache>(cache_api::base_cache::create_json_cache(&context));
     }
     else
-        cache = std::unique_ptr<cache_api::base_bwcache>(cache_api::base_bwcache::create_fast_bwcache(&context));
+        cache = std::unique_ptr<cache_api::base_cache>(cache_api::base_cache::create_fast_cache(&context));
 
     if (config_json.contains("packages")) {
         if (!config_json["packages"].is_array()) {
@@ -203,7 +203,8 @@ void builder::init() {
             if (!package.value().is_string())
                 (_log << bwtools::error) << (log_message(log_type::error)
                                              << "Invalid json file structure. Package names are expected");
-            bweas::bwpackage loaded_package;
+
+            bweas::package loaded_package;
             string raw_data_package,
                 path_to_package{bwtools::get_path_program() + "/packages/" + (string)package.value() + FORMAT_PACKAGE};
 
@@ -220,9 +221,10 @@ void builder::init() {
             loaded_package.load(raw_data_package);
             loaded_packages.push_back(loaded_package);
 
-            if (cache == NULL && loaded_package.cfg_package.cache.name_cache == config_json["cache-gn"])
-                cache = std::unique_ptr<cache_api::base_bwcache>(cache_api::base_bwcache::create_lua_bwcache(
-                    &context, loaded_package.cfg_package.cache.src_lua_cache));
+            if (cache == NULL &&
+                loaded_package.cfg_package.cache.name_cache == config_json["cache-gn"].template get<std::string>())
+                cache = std::unique_ptr<cache_api::base_cache>(
+                    cache_api::base_cache::create_lua_cache(&context, loaded_package.cfg_package.cache.src_lua_cache));
             _log << bwtools::success
                  << (log_message(log_type::msg)
                      << "\"" << path_to_package << "\" bweas package was loaded successfully("
@@ -244,7 +246,7 @@ void builder::init() {
                 generators[generator.name_generator]->set_use_build_graph_depends();
         }
     for (auto &package : loaded_packages) {
-        auto module_funcs = module_manager.init_mfuncs(package.cfg_package.modules);
+        auto module_funcs = module_m.init_mfuncs(package.cfg_package.modules);
         for (const auto &module_func : module_funcs)
             external_modules_funcs.push_back(module_func);
     }
@@ -354,10 +356,10 @@ void builder::build_targets() {
         string dir_target = path_bweas_to_build + "/" + target.name_target;
 
         auto &current_generator = generators[target.name_generator];
-        std::unique_ptr<bwdepends_files> depends_files;
+        std::unique_ptr<depends_files> depends_files;
 
         context.current_target = &target;
-        bweas::generator_api::data_transfer data_t{&context, dir_target};
+        generator_api::data_transfer data_t{&context, dir_target};
         vec<var::struct_sb::template_command> bw_tcmd = create_queue_target_templates(target);
 
         if (!std::filesystem::is_directory(dir_target))
@@ -366,9 +368,9 @@ void builder::build_targets() {
         current_generator->init();
 
         if (current_generator->has_build_graph_depends())
-            depends_files = std::make_unique<bwdepends_generator>(current_generator, target.prj.language, dir_target);
+            depends_files = std::make_unique<depends_generator>(current_generator, target.prj.language, dir_target);
         else
-            depends_files = std::make_unique<bwdepends_integral>(target.prj.language, dir_target);
+            depends_files = std::make_unique<depends_integral>(target.prj.language, dir_target);
 
         depends_files->set_include_paths(target.prj.include_paths);
 
@@ -387,11 +389,17 @@ void builder::build_targets() {
         depends_files->build_graphs_depends_files(target.prj.src_files);
         data_t.dfiles = depends_files->get_graphs_depends_files();
 
-        (_log << bwtools::message) << (log_message(log_type::msg) << "Build {" << target.name_target << "}");
+        (_log << bwtools::message) << (log_message(log_type::msg) << "Build target: " << target.name_target);
 
         current_generator->get_input_files(data_t);
 
         generator_api::commands cmd_s = current_generator->generate_commands(data_t);
+        if (!cmd_s.size()) {
+            (_log << bwtools::message) << (log_message(log_type::msg)
+                                           << "No assembly is required for the current purpose");
+            continue;
+        }
+
         processes_handler p_handler(cmd_s, 4);
 
         auto user_indicate = [&cmd_s](const generator_api::command &cmd) {
@@ -419,6 +427,8 @@ void builder::build_targets() {
                     return cmd.pid_execute_process == pid_completed_process;
                 }));
         }
+
+        (_log << bwtools::success) << (log_message(log_type::msg) << "Successfully built target");
     }
 }
 

@@ -1,3 +1,10 @@
+//
+// BWEAS is distributed under the gnu general public license 2.0 (gpl-2.0).
+// you can view the license text at the link:
+//     <https://www.gnu.org/licenses />
+// ------------------------------------------
+//
+
 #ifndef BWPROCESSES_HANDLER_HPP
 #define BWPROCESSES_HANDLER_HPP
 
@@ -7,7 +14,6 @@
 
 namespace bweas {
 class processes_handler;
-class process;
 } // namespace bweas
 
 class bweas::processes_handler {

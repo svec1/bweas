@@ -13,10 +13,12 @@
 #include <lang/static_linking_func.hpp>
 
 namespace bweas {
+class lang;
+}
 
 // A wrapper around the lang interpreter that installs all
 // the standard bweas functions and also provides interaction with the global scope
-class lang {
+class bweas::lang {
   public:
     lang(string_v bwconf_file = CONFIG_FILE);
 
@@ -200,7 +202,5 @@ var::scope &lang::get_global_scope() {
 template <typename T> vec<pair<string, T>> &lang::get_class_variables() {
     return _interpreter.get_current_scope().get_vector_variables_t<T>();
 }
-
-} // namespace bweas
 
 #endif

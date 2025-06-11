@@ -23,7 +23,7 @@ static constexpr auto NAME_VARIABLE_GEARGS      = "global_external_args";
 
 static logger _log{"BWCACHE[LUA]"};
 
-lua_bwcache::lua_bwcache(bw_context *const _context, string_v src_lua) : base_bwcache(_context) {
+lua_cache::lua_cache(bw_context *const _context, string_v src_lua) : base_cache(_context) {
     if (!context)
         (_log << bwtools::fatal) << (log_message(log_type::fatal) << "Bweas the context is not defined");
     lua.create(src_lua.data());
@@ -34,7 +34,7 @@ lua_bwcache::lua_bwcache(bw_context *const _context, string_v src_lua) : base_bw
         (_log << bwtools::fatal) << (log_message(log_type::fatal) << "No entry function for get data of cache");
 }
 
-string lua_bwcache::create_cache() {
+string lua_cache::create_cache() {
     lua_tools::param_targets ltargets_o;
     lua_tools::param_templates ltcmd_s;
     lua_tools::param_ccomponents lccmp_s;
@@ -58,7 +58,7 @@ string lua_bwcache::create_cache() {
     return "";
 }
 
-void lua_bwcache::extract_cache_data(string &&cache_str) {
+void lua_cache::extract_cache_data(string &&cache_str) {
     vec<lua_tools::table<string, any>> ltargets_o;
     vec<lua_tools::table<string, any>> ltcmd_s;
     vec<lua_tools::table<string, any>> lccmp_s;

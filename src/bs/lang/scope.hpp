@@ -1,3 +1,10 @@
+//
+// BWEAS is distributed under the gnu general public license 2.0 (gpl-2.0).
+// you can view the license text at the link:
+//     <https://www.gnu.org/licenses />
+// ------------------------------------------
+//
+
 #ifndef SCOPE_HPP
 #define SCOPE_HPP
 
@@ -141,15 +148,10 @@ template <typename T> inline T &scope::create_var(string name_var, T val) {
     }
     else
         static_assert(false, "Unsuitable type.");
-#if defined(UNIX)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wreturn-type"
     (_log << bwtools::fatal) << (log_message(log_type::fatal)
                                  << get_current_loc() << ": The " << name_var << " variable already exists");
-#pragma GCC diagnostic pop
-#else
-__assume(0);
-#endif
+
+    std::unreachable();
 }
 
 template <typename T> inline bool scope::try_create_var(string name_var, T val) {
@@ -249,15 +251,11 @@ template <typename T> inline T &scope::get_var_value(string name_var) {
     }
     else
         static_assert(false, "Unsuitable type.");
-#if defined(UNIX)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wreturn-type"
+
     (_log << bwtools::fatal) << (log_message(log_type::fatal)
                                  << get_current_loc() << ": The " << name_var << " variable does not exist");
-#pragma GCC diagnostic pop
-#else
-__assume(0);
-#endif
+
+    std::unreachable();
 }
 
 template <typename T> inline vec<pair<string, T>> &scope::get_vector_variables_t() {
@@ -283,14 +281,8 @@ template <typename T> inline vec<pair<string, T>> &scope::get_vector_variables_t
         return funcs_v.get_vector_variables();
     else
         static_assert(false, "Unsuitable type.");
-#if defined(UNIX)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wreturn-type"
-    __builtin_unreachable();
-#pragma GCC diagnostic pop
-#else
-    __assume(0);
-#endif
+
+    std::unreachable();
 }
 
 inline bool scope::is_exist(string name_var) {

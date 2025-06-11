@@ -1,3 +1,10 @@
+//
+// BWEAS is distributed under the gnu general public license 2.0 (gpl-2.0).
+// you can view the license text at the link:
+//     <https://www.gnu.org/licenses />
+// ------------------------------------------
+//
+
 #ifndef STATIC_STRUCT_HPP
 #define STATIC_STRUCT_HPP
 
@@ -5,6 +12,8 @@
 #include <memory>
 #include <string>
 #include <vector>
+
+#include <bwtools.hpp>
 
 #include <bwaliases.hpp>
 #include <bwconf_var.hpp>
@@ -130,26 +139,34 @@ inline configuration to_cfg(string target_t) {
 struct version {
     version() = default;
     version(string version_str) {
-        try {
-            string major_str = version_str;
-            string minor_str = version_str;
-            string patch_str = version_str;
+        std::regex version_syntax(R"(^(\d)(?:\.(\d))?(?:\.(\d))?$)");
 
-            if (major_str.find('.') == major_str.npos)
-                goto init_mmp;
-            major_str.erase(major_str.find('.'));
-            minor_str.erase(0, minor_str.find('.') + 1);
-            if (minor_str.find('.') == minor_str.npos)
-                goto init_mmp;
-            minor_str.erase(minor_str.find('.'));
-            patch_str.erase(0, patch_str.find_last_of('.') + 1);
+        std::smatch args_match;
+        if (!std::regex_match(version_str, args_match, version_syntax))
+            return;
 
-        init_mmp:
-            major = std::atoll(major_str.c_str());
-            minor = std::atoll(minor_str.c_str());
-            patch = std::atoll(patch_str.c_str());
-        }
-        catch (std::logic_error &_excp) {
+        size_t i = 0;
+        for (const auto &arg : args_match) {
+            if (arg == args_match[0])
+                continue;
+
+            const auto arg_str = arg.str().c_str();
+
+            switch (i) {
+            case 0:
+                major = std::atoll(arg_str);
+                break;
+            case 1:
+                minor = std::atoll(arg_str);
+                break;
+            case 2:
+                patch = std::atoll(arg_str);
+                break;
+            default:
+                std::unreachable();
+            }
+
+            ++i;
         }
     }
     version(size_t mj, size_t mn, size_t ptch) : major{mj}, minor{mn}, patch{ptch} {

@@ -12,8 +12,9 @@
 #include <bwgenerator_api.hpp>
 
 namespace bweas {
-
-class generator_tools {
+class generator_tools;
+}
+class bweas::generator_tools {
   public:
     generator_tools() = delete;
 
@@ -36,7 +37,5 @@ class generator_tools {
   public:
     static string build_string_command(const generator_api::command &cmd);
 };
-
-} // namespace bweas
 
 #endif

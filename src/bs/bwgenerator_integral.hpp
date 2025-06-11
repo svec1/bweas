@@ -14,7 +14,10 @@
 #include "bwgenerator_api.hpp"
 
 namespace bweas {
-class integral_generator {
+class integral_generator;
+}
+
+class bweas::integral_generator {
   public:
     integral_generator() = delete;
 
@@ -22,9 +25,6 @@ class integral_generator {
     static void get_input_files(bweas::generator_api::data_transfer &data_t);
     // First and basic template-based command generator
     static generator_api::commands generate(bweas::generator_api::data_transfer &data_t);
-
-  public:
 };
-} // namespace bweas
 
 #endif

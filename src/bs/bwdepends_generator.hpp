@@ -11,15 +11,17 @@
 #include "bwgenerator_api.hpp"
 
 namespace bweas {
+class depends_generator;
+} // namespace bweas
 
 // Implementing a file dependency system based on the bweas generators API
-class bwdepends_generator : public bweas::bwdepends_files {
+class bweas::depends_generator : public bweas::depends_files {
   public:
-    bwdepends_generator(std::shared_ptr<generator_api::base_generator> _generator, const string_v language,
-                        const string_v work_directory)
-        : generator(_generator), bweas::bwdepends_files(language, work_directory) {
+    depends_generator(std::shared_ptr<generator_api::base_generator> _generator, const string_v language,
+                      const string_v work_directory)
+        : generator(_generator), bweas::depends_files(language, work_directory) {
     }
-    ~bwdepends_generator() = default;
+    ~depends_generator() = default;
 
   public:
     uset<string> build_graph_depends_file(string_v name_file) override final;
@@ -28,8 +30,7 @@ class bwdepends_generator : public bweas::bwdepends_files {
     std::shared_ptr<generator_api::base_generator> generator;
 };
 
-uset<string> bweas::bwdepends_generator::build_graph_depends_file(string_v name_file) {
+uset<string> bweas::depends_generator::build_graph_depends_file(string_v name_file) {
     return generator->build_graph_depends_file(language, name_file, work_directory, include_paths);
 }
-} // namespace bweas
 #endif

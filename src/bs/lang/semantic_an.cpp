@@ -1,3 +1,10 @@
+//
+// BWEAS is distributed under the gnu general public license 2.0 (gpl-2.0).
+// you can view the license text at the link:
+//     <https://www.gnu.org/licenses />
+// ------------------------------------------
+//
+
 #include "semantic_an.hpp"
 
 static constexpr auto NOT_MATCHING_W_PARAMETERS  = "The function values passed do not correspond to the expected ones.";
@@ -197,7 +204,7 @@ void semantic_analyzer::smt_second_pass(statements &st_s, var::scope &current_sc
     bool skip = 0;
 
     for (size_t i = 0; i < st_s.size(); ++i) {
-        param_type before_nextt_param = param_type::SIZE_ENUM_PARAMS;
+        param_type before_nextt_param   = param_type::SIZE_ENUM_PARAMS;
         size_t index_before_nextt_param = 0;
         for (size_t j = 0; j < st_s[i].expr_s.size(); ++j) {
             if (st_s[i].expr_s.size() == 0 || st_s[i].expr_s[0].value.size() == 0)

@@ -70,7 +70,7 @@ lua_tools::table<string_v, any> lua_tools::conv_to_table(const var::struct_sb::t
                                            {TRG_VAR_NAME_LLIBS, trg_o.target_vec_libs}};
 }
 lua_tools::table<string, lua_tools::array<string>> lua_tools::conv_to_table(
-    const bweas::bwdepends_files::depends_map &dfiles) {
+    const bweas::depends_files::depends_map &dfiles) {
     lua_tools::table<string, lua_tools::array<string>> _dfiles;
     for (const auto &dfile : dfiles)
         _dfiles.insert({dfile.first, {dfile.second.begin(), dfile.second.end()}});

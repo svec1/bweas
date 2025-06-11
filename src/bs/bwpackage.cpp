@@ -49,7 +49,7 @@ static constexpr size_t MAX_SIZE_PACKAGE = 5 MB;
 
 static logger _log{"BWPACKAGE"};
 
-string bwpackage::create_data_package(data_bw_package _data) {
+string package::create_data_package(data_bw_package _data) {
     string data_str = PACKAGE_PREFIX_BYTE + PACKAGE_VERSION + _data.json_config + PACKAGE_SEPARATE_JSON_BYTES +
                       _data.src_lua_cache + PACKAGE_SEPARATE_LUA_CACHE;
 
@@ -59,7 +59,7 @@ string bwpackage::create_data_package(data_bw_package _data) {
     return bwlz4::compress_data(data_str);
 }
 
-string bwpackage::init(data_bw_package _data, bool is_create_pckg) {
+string package::init(data_bw_package _data, bool is_create_pckg) {
     nlohmann::json config_json = nlohmann::json::parse(_data.json_config);
     if (!config_json.contains("package-name") || ((name_package = config_json["package-name"]) == ""))
         (_log << bwtools::fatal) << (log_message(log_type::fatal) << "Bweas package name field is empty");
@@ -176,7 +176,7 @@ string bwpackage::init(data_bw_package _data, bool is_create_pckg) {
     return create_data_package(_data);
 }
 
-void bwpackage::load(string_v raw_data_package) {
+void package::load(string_v raw_data_package) {
     string data_pckg = bwlz4::decompress_data(raw_data_package, MAX_SIZE_PACKAGE);
     if (data_pckg.size() == 0)
         (_log << bwtools::fatal) << (log_message(log_type::fatal) << "Unsuccessful decompression of package bweas");
@@ -218,6 +218,6 @@ void bwpackage::load(string_v raw_data_package) {
     init(data_package);
 }
 
-bool bwpackage::is_init() {
+bool package::is_init() {
     return name_package.size();
 }

@@ -12,11 +12,12 @@
 #include "bwmodule.hpp"
 
 namespace bweas {
-
+class package;
+}
 // Class defining bweas packages
-class bwpackage {
+class bweas::package {
   public:
-    bwpackage() = default;
+    package() = default;
 
   public:
     // Data for creating a bweas package
@@ -54,7 +55,7 @@ class bwpackage {
 
         cache_lua cache;
         vec<generator_lua> generators;
-        bwmodule_mg::modules modules;
+        module_manager::modules modules;
         map<string, string> custom_ext_fields_project;
     };
 
@@ -77,6 +78,5 @@ class bwpackage {
 
     config cfg_package;
 };
-} // namespace bweas
 
 #endif

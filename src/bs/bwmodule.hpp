@@ -12,12 +12,14 @@
 #include <bwluatools.hpp>
 
 namespace bweas {
+class module_manager;
+}
 
 // Class defining modules
-class bwmodule_mg {
+class bweas::module_manager {
   public:
-    bwmodule_mg()  = default;
-    ~bwmodule_mg() = default;
+    module_manager()  = default;
+    ~module_manager() = default;
 
   public:
     struct module {
@@ -36,6 +38,5 @@ class bwmodule_mg {
     // Initializes lua modules functions for subsequent calls
     std::vector<decl_func> init_mfuncs(modules &mds);
 };
-} // namespace bweas
 
 #endif

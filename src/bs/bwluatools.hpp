@@ -53,7 +53,7 @@ class bweas::lua_tools {
     static table<string_v, any> conv_to_table(const var::struct_sb::target &trg_o);
     static table<string_v, any> conv_to_table(const var::struct_sb::target_out &trg_o);
 
-    static table<string, array<string>> conv_to_table(const bweas::bwdepends_files::depends_map &dfiles);
+    static table<string, array<string>> conv_to_table(const bweas::depends_files::depends_map &dfiles);
 
     // Functions for converting containers for lua to the corresponding bweas structures
   public:

@@ -14,12 +14,12 @@ using namespace cache_api;
 
 static logger _log{"BWCACHE[JSON]"};
 
-json_bwcache::json_bwcache(bw_context *const context) : base_bwcache(context) {
+json_cache::json_cache(bw_context *const context) : base_cache(context) {
     if (!context)
         (_log << bwtools::fatal) << (log_message(log_type::fatal) << "Bweas the context is not defined");
 }
 
-string json_bwcache::create_cache() {
+string json_cache::create_cache() {
     nlohmann::json cache_data;
 
     for (const auto &target : context->out_targets)
@@ -64,7 +64,7 @@ string json_bwcache::create_cache() {
     return cache_data.dump(4);
 }
 
-void json_bwcache::extract_cache_data(string &&cache_str) {
+void json_cache::extract_cache_data(string &&cache_str) {
     try {
         nlohmann::json cache_data = nlohmann::json::parse(cache_str);
 

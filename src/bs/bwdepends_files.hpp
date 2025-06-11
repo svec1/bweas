@@ -11,14 +11,16 @@
 #include <bw_defs.hpp>
 
 namespace bweas {
+class depends_files;
+} // namespace bweas
 
 // File dependency system interface, defines specific functions
-class bwdepends_files {
+class bweas::depends_files {
   public:
-    bwdepends_files(const string_v _language, const string_v _work_directory)
+    depends_files(const string_v _language, const string_v _work_directory)
         : language(_language), work_directory(_work_directory) {
     }
-    ~bwdepends_files() = default;
+    ~depends_files() = default;
 
   public:
     // file, dependencies
@@ -51,6 +53,5 @@ class bwdepends_files {
   private:
     depends_map mdepends;
 };
-} // namespace bweas
 
 #endif

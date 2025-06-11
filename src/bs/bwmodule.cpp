@@ -11,7 +11,7 @@ using namespace bweas;
 
 static logger _log{"BWMODULE"};
 
-vec<decl_func> bwmodule_mg::init_mfuncs(modules &mds) {
+vec<decl_func> module_manager::init_mfuncs(modules &mds) {
     vec<decl_func> funcs;
     for (auto &md : mds) {
         for (auto &_decl_func : md.funcs) {
@@ -19,7 +19,7 @@ vec<decl_func> bwmodule_mg::init_mfuncs(modules &mds) {
                 static umap<string, bwlua::lua> lua_stream_s;
                 if (!lua_stream_s[md.name_module].is_created())
                     lua_stream_s.emplace(md.name_module, bwtools::read_file(bwtools::get_ref_file(
-                                                         bwtools::open_file(md.name_lua_source_file))));
+                                                             bwtools::open_file(md.name_lua_source_file))));
 
                 lua_stream_s[md.name_module].call_function<string_v, lua_tools::integer, lua_tools::integer>(
                     _decl_func.name_func, *((lua_tools::integer *)&expr_s), *((lua_tools::integer *)&curr_scope));

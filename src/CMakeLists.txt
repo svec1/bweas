@@ -119,4 +119,6 @@ endif()
 set(BWEAS_INCLUDE ${BWEAS_INCLUDE} "bs/")
 
 target_link_libraries(${BWEAS_SLIB} PRIVATE ${BWEAS_LIBS})
+target_precompile_headers(${BWEAS_SLIB} PUBLIC bs/tools/bwlua.hpp bs/lang/static_struct.hpp bs/lang/var.hpp bs/lang/scope.hpp)
+
 include_directories(${BWEAS_INCLUDE} ${CMAKE_CURRENT_BINARY_DIR})

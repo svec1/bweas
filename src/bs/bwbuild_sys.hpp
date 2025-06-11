@@ -19,6 +19,8 @@
  * \brief Main namespace bweas
  */
 namespace bweas {
+class builder;
+} // namespace bweas
 
 /**
  *  \brief The main class of the target program, which describes all its logic.
@@ -26,7 +28,7 @@ namespace bweas {
  *  The logic of the class depends on the current mode, which is determined based on the values passed to its
  * constructor.
  */
-class builder final {
+class bweas::builder final {
   public:
     /**
      * \brief Constructor.
@@ -131,21 +133,20 @@ class builder final {
     bw_context context;
 
   private:
-    std::unique_ptr<cache_api::base_bwcache> cache;
+    std::unique_ptr<cache_api::base_cache> cache;
     map<string, std::shared_ptr<generator_api::base_generator>> generators;
 
   private:
-    vec<bwpackage> loaded_packages;
+    vec<package> loaded_packages;
 
-    bwmodule_mg module_manager;
+    module_manager module_m;
     vec<decl_func> external_modules_funcs;
 
   private:
-    var::struct_sb::version bwbuilde_ver{VERSION_FULL_STR};
+    var::struct_sb::version version{VERSION_FULL_STR};
     mode_working mode_bweas{mode_working::undef};
 
     string path_bweas_config, path_bweas_to_build;
 };
-} // namespace bweas
 
 #endif

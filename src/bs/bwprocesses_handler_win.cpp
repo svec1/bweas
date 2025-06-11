@@ -1,3 +1,9 @@
+//
+// BWEAS is distributed under the gnu general public license 2.0 (gpl-2.0).
+// you can view the license text at the link:
+//     <https://www.gnu.org/licenses />
+// ------------------------------------------
+//
 
 #include <bwprocesses_handler.hpp>
 
@@ -8,9 +14,7 @@ static logger _log{"BWPROCESS[WIN]"};
 size_t processes_handler::wait_process(size_t pid) {
     if (!pids_win.size() ||
         (pid && std::find_if(pids_win.begin(), pids_win.end(),
-                             [pid](const PROCESS_INFORMATION &pi) {
-                    return pi.dwProcessId == pid;
-                }) == pids_win.end()))
+                             [pid](const PROCESS_INFORMATION &pi) { return pi.dwProcessId == pid; }) == pids_win.end()))
         return SIZE_MAX;
 
     PROCESS_INFORMATION pid_tmp;
@@ -18,7 +22,7 @@ size_t processes_handler::wait_process(size_t pid) {
     if (pid) {
         const auto &it_pid = std::find_if(pids_win.begin(), pids_win.end(),
                                           [pid](const PROCESS_INFORMATION &pi) { return pi.dwProcessId == pid; });
-        
+
         pid_tmp = *it_pid;
         pids_win.erase(it_pid);
     }
@@ -57,10 +61,10 @@ void processes_handler::create_process(generator_api::command &cmd) {
     string str_args;
     for (const auto &arg : cmd.args)
         str_args += arg + " ";
-    str_args.erase(str_args.size()-1, 1);
+    str_args.erase(str_args.size() - 1, 1);
 
     if (!CreateProcess(NULL, ("\"" + cmd.name_program + "\" " + str_args).data(), NULL, NULL, FALSE, 0, NULL, NULL, &si,
-                      &pi)) {
+                       &pi)) {
         if (GetLastError() == 2)
             _log << bwtools::fatal << (log_message(log_type::fatal) << "No such file exists: " << cmd.name_program);
         else

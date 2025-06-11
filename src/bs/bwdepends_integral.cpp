@@ -14,12 +14,12 @@ using namespace bweas;
 
 static logger _log{"BWDEPENDS_FILES_SYSTEM[INTEGRAL]"};
 
-uset<string> bweas::bwdepends_integral::build_graph_depends_file(string_v name_file) {
+uset<string> bweas::depends_integral::build_graph_depends_file(string_v name_file) {
     return build_graph_depends_file_c_cpp(name_file, include_paths);
 }
 
-uset<string> bweas::bwdepends_integral::build_graph_depends_file_c_cpp(string_v name_file,
-                                                                       const vec<string> &include_paths) {
+uset<string> bweas::depends_integral::build_graph_depends_file_c_cpp(string_v name_file,
+                                                                     const vec<string> &include_paths) {
     uset<string> graph_depends_file;
 
     try {
