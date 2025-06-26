@@ -89,7 +89,7 @@ create_call_component(CC_EXE, "clang++", "program.exe")
 # Create a command template. You can use the capabilities that the current generator provides
 # In this case, the nth number of commands is generated (based on the number of source files), 
 # since the "feature" of the built-in generator is used: 
-# FBS\_CURRENT\_INPUT\_FILE(single-generate parameter) in conjunction with FBS\_CURRENT\_OUTPUT\_FILE.)
+# FBS_CURRENT_INPUT_FILE(single-generate parameter) in conjunction with FBS_CURRENT_OUTPUT_FILE.)
 create_templates(object_file_t, "CC_OBJ(NULL) -> OBJECTS: FBS_CURRENT_INPUT_FILE <'-o'> FBS_CURRENT_OUTPUT_FILE")
 create_templates(executable_file_t, "CC_EXE(OBJECTS) -> EXECUTABLE: <{OBJECTS}> <'-o'> FBS_CURRENT_OUTPUT_FILE")
 
