@@ -8,8 +8,8 @@
 #ifndef BWPACKAGE_HPP
 #define BWPACKAGE_HPP
 
-#include "bw_defs.hpp"
-#include "bwmodule.hpp"
+#include <bw_defs.hpp>
+#include <bwmodule.hpp>
 
 namespace bweas {
 class package;
@@ -74,7 +74,7 @@ class bweas::package {
 
   public:
     string name_package;
-    var::struct_sb::version bw_version;
+    sc::version bw_version;
 
     config cfg_package;
 };

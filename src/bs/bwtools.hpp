@@ -10,7 +10,6 @@
 
 #include <bwaliases.hpp>
 
-#include <filesystem>
 #include <fstream>
 
 #ifndef _DEBUG
@@ -87,7 +86,7 @@ class bweas::bwtools {
             mode_open = _file.mode_open;
             open();
         }
-        file(std::filesystem::path _path_to, mode_file::open _mode_open) : path_to(_path_to), mode_open(_mode_open) {
+        file(fs::path _path_to, mode_file::open _mode_open) : path_to(_path_to), mode_open(_mode_open) {
             open();
         }
         ~file() {
@@ -103,7 +102,7 @@ class bweas::bwtools {
             return *this;
         }
 
-        void open(mode_file::open _mode_open, std::filesystem::path _path_to = {}) {
+        void open(mode_file::open _mode_open, fs::path _path_to = {}) {
             if (!_path_to.empty())
                 path_to = _path_to;
             mode_open = _mode_open;
@@ -139,7 +138,7 @@ class bweas::bwtools {
 
       public:
         std::fstream stream;
-        std::filesystem::path path_to;
+        fs::path path_to;
         mode_file::open mode_open;
         bool file_opened{0};
     };

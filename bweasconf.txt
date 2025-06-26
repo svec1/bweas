@@ -1,0 +1,18 @@
+create_call_component(flex, "flex", "lexer.cpp")
+create_call_component(bison, "bison", "parser.cpp")
+create_call_component(clang_obj, "g++", "object.obj")
+create_call_component(clang_exec, "g++", "program.exe")
+
+create_template(template_flex,  "[100] flex(NULL) -> T_PROJECT_SRC_FILES: <'-o'> FBS_CURRENT_OUTPUT_FILE <[T_PROJECT_SRC_FILES:lexer.l]>")
+create_template(template_bison, "[100] bison(NULL) -> T_PROJECT_SRC_FILES: <'-o'> FBS_CURRENT_OUTPUT_FILE <'-H'> <[T_PROJECT_SRC_FILES:parser.y]>")
+create_template(template_obj,   "[1]   clang_obj(NULL) -> OBJ_S: <'-c'> <[T_PROJECT_SRC_FILES:*.cpp]> <'-o'> FBS_CURRENT_OUTPUT_FILE <'-Wall'> <'-std=c++23'> <'-fPIC'> <'-I/home/svec/bweas/src/bs'>")
+create_template(template_exec,  "[0]   clang_exec(OBJ_S) -> EXECUTABLE: <{OBJ_S}> <'-o'> FBS_CURRENT_OUTPUT_FILE <'-llz4'> <'-lluajit-5.1'>")
+
+file(SRC_FILES, 0, "src/bs/*.cpp", "src/bs/lang/*.cpp", "src/bs/lang/lexer.l", "src/bs/lang/parser.y")
+
+project(test, SRC_FILES)
+
+include_directories(test, "src/bs/")
+use_templates(test, "template_flex", "template_bison", "template_obj", "template_exec")
+
+executable(test_program, RELEASE, test)

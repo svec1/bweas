@@ -28,8 +28,6 @@
 #define DEFAULT_COMPILER_C "clang"
 #define DEFAULT_COMPILER_CPP "clang++"
 
-#define PATH_TO_COMPILER_WIN1 "null"
-
 #elif defined(UNIX)
 
 #define RELEASE_FLAGS_COMPILER_CPP "-Wall"
@@ -39,8 +37,6 @@
 
 #define DEFAULT_COMPILER_C "clang"
 #define DEFAULT_COMPILER_CPP "clang++"
-
-#define PATH_TO_COMPILER_UNIX_CL1 "null"
 
 #endif
 

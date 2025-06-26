@@ -8,8 +8,8 @@
 #ifndef BWDEPENDS_INTEGRAL__H
 #define BWDEPENDS_INTEGRAL__H
 
-#include "bwdepends_files.hpp"
-#include "bwgenerator_integral.hpp"
+#include <bwdepends_files.hpp>
+#include <bwgenerator_integral.hpp>
 
 namespace bweas {
 class depends_integral;

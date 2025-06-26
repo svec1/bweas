@@ -33,16 +33,18 @@ static constexpr string VERSION_FULL_STR = {VERSION_MAJOR_C, '.', VERSION_MINOR_
 
 static constexpr auto CONFIG_FILE    = "bweasconf.txt";
 static constexpr auto CACHE_FILE     = "bwcache";
+static constexpr auto DEPENDS_FILE   = "bwdependencies";
 static constexpr auto FORMAT_PACKAGE = ".bweas-package";
 
 // The structure defining the main data for the build
 struct bw_context {
-    vec<var::struct_sb::target_out> out_targets;
-    vec<var::struct_sb::template_command> templates;
-    vec<var::struct_sb::call_component> call_components;
+    vec<sc::target_out> out_targets;
+    vec<sc::template_command> templates;
+    vec<sc::call_component> call_components;
     vec<pair<string, string>> global_external_args;
 
-    var::struct_sb::target_out *current_target;
+    sc::target_out *current_target;
+    string current_work_directory;
 };
 
 } // namespace bweas

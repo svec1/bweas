@@ -10,7 +10,7 @@
 > ``` git clone https://github.com/svec1/bweas.git ```
 
 > [!NOTE]
-> Globally required: CMake
+> Globally required: CMake, C++ compiler(Clang is recommended)
 
 ### Build on Linux
 Before building, you should install the LuaJit and nlohmann-json libraries.
@@ -40,8 +40,8 @@ sudo make install
 **For lz4 and nlohmann-json**
 ```
 cd external
-git clone https://github.com/lz4/lz4
 git clone https://github.com/nlohmann/json
+git clone https://github.com/lz4/lz4
 ```
 > [!IMPORTANT]
 > You don't need to compile it yourself(nlohmann-json and lz4), the cmake call will do it for you next..
@@ -49,7 +49,7 @@ git clone https://github.com/nlohmann/json
 > [!TIP]
 > If you did this, then you need to set the appropriate options for cmake when building:
 ```
-cmake -DUSER_BUILD_LUA=ON -DUSER_BUILD_JSON=ON ..
+cmake -DUSER_BUILD_LUA=ON -DUSER_BUILD_JSON=ON -DUSER_BUILD_LZ4=ON ..
 cmake --build .
 ```
 ***
@@ -83,20 +83,24 @@ set(VAR, 1)
 
 # We create a call component - what will be called
 # This also stores the name pattern of files that the current calling component may create.
-create_call_component(CC, "clang++", "program.exe")
+create_call_component(CC_OBJ, "clang++", "object.obj")
+create_call_component(CC_EXE, "clang++", "program.exe")
 
-# Create a command template. You can use the capabilities that the current generator
-# provides (in this case, a file will be substituted for FBS_CURRENT_OUTPUT_FILE - because filter 1 was selected)
-create_templates(template, "CC(NULL) -> EXECUTABLE: <[T_PROJECT_SRC_FILES]>, <'-o'>, FBS_CURRENT_OUTPUT_FILE:1")
+# Create a command template. You can use the capabilities that the current generator provides
+# In this case, the nth number of commands is generated (based on the number of source files), 
+# since the "feature" of the built-in generator is used: 
+# FBS\_CURRENT\_INPUT\_FILE(single-generate parameter) in conjunction with FBS\_CURRENT\_OUTPUT\_FILE.)
+create_templates(object_file_t, "CC_OBJ(NULL) -> OBJECTS: FBS_CURRENT_INPUT_FILE <'-o'> FBS_CURRENT_OUTPUT_FILE")
+create_templates(executable_file_t, "CC_EXE(OBJECTS) -> EXECUTABLE: <{OBJECTS}> <'-o'> FBS_CURRENT_OUTPUT_FILE")
 
 # Creating a project (there can be as many of them as you like)
 # The number 1 as the second parameter indicates the programming language number
-project(test, 1, "main.cpp")
+project(test, 1, "*.cpp")
 
-# We indicate that the project will use template command generation
-use_templates(test, "template")
+# We specify the templates on the basis of which the commands will be generated
+use_templates(test, "object_file_t", "executable_file_t")
 
-# create a target in the form of an executable file (there can be as many of them as you like)
+# Create a target in the form of an executable file (there can be as many of them as you like)
 executable(test_program, RELEASE, test)
 ```
 

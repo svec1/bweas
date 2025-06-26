@@ -13,7 +13,6 @@
 
 #include <any>
 #include <map>
-#include <mutex>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -701,7 +700,6 @@ class lua {
 
   private:
     lua_State *L{NULL};
-    std::mutex lmutex;
 };
 
 namespace tools {

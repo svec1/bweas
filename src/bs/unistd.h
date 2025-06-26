@@ -32,11 +32,7 @@
 #define isatty _isatty
 #define lseek _lseek
 
-#ifdef _WIN64
 #define ssize_t __int64
-#else
-#define ssize_t long
-#endif
 
 #define STDIN_FILENO 0
 #define STDOUT_FILENO 1

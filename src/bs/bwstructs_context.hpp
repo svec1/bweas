@@ -8,15 +8,12 @@
 #ifndef STATIC_STRUCT_HPP
 #define STATIC_STRUCT_HPP
 
-#include <map>
-#include <memory>
-#include <string>
-#include <vector>
-
 #include <bwtools.hpp>
 
 #include <bwaliases.hpp>
 #include <bwconf_var.hpp>
+
+namespace bweas {
 
 // The name of a variable that, when set to 1,
 // will allow project functions and many target functions
@@ -36,6 +33,7 @@ static constexpr auto PRJ_VAR_NAME_PTH_L             = "_PATH_LINKER";
 static constexpr auto PRJ_VAR_NAME_STD_C             = "_STANDART_C";
 static constexpr auto PRJ_VAR_NAME_STD_CPP           = "_STANDART_CPP";
 static constexpr auto PRJ_VAR_NAME_SRC_FILES         = "_SRC_FILES";
+static constexpr auto PRJ_VAR_NAME_INCLUDE_PATHS     = "_INCLUDE_PATHS";
 static constexpr auto PRJ_VAR_NAME_UTEMPLATES        = "_USE_TEMPLATES";
 static constexpr auto PRJ_VAR_NAME_CUSTOM_EXT_FIELDS = "_CUSTOM_EXTENSION_FIELDS";
 
@@ -60,18 +58,19 @@ static constexpr auto NAME_FIELD_TARGET_CFG  = "TARGET_CFG";
 static constexpr auto NAME_FIELD_TARGET_VER  = "TARGET_VER";
 
 // enum of the name field of project struct
-static constexpr auto NAME_FIELD_PROJECT_NAME       = "T_PROJECT_NAME";
-static constexpr auto NAME_FIELD_PROJECT_VER        = "T_PROJECT_VER";
-static constexpr auto NAME_FIELD_PROJECT_LANG       = "T_PROJECT_LANG";
-static constexpr auto NAME_FIELD_PROJECT_PCOMPILER  = "T_PROJECT_PATH_COMPILER";
-static constexpr auto NAME_FIELD_PROJECT_PLINKER    = "T_PROJECT_PATH_LINKER";
-static constexpr auto NAME_FIELD_PROJECT_RFCOMPILER = "T_PROJECT_RFLAGS_COMPILER";
-static constexpr auto NAME_FIELD_PROJECT_RFLINKER   = "T_PROJECT_RFLAGS_LINKER";
-static constexpr auto NAME_FIELD_PROJECT_DFCOMPILER = "T_PROJECT_DFLAGS_COMPILER";
-static constexpr auto NAME_FIELD_PROJECT_DFLINKER   = "T_PROJECT_DFLAGS_LINKER";
-static constexpr auto NAME_FIELD_PROJECT_STD_C      = "T_PROJECT_STANDART_C";
-static constexpr auto NAME_FIELD_PROJECT_STD_CPP    = "T_PROJECT_STANDART_CPP";
-static constexpr auto NAME_FIELD_PROJECT_SRC_FILES  = "T_PROJECT_SRC_FILES";
+static constexpr auto NAME_FIELD_PROJECT_NAME          = "T_PROJECT_NAME";
+static constexpr auto NAME_FIELD_PROJECT_VER           = "T_PROJECT_VER";
+static constexpr auto NAME_FIELD_PROJECT_LANG          = "T_PROJECT_LANG";
+static constexpr auto NAME_FIELD_PROJECT_PCOMPILER     = "T_PROJECT_PATH_COMPILER";
+static constexpr auto NAME_FIELD_PROJECT_PLINKER       = "T_PROJECT_PATH_LINKER";
+static constexpr auto NAME_FIELD_PROJECT_RFCOMPILER    = "T_PROJECT_RFLAGS_COMPILER";
+static constexpr auto NAME_FIELD_PROJECT_RFLINKER      = "T_PROJECT_RFLAGS_LINKER";
+static constexpr auto NAME_FIELD_PROJECT_DFCOMPILER    = "T_PROJECT_DFLAGS_COMPILER";
+static constexpr auto NAME_FIELD_PROJECT_DFLINKER      = "T_PROJECT_DFLAGS_LINKER";
+static constexpr auto NAME_FIELD_PROJECT_STD_C         = "T_PROJECT_STANDART_C";
+static constexpr auto NAME_FIELD_PROJECT_STD_CPP       = "T_PROJECT_STANDART_CPP";
+static constexpr auto NAME_FIELD_PROJECT_SRC_FILES     = "T_PROJECT_SRC_FILES";
+static constexpr auto NAME_FIELD_PROJECT_INCLUDE_PATHS = "T_PROJECT_INCLUDE_PATHS";
 
 static constexpr auto FEATURE_FIELD_BS_CURRENT_IF = "FBS_CURRENT_INPUT_FILE";
 static constexpr auto FEATURE_FIELD_BS_CURRENT_OF = "FBS_CURRENT_OUTPUT_FILE";
@@ -86,51 +85,52 @@ static constexpr auto NAME_FIELD_CALL_COMPONENT_NAME          = "_NAME";
 static constexpr auto NAME_FIELD_CALL_COMPONENT_NAME_PROGRAM  = "_NAME_PROGRAM";
 static constexpr auto NAME_FIELD_CALL_COMPONENT_PATTERN_FILES = "_PATTERN_FILES";
 
-namespace var {
-namespace struct_sb {
+namespace structs_context {
 
-enum class type_target {
+struct template_command;
+
+enum class target_type {
     exe = 0,
     lib,
     interpret
 };
-enum class configuration {
+enum class target_cfg {
     RELEASE = 0,
     DEBUG
 };
 
-inline string target_t_str(const type_target &target_t) {
-    if (target_t == type_target::exe)
+inline string target_type_str(const target_type &target_t) {
+    if (target_t == target_type::exe)
         return "EXECUTABLE";
-    else if (target_t == type_target::lib)
+    else if (target_t == target_type::lib)
         return "LIBRARY";
-    else if (target_t == type_target::interpret)
+    else if (target_t == target_type::interpret)
         return "RUN-TIME";
     return "null";
 }
-inline string cfg_str(const configuration &target_t) {
-    if (target_t == configuration::RELEASE)
+inline string target_cfg_str(const target_cfg &target_t) {
+    if (target_t == target_cfg::RELEASE)
         return "RELEASE";
-    else if (target_t == configuration::DEBUG)
+    else if (target_t == target_cfg::DEBUG)
         return "DEBUG";
     return "null";
 }
 
-inline type_target to_type_target(string target_t) {
+inline target_type to_target_type(string target_t) {
     if (target_t == "EXECUTABLE")
-        return type_target::exe;
+        return target_type::exe;
     else if (target_t == "LIBRARY")
-        return type_target::lib;
+        return target_type::lib;
     else if (target_t == "RUN-TIME")
-        return type_target::interpret;
-    return type_target::exe;
+        return target_type::interpret;
+    return target_type::exe;
 }
-inline configuration to_cfg(string target_t) {
+inline target_cfg to_target_cfg(string target_t) {
     if (target_t == "RELEASE")
-        return configuration::RELEASE;
+        return target_cfg::RELEASE;
     else if (target_t == "DEBUG")
-        return configuration::DEBUG;
-    return configuration::RELEASE;
+        return target_cfg::DEBUG;
+    return target_cfg::RELEASE;
 }
 
 // structure for naming versions in a style MinorMajorPatch
@@ -211,8 +211,8 @@ struct project {
     }
 
   public:
-    string name_project;
-    version version_project;
+    string name;
+    version version;
 
     string language;
 
@@ -239,12 +239,13 @@ struct target {
 
   public:
     std::shared_ptr<project> prj;
-    type_target target_t;
-    configuration target_cfg;
 
-    string name_target;
+    target_type type;
+    target_cfg cfg;
+
+    string name;
     string name_generator{DEFAULT_BWEAS_GENERATOR};
-    version version_target;
+    version version;
 
     vec<string> target_vec_libs;
 };
@@ -256,14 +257,16 @@ struct target_out {
 
   public:
     project prj;
-    type_target target_t;
-    configuration target_cfg;
 
-    string name_target;
+    target_type type;
+    target_cfg cfg;
+
+    string name;
     string name_generator;
-    version version_target;
+    version version;
 
     vec<string> target_vec_libs;
+    vec<template_command> queue_templates;
 };
 
 struct template_command {
@@ -294,14 +297,29 @@ struct template_command {
   public:
     static template_command create_template_command(string_v template_name, const string &template_str);
 
+    // Creates a stack of templates for the correct sequential generation of commands(for every targets)
+    static vec<template_command> create_queue_target_templates(const vec<template_command> &templates,
+                                                               const vec<string> &templates_target,
+                                                               target_type target_t);
+
+  private:
+    // Recursive function, for create_stack_target_templates
+    static void recovery_queue_target_templates(vec<template_command> &vec_templates,
+                                                vec<template_command> &queue_target_templates,
+                                                const string &name_internal_param);
+
   public:
     string name;
+    pdiff group_id = 0;
 
     string name_call_component;
-    vec<string> name_accept_params;
     string returnable;
 
+    vec<string> name_accept_params;
     vec<arg> args;
+
+  public:
+    bool gen_command_for_single_file = 0;
 };
 
 struct call_component {
@@ -312,7 +330,9 @@ struct call_component {
     string pattern_ret_files;
 };
 
-} // namespace struct_sb
-} // namespace var
+} // namespace structs_context
+} // namespace bweas
+
+namespace sc = bweas::structs_context;
 
 #endif

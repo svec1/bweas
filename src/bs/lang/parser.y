@@ -12,12 +12,13 @@
 #define YYLLOC_UPDATE_GLOBAL_LOC(loc) last_line = loc.last_line; last_column = loc.last_column; 
 
 bweas::logger *log_bison;
-var::scope* current_scope;  
+scope* current_scope;  
 
 statements               stm_s;
 expressions              current_params; // Current statement expressions 
 expression::expression_t expr_t_tmp;     // Current expression type 
 
+string current_statements_str;
 int last_line = 0, last_column = 0;
 
 extern int yylex(void);
@@ -32,7 +33,10 @@ void init_param(char* value){
 
 void init_statement(const decl_func* dfunc){
     stm_s.emplace_back(dfunc, current_params, last_line, last_column); 
+    stm_s[stm_s.size()-1].view_str = current_statements_str;
+
     current_params.clear();
+    current_statements_str.clear();
 }
 
 string get_current_loc(){
@@ -63,7 +67,7 @@ string get_current_loc(){
 %%
 
 statement: 
-         | statement ID OPEN_BR params CLOSE_BR {   //printf("---Statement %s(%s,%s,%s)---\n", $2, current_params[0].value.c_str(), current_params[1].value.c_str(), current_params[2].value.c_str());
+         | statement ID OPEN_BR params CLOSE_BR {   
                                                     if(current_scope->what_type($2) != 10){
                                                         (*log_bison) << bwtools::error << (log_message(log_type::error) << "A variable is expected which is a reference to the function: " << $2); 
                                                         YYERROR;        
@@ -76,7 +80,8 @@ statement:
                  }
 ;
 
-params: param              { 
+params:
+      | param              { 
                              YYLLOC_UPDATE_GLOBAL_LOC(@$) 
                              init_param($1); 
                            }
@@ -91,7 +96,7 @@ param: ID       {
                 }
      | num_expr { 
                     $$ = (char*)malloc(sizeof(char)*10);
-                    sprintf($$, "%d", $1);
+                    sprintf($$, "%td", $1);
                     expr_t_tmp = expression::expression_t::NUMBER; 
                 } 
      | str_expr { 

@@ -10,10 +10,9 @@
 
 #include <algorithm>
 #include <filesystem>
-#include <string>
-#include <vector>
 
 #include <bwaliases.hpp>
+#include <bwtools.hpp>
 
 class bwfile {
   public:
@@ -36,82 +35,42 @@ vec<string> bwfile::file_slc_mask(string mask, const vec<string> &files) {
         return files;
 
     vec<string> slc_files;
-    vec<string> masks;
+    string files_str;
 
-    string mask_tmp;
-    for (size_t i = 0; i < mask.size() + 1; ++i) {
-        if (mask[i] == '|' || i == mask.size()) {
-            if (mask_tmp.empty())
-                continue;
-            else if (std::find(masks.begin(), masks.end(), mask_tmp) == masks.end())
-                masks.push_back(mask_tmp);
-            mask_tmp.clear();
-            continue;
-        }
-        mask_tmp += mask[i];
+    for (const auto &file : files)
+        files_str += file + " ";
+
+    string mask_regex;
+    for (size_t j = 0; j < mask.size(); ++j)
+        if (mask[j] == '*')
+            mask_regex += "\\w+";
+        else if (mask[j] == '.')
+            mask_regex += "\\.";
+        else if (mask[j] == '?')
+            mask_regex += "\\w";
+        else if (mask[j] == '/')
+            mask_regex += "\\/";
+        else
+            mask_regex += mask[j];
+
+    if (mask_regex.find("/") == mask_regex.npos) {
+        std::regex file_mask("[\\/\\w+]*" + mask_regex);
+        for (auto it_match = std::sregex_iterator(files_str.begin(), files_str.end(), file_mask);
+             it_match != std::sregex_iterator(); ++it_match)
+            slc_files.push_back(it_match->str());
     }
+    else {
 
-    for (size_t i = 0; i < masks.size(); ++i) {
-        mask = masks[i];
-        for (size_t j = 0; j < files.size(); ++j) {
-            string mask_tmp{mask};
-            bool success_file = 1;
-
-            size_t sym_file = 0;
-            for (size_t sym = 0; sym < mask_tmp.size(); ++sym, ++sym_file) {
-                if (mask_tmp[sym] == files[j][sym_file] ||
-                    (mask_tmp[sym] == '\\' || mask_tmp[sym] == '/') &&
-                        (files[j][sym_file] == '\\' || files[j][sym_file] == '/'))
-                    continue;
-                else if (mask_tmp[sym] == '?') {
-                    if (sym >= files[j].size() || files[j][sym] == '.') {
-                        success_file = 0;
-                        break;
-                    }
-                    mask_tmp.erase(sym--, 1);
-                    ++sym_file;
-                    continue;
-                }
-                else if (mask_tmp[sym] == '*') {
-                    for (; sym_file < files[j].size(); ++sym_file) {
-                        if (files[j][sym_file] == mask_tmp[sym + 1] ||
-                            (sym + 2 < mask_tmp.size() && mask_tmp[sym + 1] == '?' &&
-                             files[j][sym_file] != mask_tmp[sym + 2]))
-                            goto next_sym_mask;
-                    }
-                    if (sym == mask_tmp.size() - 1)
-                        goto next_sym_mask;
-                skip_file:
-                    success_file = 0;
-                    break;
-
-                next_sym_mask:
-                    if (sym == mask_tmp.size() - 1 && sym_file < files[j].size())
-                        goto skip_file;
-
-                    mask_tmp.erase(sym--, 1);
-                    --sym_file;
-                    continue;
-                }
-                else {
-                    success_file = 0;
-                    break;
-                }
-            }
-            if (sym_file < files[j].size())
-                continue;
-
-            if (success_file)
-                slc_files.push_back(files[j]);
-        }
+        std::regex file_mask(mask_regex);
+        for (auto it_match = std::sregex_iterator(files_str.begin(), files_str.end(), file_mask);
+             it_match != std::sregex_iterator(); ++it_match)
+            slc_files.push_back(it_match->str());
     }
-
     return slc_files;
 }
 
 string bwfile::get_path_file(string name_file) {
-    if (auto path_file = std::filesystem::weakly_canonical(std::filesystem::current_path() / name_file);
-        std::filesystem::is_regular_file(path_file))
+    if (auto path_file = fs::weakly_canonical(fs::current_path() / name_file); fs::is_regular_file(path_file))
         return path_file.string();
 
     return {};
@@ -121,19 +80,18 @@ string bwfile::get_path_file(string name_file, const vec<string> &possible_paths
     if (auto path_file = get_path_file(name_file); !path_file.empty())
         return path_file;
 
-    std::filesystem::path current_path_tmp = std::filesystem::current_path();
-    std::filesystem::path find_path_file;
+    fs::path current_path_tmp = fs::current_path();
+    fs::path find_path_file;
 
     for (const auto &path : possible_paths) {
-        std::filesystem::current_path(std::filesystem::weakly_canonical(path));
-        if (auto path_file = std::filesystem::weakly_canonical(std::filesystem::current_path() / name_file);
-            std::filesystem::is_regular_file(path_file)) {
+        fs::current_path(fs::weakly_canonical(path));
+        if (auto path_file = fs::weakly_canonical(fs::current_path() / name_file); fs::is_regular_file(path_file)) {
             find_path_file = path_file;
             break;
         }
     }
 
-    std::filesystem::current_path(current_path_tmp);
+    fs::current_path(current_path_tmp);
 
     return find_path_file.string();
 }

@@ -15,7 +15,7 @@ vec<decl_func> module_manager::init_mfuncs(modules &mds) {
     vec<decl_func> funcs;
     for (auto &md : mds) {
         for (auto &_decl_func : md.funcs) {
-            _decl_func.func = [&md, &_decl_func](const expressions &expr_s, var::scope &curr_scope) {
+            _decl_func.func = [&md, &_decl_func](const expressions &expr_s, scope &curr_scope) {
                 static umap<string, bwlua::lua> lua_stream_s;
                 if (!lua_stream_s[md.name_module].is_created())
                     lua_stream_s.emplace(md.name_module, bwtools::read_file(bwtools::get_ref_file(

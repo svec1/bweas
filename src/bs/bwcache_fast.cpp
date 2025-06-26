@@ -5,9 +5,7 @@
 // ------------------------------------------
 //
 
-#include <unordered_set>
-
-#include "bwcache_api.hpp"
+#include <bwcache_api.hpp>
 
 using namespace bweas;
 using namespace cache_api;
@@ -45,16 +43,16 @@ string fast_cache::create_cache() {
                             std::to_string(out_targets[i].prj.vec_templates.size()) + " " +
                             std::to_string(out_targets[i].prj.custom_ext_fields.size()) + " " +
                             std::to_string(out_targets[i].target_vec_libs.size()) + " ";
-        for (pdiff j = 0; j < sizeof(var::struct_sb::project); j += sizeof(string)) {
+        for (pdiff j = 0; j < sizeof(sc::project); j += sizeof(string)) {
             // version project
             if (j == sizeof(string)) {
-                serel_target_tmp += (*(var::struct_sb::version *)(prj_v + j)).get_str_version() + " " +
-                                    *(string *)(prj_v + j + sizeof(var::struct_sb::version)) + " ";
-                j += sizeof(var::struct_sb::version) + sizeof(string);
+                serel_target_tmp += (*(sc::version *)(prj_v + j)).get_str_version() + " " +
+                                    *(string *)(prj_v + j + sizeof(sc::version)) + " ";
+                j += sizeof(sc::version) + sizeof(string);
             }
 
             // standart c
-            else if (j == sizeof(string) * 7 + sizeof(var::struct_sb::version) + sizeof(string)) {
+            else if (j == sizeof(string) * 7 + sizeof(sc::version) + sizeof(string)) {
                 serel_target_tmp += std::to_string(*(pdiff *)(prj_v + j)) + " " +
                                     std::to_string(*(pdiff *)(prj_v + j + sizeof(pdiff))) + " ";
                 break;
@@ -75,10 +73,9 @@ string fast_cache::create_cache() {
         for (auto it : out_targets[i].prj.custom_ext_fields)
             serel_target_tmp += it.first + " " + it.second + " ";
 
-        serel_target_tmp += var::struct_sb::target_t_str(out_targets[i].target_t) + " " +
-                            var::struct_sb::cfg_str(out_targets[i].target_cfg) + " " + out_targets[i].name_target +
-                            " " + out_targets[i].name_generator + " " +
-                            out_targets[i].version_target.get_str_version() + " ";
+        serel_target_tmp += sc::target_type_str(out_targets[i].type) + " " + sc::target_cfg_str(out_targets[i].cfg) +
+                            " " + out_targets[i].name + " " + out_targets[i].name_generator + " " +
+                            out_targets[i].version.get_str_version() + " ";
         for (size_t j = 0; j < out_targets[i].target_vec_libs.size(); ++j)
             serel_target_tmp += out_targets[i].target_vec_libs[j] + " ";
     }
@@ -88,19 +85,18 @@ string fast_cache::create_cache() {
     for (size_t i = 0; i < templates.size(); ++i) {
         serel_target_tmp += std::to_string(templates[i].name_accept_params.size()) + " " +
                             std::to_string(templates[i].args.size()) + " " + templates[i].name + " " +
-                            templates[i].name_call_component + " " + templates[i].returnable + " ";
+                            templates[i].name_call_component + " " + templates[i].returnable + " " +
+                            std::to_string(templates[i].group_id) + " ";
 
         all_used_call_component.emplace(templates[i].name_call_component);
 
         for (size_t j = 0; j < templates[i].name_accept_params.size(); ++j)
             serel_target_tmp += templates[i].name_accept_params[j] + " ";
         for (size_t j = 0; j < templates[i].args.size(); ++j) {
-            if (templates[i].args[j].arg_t == var::struct_sb::template_command::arg::type::extglobal)
+            if (templates[i].args[j].arg_t == sc::template_command::arg::type::extglobal)
                 all_used_globally_args.emplace(templates[i].args[j].str_arg);
-            else if (templates[i].args[j].arg_t == var::struct_sb::template_command::arg::type::string)
-                serel_target_tmp += "\"" + templates[i].args[j].str_arg + "\" ";
-            else
-                serel_target_tmp += templates[i].args[j].str_arg + " ";
+
+            serel_target_tmp += "\"" + templates[i].args[j].str_arg + "\" ";
             serel_target_tmp += std::to_string((pdiff)templates[i].args[j].arg_t) + " ";
         }
     }
@@ -108,9 +104,9 @@ string fast_cache::create_cache() {
     serel_target_tmp += std::to_string(all_used_call_component.size()) + " ";
 
     for (const auto &call_component : all_used_call_component) {
-        const auto &ref_call_component = find_if(
-            call_components.begin(), call_components.end(),
-            [call_component](const var::struct_sb::call_component &ccmp) { return ccmp.name == call_component; });
+        const auto &ref_call_component =
+            find_if(call_components.begin(), call_components.end(),
+                    [call_component](const sc::call_component &ccmp) { return ccmp.name == call_component; });
         serel_target_tmp += ref_call_component->name + " \"" + ref_call_component->name_program + "\" " +
                             ref_call_component->pattern_ret_files + " ";
     }
@@ -128,10 +124,10 @@ string fast_cache::create_cache() {
 }
 
 void fast_cache::extract_cache_data(string &&cache_str) {
-    var::struct_sb::target_out trg_tmp;
-    var::struct_sb::template_command tcmd_tmp;
-    var::struct_sb::template_command::arg arg_tmp;
-    var::struct_sb::call_component ccmp_tmp;
+    sc::target_out trg_tmp;
+    sc::template_command tcmd_tmp;
+    sc::template_command::arg arg_tmp;
+    sc::call_component ccmp_tmp;
 
     string str_tmp, str_tmp_key;
 
@@ -199,22 +195,24 @@ void fast_cache::extract_cache_data(string &&cache_str) {
                         tcmd_tmp.name_call_component = str_tmp;
                     else if (count_word == 5)
                         tcmd_tmp.returnable = str_tmp;
-                    else if (count_word >= 6 && count_word < 6 + size_internal_args)
+                    else if (count_word == 6)
+                        tcmd_tmp.group_id = std::stoi(str_tmp);
+                    else if (count_word >= 7 && count_word < 7 + size_internal_args)
                         tcmd_tmp.name_accept_params.push_back(str_tmp);
-                    else if ((count_word >= 6 + size_internal_args &&
-                              count_word < 6 + size_internal_args + (size_external_args * 2)) ||
-                             count_word == 6 + size_internal_args) {
+                    else if ((count_word >= 7 + size_internal_args &&
+                              count_word < 7 + size_internal_args + (size_external_args * 2)) ||
+                             count_word == 7 + size_internal_args) {
                         if (expected_arg_param_str) {
                             arg_tmp.str_arg        = str_tmp;
                             expected_arg_param_str = 0;
                         }
                         else {
-                            arg_tmp.arg_t = (var::struct_sb::template_command::arg::type)std::stoi(str_tmp);
+                            arg_tmp.arg_t = (sc::template_command::arg::type)std::stoi(str_tmp);
                             tcmd_tmp.args.push_back(arg_tmp);
                             expected_arg_param_str = 1;
                         }
                     }
-                    else if (count_word == 6 + size_internal_args + (size_external_args * 2)) {
+                    else if (count_word == 7 + size_internal_args + (size_external_args * 2)) {
                         context->templates.push_back(tcmd_tmp);
                         --size_templates;
 
@@ -252,8 +250,8 @@ void fast_cache::extract_cache_data(string &&cache_str) {
                             offset_byte_prj += sizeof(pdiff);
                         }
                         else if (count_word == 7) {
-                            trg_tmp.prj.version_project = str_tmp;
-                            offset_byte_prj += sizeof(var::struct_sb::version);
+                            trg_tmp.prj.version = str_tmp;
+                            offset_byte_prj += sizeof(sc::version);
                         }
                         else if (count_word == 8) {
                             trg_tmp.prj.language = str_tmp;
@@ -277,7 +275,7 @@ void fast_cache::extract_cache_data(string &&cache_str) {
                                                       size_custom_ext_fields) {
                                 if (str_tmp == "null")
                                     ;
-                                else if (is_beg_custom_field = !is_beg_custom_field) {
+                                else if ((is_beg_custom_field = !is_beg_custom_field)) {
                                     trg_tmp.prj.custom_ext_fields[str_tmp] = "";
                                     str_tmp_key                            = str_tmp;
                                     --count_word;
@@ -287,19 +285,19 @@ void fast_cache::extract_cache_data(string &&cache_str) {
                             }
                             else if (count_word == 17 + size_src_files + size_include_paths + size_vec_templates +
                                                        size_custom_ext_fields)
-                                trg_tmp.target_t = var::struct_sb::to_type_target(str_tmp);
+                                trg_tmp.type = sc::to_target_type(str_tmp);
                             else if (count_word == 17 + size_src_files + size_include_paths + size_vec_templates +
                                                        size_custom_ext_fields + 1)
-                                trg_tmp.target_cfg = var::struct_sb::to_cfg(str_tmp);
+                                trg_tmp.cfg = sc::to_target_cfg(str_tmp);
                             else if (count_word == 17 + size_src_files + size_include_paths + size_vec_templates +
                                                        size_custom_ext_fields + 2)
-                                trg_tmp.name_target = str_tmp;
+                                trg_tmp.name = str_tmp;
                             else if (count_word == 17 + size_src_files + size_include_paths + size_vec_templates +
                                                        size_custom_ext_fields + 3)
                                 trg_tmp.name_generator = str_tmp;
                             else if (count_word == 17 + size_src_files + size_include_paths + size_vec_templates +
                                                        size_custom_ext_fields + 4)
-                                trg_tmp.version_target = str_tmp;
+                                trg_tmp.version = str_tmp;
                             else if (count_word >= 17 + size_src_files + size_include_paths + size_vec_templates +
                                                        size_custom_ext_fields + 5 &&
                                      count_word < 17 + size_src_files + size_include_paths + size_vec_templates +

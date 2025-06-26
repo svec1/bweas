@@ -5,10 +5,10 @@
 // ------------------------------------------
 //
 
-#include "bwpackage.hpp"
+#include <bwpackage.hpp>
 
-#include "tools/bwlz4.hpp"
 #include <nlohmann/json.hpp>
+#include <tools/bwlz4.hpp>
 
 using namespace bweas;
 
@@ -64,7 +64,7 @@ string package::init(data_bw_package _data, bool is_create_pckg) {
     if (!config_json.contains("package-name") || ((name_package = config_json["package-name"]) == ""))
         (_log << bwtools::fatal) << (log_message(log_type::fatal) << "Bweas package name field is empty");
     else if (!config_json.contains("bweas-version") ||
-             ((bw_version = var::struct_sb::version(config_json["bweas-version"])) == "0.0.0"))
+             ((bw_version = sc::version(config_json["bweas-version"])) == "0.0.0"))
         (_log << bwtools::fatal) << (log_message(log_type::fatal) << "Build system version field is empty");
     else if (config_json.contains("custom_fields_project") && config_json["custom_fields_project"].is_object())
         cfg_package.custom_ext_fields_project = config_json["custom_fields_project"];
@@ -190,7 +190,7 @@ void package::load(string_v raw_data_package) {
     prefix_package.erase(0, PACKAGE_PREFIX_BYTE_LENGHT);
     prefix_package.erase(PACKAGE_VERSION_BWEAS_VERSION_LENGHT);
 
-    if (var::struct_sb::version(prefix_package) < var::struct_sb::version(PACKAGE_PREFIX_BYTE))
+    if (sc::version(prefix_package) < sc::version(PACKAGE_PREFIX_BYTE))
         (_log << bwtools::fatal) << (log_message(log_type::fatal)
                                      << "The package of this version is not supported by the build system"
                                      << "[Package: " << data_pckg.size() << " bytes] Ver pckg: " << prefix_package);

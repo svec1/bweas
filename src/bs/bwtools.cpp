@@ -114,7 +114,7 @@ std::string bwtools::get_path_program() {
     return str;
 }
 std::string bwtools::get_current_path() {
-    return std::filesystem::current_path().string();
+    return fs::current_path().string();
 }
 bwtools::file_it bwtools::open_file(std::string_view name_file, file::mode_file::open mode) {
     file_it it = get_iterator_file(name_file);
@@ -125,7 +125,7 @@ bwtools::file_it bwtools::open_file(std::string_view name_file, file::mode_file:
         files[it].open(mode);
         return it;
     }
-    files.emplace_back(std::filesystem::absolute(name_file), mode);
+    files.emplace_back(fs::absolute(name_file), mode);
 
     return files.size() - 1;
 }
@@ -140,14 +140,14 @@ bool bwtools::exist_file(file_it file) {
     return 1;
 }
 bool bwtools::exist_file(std::string_view name_file) {
-    if (std::filesystem::exists(name_file))
+    if (fs::exists(name_file))
         return 1;
     return 0;
 }
 bwtools::file_it bwtools::get_iterator_file(std::string_view name_file) {
     return std::distance(files.begin(),
                          std::find_if(files.begin(), files.end(), [name_file](const bwtools::file &file) {
-                             return file.path_to == std::filesystem::absolute(name_file);
+                             return file.path_to == fs::absolute(name_file);
                          }));
 }
 

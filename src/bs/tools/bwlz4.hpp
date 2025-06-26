@@ -11,15 +11,13 @@
 #include <bwaliases.hpp>
 
 #include <lz4.h>
-#include <string>
-#include <string_view>
 
 #define MB *1048576
 
 namespace bwlz4 {
 
 // Compresses data based on lz4. If unsuccessful, returns an empty string
-static inline std::string compress_data(std::string_view data) {
+static inline string compress_data(string_v data) {
     if (data.size() >= LZ4_MAX_INPUT_SIZE || data.size() == 0)
         return "";
     char *comp_data = (char *)malloc(LZ4_compressBound(data.size()));
@@ -30,7 +28,7 @@ static inline std::string compress_data(std::string_view data) {
         return "";
     }
 
-    std::string comp_data_str(comp_data, size_comp_data);
+    string comp_data_str(comp_data, size_comp_data);
     free(comp_data);
 
     return comp_data_str;
@@ -38,7 +36,7 @@ static inline std::string compress_data(std::string_view data) {
 
 // Decompresses data based on lz4. In case of failure, expected_size = 0 or >= LZ4_MAX_INPUT_SIZE, an empty string is
 // returned.
-static inline std::string decompress_data(std::string_view compress_data, size_t expected_size = 2 MB) {
+static inline string decompress_data(string_v compress_data, size_t expected_size = 2 MB) {
     if (compress_data.size() >= LZ4_MAX_INPUT_SIZE || compress_data.size() == 0)
         return "";
     char *decomp_data = (char *)malloc(expected_size);
@@ -48,7 +46,7 @@ static inline std::string decompress_data(std::string_view compress_data, size_t
         return "";
     }
 
-    std::string decomp_data_str(decomp_data, size_data);
+    string decomp_data_str(decomp_data, size_data);
     free(decomp_data);
 
     return decomp_data_str;

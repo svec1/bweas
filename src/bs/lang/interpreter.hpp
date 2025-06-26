@@ -25,17 +25,16 @@ class interpreter {
     // explicitly marked as called in the semantic analysis)
     void interpret();
 
-    void set_external_scope(var::scope *_external_scope);
-    var::scope &get_current_scope();
+    void set_scope(scope *external_scope);
+    scope &get_scope();
 
-    vec<var::struct_sb::target> export_targets();
+    vec<sc::target> export_targets();
 
     void create_function(const decl_func &func);
     void create_function(string_v name_func, decl_func::func_t func, vec<param> expected_params);
 
   private:
-    var::scope global_scope;
-    var::scope *external_scope = (var::scope *)&global_scope;
+    scope global_scope;
 
     semantic_analyzer smt_analyzer;
 };

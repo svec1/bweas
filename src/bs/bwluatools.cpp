@@ -5,7 +5,7 @@
 // ------------------------------------------
 //
 
-#include "bwluatools.hpp"
+#include <bwluatools.hpp>
 
 #include <bwgntools.hpp>
 #include <lang/scope.hpp>
@@ -13,10 +13,10 @@
 
 using namespace bweas;
 
-lua_tools::table<string_v, any> lua_tools::conv_to_table(const var::struct_sb::project &prj) {
+lua_tools::table<string_v, any> lua_tools::conv_to_table(const sc::project &prj) {
     return lua_tools::table<string_v, any>{
-        {PRJ_VAR_NAME, prj.name_project},
-        {PRJ_VAR_NAME_VER, prj.version_project.get_str_version()},
+        {PRJ_VAR_NAME, prj.name},
+        {PRJ_VAR_NAME_VER, prj.version.get_str_version()},
         {PRJ_VAR_NAME_LANG, prj.language},
         {PRJ_VAR_NAME_PTH_C, prj.path_compiler},
         {PRJ_VAR_NAME_PTH_L, prj.path_linker},
@@ -31,14 +31,14 @@ lua_tools::table<string_v, any> lua_tools::conv_to_table(const var::struct_sb::p
         {PRJ_VAR_NAME_CUSTOM_EXT_FIELDS, bwlua::lua::to_table(prj.custom_ext_fields)}};
 }
 
-lua_tools::array<any> lua_tools::conv_to_table(const vec<var::struct_sb::template_command::arg> &args) {
+lua_tools::array<any> lua_tools::conv_to_table(const vec<sc::template_command::arg> &args) {
     lua_tools::array<any> vec_args;
     for (const auto &arg : args)
         vec_args.emplace_back(lua_tools::array<any>{arg.str_arg, (bwlua::lua::integer)arg.arg_t});
     return vec_args;
 }
 
-lua_tools::table<string_v, any> lua_tools::conv_to_table(const var::struct_sb::template_command &tmp_c) {
+lua_tools::table<string_v, any> lua_tools::conv_to_table(const sc::template_command &tmp_c) {
     return table<string_v, any>{{NAME_FIELD_TEMPLATE_COMMAND_NAME, tmp_c.name},
                                 {NAME_FIELD_TEMPLATE_COMMAND_NAME_CCMP, tmp_c.name_call_component},
                                 {NAME_FIELD_TEMPLATE_COMMAND_NAME_ACCEPTS_ARGS, tmp_c.name_accept_params},
@@ -46,28 +46,24 @@ lua_tools::table<string_v, any> lua_tools::conv_to_table(const var::struct_sb::t
                                 {NAME_FIELD_TEMPLATE_COMMAND_RET, tmp_c.returnable}};
 }
 
-lua_tools::table<string_v, string> lua_tools::conv_to_table(const var::struct_sb::call_component &ccmp) {
+lua_tools::table<string_v, string> lua_tools::conv_to_table(const sc::call_component &ccmp) {
     return lua_tools::table<string_v, string>{{NAME_FIELD_CALL_COMPONENT_NAME, ccmp.name},
                                               {NAME_FIELD_CALL_COMPONENT_NAME_PROGRAM, ccmp.name_program},
                                               {NAME_FIELD_CALL_COMPONENT_PATTERN_FILES, ccmp.pattern_ret_files}};
 }
 
-lua_tools::table<string_v, any> lua_tools::conv_to_table(const var::struct_sb::target &trg_o) {
-    return lua_tools::table<string_v, any>{{TRG_NAME_FIELD_PROJECT, conv_to_table(*trg_o.prj)},
-                                           {TRG_VAR_NAME_TYPE_T, target_t_str(trg_o.target_t)},
-                                           {TRG_VAR_NAME_CFG, cfg_str(trg_o.target_cfg)},
-                                           {TRG_NAME_FIELD_NTARGET, trg_o.name_target},
-                                           {TRG_VAR_NAME_VER, trg_o.version_target.get_str_version()},
-                                           {TRG_VAR_NAME_LLIBS, trg_o.target_vec_libs}};
+lua_tools::table<string_v, any> lua_tools::conv_to_table(const sc::target &trg_o) {
+    return lua_tools::table<string_v, any>{
+        {TRG_NAME_FIELD_PROJECT, conv_to_table(*trg_o.prj)}, {TRG_VAR_NAME_TYPE_T, target_type_str(trg_o.type)},
+        {TRG_VAR_NAME_CFG, target_cfg_str(trg_o.cfg)},       {TRG_NAME_FIELD_NTARGET, trg_o.name},
+        {TRG_VAR_NAME_VER, trg_o.version.get_str_version()}, {TRG_VAR_NAME_LLIBS, trg_o.target_vec_libs}};
 }
 
-lua_tools::table<string_v, any> lua_tools::conv_to_table(const var::struct_sb::target_out &trg_o) {
-    return lua_tools::table<string_v, any>{{TRG_NAME_FIELD_PROJECT, conv_to_table(trg_o.prj)},
-                                           {TRG_VAR_NAME_TYPE_T, target_t_str(trg_o.target_t)},
-                                           {TRG_VAR_NAME_CFG, cfg_str(trg_o.target_cfg)},
-                                           {TRG_NAME_FIELD_NTARGET, trg_o.name_target},
-                                           {TRG_VAR_NAME_VER, trg_o.version_target.get_str_version()},
-                                           {TRG_VAR_NAME_LLIBS, trg_o.target_vec_libs}};
+lua_tools::table<string_v, any> lua_tools::conv_to_table(const sc::target_out &trg_o) {
+    return lua_tools::table<string_v, any>{
+        {TRG_NAME_FIELD_PROJECT, conv_to_table(trg_o.prj)},  {TRG_VAR_NAME_TYPE_T, target_type_str(trg_o.type)},
+        {TRG_VAR_NAME_CFG, target_cfg_str(trg_o.cfg)},       {TRG_NAME_FIELD_NTARGET, trg_o.name},
+        {TRG_VAR_NAME_VER, trg_o.version.get_str_version()}, {TRG_VAR_NAME_LLIBS, trg_o.target_vec_libs}};
 }
 lua_tools::table<string, lua_tools::array<string>> lua_tools::conv_to_table(
     const bweas::depends_files::depends_map &dfiles) {
@@ -77,11 +73,11 @@ lua_tools::table<string, lua_tools::array<string>> lua_tools::conv_to_table(
     return _dfiles;
 }
 
-var::struct_sb::project lua_tools::conv_to_project(lua_tools::table<string, any> prj_t) {
-    var::struct_sb::project prj;
+sc::project lua_tools::conv_to_project(lua_tools::table<string, any> prj_t) {
+    sc::project prj;
 
-    prj.name_project      = std::any_cast<string>(prj_t[PRJ_VAR_NAME]);
-    prj.version_project   = std::any_cast<string>(prj_t[PRJ_VAR_NAME_VER]);
+    prj.name              = std::any_cast<string>(prj_t[PRJ_VAR_NAME]);
+    prj.version           = std::any_cast<string>(prj_t[PRJ_VAR_NAME_VER]);
     prj.language          = std::any_cast<string>(prj_t[PRJ_VAR_NAME_LANG]);
     prj.path_compiler     = std::any_cast<string>(prj_t[PRJ_VAR_NAME_PTH_C]);
     prj.path_linker       = std::any_cast<string>(prj_t[PRJ_VAR_NAME_PTH_L]);
@@ -98,31 +94,30 @@ var::struct_sb::project lua_tools::conv_to_project(lua_tools::table<string, any>
     return prj;
 }
 
-var::struct_sb::target_out lua_tools::conv_to_target(lua_tools::table<string, any> &trg_o_t) {
-    var::struct_sb::target_out trg;
+sc::target_out lua_tools::conv_to_target(lua_tools::table<string, any> &trg_o_t) {
+    sc::target_out trg;
 
-    trg.prj         = conv_to_project(std::any_cast<bwlua::lua::table<string, any>>(trg_o_t[TRG_NAME_FIELD_PROJECT]));
-    trg.target_t    = var::struct_sb::to_type_target(std::any_cast<string>(trg_o_t[TRG_VAR_NAME_TYPE_T]));
-    trg.target_cfg  = var::struct_sb::to_cfg(std::any_cast<string>(trg_o_t[TRG_VAR_NAME_CFG]));
-    trg.name_target = std::any_cast<string>(trg_o_t[TRG_NAME_FIELD_NTARGET]);
-    trg.version_target  = std::any_cast<string>(trg_o_t[TRG_VAR_NAME_VER]);
+    trg.prj     = conv_to_project(std::any_cast<bwlua::lua::table<string, any>>(trg_o_t[TRG_NAME_FIELD_PROJECT]));
+    trg.type    = sc::to_target_type(std::any_cast<string>(trg_o_t[TRG_VAR_NAME_TYPE_T]));
+    trg.cfg     = sc::to_target_cfg(std::any_cast<string>(trg_o_t[TRG_VAR_NAME_CFG]));
+    trg.name    = std::any_cast<string>(trg_o_t[TRG_NAME_FIELD_NTARGET]);
+    trg.version = std::any_cast<string>(trg_o_t[TRG_VAR_NAME_VER]);
     trg.target_vec_libs = std::any_cast<vec<string>>(trg_o_t[TRG_VAR_NAME_LLIBS]);
 
     return trg;
 }
 
-vec<var::struct_sb::template_command::arg> lua_tools::conv_to_args(lua_tools::array<lua_tools::array<any>> args) {
-    vec<var::struct_sb::template_command::arg> _args;
+vec<sc::template_command::arg> lua_tools::conv_to_args(lua_tools::array<lua_tools::array<any>> args) {
+    vec<sc::template_command::arg> _args;
 
     for (const auto &arg : args)
-        _args.emplace_back(std::any_cast<string>(arg[0]),
-                           std::any_cast<var::struct_sb::template_command::arg::type>(arg[1]));
+        _args.emplace_back(std::any_cast<string>(arg[0]), std::any_cast<sc::template_command::arg::type>(arg[1]));
 
     return _args;
 }
 
-var::struct_sb::template_command lua_tools::conv_to_template(lua_tools::table<string, any> &tcmd) {
-    var::struct_sb::template_command _tcmd;
+sc::template_command lua_tools::conv_to_template(lua_tools::table<string, any> &tcmd) {
+    sc::template_command _tcmd;
 
     _tcmd.name                = std::any_cast<string>(tcmd[NAME_FIELD_CALL_COMPONENT_NAME]);
     _tcmd.name_call_component = std::any_cast<string>(tcmd[NAME_FIELD_TEMPLATE_COMMAND_NAME_CCMP]);
@@ -134,8 +129,8 @@ var::struct_sb::template_command lua_tools::conv_to_template(lua_tools::table<st
     return _tcmd;
 }
 
-var::struct_sb::call_component lua_tools::conv_to_call_components(lua_tools::table<string, any> &ccmp) {
-    var::struct_sb::call_component _ccmp;
+sc::call_component lua_tools::conv_to_call_components(lua_tools::table<string, any> &ccmp) {
+    sc::call_component _ccmp;
 
     _ccmp.name              = std::any_cast<string>(ccmp[NAME_FIELD_CALL_COMPONENT_NAME]);
     _ccmp.name_program      = std::any_cast<string>(ccmp[NAME_FIELD_CALL_COMPONENT_NAME_PROGRAM]);
@@ -147,7 +142,7 @@ var::struct_sb::call_component lua_tools::conv_to_call_components(lua_tools::tab
 int lua_tools::get_var(lua_State *L) {
     string name_var           = bwlua::tools::pop_stack<string>(L);
     bwlua::lua::integer var_t = bwlua::tools::pop_stack<integer>(L);
-    var::scope *ref           = (var::scope *)bwlua::tools::pop_stack<integer>(L);
+    scope *ref                = (scope *)bwlua::tools::pop_stack<integer>(L);
     try {
         if (var_t == 1)
             bwlua::tools::push_stack(L, (bwlua::lua::integer)ref->get_var_value<pdiff>(name_var));
@@ -158,13 +153,13 @@ int lua_tools::get_var(lua_State *L) {
         else if (var_t == 4)
             bwlua::tools::push_stack(L, ref->get_var_value<vec<string>>(name_var));
         else if (var_t == 5)
-            bwlua::tools::push_stack(L, conv_to_table(ref->get_var_value<var::struct_sb::project>(name_var)));
+            bwlua::tools::push_stack(L, conv_to_table(ref->get_var_value<sc::project>(name_var)));
         else if (var_t == 6)
-            bwlua::tools::push_stack(L, conv_to_table(ref->get_var_value<var::struct_sb::target>(name_var)));
+            bwlua::tools::push_stack(L, conv_to_table(ref->get_var_value<sc::target>(name_var)));
         else if (var_t == 7)
-            bwlua::tools::push_stack(L, conv_to_table(ref->get_var_value<var::struct_sb::template_command>(name_var)));
+            bwlua::tools::push_stack(L, conv_to_table(ref->get_var_value<sc::template_command>(name_var)));
         else if (var_t == 8)
-            bwlua::tools::push_stack(L, conv_to_table(ref->get_var_value<var::struct_sb::call_component>(name_var)));
+            bwlua::tools::push_stack(L, conv_to_table(ref->get_var_value<sc::call_component>(name_var)));
         else if (var_t == 9)
             bwlua::tools::push_stack(L, ref->get_var_value<std::pair<string, string>>(name_var));
     }
@@ -178,7 +173,7 @@ int lua_tools::get_var(lua_State *L) {
 int lua_tools::set_var(lua_State *L) {
     string name_var = bwlua::tools::pop_stack<string>(L);
     any value       = bwlua::tools::pop_stack<any>(L);
-    var::scope *ref = (var::scope *)bwlua::tools::pop_stack<integer>(L);
+    scope *ref      = (scope *)bwlua::tools::pop_stack<integer>(L);
     try {
         if (value.type() == typeid(pdiff) && !ref->try_create_var(name_var, std::any_cast<pdiff>(value)))
             ref->get_var_value<pdiff>(name_var) = std::any_cast<pdiff>(value);

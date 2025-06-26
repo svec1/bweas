@@ -5,8 +5,8 @@
 // ------------------------------------------
 //
 
-#include "bwcache_api.hpp"
-#include "bwluatools.hpp"
+#include <bwcache_api.hpp>
+#include <bwluatools.hpp>
 
 #include <tools/bwlua.hpp>
 

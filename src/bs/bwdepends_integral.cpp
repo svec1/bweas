@@ -5,8 +5,6 @@
 // ------------------------------------------
 //
 
-#include <regex>
-
 #include <bwdepends_integral.hpp>
 #include <tools/bwfile.hpp>
 
@@ -20,6 +18,12 @@ uset<string> bweas::depends_integral::build_graph_depends_file(string_v name_fil
 
 uset<string> bweas::depends_integral::build_graph_depends_file_c_cpp(string_v name_file,
                                                                      const vec<string> &include_paths) {
+    if (name_file.find(".cpp") == name_file.npos)
+        return {};
+
+    string last_current_path = fs::current_path();
+
+    fs::current_path(fs::path(name_file).parent_path());
     uset<string> graph_depends_file;
 
     try {
@@ -27,42 +31,39 @@ uset<string> bweas::depends_integral::build_graph_depends_file_c_cpp(string_v na
         string src_file       = bwtools::read_file(bwtools::get_ref_file(file));
         bool is_system_header = 0;
 
-        pdiff pos_include = 0;
+        std::regex include_line_syntax(R"(#include\s+(<[\/\w+]+(?:\.\w+)?>)|(\"[\/\w+]+(?:\.\w+)?\"))");
+        for (auto it_match = std::sregex_iterator(src_file.begin(), src_file.end(), include_line_syntax);
+             it_match != std::sregex_iterator(); ++it_match) {
+            string include_file = (*it_match)[0].str();
 
-        src_file = std::regex_replace(src_file, std::regex{" "}, "");
+            if (include_file.find("#include ") == 0)
+                include_file.erase(0, 9);
 
-        while ((pos_include = src_file.find("#include")) != src_file.npos) {
-            if (auto pos_path = src_file.find_first_of("\"<"); pos_path == pos_include + 8) {
-                if (src_file[pos_path++] == '<')
-                    is_system_header = 1;
+            if (include_file.find('<') == 0)
+                is_system_header = 1;
 
-                string include_file_path;
-                while (pos_path < src_file.size() && src_file[pos_path] != '\"' && src_file[pos_path] != '>')
-                    include_file_path += src_file[pos_path++];
+            include_file.erase(0, 1);
+            include_file.erase(include_file.size() - 1, 1);
 
-                if (include_file_path.find(".hpp") == include_file_path.npos)
-                    goto next_include;
+            if (include_file.find(".hpp") == include_file.npos)
+                continue;
 
-                if (is_system_header)
-                    include_file_path = bwfile::get_path_file(include_file_path, include_paths);
-                else
-                    include_file_path = bwfile::get_path_file(include_file_path);
-
-                graph_depends_file.insert(include_file_path);
-                graph_depends_file.merge(build_graph_depends_file_c_cpp(include_file_path, include_paths));
-
-            next_include:
-                src_file.erase(pos_include, pos_path + 1);
-            }
+            if (is_system_header)
+                include_file = bwfile::get_path_file(include_file, include_paths);
             else
-                throw std::runtime_error("Invalid syntax");
+                include_file = bwfile::get_path_file(include_file);
+
+            graph_depends_file.insert(include_file);
+            graph_depends_file.merge(build_graph_depends_file_c_cpp(include_file, include_paths));
         }
 
         bwtools::close_file(file);
     }
     catch (std::exception &excp) {
-        throw std::runtime_error(name_file.data() + string("->") + excp.what());
+        throw std::runtime_error(fs::path(name_file).filename().c_str() + string("->") + excp.what());
     }
+
+    fs::current_path(last_current_path);
 
     return graph_depends_file;
 }

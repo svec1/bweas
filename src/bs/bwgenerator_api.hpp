@@ -11,9 +11,9 @@
 #include <functional>
 #include <string_view>
 
-#include "bw_defs.hpp"
-#include "bwdepends_files.hpp"
-#include "bwluatools.hpp"
+#include <bw_defs.hpp>
+#include <bwdepends_files.hpp>
+#include <bwluatools.hpp>
 
 namespace bweas {
 
@@ -41,8 +41,7 @@ using func_get_input_files          = std::function<void(data_transfer &)>;
 
 // A temporary structure that allows you to transfer data to the generator and its sub-functions
 struct bweas::generator_api::data_transfer {
-    data_transfer(bw_context *const _context, string _work_directory)
-        : context(_context), work_directory(_work_directory) {
+    data_transfer(bw_context *const _context) : context(_context) {
     }
 
   public:
@@ -50,7 +49,6 @@ struct bweas::generator_api::data_transfer {
 
     depends_files::depends_map dfiles;
     files_input ifiles;
-    string work_directory;
 };
 
 struct bweas::generator_api::command {
@@ -66,7 +64,7 @@ struct bweas::generator_api::command {
     string name_program;
 
     vec<string> args;
-    vec<string> depends_command;
+    uset<string> depends_command;
 
   public:
     size_t pid_execute_process = 0;

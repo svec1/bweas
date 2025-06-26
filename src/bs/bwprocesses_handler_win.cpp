@@ -61,7 +61,6 @@ void processes_handler::create_process(generator_api::command &cmd) {
     string str_args;
     for (const auto &arg : cmd.args)
         str_args += arg + " ";
-    str_args.erase(str_args.size() - 1, 1);
 
     if (!CreateProcess(NULL, ("\"" + cmd.name_program + "\" " + str_args).data(), NULL, NULL, FALSE, 0, NULL, NULL, &si,
                        &pi)) {

@@ -8,10 +8,8 @@
 #ifndef BWGENERATOR_INTEGRAL_HPP
 #define BWGENERATOR_INTEGRAL_HPP
 
-#include <map>
-
-#include "bw_defs.hpp"
-#include "bwgenerator_api.hpp"
+#include <bw_defs.hpp>
+#include <bwgenerator_api.hpp>
 
 namespace bweas {
 class integral_generator;

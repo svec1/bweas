@@ -5,7 +5,7 @@
 // ------------------------------------------
 //
 
-#include "bwgntools.hpp"
+#include <bwgntools.hpp>
 
 using namespace bweas;
 
@@ -24,44 +24,40 @@ string generator_tools::get_name_output_file(string pattern_file, size_t index, 
 }
 
 bool generator_tools::should_uses_src_file(string_v src_file, string_v output_file, const uset<string> &dfiles) {
-    if (std::filesystem::is_regular_file(output_file) &&
-        std::filesystem::last_write_time(CACHE_FILE) > std::filesystem::last_write_time(output_file))
+    if (fs::is_regular_file(output_file) && fs::last_write_time(CACHE_FILE) > fs::last_write_time(output_file))
         return 1;
-    else if (!std::filesystem::is_regular_file(output_file) ||
-             std::filesystem::last_write_time(output_file) < std::filesystem::last_write_time(src_file))
+    else if (!fs::is_regular_file(output_file) || fs::last_write_time(output_file) < fs::last_write_time(src_file))
         return 1;
 
     for (const auto &dfile : dfiles)
-        if (std::filesystem::last_write_time(output_file) < std::filesystem::last_write_time(dfile))
+        if (fs::last_write_time(output_file) < fs::last_write_time(dfile))
             return 1;
 
     return 0;
 }
 
-void generator_tools::parse_basic_args(const var::struct_sb::target_out &target,
-                                       vec<var::struct_sb::template_command> &target_queue_templates,
+void generator_tools::parse_basic_args(const sc::target_out &target, vec<sc::template_command> &target_queue_templates,
                                        const vec<pair<string, string>> &global_extern_args) {
     for (auto &trg_template : target_queue_templates) {
         for (size_t i = 0; i < trg_template.args.size(); ++i) {
-            var::struct_sb::template_command::arg &current_arg = trg_template.args[i];
-            if (current_arg.arg_t == var::struct_sb::template_command::arg::type::string ||
-                current_arg.arg_t == var::struct_sb::template_command::arg::type::features ||
-                current_arg.arg_t == var::struct_sb::template_command::arg::type::internal)
+            sc::template_command::arg &current_arg = trg_template.args[i];
+            if (current_arg.arg_t == sc::template_command::arg::type::string ||
+                current_arg.arg_t == sc::template_command::arg::type::features ||
+                current_arg.arg_t == sc::template_command::arg::type::internal)
                 continue;
-            else if (current_arg.arg_t == var::struct_sb::template_command::arg::type::extglobal) {
+            else if (current_arg.arg_t == sc::template_command::arg::type::extglobal) {
                 const auto &extern_arg = std::find_if(global_extern_args.begin(), global_extern_args.end(),
                                                       [current_arg](const std::pair<string, string> extern_arg_tmp) {
                                                           return extern_arg_tmp.first == current_arg.str_arg;
                                                       });
                 if (extern_arg == global_extern_args.end())
-                    throw "[" + trg_template.name + "] The specified external parameter does not exist - " +
-                        current_arg.str_arg;
+                    throw std::runtime_error("The specified external parameter does not exist: " + current_arg.str_arg);
 
                 current_arg.str_arg = extern_arg->second;
             }
-            else if (current_arg.arg_t == var::struct_sb::template_command::arg::type::trgfield) {
+            else if (current_arg.arg_t == sc::template_command::arg::type::trgfield) {
                 if (current_arg.str_arg == NAME_FIELD_TARGET_NAME)
-                    current_arg.str_arg = target.name_target;
+                    current_arg.str_arg = target.name;
                 else if (current_arg.str_arg == NAME_FIELD_TARGET_LIBS) {
                     current_arg.str_arg = "";
                     for (size_t k = 0; k < target.target_vec_libs.size(); ++k) {
@@ -71,15 +67,15 @@ void generator_tools::parse_basic_args(const var::struct_sb::target_out &target,
                     }
                 }
                 else if (current_arg.str_arg == NAME_FIELD_TARGET_TYPE)
-                    current_arg.str_arg = var::struct_sb::target_t_str(target.target_t);
+                    current_arg.str_arg = sc::target_type_str(target.type);
                 else if (current_arg.str_arg == NAME_FIELD_TARGET_CFG)
-                    current_arg.str_arg = var::struct_sb::cfg_str(target.target_cfg);
+                    current_arg.str_arg = sc::target_cfg_str(target.cfg);
                 else if (current_arg.str_arg == NAME_FIELD_TARGET_VER)
-                    current_arg.str_arg = target.version_target.get_str_version();
+                    current_arg.str_arg = target.version.get_str_version();
                 else if (current_arg.str_arg == NAME_FIELD_PROJECT_NAME)
-                    current_arg.str_arg = target.prj.name_project;
+                    current_arg.str_arg = target.prj.name;
                 else if (current_arg.str_arg == NAME_FIELD_PROJECT_VER)
-                    current_arg.str_arg = target.prj.version_project.get_str_version();
+                    current_arg.str_arg = target.prj.version.get_str_version();
                 else if (current_arg.str_arg == NAME_FIELD_PROJECT_LANG)
                     current_arg.str_arg = target.prj.language;
                 else if (current_arg.str_arg == NAME_FIELD_PROJECT_PCOMPILER)
@@ -98,13 +94,13 @@ void generator_tools::parse_basic_args(const var::struct_sb::target_out &target,
                     current_arg.str_arg = std::to_string(target.prj.standart_c);
                 else if (current_arg.str_arg == NAME_FIELD_PROJECT_STD_CPP)
                     current_arg.str_arg = std::to_string(target.prj.standart_cpp);
-                else if (current_arg.str_arg == "single" || current_arg.str_arg == "all")
+                else if (current_arg.str_arg.find(NAME_FIELD_PROJECT_SRC_FILES) != current_arg.str_arg.npos)
                     continue;
                 else
-                    throw "[" + trg_template.name + "] There is no such parameter - " + current_arg.str_arg;
+                    throw std::runtime_error("There is no such parameter: " + current_arg.str_arg);
             }
 
-            current_arg.arg_t = var::struct_sb::template_command::arg::type::string;
+            current_arg.arg_t = sc::template_command::arg::type::string;
         }
     }
 }
@@ -113,8 +109,6 @@ string generator_tools::build_string_command(const generator_api::command &cmd) 
     string cmd_str = cmd.name_program + " ";
     for (const auto &arg : cmd.args)
         cmd_str += arg + " ";
-
-    cmd_str.erase(cmd_str.size() - 1); // remove charected of space
 
     return cmd_str;
 }

@@ -9,6 +9,8 @@
 #define BWALIASES_HPP
 
 #include <any>
+#include <array>
+#include <filesystem>
 #include <map>
 #include <regex>
 #include <string>
@@ -20,8 +22,10 @@
 
 #include <bwmacros_platform.h>
 
-template <typename T> using vec              = std::vector<T>;
-template <typename T> using uset             = std::unordered_set<T>;
+template <typename T> using vec                = std::vector<T>;
+template <typename T, size_t Size> using array = std::array<T, Size>;
+template <typename T> using uset               = std::unordered_set<T>;
+
 template <typename K, typename V> using pair = std::pair<K, V>;
 template <typename K, typename V> using map  = std::map<K, V>;
 template <typename K, typename V> using umap = std::unordered_map<K, V>;
@@ -30,5 +34,7 @@ using pdiff    = std::ptrdiff_t;
 using string   = std::string;
 using string_v = std::string_view;
 using any      = std::any;
+
+namespace fs = std::filesystem;
 
 #endif

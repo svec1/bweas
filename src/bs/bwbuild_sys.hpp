@@ -108,6 +108,9 @@ class bweas::builder final {
      */
     size_t gen_cache_target();
 
+    depends_files::depends_map load_depends_file(std::unique_ptr<depends_files> &_depends_files,
+                                                 const sc::target_out target);
+
   private:
     /** \brief Collects projects(out_targets) by initializing the generator and calling(bwIGenerator::gen_commands)
      *
@@ -116,15 +119,6 @@ class bweas::builder final {
 
     // Deserializes the bweas cache file
     void deserl_cache();
-
-  private:
-    // Creates a stack of templates for the correct sequential generation of commands(for every targets)
-    vec<var::struct_sb::template_command> create_queue_target_templates(const var::struct_sb::target_out &target);
-
-    // Recursive function, for create_stack_target_templates
-    void recovery_queue_target_templates(vec<var::struct_sb::template_command> &vec_templates,
-                                         const string &name_internal_param,
-                                         vec<var::struct_sb::template_command> &queue_target_templates);
 
   protected:
     /**
@@ -143,7 +137,7 @@ class bweas::builder final {
     vec<decl_func> external_modules_funcs;
 
   private:
-    var::struct_sb::version version{VERSION_FULL_STR};
+    sc::version version{VERSION_FULL_STR};
     mode_working mode_bweas{mode_working::undef};
 
     string path_bweas_config, path_bweas_to_build;

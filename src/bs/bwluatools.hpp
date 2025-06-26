@@ -10,7 +10,7 @@
 
 #include <bwdepends_files.hpp>
 
-#include <lang/static_struct.hpp>
+#include <bwstructs_context.hpp>
 #include <tools/bwlua.hpp>
 
 namespace bweas {
@@ -43,28 +43,28 @@ class bweas::lua_tools {
 
     // Functions for converting standard bweas structures into appropriate containers for lua
   public:
-    static table<string_v, any> conv_to_table(const var::struct_sb::project &prj);
+    static table<string_v, any> conv_to_table(const sc::project &prj);
 
-    static array<any> conv_to_table(const vec<var::struct_sb::template_command::arg> &args);
-    static table<string_v, any> conv_to_table(const var::struct_sb::template_command &tmp_c);
+    static array<any> conv_to_table(const vec<sc::template_command::arg> &args);
+    static table<string_v, any> conv_to_table(const sc::template_command &tmp_c);
 
-    static table<string_v, string> conv_to_table(const var::struct_sb::call_component &ccmp);
+    static table<string_v, string> conv_to_table(const sc::call_component &ccmp);
 
-    static table<string_v, any> conv_to_table(const var::struct_sb::target &trg_o);
-    static table<string_v, any> conv_to_table(const var::struct_sb::target_out &trg_o);
+    static table<string_v, any> conv_to_table(const sc::target &trg_o);
+    static table<string_v, any> conv_to_table(const sc::target_out &trg_o);
 
     static table<string, array<string>> conv_to_table(const bweas::depends_files::depends_map &dfiles);
 
     // Functions for converting containers for lua to the corresponding bweas structures
   public:
-    static var::struct_sb::project conv_to_project(table<string, any> prj_t);
+    static sc::project conv_to_project(table<string, any> prj_t);
 
-    static vec<var::struct_sb::template_command::arg> conv_to_args(array<array<any>> args);
-    static var::struct_sb::template_command conv_to_template(table<string, any> &tcmd);
+    static vec<sc::template_command::arg> conv_to_args(array<array<any>> args);
+    static sc::template_command conv_to_template(table<string, any> &tcmd);
 
-    static var::struct_sb::call_component conv_to_call_components(table<string, any> &ccmp);
+    static sc::call_component conv_to_call_components(table<string, any> &ccmp);
 
-    static var::struct_sb::target_out conv_to_target(table<string, any> &trg_o_t);
+    static sc::target_out conv_to_target(table<string, any> &trg_o_t);
 
     // Auxiliary functions for lua scripts for interacting with bweas (wrappers over bweas functions)
   public:

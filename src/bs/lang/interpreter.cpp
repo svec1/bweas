@@ -7,13 +7,14 @@
 
 #include "interpreter.hpp"
 
-static logger _log{"INTERPRETER[BWLANG]"};
+static logger _log{"INTERPRETER"};
 
 extern FILE *yyin;
 extern int yyparse(void);
 
-extern var::scope *current_scope;
 extern bweas::logger *log_bison;
+
+extern scope *current_scope;
 extern statements stm_s;
 
 interpreter::interpreter(string_v name_file) : global_scope{_log}, smt_analyzer{_log} {
@@ -21,13 +22,12 @@ interpreter::interpreter(string_v name_file) : global_scope{_log}, smt_analyzer{
     log_bison     = &_log;
     current_scope = &global_scope;
 
+    global_scope.create_var<decl_func>(STR_KEYWORD_IF, decl_func(STR_KEYWORD_IF, NULL, {param_type::LNUM_OR_ID_VAR}));
+    global_scope.create_var<decl_func>(STR_KEYWORD_ELSE, decl_func(STR_KEYWORD_ELSE, NULL, {}));
+    global_scope.create_var<decl_func>(STR_KEYWORD_ENDIF, decl_func(STR_KEYWORD_ENDIF, NULL, {}));
+
     if (yyin == NULL)
         (_log << bwtools::fatal) << (log_message(log_type::fatal) << "Not found file: " << name_file);
-}
-
-void interpreter::set_external_scope(var::scope *_external_scope) {
-    external_scope = _external_scope;
-    current_scope  = &(*external_scope);
 }
 
 void interpreter::interpret() {
@@ -35,20 +35,21 @@ void interpreter::interpret() {
     smt_analyzer.analysis(stm_s, *current_scope);
 }
 
-vec<var::struct_sb::target> interpreter::export_targets() {
-    const vec<std::pair<string, var::struct_sb::target>> &vec_targets_ref =
-        global_scope.get_vector_variables_t<var::struct_sb::target>();
+vec<sc::target> interpreter::export_targets() {
+    const vec<std::pair<string, sc::target>> &vec_targets_ref = global_scope.get_vector_variables_t<sc::target>();
 
-    vec<var::struct_sb::target> targets;
+    vec<sc::target> targets;
     for (size_t i = 0; i < vec_targets_ref.size(); ++i)
         targets.push_back(vec_targets_ref[i].second);
 
     return targets;
 }
 
-var::scope &interpreter::get_current_scope() {
-    if (external_scope != &global_scope)
-        return *external_scope;
+void interpreter::set_scope(scope *external_scope) {
+    current_scope = &(*external_scope);
+}
+
+scope &interpreter::get_scope() {
     return *current_scope;
 }
 

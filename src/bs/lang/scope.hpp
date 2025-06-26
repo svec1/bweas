@@ -8,22 +8,15 @@
 #ifndef SCOPE_HPP
 #define SCOPE_HPP
 
-#include <string>
-#include <vector>
-
 #include <bwlogger.hpp>
 
+#include <bwstructs_context.hpp>
 #include <lang/expression.hpp>
-#include <lang/static_struct.hpp>
 #include <lang/var.hpp>
-
-#include <tools/call_cmd.hpp>
 
 extern string get_current_loc();
 
 using namespace bweas;
-
-namespace var {
 
 inline string type_var_to_str(size_t ind) {
     if (ind == 1)
@@ -85,24 +78,21 @@ class scope {
     // 0  - undefined
     inline size_t what_type(string name_var);
 
-  public:
-    call_cmd_manager call_cmd;
-
   private:
     logger &_log;
 
-    var::datatype_var<decl_func> funcs_v;
+    container_vars<decl_func> funcs_v;
 
-    var::datatype_var<pdiff> int_v;
-    var::datatype_var<string> str_v;
-    var::datatype_var<struct_sb::project> prj_v;
-    var::datatype_var<struct_sb::target> trg_v;
-    var::datatype_var<vec<pdiff>> vec_int_v;
-    var::datatype_var<vec<string>> vec_str_v;
+    container_vars<pdiff> int_v;
+    container_vars<string> str_v;
+    container_vars<sc::project> prj_v;
+    container_vars<sc::target> trg_v;
+    container_vars<vec<pdiff>> vec_int_v;
+    container_vars<vec<string>> vec_str_v;
 
-    var::datatype_var<struct_sb::template_command> tcmd_v;
-    var::datatype_var<struct_sb::call_component> ccmp_v;
-    var::datatype_var<pair<string, string>> global_ext_args_v;
+    container_vars<sc::template_command> tcmd_v;
+    container_vars<sc::call_component> ccmp_v;
+    container_vars<pair<string, string>> global_ext_args_v;
 };
 
 template <typename T> inline T &scope::create_var(string name_var, T val) {
@@ -114,11 +104,11 @@ template <typename T> inline T &scope::create_var(string name_var, T val) {
         if (!str_v.create_var(name_var, val))
             return str_v.get_val_ref(name_var);
     }
-    else if constexpr (std::is_same_v<T, struct_sb::project>) {
+    else if constexpr (std::is_same_v<T, sc::project>) {
         if (!prj_v.create_var(name_var, val))
             return prj_v.get_val_ref(name_var);
     }
-    else if constexpr (std::is_same_v<T, struct_sb::target>) {
+    else if constexpr (std::is_same_v<T, sc::target>) {
         if (!trg_v.create_var(name_var, val))
             return trg_v.get_val_ref(name_var);
     }
@@ -130,11 +120,11 @@ template <typename T> inline T &scope::create_var(string name_var, T val) {
         if (!vec_str_v.create_var(name_var, val))
             return vec_str_v.get_val_ref(name_var);
     }
-    else if constexpr (std::is_same_v<T, struct_sb::template_command>) {
+    else if constexpr (std::is_same_v<T, sc::template_command>) {
         if (!tcmd_v.create_var(name_var, val))
             return tcmd_v.get_val_ref(name_var);
     }
-    else if constexpr (std::is_same_v<T, struct_sb::call_component>) {
+    else if constexpr (std::is_same_v<T, sc::call_component>) {
         if (!ccmp_v.create_var(name_var, val))
             return ccmp_v.get_val_ref(name_var);
     }
@@ -160,17 +150,17 @@ template <typename T> inline bool scope::try_create_var(string name_var, T val) 
         creates = int_v.create_var(name_var, val);
     else if constexpr (std::is_same_v<T, string>)
         creates = str_v.create_var(name_var, val);
-    else if constexpr (std::is_same_v<T, struct_sb::project>)
+    else if constexpr (std::is_same_v<T, sc::project>)
         creates = prj_v.create_var(name_var, val);
-    else if constexpr (std::is_same_v<T, struct_sb::target>)
+    else if constexpr (std::is_same_v<T, sc::target>)
         creates = trg_v.create_var(name_var, val);
     else if constexpr (std::is_same_v<T, vec<pdiff>>)
         creates = vec_int_v.create_var(name_var, val);
     else if constexpr (std::is_same_v<T, vec<string>>)
         creates = vec_str_v.create_var(name_var, val);
-    else if constexpr (std::is_same_v<T, struct_sb::template_command>)
+    else if constexpr (std::is_same_v<T, sc::template_command>)
         creates = tcmd_v.create_var(name_var, val);
-    else if constexpr (std::is_same_v<T, struct_sb::call_component>)
+    else if constexpr (std::is_same_v<T, sc::call_component>)
         creates = ccmp_v.create_var(name_var, val);
     else if constexpr (std::is_same_v<T, pair<string, string>>)
         creates = global_ext_args_v.create_var(name_var, val);
@@ -187,17 +177,17 @@ template <typename T> inline void scope::delete_var(string name_var) {
         err_handling = int_v.delete_var(name_var);
     else if constexpr (std::is_same_v<T, string>)
         err_handling = str_v.delete_var(name_var);
-    else if constexpr (std::is_same_v<T, struct_sb::project>)
+    else if constexpr (std::is_same_v<T, sc::project>)
         err_handling = prj_v.delete_var(name_var);
-    else if constexpr (std::is_same_v<T, struct_sb::target>)
+    else if constexpr (std::is_same_v<T, sc::target>)
         err_handling = trg_v.delete_var(name_var);
     else if constexpr (std::is_same_v<T, vec<pdiff>>)
         err_handling = vec_int_v.delete_var(name_var);
     else if constexpr (std::is_same_v<T, vec<string>>)
         err_handling = vec_str_v.delete_var(name_var);
-    else if constexpr (std::is_same_v<T, struct_sb::template_command>)
+    else if constexpr (std::is_same_v<T, sc::template_command>)
         err_handling = tcmd_v.delete_var(name_var);
-    else if constexpr (std::is_same_v<T, struct_sb::call_component>)
+    else if constexpr (std::is_same_v<T, sc::call_component>)
         err_handling = ccmp_v.delete_var(name_var);
     else if constexpr (std::is_same_v<T, pair<string, string>>)
         err_handling = global_ext_args_v.delete_var(name_var);
@@ -217,11 +207,11 @@ template <typename T> inline T &scope::get_var_value(string name_var) {
         if (str_v.is_exist_var(name_var))
             return str_v.get_val_ref(name_var);
     }
-    else if constexpr (std::is_same_v<T, struct_sb::project>) {
+    else if constexpr (std::is_same_v<T, sc::project>) {
         if (prj_v.is_exist_var(name_var))
             return prj_v.get_val_ref(name_var);
     }
-    else if constexpr (std::is_same_v<T, struct_sb::target>) {
+    else if constexpr (std::is_same_v<T, sc::target>) {
         if (trg_v.is_exist_var(name_var))
             return trg_v.get_val_ref(name_var);
     }
@@ -233,11 +223,11 @@ template <typename T> inline T &scope::get_var_value(string name_var) {
         if (vec_str_v.is_exist_var(name_var))
             return vec_str_v.get_val_ref(name_var);
     }
-    else if constexpr (std::is_same_v<T, struct_sb::template_command>) {
+    else if constexpr (std::is_same_v<T, sc::template_command>) {
         if (tcmd_v.is_exist_var(name_var))
             return tcmd_v.get_val_ref(name_var);
     }
-    else if constexpr (std::is_same_v<T, struct_sb::call_component>) {
+    else if constexpr (std::is_same_v<T, sc::call_component>) {
         if (ccmp_v.is_exist_var(name_var))
             return ccmp_v.get_val_ref(name_var);
     }
@@ -263,17 +253,17 @@ template <typename T> inline vec<pair<string, T>> &scope::get_vector_variables_t
         return int_v.get_vector_variables();
     else if constexpr (std::is_same_v<T, string>)
         return str_v.get_vector_variables();
-    else if constexpr (std::is_same_v<T, struct_sb::project>)
+    else if constexpr (std::is_same_v<T, sc::project>)
         return prj_v.get_vector_variables();
-    else if constexpr (std::is_same_v<T, struct_sb::target>)
+    else if constexpr (std::is_same_v<T, sc::target>)
         return trg_v.get_vector_variables();
     else if constexpr (std::is_same_v<T, vec<pdiff>>)
         return vec_int_v.get_vector_variables();
     else if constexpr (std::is_same_v<T, vec<string>>)
         return vec_str_v.get_vector_variables();
-    else if constexpr (std::is_same_v<T, struct_sb::template_command>)
+    else if constexpr (std::is_same_v<T, sc::template_command>)
         return tcmd_v.get_vector_variables();
-    else if constexpr (std::is_same_v<T, struct_sb::call_component>)
+    else if constexpr (std::is_same_v<T, sc::call_component>)
         return ccmp_v.get_vector_variables();
     else if constexpr (std::is_same_v<T, pair<string, string>>)
         return global_ext_args_v.get_vector_variables();
@@ -330,7 +320,5 @@ inline void scope::clear() {
     global_ext_args_v.clear();
     funcs_v.clear();
 }
-
-} // namespace var
 
 #endif

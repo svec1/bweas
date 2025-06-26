@@ -20,7 +20,7 @@ class bweas::depends_files {
     depends_files(const string_v _language, const string_v _work_directory)
         : language(_language), work_directory(_work_directory) {
     }
-    ~depends_files() = default;
+    virtual ~depends_files() = default;
 
   public:
     // file, dependencies

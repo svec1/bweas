@@ -11,6 +11,7 @@
 #include <bw_defs.hpp>
 
 #include <bwgenerator_api.hpp>
+#include <bwgntools.hpp>
 
 namespace bweas {
 class processes_handler;

@@ -11,9 +11,14 @@
 #include "parser.hpp"
 
 #define YY_USER_ACTION \
+    { \
+        int yytext_len = strlen(yytext); \  
+        if(yytext[yytext_len-1] != ' ' && yytext[yytext_len-1] != '\t' && yytext[yytext_len-1] != '\n' && yytext[yytext_len-1] != '\r') \
+            current_statements_str += yytext; \
+    } \
     yylloc.first_line = yylloc.last_line; \
     yylloc.first_column = yylloc.last_column; \
-    for(int i = 0; yytext[i] != '\0'; ++i) \
+    for(int i = 0; i < yytext[i] != '\0'; ++i) \
         if(yytext[i] == '\n') { \
             yylloc.last_line++; \
             yylloc.last_column = 0; \
@@ -21,7 +26,8 @@
         else \
             yylloc.last_column++; 
 
-extern var::scope* current_scope;
+extern scope* current_scope;
+extern string current_statements_str;
 
 %}
 

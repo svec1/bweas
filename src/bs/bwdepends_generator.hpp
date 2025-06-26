@@ -8,7 +8,7 @@
 #ifndef BWDEPENDS_GENERATOR_HPP
 #define BWDEPENDS_GENERATOR_HPP
 
-#include "bwgenerator_api.hpp"
+#include <bwgenerator_api.hpp>
 
 namespace bweas {
 class depends_generator;
