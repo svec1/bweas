@@ -11,22 +11,44 @@ using namespace bweas;
 
 void processes_handler::start(std::function<void(const generator_api::command &cmd)> do_more_func) {
     for (size_t i = 0; i < cmd_s.size(); ++i) {
-        if (i == max_processes)
-            (void)wait_process();
+        if (count_runable_processes >= max_count_processes) {
+            size_t tmp_pid = wait_process();
+
+            const auto &completed_cmd =
+                std::find_if(cmd_s.begin(), cmd_s.end(), [tmp_pid](const generator_api::command &cmd) {
+                    return cmd.pid_execute_process == tmp_pid;
+                });
+
+            do_more_func(*completed_cmd);
+            --count_runable_processes;
+        }
 
         for (const auto &name_dependence : cmd_s[i].depends_command) {
-            const auto &cmd_dependence =
+            const auto &dependence_cmd =
                 std::find_if(cmd_s.begin(), cmd_s.end(), [name_dependence](const generator_api::command &cmd) {
                     return cmd.name == name_dependence;
                 });
 
-            if (cmd_dependence == cmd_s.end())
+            if (dependence_cmd == cmd_s.end() || std::find(completed_pid.begin(), completed_pid.end(),
+                                                           dependence_cmd->pid_execute_process) != completed_pid.end())
                 continue;
 
-            (void)wait_process(cmd_dependence->pid_execute_process);
-            do_more_func(*cmd_dependence);
+            (void)wait_process(dependence_cmd->pid_execute_process);
+
+            do_more_func(*dependence_cmd);
+            --count_runable_processes;
         }
         create_process(cmd_s[i]);
+        ++count_runable_processes;
+    }
+
+    while (count_runable_processes) {
+        size_t tmp_pid = wait_process();
+
+        do_more_func(*std::find_if(cmd_s.begin(), cmd_s.end(), [tmp_pid](const generator_api::command &cmd) {
+            return cmd.pid_execute_process == tmp_pid;
+        }));
+        --count_runable_processes;
     }
 }
 
@@ -41,17 +63,12 @@ size_t processes_handler::wait_process(size_t pid) {
     else
         pid = wait(&pstatus);
 
-    if (pid + 1) {
-        if (WIFEXITED(pstatus))
-            _log << (log_message(log_type::msg) << "Process closed(" << pid << "): returned " << WEXITSTATUS(pstatus));
-        else
-            _log << (log_message(log_type::msg) << "Process aborted(" << pid << ")");
-
+    if (pid + 1)
         std::find_if(cmd_s.begin(), cmd_s.end(), [pid](const generator_api::command &cmd) {
             return cmd.pid_execute_process == pid;
         })->success = !WEXITSTATUS(pstatus);
-    }
 
+    completed_pid.insert(pid);
     return pid;
 }
 

@@ -7,20 +7,22 @@
 
 #include <algorithm>
 
+#include <bwlogger.hpp>
 #include <bwstructs_context.hpp>
 
+using namespace bweas;
 using namespace sc;
 
-bweas::logger _log{"BWCOMMANDS_TEMPLATE"};
+bweas::logger _log{"BWCOMMAND_TEMPLATE"};
 
 template_command template_command::create_template_command(string_v template_name, const string &template_str) {
-    static const array<string, 17> name_field_target = {
+    static const array<string, 18> name_field_target = {
         NAME_FIELD_TARGET_NAME,        NAME_FIELD_TARGET_LIBS,        NAME_FIELD_TARGET_TYPE,
         NAME_FIELD_TARGET_CFG,         NAME_FIELD_TARGET_VER,         NAME_FIELD_PROJECT_NAME,
         NAME_FIELD_PROJECT_VER,        NAME_FIELD_PROJECT_LANG,       NAME_FIELD_PROJECT_PCOMPILER,
         NAME_FIELD_PROJECT_PLINKER,    NAME_FIELD_PROJECT_RFCOMPILER, NAME_FIELD_PROJECT_RFLINKER,
         NAME_FIELD_PROJECT_DFCOMPILER, NAME_FIELD_PROJECT_DFLINKER,   NAME_FIELD_PROJECT_STD_C,
-        NAME_FIELD_PROJECT_STD_CPP,    NAME_FIELD_PROJECT_SRC_FILES};
+        NAME_FIELD_PROJECT_STD_CPP,    NAME_FIELD_PROJECT_SRC_FILES,  NAME_FIELD_PROJECT_INCLUDE_PATHS};
 
     template_command tcmd_tmp;
     tcmd_tmp.name = template_name;

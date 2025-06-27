@@ -42,6 +42,12 @@ inline string type_var_to_str(size_t ind) {
     return "undef";
 }
 
+inline bool is_struct(size_t ind) {
+    if (ind >= 5 && ind <= 8)
+        return 1;
+    return 0;
+}
+
 class scope {
   public:
     scope(bweas::logger &__log) : _log(__log) {

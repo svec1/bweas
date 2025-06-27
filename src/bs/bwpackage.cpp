@@ -32,8 +32,6 @@ static constexpr auto PACKAGE_SEPARATE_JSON_BYTES = "ejc";
 static constexpr auto PACKAGE_SEPARATE_LUA_CACHE = "elc";
 // Source code separator bytes of generators
 static constexpr auto PACKAGE_SEPARATE_LUA_GENERATE = "elg";
-// Source code separator bytes of modules
-static constexpr auto PACKAGE_SEPARATE_LUA_MODULE = "elm";
 
 // Length of separating bytes json configuration of the bweas package
 static constexpr size_t PACKAGE_SEPARATE_JSON_BYTES_LENGHT = 3;
@@ -41,8 +39,6 @@ static constexpr size_t PACKAGE_SEPARATE_JSON_BYTES_LENGHT = 3;
 static constexpr size_t PACKAGE_SEPARATE_LUA_CACHE_LENGHT = 3;
 // Length of separating bytes between generator source codes
 static constexpr size_t PACKAGE_SEPARATE_LUA_GENERATE_LENGHT = 3;
-// Length of separating bytes between module source codes
-static constexpr size_t PACKAGE_SEPARATE_LUA_MODULE_LENGHT = 3;
 
 // Maximum bweas packet size(5 mb)
 static constexpr size_t MAX_SIZE_PACKAGE = 5 MB;

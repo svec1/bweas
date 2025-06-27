@@ -136,6 +136,8 @@ void integral_generator::get_input_files(generator_api::data_transfer &data_t) {
 generator_api::commands integral_generator::generate(generator_api::data_transfer &data_t) {
     generator_api::commands cmd_s;
 
+    static umap<string, vec<string>> returnable_target;
+
     umap<string, vec<string>> internal_args_stack_tmp;
     umap<string, vec<string>> commands_execute_template;
 
@@ -204,13 +206,16 @@ generator_api::commands integral_generator::generate(generator_api::data_transfe
                      arg.str_arg == FEATURE_FIELD_BS_CURRENT_OF) {
                 if (current_template.returnable == target_type_str(target.type)) {
                     cmd.args.push_back(output_file);
+                    returnable_target[target.name].push_back(output_file);
+
                     real_count_use_ifiles = SIZE_MAX;
                 }
                 else {
                     if (single_generate) {
                         if (current_template.returnable == NAME_FIELD_PROJECT_SRC_FILES) {
                             for (size_t t = j + 1; t < target.queue_templates.size(); ++t)
-                                data_t.ifiles[target.queue_templates[t].name].push_back(output_file);
+                                if (target.queue_templates[t].group_id != current_template.group_id)
+                                    data_t.ifiles[target.queue_templates[t].name].push_back(output_file);
                         }
                         else
                             internal_args_stack_tmp[current_template.returnable].push_back(output_file);
@@ -223,7 +228,8 @@ generator_api::commands integral_generator::generate(generator_api::data_transfe
                                                                                 data_t.context->current_work_directory);
                             if (current_template.returnable == NAME_FIELD_PROJECT_SRC_FILES) {
                                 for (size_t t = j + 1; t < target.queue_templates.size(); ++t)
-                                    data_t.ifiles[target.queue_templates[t].name].push_back(output_file);
+                                    if (target.queue_templates[t].group_id != current_template.group_id)
+                                        data_t.ifiles[target.queue_templates[t].name].push_back(output_file);
                             }
                             else
                                 internal_args_stack_tmp[current_template.returnable].push_back(output_file);

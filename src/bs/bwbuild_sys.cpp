@@ -394,6 +394,7 @@ void builder::build_targets() {
                                          << "There are no templates for the target - " << target.name);
             return;
         }
+        (_log << bwtools::message) << (log_message(log_type::msg) << "Build target: " << target.name);
 
         target.queue_templates = sc::template_command::create_queue_target_templates(
             context.templates, target.prj.vec_templates, target.type);
@@ -415,19 +416,13 @@ void builder::build_targets() {
 
         data_t.dfiles = load_depends_file(depends_files, target);
 
-        (_log << bwtools::message) << (log_message(log_type::msg) << "Build target: " << target.name);
-
         current_generator->get_input_files(data_t);
         generator_api::commands cmd_s = current_generator->generate_commands(data_t);
-        if (!cmd_s.size()) {
-            (_log << bwtools::message) << (log_message(log_type::msg)
-                                           << "No assembly is required for the current purpose");
-            continue;
-        }
+
         (_log << bwtools::success) << (log_message(log_type::msg) << cmd_s.size() << " commands generated");
 
-        auto user_indicate = [&cmd_s](const generator_api::command &cmd) {
-            static logger _log{"BWBUILDER"};
+        processes_handler p_handler(cmd_s, 4);
+        p_handler.start([&cmd_s](const generator_api::command &cmd) {
             static double build_state = 0.f;
 
             if (!cmd.success)
@@ -440,18 +435,7 @@ void builder::build_targets() {
                         << "[" << std::to_string(build_state).erase(std::to_string((size_t)build_state).size() + 2, 5)
                         << "%] " << cmd.name_used_file);
             }
-        };
-
-        processes_handler p_handler(cmd_s, 4);
-        p_handler.start(user_indicate);
-
-        size_t pid_completed_process;
-        while ((pid_completed_process = p_handler.wait_process()) && pid_completed_process + 1 != 0) {
-            user_indicate(
-                *std::find_if(cmd_s.begin(), cmd_s.end(), [pid_completed_process](const generator_api::command &cmd) {
-                    return cmd.pid_execute_process == pid_completed_process;
-                }));
-        }
+        });
 
         (_log << bwtools::success) << (log_message(log_type::msg) << "Successfully built target");
     }

@@ -16,7 +16,7 @@ using namespace bweas;
 lua_tools::table<string_v, any> lua_tools::conv_to_table(const sc::project &prj) {
     return lua_tools::table<string_v, any>{
         {PRJ_VAR_NAME, prj.name},
-        {PRJ_VAR_NAME_VER, prj.version.get_str_version()},
+        {PRJ_VAR_NAME_VER, prj.ver.get_str_version()},
         {PRJ_VAR_NAME_LANG, prj.language},
         {PRJ_VAR_NAME_PTH_C, prj.path_compiler},
         {PRJ_VAR_NAME_PTH_L, prj.path_linker},
@@ -56,14 +56,14 @@ lua_tools::table<string_v, any> lua_tools::conv_to_table(const sc::target &trg_o
     return lua_tools::table<string_v, any>{
         {TRG_NAME_FIELD_PROJECT, conv_to_table(*trg_o.prj)}, {TRG_VAR_NAME_TYPE_T, target_type_str(trg_o.type)},
         {TRG_VAR_NAME_CFG, target_cfg_str(trg_o.cfg)},       {TRG_NAME_FIELD_NTARGET, trg_o.name},
-        {TRG_VAR_NAME_VER, trg_o.version.get_str_version()}, {TRG_VAR_NAME_LLIBS, trg_o.target_vec_libs}};
+        {TRG_VAR_NAME_VER, trg_o.ver.get_str_version()},     {TRG_VAR_NAME_LLIBS, trg_o.target_vec_libs}};
 }
 
 lua_tools::table<string_v, any> lua_tools::conv_to_table(const sc::target_out &trg_o) {
     return lua_tools::table<string_v, any>{
-        {TRG_NAME_FIELD_PROJECT, conv_to_table(trg_o.prj)},  {TRG_VAR_NAME_TYPE_T, target_type_str(trg_o.type)},
-        {TRG_VAR_NAME_CFG, target_cfg_str(trg_o.cfg)},       {TRG_NAME_FIELD_NTARGET, trg_o.name},
-        {TRG_VAR_NAME_VER, trg_o.version.get_str_version()}, {TRG_VAR_NAME_LLIBS, trg_o.target_vec_libs}};
+        {TRG_NAME_FIELD_PROJECT, conv_to_table(trg_o.prj)}, {TRG_VAR_NAME_TYPE_T, target_type_str(trg_o.type)},
+        {TRG_VAR_NAME_CFG, target_cfg_str(trg_o.cfg)},      {TRG_NAME_FIELD_NTARGET, trg_o.name},
+        {TRG_VAR_NAME_VER, trg_o.ver.get_str_version()},    {TRG_VAR_NAME_LLIBS, trg_o.target_vec_libs}};
 }
 lua_tools::table<string, lua_tools::array<string>> lua_tools::conv_to_table(
     const bweas::depends_files::depends_map &dfiles) {
@@ -77,7 +77,7 @@ sc::project lua_tools::conv_to_project(lua_tools::table<string, any> prj_t) {
     sc::project prj;
 
     prj.name              = std::any_cast<string>(prj_t[PRJ_VAR_NAME]);
-    prj.version           = std::any_cast<string>(prj_t[PRJ_VAR_NAME_VER]);
+    prj.ver               = std::any_cast<string>(prj_t[PRJ_VAR_NAME_VER]);
     prj.language          = std::any_cast<string>(prj_t[PRJ_VAR_NAME_LANG]);
     prj.path_compiler     = std::any_cast<string>(prj_t[PRJ_VAR_NAME_PTH_C]);
     prj.path_linker       = std::any_cast<string>(prj_t[PRJ_VAR_NAME_PTH_L]);
@@ -97,11 +97,11 @@ sc::project lua_tools::conv_to_project(lua_tools::table<string, any> prj_t) {
 sc::target_out lua_tools::conv_to_target(lua_tools::table<string, any> &trg_o_t) {
     sc::target_out trg;
 
-    trg.prj     = conv_to_project(std::any_cast<bwlua::lua::table<string, any>>(trg_o_t[TRG_NAME_FIELD_PROJECT]));
-    trg.type    = sc::to_target_type(std::any_cast<string>(trg_o_t[TRG_VAR_NAME_TYPE_T]));
-    trg.cfg     = sc::to_target_cfg(std::any_cast<string>(trg_o_t[TRG_VAR_NAME_CFG]));
-    trg.name    = std::any_cast<string>(trg_o_t[TRG_NAME_FIELD_NTARGET]);
-    trg.version = std::any_cast<string>(trg_o_t[TRG_VAR_NAME_VER]);
+    trg.prj  = conv_to_project(std::any_cast<bwlua::lua::table<string, any>>(trg_o_t[TRG_NAME_FIELD_PROJECT]));
+    trg.type = sc::to_target_type(std::any_cast<string>(trg_o_t[TRG_VAR_NAME_TYPE_T]));
+    trg.cfg  = sc::to_target_cfg(std::any_cast<string>(trg_o_t[TRG_VAR_NAME_CFG]));
+    trg.name = std::any_cast<string>(trg_o_t[TRG_NAME_FIELD_NTARGET]);
+    trg.ver  = std::any_cast<string>(trg_o_t[TRG_VAR_NAME_VER]);
     trg.target_vec_libs = std::any_cast<vec<string>>(trg_o_t[TRG_VAR_NAME_LLIBS]);
 
     return trg;

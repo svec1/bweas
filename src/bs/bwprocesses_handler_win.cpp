@@ -45,8 +45,7 @@ size_t processes_handler::wait_process(size_t pid) {
     CloseHandle(pid_tmp.hProcess);
     CloseHandle(pid_tmp.hThread);
 
-    _log << (log_message(log_type::msg) << "Process closed(" << pid << ")");
-
+    completed_pid.insert(pid);
     return pid;
 }
 

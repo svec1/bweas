@@ -25,12 +25,12 @@ string json_cache::create_cache() {
     for (const auto &target : context->out_targets)
         cache_data["targets"][target.name] = {{"type", sc::target_type_str(target.type)},
                                               {"configuration", sc::target_cfg_str(target.cfg)},
-                                              {"version", target.version.get_str_version()},
+                                              {"version", target.ver.get_str_version()},
                                               {"generator", target.name_generator},
                                               {"dependencies", target.target_vec_libs},
                                               {"project",
                                                {{"name", target.prj.name},
-                                                {"version", target.prj.version.get_str_version()},
+                                                {"version", target.prj.ver.get_str_version()},
                                                 {"lang", target.prj.language},
                                                 {"path_compiler", target.prj.path_compiler},
                                                 {"path_linker", target.prj.path_linker},
@@ -76,13 +76,13 @@ void json_cache::extract_cache_data(string &&cache_str) {
             const auto &fields           = target.value();
             target_o_tmp.type            = sc::to_target_type(fields["type"]);
             target_o_tmp.cfg             = sc::to_target_cfg(fields["configuration"]);
-            target_o_tmp.version         = (string)fields["version"];
+            target_o_tmp.ver             = (string)fields["version"];
             target_o_tmp.name_generator  = fields["generator"];
             target_o_tmp.target_vec_libs = fields["dependencies"];
 
             const auto &prj                    = fields["project"];
             target_o_tmp.prj.name              = prj["name"];
-            target_o_tmp.prj.version           = (string)prj["version"];
+            target_o_tmp.prj.ver               = (string)prj["version"];
             target_o_tmp.prj.language          = prj["lang"];
             target_o_tmp.prj.path_compiler     = prj["path_compiler"];
             target_o_tmp.prj.path_linker       = prj["path_linker"];

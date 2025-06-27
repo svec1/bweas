@@ -5,7 +5,7 @@ build_linux/
 external/LuaJIT/
 external/json/
 external/lz4/
-dev/doxygen
+docs/doxygen
 vcpkg_installed/
 vcpkg/
 

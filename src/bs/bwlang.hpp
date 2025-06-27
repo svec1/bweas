@@ -69,6 +69,10 @@ lang::lang(string_v bwconf_file) : _interpreter(bwconf_file) {
 void lang::init_scope() {
     _interpreter.get_scope().create_var<pdiff>("DEBUG", 0);
     _interpreter.get_scope().create_var<pdiff>("RELEASE", 1);
+    _interpreter.get_scope().create_var<pdiff>("FALSE", 0);
+    _interpreter.get_scope().create_var<pdiff>("TRUE", 1);
+    _interpreter.get_scope().create_var<pdiff>("EXECUTABLE", 0);
+    _interpreter.get_scope().create_var<pdiff>("LIBRARY", 1);
 
     _interpreter.create_function(
         "set", sl_func::set,
@@ -84,11 +88,11 @@ void lang::init_scope() {
                                   {param_type::LNUM_OR_ID_VAR, "1"},
                                   param_type::LSTR_OR_ID_VAR,
                                   param_type::NEXT_TOO});
-    _interpreter.create_function("executable", sl_func::executable,
-                                 {param_type::FUTURE_VAR_ID, param_type::LNUM_OR_ID_VAR, param_type::VAR_STRUCT_ID});
+    _interpreter.create_function("create_target", sl_func::create_target,
+                                 {param_type::FUTURE_VAR_ID, param_type::VAR_STRUCT_ID, param_type::LNUM_OR_ID_VAR});
 
-    _interpreter.create_function("link_lib", sl_func::link_lib,
-                                 {param_type::VAR_STRUCT_ID, param_type::LSTR_OR_ID_VAR, param_type::NEXT_TOO});
+    _interpreter.create_function("add_dependencies_target", sl_func::add_dependencies_target,
+                                 {param_type::VAR_STRUCT_ID, param_type::VAR_STRUCT_ID, param_type::NEXT_TOO});
     _interpreter.create_function("exp_data", sl_func::exp_data, {param_type::LSTR_OR_ID_VAR});
     _interpreter.create_function("debug", sl_func::debug, {param_type::LSTR_OR_ID_VAR, param_type::NEXT_TOO});
     _interpreter.create_function("debug_struct", sl_func::debug_struct, {param_type::VAR_STRUCT_ID});
@@ -124,7 +128,7 @@ void lang::init_scope() {
     _interpreter.create_function("add_param_template", sl_func::add_param_template,
                                  {param_type::FUTURE_VAR_ID, param_type::VAR_ID});
     _interpreter.create_function("use_templates", sl_func::use_templates,
-                                 {param_type::VAR_STRUCT_ID, param_type::LSTR_OR_ID_VAR, param_type::NEXT_TOO});
+                                 {param_type::VAR_STRUCT_ID, param_type::VAR_STRUCT_ID, param_type::NEXT_TOO});
 }
 
 void lang::execute() {
@@ -157,7 +161,7 @@ vec<sc::target_out> lang::get_targets() {
         target_tmp.name            = targets[i].name;
         target_tmp.type            = targets[i].type;
         target_tmp.cfg             = targets[i].cfg;
-        target_tmp.version         = targets[i].version;
+        target_tmp.ver             = targets[i].ver;
         target_tmp.name_generator  = targets[i].name_generator;
         target_tmp.target_vec_libs = targets[i].target_vec_libs;
         target_tmp.prj             = *targets[i].prj;

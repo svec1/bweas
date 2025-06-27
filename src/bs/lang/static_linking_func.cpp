@@ -94,7 +94,7 @@ static void update_target_cfg_struct(const string &name_var, scope &current_scop
                 else if (tmp_str_postfix == PRJ_VAR_NAME_VER) {
                     if (current_scope.what_type(tmp_str_prefix) != 5 || current_scope.what_type(name_var) != 2)
                         return;
-                    current_scope.get_var_value<sc::project>(tmp_str_prefix).version =
+                    current_scope.get_var_value<sc::project>(tmp_str_prefix).ver =
                         sc::version(current_scope.get_var_value<string>(name_var));
                 }
                 else if (tmp_str_postfix == PRJ_VAR_NAME_SRC_FILES) {
@@ -124,7 +124,7 @@ static void update_target_cfg_struct(const string &name_var, scope &current_scop
                 else if (tmp_str_postfix == TRG_VAR_NAME_VER) {
                     if (current_scope.what_type(tmp_str_prefix) != 6 || current_scope.what_type(name_var) != 2)
                         return;
-                    current_scope.get_var_value<sc::target>(tmp_str_prefix).version =
+                    current_scope.get_var_value<sc::target>(tmp_str_prefix).ver =
                         sc::version(current_scope.get_var_value<string>(name_var));
                 }
                 else if (tmp_str_postfix == TRG_VAR_NAME_CFG) {
@@ -275,8 +275,8 @@ void sl_func::project(const expressions &expr_s, scope &current_scope) {
     if (current_scope.what_type(DECL_VAR_STRUCT) == 1 && current_scope.get_var_value<pdiff>(DECL_VAR_STRUCT) > 0) {
         if (!current_scope.try_create_var<string>(prj_ref.name + PRJ_VAR_NAME_LANG, prj_ref.language))
             prj_ref.language = current_scope.get_var_value<string>(prj_ref.name + PRJ_VAR_NAME_LANG);
-        if (!current_scope.try_create_var<string>(prj_ref.name + PRJ_VAR_NAME_VER, prj_ref.version.get_str_version()))
-            prj_ref.version = sc::version(current_scope.get_var_value<string>(prj_ref.name + PRJ_VAR_NAME_VER));
+        if (!current_scope.try_create_var<string>(prj_ref.name + PRJ_VAR_NAME_VER, prj_ref.ver.get_str_version()))
+            prj_ref.ver = sc::version(current_scope.get_var_value<string>(prj_ref.name + PRJ_VAR_NAME_VER));
 
         if (!current_scope.try_create_var<string>(prj_ref.name + PRJ_VAR_NAME_DFLAGS_C, prj_ref.dflags_compiler))
             prj_ref.dflags_compiler = current_scope.get_var_value<string>(prj_ref.name + PRJ_VAR_NAME_DFLAGS_C);
@@ -300,24 +300,23 @@ void sl_func::project(const expressions &expr_s, scope &current_scope) {
             prj_ref.vec_templates = current_scope.get_var_value<vec<string>>(prj_ref.name + PRJ_VAR_NAME_UTEMPLATES);
     }
 }
-void sl_func::executable(const expressions &expr_s, scope &current_scope) {
-    if (current_scope.what_type(expr_s[2].value) != 5)
+void sl_func::create_target(const expressions &expr_s, scope &current_scope) {
+    if (current_scope.what_type(expr_s[1].value) != 5)
         _log << bwtools::fatal << (log_message(log_type::fatal) << "Expected var project: " << expr_s[2].value);
 
     sc::target &trg_ref = current_scope.create_var<sc::target>(expr_s[0].value);
 
     trg_ref.name = expr_s[0].value;
+    trg_ref.type = (sc::target_type)std::stoi(expr_s[2].value);
     trg_ref.prj  = std::shared_ptr<sc::project>(
-        (sc::project *)&current_scope.get_var_value<sc::project>(expr_s[2].value), [](const sc::project *) {});
-    trg_ref.cfg     = (sc::target_cfg)std::stoi(expr_s[1].value);
-    trg_ref.version = sc::version(0, 0, 0);
+        (sc::project *)&current_scope.get_var_value<sc::project>(expr_s[1].value), [](const sc::project *) {});
 
     // ??????? - I don't know if this helper function is needed
     if (current_scope.what_type(DECL_VAR_STRUCT) == 1 && current_scope.get_var_value<pdiff>(DECL_VAR_STRUCT) > 0) {
         if (!current_scope.try_create_var<string>(trg_ref.name + TRG_VAR_NAME_NPROJECT, trg_ref.prj->name))
             trg_ref.prj->name = current_scope.get_var_value<string>(trg_ref.name + TRG_VAR_NAME_NPROJECT);
-        if (!current_scope.try_create_var<string>(trg_ref.name + TRG_VAR_NAME_VER, trg_ref.version.get_str_version()))
-            trg_ref.version = sc::version(current_scope.get_var_value<string>(trg_ref.name + TRG_VAR_NAME_VER));
+        if (!current_scope.try_create_var<string>(trg_ref.name + TRG_VAR_NAME_VER, trg_ref.ver.get_str_version()))
+            trg_ref.ver = sc::version(current_scope.get_var_value<string>(trg_ref.name + TRG_VAR_NAME_VER));
         if (!current_scope.try_create_var<pdiff>(trg_ref.name + TRG_VAR_NAME_CFG, (pdiff)trg_ref.cfg))
             trg_ref.cfg = (sc::target_cfg)current_scope.get_var_value<pdiff>(trg_ref.name + TRG_VAR_NAME_CFG);
         if (!current_scope.try_create_var<pdiff>(trg_ref.name + TRG_VAR_NAME_TYPE_T, (pdiff)trg_ref.type))
@@ -329,14 +328,18 @@ void sl_func::executable(const expressions &expr_s, scope &current_scope) {
     }
 }
 
-void sl_func::link_lib(const expressions &expr_s, scope &current_scope) {
+void sl_func::add_dependencies_target(const expressions &expr_s, scope &current_scope) {
     if (current_scope.what_type(expr_s[0].value) != 6)
         _log << bwtools::fatal << (log_message(log_type::fatal) << "Expected var target: " << expr_s[2].value);
 
     sc::target &trg_ref = current_scope.get_var_value<sc::target>(expr_s[0].value);
 
-    for (size_t i = 1; i < expr_s.size(); ++i)
+    for (size_t i = 1; i < expr_s.size(); ++i) {
+        if (current_scope.what_type(expr_s[i].value) != 6)
+            _log << bwtools::fatal
+                 << (log_message(log_type::fatal) << "There is no such target object: " << expr_s[i].value);
         trg_ref.target_vec_libs.push_back(expr_s[i].value);
+    }
 
     if (current_scope.what_type(DECL_VAR_STRUCT) == 1 && current_scope.get_var_value<pdiff>(DECL_VAR_STRUCT) > 0) {
         if (current_scope.what_type(trg_ref.name + TRG_VAR_NAME_LLIBS) == 4) {
@@ -363,7 +366,7 @@ void sl_func::debug_struct(const expressions &expr_s, scope &current_scope) {
     size_t ind = current_scope.what_type(expr_s[0].value);
     if (ind == 5) {
         sc::project &prj_ref = current_scope.get_var_value<sc::project>(expr_s[0].value);
-        str_out              = "Name Project: " + prj_ref.name + "\nVersion: " + prj_ref.version.get_str_version() +
+        str_out              = "Name Project: " + prj_ref.name + "\nVersion: " + prj_ref.ver.get_str_version() +
                   "\nLang: " + prj_ref.language + "\nCompiler: " + prj_ref.path_compiler +
                   "\nLinker: " + prj_ref.path_linker + "\nDebug Flags Compiler: " + prj_ref.dflags_compiler +
                   "\nRelease Flags Compiler: " + prj_ref.rflags_compiler +
@@ -385,7 +388,7 @@ void sl_func::debug_struct(const expressions &expr_s, scope &current_scope) {
     }
     else if (ind == 6) {
         sc::target &trg_ref = current_scope.get_var_value<sc::target>(expr_s[0].value);
-        str_out             = "Name Target: " + trg_ref.name + "\nVersion: " + trg_ref.version.get_str_version() +
+        str_out             = "Name Target: " + trg_ref.name + "\nVersion: " + trg_ref.ver.get_str_version() +
                   "\nName Project: " + trg_ref.prj->name + "\nType Build: " + target_type_str(trg_ref.type) +
                   "\nConfiguration: " + target_cfg_str(trg_ref.cfg) + "\nLibs: \n";
         for (size_t i = 0; i < trg_ref.target_vec_libs.size(); ++i) {

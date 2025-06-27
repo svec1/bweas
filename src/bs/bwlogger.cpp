@@ -15,13 +15,13 @@ log_type logger::global_status;
 log_message::log_message(log_type _log_t) : log_t(_log_t) {
     switch (log_t) {
     case log_type::warning:
-        ss << "[WARNING]: ";
+        ss << "WARNING ";
         break;
     case log_type::error:
-        ss << "[ERROR]: ";
+        ss << "ERROR ";
         break;
     case log_type::fatal:
-        ss << "[FATAL]: ";
+        ss << "FATAL ";
 
     case log_type::msg:
     default:

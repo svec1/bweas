@@ -150,17 +150,17 @@ struct version {
             if (arg == args_match[0])
                 continue;
 
-            const auto arg_str = arg.str().c_str();
+            const auto arg_str = arg.str();
 
             switch (i) {
             case 0:
-                major = std::atoll(arg_str);
+                major = std::stoi(arg_str);
                 break;
             case 1:
-                minor = std::atoll(arg_str);
+                minor = std::stoi(arg_str);
                 break;
             case 2:
-                patch = std::atoll(arg_str);
+                patch = std::stoi(arg_str);
                 break;
             default:
                 std::unreachable();
@@ -212,7 +212,7 @@ struct project {
 
   public:
     string name;
-    version version;
+    version ver;
 
     string language;
 
@@ -245,7 +245,7 @@ struct target {
 
     string name;
     string name_generator{DEFAULT_BWEAS_GENERATOR};
-    version version;
+    version ver;
 
     vec<string> target_vec_libs;
 };
@@ -263,7 +263,7 @@ struct target_out {
 
     string name;
     string name_generator;
-    version version;
+    version ver;
 
     vec<string> target_vec_libs;
     vec<template_command> queue_templates;

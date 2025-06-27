@@ -19,21 +19,27 @@ class processes_handler;
 
 class bweas::processes_handler {
   public:
-    processes_handler(generator_api::commands &_cmd_s, size_t _max_processes)
-        : cmd_s(_cmd_s), max_processes(_max_processes > cmd_s.size() ? cmd_s.size() : _max_processes) {
+    processes_handler(generator_api::commands &_cmd_s, size_t _max_count_processes)
+        : cmd_s(_cmd_s),
+          max_count_processes(_max_count_processes > cmd_s.size() ? cmd_s.size() : _max_count_processes + 1) {
     }
 
   public:
     void start(std::function<void(const generator_api::command &cmd)> do_more_func = NULL);
-    size_t wait_process(size_t pid = 0);
 
   private:
     void create_process(generator_api::command &cmd);
+    size_t wait_process(size_t pid = 0);
 
   private:
     generator_api::commands &cmd_s;
 
-    size_t max_processes;
+    size_t max_count_processes;
+
+    // Platform-independent running process counter
+    size_t count_runable_processes = 0;
+
+    uset<size_t> completed_pid;
 
 #if defined(WIN)
     vec<PROCESS_INFORMATION> pids_win;

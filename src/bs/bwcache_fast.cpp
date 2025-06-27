@@ -73,9 +73,11 @@ string fast_cache::create_cache() {
         for (auto it : out_targets[i].prj.custom_ext_fields)
             serel_target_tmp += it.first + " " + it.second + " ";
 
+        serel_target_tmp.erase(serel_target_tmp.size() - 1, 1);
+
         serel_target_tmp += sc::target_type_str(out_targets[i].type) + " " + sc::target_cfg_str(out_targets[i].cfg) +
                             " " + out_targets[i].name + " " + out_targets[i].name_generator + " " +
-                            out_targets[i].version.get_str_version() + " ";
+                            out_targets[i].ver.get_str_version() + " ";
         for (size_t j = 0; j < out_targets[i].target_vec_libs.size(); ++j)
             serel_target_tmp += out_targets[i].target_vec_libs[j] + " ";
     }
@@ -250,7 +252,7 @@ void fast_cache::extract_cache_data(string &&cache_str) {
                             offset_byte_prj += sizeof(pdiff);
                         }
                         else if (count_word == 7) {
-                            trg_tmp.prj.version = str_tmp;
+                            trg_tmp.prj.ver = str_tmp;
                             offset_byte_prj += sizeof(sc::version);
                         }
                         else if (count_word == 8) {
@@ -297,7 +299,7 @@ void fast_cache::extract_cache_data(string &&cache_str) {
                                 trg_tmp.name_generator = str_tmp;
                             else if (count_word == 17 + size_src_files + size_include_paths + size_vec_templates +
                                                        size_custom_ext_fields + 4)
-                                trg_tmp.version = str_tmp;
+                                trg_tmp.ver = str_tmp;
                             else if (count_word >= 17 + size_src_files + size_include_paths + size_vec_templates +
                                                        size_custom_ext_fields + 5 &&
                                      count_word < 17 + size_src_files + size_include_paths + size_vec_templates +

@@ -85,7 +85,7 @@ struct expression {
   public:
     expression() = default;
     explicit expression(string_v _value, expression_t _type, size_t line = 0, size_t column = 0)
-        : value(_value), type(_type) {
+        : type(_type), value(_value) {
     }
 
   public:

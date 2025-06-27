@@ -215,7 +215,7 @@ void semantic_analyzer::smt_second_pass(statements &st_s, scope &current_scope) 
                     continue;
                 else if (before_nextt_param == param_type::VAR_STRUCT_ID) {
                     size_t index_type = current_scope.what_type(st_s[i].expr_s[j].value);
-                    if (index_type != 5 && index_type != 6)
+                    if (!is_struct(index_type))
                         _log << bwtools::fatal
                              << (log_message(log_type::fatal)
                                  << st_s[i].build_string_error(j + 1, EXPECTED_EXIST_SYMBOL, "[VAR STRUCT ID]"));
@@ -300,7 +300,7 @@ void semantic_analyzer::smt_second_pass(statements &st_s, scope &current_scope) 
                 continue;
             else if (st_s[i].expr_func->expected_params[j].type == param_type::VAR_STRUCT_ID) {
                 size_t index_type = current_scope.what_type(st_s[i].expr_s[j].value);
-                if (index_type != 5 && index_type != 6)
+                if (!is_struct(index_type))
                     _log << bwtools::fatal
                          << (log_message(log_type::fatal)
                              << st_s[i].build_string_error(j + 1, EXPECTED_EXIST_SYMBOL, "[VAR STRUCT ID]"));

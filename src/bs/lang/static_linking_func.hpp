@@ -38,10 +38,10 @@ extern "C++"
 
     // Creates a target with a specific configuration (RELEASE/DEBUG)
     // and a main project
-    void executable(const expressions &expr_s, scope &current_scope);
+    void create_target(const expressions &expr_s, scope &current_scope);
 
     // Adds the specified libraries to the list of dependencies of the target (library)
-    void link_lib(const expressions &expr_s, scope &current_scope);
+    void add_dependencies_target(const expressions &expr_s, scope &current_scope);
 
     // Exports all created variables or structures (by creating another
     // interpreter for the file)
