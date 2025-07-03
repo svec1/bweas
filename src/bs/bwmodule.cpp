@@ -7,6 +7,8 @@
 
 #include <bwmodule.hpp>
 
+#include <bwluatools.hpp>
+
 using namespace bweas;
 
 static logger _log{"BWMODULE"};

@@ -29,7 +29,7 @@ static const string INFO_STR =
     "bweas version " + std::string(VERSION_FULL_STR) + "\nrep on github - https://github.com/svec1/bweas";
 
 static constexpr auto HELP_STR =
-    "bweas-call: \n   bweas <parameter>... path_depending\n   bweas path_bweas_config <parameter>..."
+    "bweas-call: \n   bweas <parameter>... path_depending\n   bweas context.path_bweas_config <parameter>..."
     "\nAcceptable parameters:"
     "\n   --build - builds the project (either by executing the configuration file or deserializing the cache file "
     "if it exists)"
@@ -38,12 +38,12 @@ static constexpr auto HELP_STR =
     "\n   --help - outputs the syntax of the bweas call as well as its possible functions"
     "\n   --version - outputs the version of bweas";
 
-static constexpr auto JSON_CONFIG_FILE = "bweas-config.json";
-static constexpr auto DIRWORK_ENV      = ".bweas";
+static constexpr auto JSON_CONFIG_FILE          = "bweas-config.json";
+static constexpr auto DEFAULT_BWEAS_JSON_CONFIG = "{\n\t\"cache-gn\": \"fast_bwcache\",\n\t\"packages\": []\n}";
 
 static logger _log{"BWEAS"};
 
-builder::builder(size_t argv, char **args) : path_bweas_to_build(DIRWORK_ENV) {
+builder::builder(size_t argv, char **args) {
     vec<string> vec_args;
     for (size_t i = 0; i < argv; ++i)
         vec_args.push_back(args[i]);
@@ -58,8 +58,8 @@ builder::builder(size_t argv, char **args) : path_bweas_to_build(DIRWORK_ENV) {
 }
 
 void builder::handle_args(vec<string> &args) {
-    path_bweas_config   = fs::current_path().string();
-    path_bweas_to_build = fs::current_path().string();
+    context.path_bweas_config   = fs::current_path().string() + "/";
+    context.path_bweas_to_build = fs::current_path().string() + "/";
 
     if (args.size() == 1)
         mode_bweas = mode_working::collect_cfg;
@@ -105,15 +105,15 @@ void builder::handle_args(vec<string> &args) {
         else {
             // --cfg <arg> or arg
             if (expected_path_bweas_config) {
-                path_bweas_config = fs::absolute(args[i]).string();
-                mode_bweas        = mode_working::collect_cfg;
+                context.path_bweas_config = fs::absolute(args[i]).lexically_normal().string();
+                mode_bweas                = mode_working::collect_cfg;
 
                 expected_path_bweas_config = 0;
             }
             // --build <arg>
             else if (expected_path_to_build) {
-                path_bweas_to_build    = fs::absolute(args[i]).string();
-                expected_path_to_build = 0;
+                context.path_bweas_to_build = fs::absolute(args[i]).lexically_normal().string();
+                expected_path_to_build      = 0;
             }
             // --package <arg>
             else if (expected_path_json_cfg_package) {
@@ -163,14 +163,14 @@ size_t builder::create_package(string path_json_config_package) {
 }
 
 void builder::init() {
-    fs::current_path(path_bweas_config);
+    fs::current_path(context.path_bweas_config);
 
-    path_bweas_config = path_bweas_config + "/" + CONFIG_FILE;
-    string bweas_path = bwtools::get_path_program() + "/" + JSON_CONFIG_FILE;
+    context.path_bweas_config     = context.path_bweas_config + CONFIG_FILE;
+    string bweas_json_config_path = bwtools::get_path_program() + JSON_CONFIG_FILE;
 
     nlohmann::json config_json;
-    file_it file_json_config = bwtools::open_file(bweas_path, mf::open::r);
-    if (!bwtools::exist_file(file_json_config)) {
+    file_it file_json_config = bwtools::open_file(bweas_json_config_path, mf::open::r);
+    if (bwtools::exist_file(file_json_config) && !bwtools::get_ref_file(file_json_config).file_opened) {
         bwtools::get_ref_file(file_json_config).open(mf::open::w);
         bwtools::write_file(bwtools::get_ref_file(file_json_config), DEFAULT_BWEAS_JSON_CONFIG);
         bwtools::close_file(file_json_config);
@@ -262,31 +262,44 @@ builder::mode_working builder::get_current_mode() {
 void builder::start() {
     if (mode_bweas == mode_working::build_package)
         return;
-    else if (!bwtools::exist_file(path_bweas_config))
-        (_log << bwtools::fatal) << (log_message(log_type::fatal)
-                                     << "Unable to open configuration file \'" << path_bweas_config << "\'");
+    else if (mode_bweas == mode_working::build) {
+        file_it bweas_cache = bwtools::open_file(CACHE_FILE, mf::open::rb);
+        string cache_str    = bwtools::read_file(bwtools::get_ref_file(bweas_cache));
 
-    if (mode_bweas == mode_working::build) {
-        string cache_file = path_bweas_to_build + "/" + CACHE_FILE;
-        if (!bwtools::exist_file(cache_file))
+        context.path_bweas_config = cache->get_path_config(cache_str);
+        string path_bweas_cache   = context.path_bweas_to_build + CACHE_FILE;
+
+        if (!bwtools::exist_file(context.path_bweas_config))
+            (_log << bwtools::fatal) << (log_message(log_type::fatal) << "Bweas config not found");
+        if (!bwtools::exist_file(path_bweas_cache))
             (_log << bwtools::fatal) << (log_message(log_type::fatal) << "Bweas cache not found");
-        fs::path main_file = path_bweas_config;
 
-        fs::file_time_type cftime = fs::last_write_time(cache_file);
-        fs::file_time_type mftime = fs::last_write_time(main_file);
-        if (mftime >= cftime) {
+        fs::file_time_type config_ftime = fs::last_write_time(context.path_bweas_config);
+        fs::file_time_type cache_ftime  = fs::last_write_time(path_bweas_cache);
+        if (config_ftime > cache_ftime) {
             (_log << bwtools::message) << (log_message(log_type::msg) << "The configuration file has been modified");
             goto interpreter_start;
         }
 
-        deserl_cache();
+        (_log << bwtools::message) << (log_message(log_type::msg) << "Cache deserialization...");
+
+        cache->extract_cache_data(cache_str);
+
+        (_log << bwtools::success) << (log_message(log_type::msg)
+                                       << "Cache deserialization was successful!\n"
+                                       << "Was loaded " << context.templates.size() << " template of command!");
     }
     else if (mode_bweas == mode_working::collect_cfg || mode_bweas == mode_working::collect_cfg_w_build) {
+        if (!bwtools::exist_file(context.path_bweas_config))
+            (_log << bwtools::fatal) << (log_message(log_type::fatal)
+                                         << "Bweas config not found \'" << context.path_bweas_config << "\'");
+
     interpreter_start:
+        fs::current_path(fs::path(context.path_bweas_config).parent_path());
         run_interpreter();
 
-        fs::current_path(path_bweas_to_build);
-        if (!gen_cache_target())
+        fs::current_path(context.path_bweas_to_build);
+        if (gen_cache_target())
             return;
     }
 
@@ -297,7 +310,7 @@ void builder::start() {
 }
 
 void builder::run_interpreter() {
-    lang bwlang{path_bweas_config};
+    lang bwlang{&context};
     bwlang.init_external_funcs(external_modules_funcs);
     for (const auto &loaded_package : loaded_packages)
         bwlang.set_custom_ext_fields_project(loaded_package.cfg_package.custom_ext_fields_project);
@@ -306,14 +319,14 @@ void builder::run_interpreter() {
     bwlang.execute();
     (_log << bwtools::success) << (log_message(log_type::msg) << "The interpretation was successful!");
 
-    context = bwlang.get_context();
+    bwlang.init_context();
 }
 
 size_t builder::gen_cache_target() {
     if (!context.out_targets.size()) {
         (_log << bwtools::warning) << (log_message(log_type::warning)
                                        << "Generating a file with a cache will not be performed.");
-        return 0;
+        return 1;
     }
 
     (_log << bwtools::message) << (log_message(log_type::msg) << "Generating a cache file...");
@@ -325,19 +338,7 @@ size_t builder::gen_cache_target() {
 
     (_log << bwtools::success) << (log_message(log_type::msg) << "Cache generation was successful!");
 
-    return 1;
-}
-
-void builder::deserl_cache() {
-    file_it bweas_cache = bwtools::open_file(CACHE_FILE, mf::open::rb);
-
-    (_log << bwtools::message) << (log_message(log_type::msg) << "Cache deserialization...");
-
-    cache->extract_cache_data(bwtools::read_file(bwtools::get_ref_file(bweas_cache)));
-
-    (_log << bwtools::success) << (log_message(log_type::msg)
-                                   << "Cache deserialization was successful!\n"
-                                   << "Was loaded " << context.templates.size() << " template of command!");
+    return 0;
 }
 
 depends_files::depends_map builder::load_depends_file(std::unique_ptr<depends_files> &_depends_files,
@@ -376,7 +377,7 @@ depends_files::depends_map builder::load_depends_file(std::unique_ptr<depends_fi
 void builder::build_targets() {
     (_log << bwtools::message) << (log_message(log_type::msg) << "Building targets...");
 
-    fs::current_path(path_bweas_to_build);
+    fs::current_path(context.path_bweas_to_build);
 
     context.global_external_args.push_back(pair<string, string>("", ""));
     generator_api::data_transfer data_t{&context};
@@ -399,7 +400,7 @@ void builder::build_targets() {
         target.queue_templates = sc::template_command::create_queue_target_templates(
             context.templates, target.prj.vec_templates, target.type);
         context.current_target         = &target;
-        context.current_work_directory = path_bweas_to_build + "/" + target.name;
+        context.current_work_directory = context.path_bweas_to_build + target.name;
 
         if (!fs::is_directory(context.current_work_directory))
             fs::create_directories(context.current_work_directory);

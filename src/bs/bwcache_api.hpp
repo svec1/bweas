@@ -32,8 +32,12 @@ class bweas::cache_api::base_cache {
     // A function that must be defined in a child class, and return a cache of data
     virtual string create_cache() = 0;
 
+    // A function that should be defined in the child class and extract the path to the configuration file from the
+    // cache file
+    virtual string get_path_config(const string &cache_str) = 0;
+
     // A function that must be defined in a child class and return cache data
-    virtual void extract_cache_data(string &&cache_str) = 0;
+    virtual void extract_cache_data(const string &cache_str) = 0;
 
     // A number of factory functions to create all possible child classes that implement the bwcache cache generator
     // based on the bwcache API
@@ -61,7 +65,8 @@ class bweas::cache_api::fast_cache final : private bweas::cache_api::base_cache 
 
   public:
     string create_cache() override;
-    void extract_cache_data(string &&cache_str) override;
+    string get_path_config(const string &cache_str) override;
+    void extract_cache_data(const string &cache_str) override;
 };
 
 // The second basic cache generator, which in turn has a human readable form,
@@ -77,7 +82,8 @@ class bweas::cache_api::json_cache final : private bweas::cache_api::base_cache 
 
   public:
     string create_cache() override;
-    void extract_cache_data(string &&cache_str) override;
+    string get_path_config(const string &cache_str) override;
+    void extract_cache_data(const string &cache_str) override;
 };
 
 // A class providing an API for creating cache generators in lua, based on the bwcache API
@@ -92,7 +98,8 @@ class bweas::cache_api::lua_cache final : private bweas::cache_api::base_cache {
 
   public:
     string create_cache() override;
-    void extract_cache_data(string &&cache_str) override;
+    string get_path_config(const string &cache_str) override;
+    void extract_cache_data(const string &cache_str) override;
 
   private:
     bwlua::lua lua;

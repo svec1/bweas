@@ -38,7 +38,8 @@ string fast_cache::create_cache() {
             out_targets[i].target_vec_libs.push_back("null");
 
         char *prj_v = (char *)&out_targets[i];
-        serel_target_tmp += std::to_string(out_targets[i].prj.src_files.size()) + " " +
+        serel_target_tmp += "\"" + context->path_bweas_config + "\" " +
+                            std::to_string(out_targets[i].prj.src_files.size()) + " " +
                             std::to_string(out_targets[i].prj.include_paths.size()) + " " +
                             std::to_string(out_targets[i].prj.vec_templates.size()) + " " +
                             std::to_string(out_targets[i].prj.custom_ext_fields.size()) + " " +
@@ -124,8 +125,18 @@ string fast_cache::create_cache() {
 
     return serel_target_tmp;
 }
-
-void fast_cache::extract_cache_data(string &&cache_str) {
+string fast_cache::get_path_config(const string &cache_str) {
+    try {
+        string str_tmp = cache_str;
+        str_tmp.erase(0, 1);
+        str_tmp.erase(str_tmp.find("\""));
+        return str_tmp;
+    }
+    catch (const std::logic_error &_excp) {
+        (_log << bwtools::fatal) << (log_message(log_type::fatal) << "Invalid structure of the bweas cache file");
+    }
+}
+void fast_cache::extract_cache_data(const string &cache_str) {
     sc::target_out trg_tmp;
     sc::template_command tcmd_tmp;
     sc::template_command::arg arg_tmp;
@@ -141,6 +152,7 @@ void fast_cache::extract_cache_data(string &&cache_str) {
     char *tproj_p = (char *)&trg_tmp.prj;
     char *ccmp_p  = (char *)&ccmp_tmp;
 
+    bool is_beg_file         = 1;
     bool is_beg_custom_field = 0;
 
     bool open_sk                 = 0;
@@ -159,6 +171,12 @@ void fast_cache::extract_cache_data(string &&cache_str) {
 
             if (cache_str[i] == ' ' && !str_tmp.empty() && !open_sk) {
             next_word:
+                if (is_beg_file) {
+                    context->path_bweas_config = str_tmp;
+
+                    is_beg_file = 0;
+                    goto next;
+                }
                 ++count_word;
                 if (enum_global_extern_args) {
                     if (!size_global_extern_args)
@@ -345,3 +363,4 @@ void fast_cache::extract_cache_data(string &&cache_str) {
         (_log << bwtools::fatal) << (log_message(log_type::fatal) << "Invalid structure of the bweas cache file");
     }
 }
+

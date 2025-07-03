@@ -12,22 +12,8 @@
 
 #include <fstream>
 
-#ifndef _DEBUG
-#define FATAL(str)                                                                                                     \
-    if (errno)                                                                                                         \
-    bwtools::fatal(str)
-
-#else
-#define FATAL(str)                                                                                                     \
-    if (errno)                                                                                                         \
-    bwtools::fatal(std::string(__FILE__) + ":" + std::to_string(__LINE__) + " " + std::string(__func__) + "() " str)
-#endif
-
-#define FATAL_ERROR 1
-
 namespace bweas {
 class bwtools;
-extern bwtools _bwtools;
 } // namespace bweas
 
 // A base class that implements many auxiliary functions
@@ -36,6 +22,19 @@ class bweas::bwtools {
     bwtools() = delete;
 
   public:
+#if defined(WIN)
+    class virtual_terminal {
+      public:
+        static void init() {
+            static virtual_terminal vterminal;
+        }
+
+      private:
+        virtual_terminal();
+        ~virtual_terminal();
+    };
+#endif
+
     struct file {
         struct mode_file {
           private:
@@ -153,10 +152,10 @@ class bweas::bwtools {
     static void error(std::string_view str_error = "");
     static void fatal(std::string_view str_error = "");
 
-    static std::string get_time();
+    static string get_time();
 
-    static std::string get_path_program();
-    static std::string get_current_path();
+    static string get_path_program();
+    static string get_current_path();
 
   public:
     static file_it open_file(std::string_view name_file, file::mode_file::open mode = file::mode_file::open::r);
@@ -168,12 +167,12 @@ class bweas::bwtools {
     static file_it get_iterator_file(std::string_view name_file);
     static file &get_ref_file(file_it file);
 
-    static std::string read_file(file &file, file::mode_file::input mode = file::mode_file::input::read_default);
-    static void write_file(file &file, std::string_view buf,
+    static string read_file(file &file, file::mode_file::input mode = file::mode_file::input::read_default);
+    static void write_file(file &file, string_v buf,
                            file::mode_file::output mode = file::mode_file::output::write_default);
 
   private:
-    static std::vector<file> files;
+    static vec<file> files;
 };
 
 #endif

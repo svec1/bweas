@@ -104,7 +104,7 @@ class bweas::builder final {
 
     /** \brief Generates a cache file of all targets that were created by the interpreter.
      *
-     *  \return 1 - if the cache file is generated, 0 - otherwise.
+     *  \return 0 - if the cache file is generated, 1 - otherwise.
      */
     size_t gen_cache_target();
 
@@ -116,9 +116,6 @@ class bweas::builder final {
      *
      */
     void build_targets();
-
-    // Deserializes the bweas cache file
-    void deserl_cache();
 
   protected:
     /**
@@ -139,8 +136,6 @@ class bweas::builder final {
   private:
     sc::version version{VERSION_FULL_STR};
     mode_working mode_bweas{mode_working::undef};
-
-    string path_bweas_config, path_bweas_to_build;
 };
 
 #endif

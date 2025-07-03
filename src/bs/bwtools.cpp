@@ -8,29 +8,36 @@
 #include <algorithm>
 #include <cerrno>
 #include <chrono>
+#include <cstring>
 #include <ctime>
 #include <iomanip>
 #include <stdlib.h>
 
-#include <cstring>
-
 #include <bwmacros_platform.h>
 #include <bwtools.hpp>
 
-#if defined(UNIX)
-#include <linux/limits.h>
-#include <unistd.h>
-#else
+#define IF_ERRNO()                                                                                                     \
+    if (errno)                                                                                                         \
+        bwtools::fatal(std::strerror(errno));
 
+#if defined(WIN)
 static HANDLE STD_HANDLE = GetStdHandle(STD_OUTPUT_HANDLE);
 
+virtual_terminal::virtual_terminal() {
+    DWORD mode;
+    GetConsoleMode(STD_HANDLE, &mode);
+    mode |= ENABLE_PROCESSED_OUTPUT | ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+    SetConsoleMode(STD_HANDLE, mode);
+}
+virtual_terminal::~virtual_terminal() {
+    SetConsoleMode(STD_HANDLE, 0);
+}
 #endif
 
 using namespace bweas;
 
-std::vector<bwtools::file> bwtools::files;
+vec<bwtools::file> bwtools::files;
 
-#if defined(UNIX)
 void bwtools::message(std::string_view str) {
     std::fprintf(stdout, "%s\n", str.data());
 }
@@ -54,41 +61,8 @@ void bwtools::fatal(std::string_view str_err) {
     else
         std::fprintf(stderr, "%s\e[0m\n", str_err.data());
 
-    exit(FATAL_ERROR);
+    exit(1);
 }
-#else
-void bwtools::message(std::string_view str) {
-    std::fprintf(stdout, "%s\n", str.data());
-}
-void bwtools::success(std::string_view str) {
-    SetConsoleTextAttribute(STD_HANDLE, 10);
-    std::fprintf(stdout, "%s\n", str.data());
-    SetConsoleTextAttribute(STD_HANDLE, 15);
-}
-void bwtools::warning(std::string_view str_warn) {
-    SetConsoleTextAttribute(STD_HANDLE, 14);
-    std::fprintf(stderr, "%s\n", str_warn.data());
-    SetConsoleTextAttribute(STD_HANDLE, 15);
-}
-void bwtools::error(std::string_view str_err) {
-    SetConsoleTextAttribute(STD_HANDLE, 12);
-    if (str_err.empty())
-        std::fprintf(stderr, "%s\n", std::strerror(errno));
-    else
-        std::fprintf(stderr, "%s\n", str_err.data());
-    SetConsoleTextAttribute(STD_HANDLE, 15);
-}
-void bwtools::fatal(std::string_view str_err) {
-    SetConsoleTextAttribute(STD_HANDLE, 12);
-    if (str_err.empty())
-        std::fprintf(stderr, "%s\n", std::strerror(errno));
-    else
-        std::fprintf(stderr, "%s\n", str_err.data());
-    SetConsoleTextAttribute(STD_HANDLE, 15);
-
-    ExitProcess(FATAL_ERROR);
-}
-#endif
 
 std::string bwtools::get_time() {
     auto time    = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
@@ -105,13 +79,13 @@ std::string bwtools::get_path_program() {
     GetModuleFileNameA(NULL, buffer, MAX_PATH);
 #elif defined(UNIX)
     char buffer[PATH_MAX];
-    ssize_t count = readlink("/proc/self/exe", buffer, PATH_MAX);
+    readlink("/proc/self/exe", buffer, PATH_MAX);
 #endif
     std::string str(buffer);
     str.erase(str.find_last_of("/\\"), str.size());
 
-    FATAL();
-    return str;
+    IF_ERRNO();
+    return str + "/";
 }
 std::string bwtools::get_current_path() {
     return fs::current_path().string();

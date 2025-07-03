@@ -8,6 +8,10 @@
 #include "bs/bwbuild_sys.hpp"
 
 int main(int argc, char **argv) {
+#if defined(WIN)
+    bwtools::virtual_terminal::init();
+#endif
+
     bweas::builder bw(argc, argv);
     bw.start();
 

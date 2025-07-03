@@ -10,12 +10,6 @@
 
 #include <bwmacros_platform.h>
 
-#define DEFAULT_BWEAS_JSON_CONFIG                                                                                      \
-    "{ \
-        \"cache-gn \": \"fast_bwcache\", \
-        \"packages\": [] \
-    }"
-
 #define DEFAULT_BWEAS_GENERATOR "bwgenerator"
 
 #if defined(WIN)

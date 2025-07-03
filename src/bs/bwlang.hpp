@@ -20,7 +20,7 @@ class lang;
 // the standard bweas functions and also provides interaction with the global scope
 class bweas::lang {
   public:
-    lang(string_v bwconf_file = CONFIG_FILE);
+    lang(bw_context *const _context);
 
     lang(lang &&)            = delete;
     lang(const lang &)       = delete;
@@ -50,7 +50,7 @@ class bweas::lang {
     scope &get_global_scope();
     template <typename T> vec<pair<string, T>> &get_class_variables();
 
-    bw_context get_context();
+    void init_context();
 
   private:
     vec<sc::target_out> get_targets();
@@ -59,10 +59,10 @@ class bweas::lang {
     vec<pair<string, string>> get_global_external_args();
 
   private:
+    bw_context *const context;
     interpreter _interpreter;
-    bw_context context;
 };
-lang::lang(string_v bwconf_file) : _interpreter(bwconf_file) {
+lang::lang(bw_context *const _context) : context(_context), _interpreter(context->path_bweas_config) {
     init_scope();
 }
 
@@ -142,13 +142,11 @@ void lang::set_custom_ext_fields_project(map<string, string> custom_ext_fields) 
     sc::project::preset_ext_fields.merge(custom_ext_fields);
 }
 
-bw_context lang::get_context() {
-    context.out_targets          = get_targets();
-    context.templates            = get_templates();
-    context.call_components      = get_call_components();
-    context.global_external_args = get_global_external_args();
-
-    return context;
+void lang::init_context() {
+    context->out_targets          = get_targets();
+    context->templates            = get_templates();
+    context->call_components      = get_call_components();
+    context->global_external_args = get_global_external_args();
 }
 
 vec<sc::target_out> lang::get_targets() {

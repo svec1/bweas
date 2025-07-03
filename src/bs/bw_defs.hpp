@@ -45,6 +45,8 @@ struct bw_context {
 
     sc::target_out *current_target;
     string current_work_directory;
+
+    string path_bweas_config, path_bweas_to_build;
 };
 
 } // namespace bweas

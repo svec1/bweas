@@ -11,9 +11,9 @@
 
 using namespace bweas;
 
-static constexpr const char *NAME_FUNCTION_GENERATE       = "generate";
-static constexpr const char *NAME_FUNCTION_BUILD_DEPENDS  = "build_graph_depends_file";
-static constexpr const char *NAME_FUNCTION_GET_INPUT_FILE = "get_input_files";
+static constexpr auto NAME_FUNCTION_GENERATE       = "generate";
+static constexpr auto NAME_FUNCTION_BUILD_DEPENDS  = "build_graph_depends_file";
+static constexpr auto NAME_FUNCTION_GET_INPUT_FILE = "get_input_files";
 
 static logger _log{"BWGENERATOR[LUA]"};
 

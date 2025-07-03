@@ -22,6 +22,8 @@ json_cache::json_cache(bw_context *const context) : base_cache(context) {
 string json_cache::create_cache() {
     nlohmann::json cache_data;
 
+    cache_data["config_file"] = context->path_bweas_config;
+
     for (const auto &target : context->out_targets)
         cache_data["targets"][target.name] = {{"type", sc::target_type_str(target.type)},
                                               {"configuration", sc::target_cfg_str(target.cfg)},
@@ -64,10 +66,22 @@ string json_cache::create_cache() {
 
     return cache_data.dump(4);
 }
-
-void json_cache::extract_cache_data(string &&cache_str) {
+string json_cache::get_path_config(const string &cache_str) {
     try {
         nlohmann::json cache_data = nlohmann::json::parse(cache_str);
+        return cache_data["config_file"];
+    }
+    catch (std::exception &what) {
+        (_log << bwtools::fatal) << (log_message(log_type::fatal)
+                                     << "Invalid structure of the bweas cache file: " << what.what());
+    }
+}
+
+void json_cache::extract_cache_data(const string &cache_str) {
+    try {
+        nlohmann::json cache_data = nlohmann::json::parse(cache_str);
+
+        context->path_bweas_config = cache_data["config_file"];
 
         for (const auto &target : cache_data["targets"].items()) {
             sc::target_out target_o_tmp;

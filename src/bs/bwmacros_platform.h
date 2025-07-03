@@ -10,11 +10,10 @@
 
 // macro set
 
-#define _DEBUG
-
 #if defined(__unix__) || defined(__unix) || (defined(__APPLE__) && defined(__MACH__))
 #define UNIX
 
+#include <linux/limits.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
