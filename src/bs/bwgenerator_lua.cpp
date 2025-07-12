@@ -26,7 +26,9 @@ generator_api::lua_generator::lua_generator(string_v src_lua) {
     }
 }
 
-void generator_api::lua_generator::init() {
+void generator_api::lua_generator::init(context *const __context) {
+    base_generator::init(__context);
+
     if (!lua.is_created())
         (_log << bwtools::fatal) << (log_message(log_type::fatal) << "Lua script not loaded");
     else if (!lua.is_function(NAME_FUNCTION_GENERATE))
@@ -53,47 +55,54 @@ uset<string> generator_api::lua_generator::build_graph_depends_file(string_v lan
     return {};
 }
 
-void generator_api::lua_generator::get_input_files(data_transfer &data_t) {
+void generator_api::lua_generator::get_input_files() {
     lua_tools::array<lua_tools::table<string_v, string>> ccmps;
-    for (const auto &call_component : data_t.context->call_components)
+    for (const auto &call_component : _context->call_components)
         ccmps.emplace_back(lua_tools::conv_to_table(call_component));
     lua_tools::array<lua_tools::table<string_v, any>> tcmd_s_vec;
-    for (const auto &_template : data_t.context->templates)
+    for (const auto &_template : _context->templates)
         tcmd_s_vec.emplace_back(lua_tools::conv_to_table(_template));
 
     try {
-        lua["CURRENT_TARGET"]          = lua_tools::conv_to_table(*data_t.context->current_target);
+        lua["CURRENT_TARGET"]          = lua_tools::conv_to_table(*_context->current_target);
         lua["CURRENT_QUEUE_TEMPLATES"] = tcmd_s_vec;
         lua["CCMPS"]                   = ccmps;
 
-        data_t.ifiles = bwlua::lua::to_map(lua.call_function<lua_tools::table<string, lua_tools::array<string>>,
-                                                             lua_tools::table<string, lua_tools::array<string>>>(
-            NAME_FUNCTION_GET_INPUT_FILE, lua_tools::conv_to_table(data_t.dfiles)));
+        const auto ifiles_map =
+            bwlua::lua::to_map(lua.call_function<lua_tools::table<string, lua_tools::array<string>>,
+                                                 lua_tools::table<string, lua_tools::array<string>>>(
+                NAME_FUNCTION_GET_INPUT_FILE, lua_tools::conv_to_table(_context->dfiles)));
+
+        for (auto ifiles : ifiles_map) {
+            const auto &it = std::find_if(
+                _context->current_target->queue_templates.begin(), _context->current_target->queue_templates.end(),
+                [&ifiles](const sc::template_command &tcmd_tmp) { return tcmd_tmp.name == ifiles.first; });
+            it->ifiles.insert(it->ifiles.end(), ifiles.second.begin(), ifiles.second.end());
+        }
     }
     catch (std::exception &excp) {
         _log << bwtools::fatal
              << (log_message(log_type::fatal) << "Couldn't get the input files for the current target's templates("
-                                              << data_t.context->current_target->name << "):\n"
+                                              << _context->current_target->name << "):\n"
                                               << excp.what());
     }
 }
 
-generator_api::commands generator_api::lua_generator::generate_commands(data_transfer &data_t) {
+generator_api::commands generator_api::lua_generator::generate_commands() {
     vec<lua_tools::table<string_v, any>> tcmd_s_vec;
-    for (const auto &_template : data_t.context->templates)
+    for (const auto &_template : _context->templates)
         tcmd_s_vec.emplace_back(lua_tools::conv_to_table(_template));
 
-    lua["CURRENT_TARGET"]          = lua_tools::conv_to_table(*data_t.context->current_target);
+    lua["CURRENT_TARGET"]          = lua_tools::conv_to_table(*_context->current_target);
     lua["CURRENT_QUEUE_TEMPLATES"] = tcmd_s_vec;
-    lua["CURRENT_DIR"]             = data_t.context->current_work_directory;
+    lua["CURRENT_DIR"]             = _context->current_work_directory;
 
     try {
-        generator_tools::parse_basic_args(*data_t.context->current_target, data_t.context->templates,
-                                          data_t.context->global_external_args);
+        generator_tools::parse_basic_args(*_context->current_target, _context->templates,
+                                          _context->global_external_args);
         map<string, pair<string, vec<string>>> commands_map = bwlua::lua::to_map(
             lua.call_function<lua_tools::table<string, lua_tools::key_value<string, lua_tools::array<string>>>,
-                              lua_tools::table<string, lua_tools::array<string>>>(NAME_FUNCTION_GENERATE,
-                                                                                  bwlua::lua::to_table(data_t.ifiles)));
+                              lua_tools::nil>(NAME_FUNCTION_GENERATE, lua_tools::nil{}));
 
         generator_api::commands cmd_s;
         for (const auto &[name_used_file, command] : commands_map)
@@ -104,7 +113,7 @@ generator_api::commands generator_api::lua_generator::generate_commands(data_tra
     catch (std::exception &excp) {
         _log << bwtools::fatal
              << (log_message(log_type::fatal) << "Failed to generate a template command for the current target("
-                                              << data_t.context->current_target->name << "):\n"
+                                              << _context->current_target->name << "):\n"
                                               << excp.what());
     }
 

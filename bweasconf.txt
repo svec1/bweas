@@ -4,18 +4,23 @@ create_call_component(clang_obj, "clang++", "object.obj")
 create_call_component(arch_lib, "ar", "bweas.a")
 create_call_component(clang_exec, "clang++", "bweas.exe")
 
-create_template(template_flex,  "[100] flex(NULL) -> T_PROJECT_SRC_FILES: <'-o'> FBS_CURRENT_OUTPUT_FILE <[T_PROJECT_SRC_FILES:lexer.l]>")
-create_template(template_bison, "[100] bison(NULL) -> T_PROJECT_SRC_FILES: <'-o'> FBS_CURRENT_OUTPUT_FILE <'-H'> <[T_PROJECT_SRC_FILES:parser.y]>")
-create_template(template_obj,   "[1]   clang_obj(NULL) -> OBJ_S: <'-c'> <[T_PROJECT_SRC_FILES:*.cpp]> <'-o'> FBS_CURRENT_OUTPUT_FILE <'-std=gnu++23'> <'-fPIC'> <[T_PROJECT_INCLUDE_PATHS]>")
-create_template(template_lib,   "[0]   arch_lib(OBJ_S) -> LIBRARY: <'rcs'> FBS_CURRENT_OUTPUT_FILE <{OBJ_S}>")
+create_template(template_flex,  "flex(NULL) -> T_PROJECT_SRC_FILES: <'-o'> FBS_CURRENT_OUTPUT_FILE <[T_PROJECT_SRC_FILES:lexer.l]>")
+create_template(template_bison, "bison(NULL) -> T_PROJECT_SRC_FILES: <'-o'> FBS_CURRENT_OUTPUT_FILE <'-H'> <[T_PROJECT_SRC_FILES:parser.y]>")
+create_template(template_obj,   "clang_obj(NULL) -> OBJ_S: <'-c'> <[T_PROJECT_SRC_FILES:*.cpp]> <'-o'> FBS_CURRENT_OUTPUT_FILE <'-std=gnu++23'> <'-fPIC'> <[T_PROJECT_INCLUDE_PATHS]>")
+create_template(template_lib,   "arch_lib(OBJ_S) -> LIBRARY: <'rcs'> FBS_CURRENT_OUTPUT_FILE <{OBJ_S}>")
 
-create_template(template_exec,  "[0]   clang_exec(LIBRARY) -> EXECUTABLE: <'src/bweas.cpp'> <{LIBRARY}> <'-o'> FBS_CURRENT_OUTPUT_FILE <[T_PROJECT_INCLUDE_PATHS]> <'-llz4'> <'-lluajit-5.1'>")
+create_template(template_exec,  "clang_exec(BWEAS_SLIB) -> EXECUTABLE: FBS_CURRENT_INPUT_FILE <{BWEAS_SLIB}> <'-o'> FBS_CURRENT_OUTPUT_FILE <[T_PROJECT_INCLUDE_PATHS]> <'-std=gnu++23'> <'-llz4'> <'-llua'> <'-lluajit-5.1'>")
 
 file(SRC_FILES, 0, "src/bs/*.cpp", "src/bs/lang/*.cpp", "src/bs/lang/lexer.l", "src/bs/lang/parser.y")
+file(BWEAS_MAIN_FILE, 0, "src/bweas.cpp")
 
 project(BWEAS_SLIB_PROJECT, SRC_FILES)
+project(BWEAS_PROJECT, BWEAS_MAIN_FILE)
 
 include_directories(BWEAS_SLIB_PROJECT, "src/bs/")
+include_directories(BWEAS_PROJECT, "src/bs/")
 use_templates(BWEAS_SLIB_PROJECT, template_flex, template_bison, template_obj, template_lib)
+use_templates(BWEAS_PROJECT, template_exec)
 
 create_target(BWEAS_SLIB, BWEAS_SLIB_PROJECT, LIBRARY)
+create_target(BWEAS, BWEAS_PROJECT, EXECUTABLE)

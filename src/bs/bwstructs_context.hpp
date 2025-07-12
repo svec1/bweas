@@ -81,6 +81,9 @@ static constexpr auto NAME_FIELD_TEMPLATE_COMMAND_NAME_ACCEPTS_ARGS = "_ACP_ARGS
 static constexpr auto NAME_FIELD_TEMPLATE_COMMAND_RET               = "_RETURN";
 static constexpr auto NAME_FIELD_TEMPLATE_COMMAND_NAME_ARGS         = "_ARGS";
 
+static constexpr auto NAME_FIELD_TEMPLATE_COMMAND_IFILES           = "_IFILES";
+static constexpr auto NAME_FIELD_TEMPLATE_COMMAND_SINGLE_GENERATES = "_SINGLE_GENERATE";
+
 static constexpr auto NAME_FIELD_CALL_COMPONENT_NAME          = "_NAME";
 static constexpr auto NAME_FIELD_CALL_COMPONENT_NAME_PROGRAM  = "_NAME_PROGRAM";
 static constexpr auto NAME_FIELD_CALL_COMPONENT_PATTERN_FILES = "_PATTERN_FILES";
@@ -310,7 +313,6 @@ struct template_command {
 
   public:
     string name;
-    pdiff group_id = 0;
 
     string name_call_component;
     string returnable;
@@ -319,7 +321,9 @@ struct template_command {
     vec<arg> args;
 
   public:
-    bool gen_command_for_single_file = 0;
+    vec<string> ifiles;
+    bool single_generates = 0;
+    bool returns_target   = 0;
 };
 
 struct call_component {
@@ -331,8 +335,8 @@ struct call_component {
 };
 
 } // namespace structs_context
-} // namespace bweas
 
-namespace sc = bweas::structs_context;
+namespace sc = structs_context;
+} // namespace bweas
 
 #endif

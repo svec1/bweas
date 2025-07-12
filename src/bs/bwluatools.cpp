@@ -43,7 +43,9 @@ lua_tools::table<string_v, any> lua_tools::conv_to_table(const sc::template_comm
                                 {NAME_FIELD_TEMPLATE_COMMAND_NAME_CCMP, tmp_c.name_call_component},
                                 {NAME_FIELD_TEMPLATE_COMMAND_NAME_ACCEPTS_ARGS, tmp_c.name_accept_params},
                                 {NAME_FIELD_TEMPLATE_COMMAND_NAME_ARGS, conv_to_table(tmp_c.args)},
-                                {NAME_FIELD_TEMPLATE_COMMAND_RET, tmp_c.returnable}};
+                                {NAME_FIELD_TEMPLATE_COMMAND_RET, tmp_c.returnable},
+                                {NAME_FIELD_TEMPLATE_COMMAND_IFILES, tmp_c.ifiles},
+                                {NAME_FIELD_TEMPLATE_COMMAND_SINGLE_GENERATES, (pdiff)tmp_c.single_generates}};
 }
 
 lua_tools::table<string_v, string> lua_tools::conv_to_table(const sc::call_component &ccmp) {
@@ -124,7 +126,9 @@ sc::template_command lua_tools::conv_to_template(lua_tools::table<string, any> &
     _tcmd.name_accept_params  = std::any_cast<vec<string>>(tcmd[NAME_FIELD_TEMPLATE_COMMAND_NAME_ACCEPTS_ARGS]);
     _tcmd.args                = conv_to_args(
         std::any_cast<bwlua::lua::array<bwlua::lua::array<any>>>(tcmd[NAME_FIELD_TEMPLATE_COMMAND_NAME_ARGS]));
-    _tcmd.returnable = std::any_cast<string>(tcmd[NAME_FIELD_TEMPLATE_COMMAND_RET]);
+    _tcmd.returnable       = std::any_cast<string>(tcmd[NAME_FIELD_TEMPLATE_COMMAND_RET]);
+    _tcmd.ifiles           = std::any_cast<vec<string>>(tcmd[NAME_FIELD_TEMPLATE_COMMAND_IFILES]);
+    _tcmd.single_generates = std::any_cast<pdiff>(tcmd[NAME_FIELD_TEMPLATE_COMMAND_SINGLE_GENERATES]);
 
     return _tcmd;
 }

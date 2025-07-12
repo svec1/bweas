@@ -75,13 +75,12 @@ std::string bwtools::get_time() {
 
 std::string bwtools::get_path_program() {
 #if defined(WIN)
-    char buffer[MAX_PATH];
-    GetModuleFileNameA(NULL, buffer, MAX_PATH);
+    std::string str(MAX_PATH, '\0');
+    GetModuleFileNameA(NULL, str.data(), MAX_PATH);
 #elif defined(UNIX)
-    char buffer[PATH_MAX];
-    readlink("/proc/self/exe", buffer, PATH_MAX);
+    std::string str(PATH_MAX, '\0');
+    readlink("/proc/self/exe", str.data(), PATH_MAX);
 #endif
-    std::string str(buffer);
     str.erase(str.find_last_of("/\\"), str.size());
 
     IF_ERRNO();

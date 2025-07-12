@@ -108,8 +108,8 @@ class bweas::builder final {
      */
     size_t gen_cache_target();
 
-    depends_files::depends_map load_depends_file(std::unique_ptr<depends_files> &_depends_files,
-                                                 const sc::target_out target);
+    depends_files::depends_map &load_depends_file(std::unique_ptr<depends_files> &_depends_files,
+                                                  const sc::target_out target);
 
   private:
     /** \brief Collects projects(out_targets) by initializing the generator and calling(bwIGenerator::gen_commands)
@@ -121,7 +121,7 @@ class bweas::builder final {
     /**
      * \brief The state of the entire build system.
      */
-    bw_context context;
+    context _context;
 
   private:
     std::unique_ptr<cache_api::base_cache> cache;

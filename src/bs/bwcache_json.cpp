@@ -14,17 +14,12 @@ using namespace cache_api;
 
 static logger _log{"BWCACHE[JSON]"};
 
-json_cache::json_cache(bw_context *const context) : base_cache(context) {
-    if (!context)
-        (_log << bwtools::fatal) << (log_message(log_type::fatal) << "Bweas the context is not defined");
-}
-
 string json_cache::create_cache() {
     nlohmann::json cache_data;
 
-    cache_data["config_file"] = context->path_bweas_config;
+    cache_data["config_file"] = _context->path_bweas_config;
 
-    for (const auto &target : context->out_targets)
+    for (const auto &target : _context->out_targets)
         cache_data["targets"][target.name] = {{"type", sc::target_type_str(target.type)},
                                               {"configuration", sc::target_cfg_str(target.cfg)},
                                               {"version", target.ver.get_str_version()},
@@ -47,20 +42,19 @@ string json_cache::create_cache() {
                                                 {"templates", target.prj.vec_templates},
                                                 {"custom_extension_fields", target.prj.custom_ext_fields}}}};
 
-    for (const auto &_template : context->templates) {
+    for (const auto &_template : _context->templates) {
         cache_data["templates"][_template.name] = {{"name_call_component", _template.name_call_component},
                                                    {"returnable", _template.returnable},
-                                                   {"group_id", _template.group_id},
                                                    {"accept_params", _template.name_accept_params}};
         for (const auto &arg : _template.args)
             cache_data["templates"][_template.name]["args"].push_back({{"type", arg.arg_t}, {"str", arg.str_arg}});
     }
 
-    for (const auto &call_component : context->call_components)
+    for (const auto &call_component : _context->call_components)
         cache_data["call_components"][call_component.name] = {{"name_program", call_component.name_program},
                                                               {"pattern_ret_files", call_component.pattern_ret_files}};
 
-    for (const auto &global_external_arg : context->global_external_args)
+    for (const auto &global_external_arg : _context->global_external_args)
         cache_data["global_external_args"].push_back(
             {{"name", global_external_arg.first}, {"value", global_external_arg.second}});
 
@@ -81,7 +75,7 @@ void json_cache::extract_cache_data(const string &cache_str) {
     try {
         nlohmann::json cache_data = nlohmann::json::parse(cache_str);
 
-        context->path_bweas_config = cache_data["config_file"];
+        _context->path_bweas_config = cache_data["config_file"];
 
         for (const auto &target : cache_data["targets"].items()) {
             sc::target_out target_o_tmp;
@@ -111,7 +105,7 @@ void json_cache::extract_cache_data(const string &cache_str) {
             target_o_tmp.prj.vec_templates     = prj["templates"];
             target_o_tmp.prj.custom_ext_fields = prj["custom_extension_fields"];
 
-            context->out_targets.push_back(target_o_tmp);
+            _context->out_targets.push_back(target_o_tmp);
         }
 
         for (const auto &_template : cache_data["templates"].items()) {
@@ -121,13 +115,12 @@ void json_cache::extract_cache_data(const string &cache_str) {
             const auto &fields               = _template.value();
             template_tmp.name_call_component = fields["name_call_component"];
             template_tmp.returnable          = fields["returnable"];
-            template_tmp.group_id            = fields["group_id"];
             template_tmp.name_accept_params  = fields["accept_params"];
             for (const auto &arg : fields["args"])
                 template_tmp.args.push_back(
                     sc::template_command::arg(arg["str"], (sc::template_command::arg::type)arg["type"]));
 
-            context->templates.push_back(template_tmp);
+            _context->templates.push_back(template_tmp);
         }
 
         for (const auto &call_component : cache_data["call_components"].items()) {
@@ -138,11 +131,12 @@ void json_cache::extract_cache_data(const string &cache_str) {
             call_component_tmp.name_program      = fields["name_program"];
             call_component_tmp.pattern_ret_files = fields["pattern_ret_files"];
 
-            context->call_components.push_back(call_component_tmp);
+            _context->call_components.push_back(call_component_tmp);
         }
 
         for (const auto &call_component : cache_data["global_external_args"].items())
-            context->global_external_args.emplace_back(call_component.value()["name"], call_component.value()["value"]);
+            _context->global_external_args.emplace_back(call_component.value()["name"],
+                                                        call_component.value()["value"]);
     }
     catch (std::exception &what) {
         (_log << bwtools::fatal) << (log_message(log_type::fatal)

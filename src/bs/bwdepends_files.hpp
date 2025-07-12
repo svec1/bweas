@@ -8,7 +8,7 @@
 #ifndef BWDEPENDS_FILES_HPP
 #define BWDEPENDS_FILES_HPP
 
-#include <bw_defs.hpp>
+#include <bwaliases.hpp>
 
 namespace bweas {
 class depends_files;

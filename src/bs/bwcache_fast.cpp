@@ -12,11 +12,6 @@ using namespace cache_api;
 
 static logger _log{"BWCACHE[FAST]"};
 
-fast_cache::fast_cache(bw_context *const _context) : base_cache(_context) {
-    if (!context)
-        (_log << bwtools::fatal) << (log_message(log_type::fatal) << "Bweas the context is not defined");
-}
-
 string fast_cache::create_cache() {
     string serel_target_tmp;
 
@@ -24,10 +19,12 @@ string fast_cache::create_cache() {
     uset<string> all_used_globally_args;
     uset<string> all_used_call_component;
 
-    auto &out_targets                = context->out_targets;
-    const auto &templates            = context->templates;
-    const auto &call_components      = context->call_components;
-    const auto &global_external_args = context->global_external_args;
+    auto &out_targets                = _context->out_targets;
+    const auto &templates            = _context->templates;
+    const auto &call_components      = _context->call_components;
+    const auto &global_external_args = _context->global_external_args;
+
+    serel_target_tmp += "\"" + _context->path_bweas_config + "\" ";
 
     for (pdiff i = 0; i < out_targets.size(); ++i) {
         if (!out_targets[i].prj.vec_templates.size())
@@ -38,8 +35,7 @@ string fast_cache::create_cache() {
             out_targets[i].target_vec_libs.push_back("null");
 
         char *prj_v = (char *)&out_targets[i];
-        serel_target_tmp += "\"" + context->path_bweas_config + "\" " +
-                            std::to_string(out_targets[i].prj.src_files.size()) + " " +
+        serel_target_tmp += std::to_string(out_targets[i].prj.src_files.size()) + " " +
                             std::to_string(out_targets[i].prj.include_paths.size()) + " " +
                             std::to_string(out_targets[i].prj.vec_templates.size()) + " " +
                             std::to_string(out_targets[i].prj.custom_ext_fields.size()) + " " +
@@ -88,8 +84,7 @@ string fast_cache::create_cache() {
     for (size_t i = 0; i < templates.size(); ++i) {
         serel_target_tmp += std::to_string(templates[i].name_accept_params.size()) + " " +
                             std::to_string(templates[i].args.size()) + " " + templates[i].name + " " +
-                            templates[i].name_call_component + " " + templates[i].returnable + " " +
-                            std::to_string(templates[i].group_id) + " ";
+                            templates[i].name_call_component + " " + templates[i].returnable + " ";
 
         all_used_call_component.emplace(templates[i].name_call_component);
 
@@ -172,7 +167,7 @@ void fast_cache::extract_cache_data(const string &cache_str) {
             if (cache_str[i] == ' ' && !str_tmp.empty() && !open_sk) {
             next_word:
                 if (is_beg_file) {
-                    context->path_bweas_config = str_tmp;
+                    _context->path_bweas_config = str_tmp;
 
                     is_beg_file = 0;
                     goto next;
@@ -184,11 +179,11 @@ void fast_cache::extract_cache_data(const string &cache_str) {
                     string name_arg = str_tmp;
                     name_arg.erase(name_arg.find("-"));
                     str_tmp.erase(0, str_tmp.find("-") + 1);
-                    context->global_external_args.push_back(pair<string, string>(name_arg, str_tmp));
+                    _context->global_external_args.push_back(pair<string, string>(name_arg, str_tmp));
                 }
                 else if (enum_call_component) {
                     if (offset_byte_ccmp / sizeof(string) == 3) {
-                        context->call_components.push_back(ccmp_tmp);
+                        _context->call_components.push_back(ccmp_tmp);
                         offset_byte_ccmp = 0;
 
                         --size_call_components;
@@ -215,13 +210,11 @@ void fast_cache::extract_cache_data(const string &cache_str) {
                         tcmd_tmp.name_call_component = str_tmp;
                     else if (count_word == 5)
                         tcmd_tmp.returnable = str_tmp;
-                    else if (count_word == 6)
-                        tcmd_tmp.group_id = std::stoi(str_tmp);
-                    else if (count_word >= 7 && count_word < 7 + size_internal_args)
+                    else if (count_word >= 6 && count_word < 6 + size_internal_args)
                         tcmd_tmp.name_accept_params.push_back(str_tmp);
-                    else if ((count_word >= 7 + size_internal_args &&
-                              count_word < 7 + size_internal_args + (size_external_args * 2)) ||
-                             count_word == 7 + size_internal_args) {
+                    else if ((count_word >= 6 + size_internal_args &&
+                              count_word < 6 + size_internal_args + (size_external_args * 2)) ||
+                             count_word == 6 + size_internal_args) {
                         if (expected_arg_param_str) {
                             arg_tmp.str_arg        = str_tmp;
                             expected_arg_param_str = 0;
@@ -232,8 +225,8 @@ void fast_cache::extract_cache_data(const string &cache_str) {
                             expected_arg_param_str = 1;
                         }
                     }
-                    else if (count_word == 7 + size_internal_args + (size_external_args * 2)) {
-                        context->templates.push_back(tcmd_tmp);
+                    else if (count_word == 6 + size_internal_args + (size_external_args * 2)) {
+                        _context->templates.push_back(tcmd_tmp);
                         --size_templates;
 
                         tcmd_tmp.name_accept_params = {};
@@ -325,7 +318,7 @@ void fast_cache::extract_cache_data(const string &cache_str) {
                                 trg_tmp.target_vec_libs.push_back(str_tmp);
                             else if (count_word == 17 + size_src_files + size_include_paths + size_vec_templates +
                                                        size_custom_ext_fields + 5 + size_vec_libs) {
-                                context->out_targets.push_back(trg_tmp);
+                                _context->out_targets.push_back(trg_tmp);
 
                                 trg_tmp.target_vec_libs   = {};
                                 trg_tmp.prj.src_files     = {};

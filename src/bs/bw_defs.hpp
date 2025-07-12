@@ -20,6 +20,8 @@
 #include <bwlogger.hpp>
 #include <lang/interpreter.hpp>
 
+#include <bwdepends_files.hpp>
+
 namespace bweas {
 
 using mf      = bwtools::file::mode_file;
@@ -37,12 +39,16 @@ static constexpr auto DEPENDS_FILE   = "bwdependencies";
 static constexpr auto FORMAT_PACKAGE = ".bweas-package";
 
 // The structure defining the main data for the build
-struct bw_context {
+struct context {
     vec<sc::target_out> out_targets;
     vec<sc::template_command> templates;
     vec<sc::call_component> call_components;
     vec<pair<string, string>> global_external_args;
 
+  public:
+    depends_files::depends_map dfiles;
+
+  public:
     sc::target_out *current_target;
     string current_work_directory;
 

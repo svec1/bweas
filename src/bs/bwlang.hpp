@@ -20,7 +20,7 @@ class lang;
 // the standard bweas functions and also provides interaction with the global scope
 class bweas::lang {
   public:
-    lang(bw_context *const _context);
+    lang(context *const __context);
 
     lang(lang &&)            = delete;
     lang(const lang &)       = delete;
@@ -59,10 +59,10 @@ class bweas::lang {
     vec<pair<string, string>> get_global_external_args();
 
   private:
-    bw_context *const context;
+    context *const _context;
     interpreter _interpreter;
 };
-lang::lang(bw_context *const _context) : context(_context), _interpreter(context->path_bweas_config) {
+lang::lang(context *const __context) : _context(__context), _interpreter(_context->path_bweas_config) {
     init_scope();
 }
 
@@ -143,10 +143,10 @@ void lang::set_custom_ext_fields_project(map<string, string> custom_ext_fields) 
 }
 
 void lang::init_context() {
-    context->out_targets          = get_targets();
-    context->templates            = get_templates();
-    context->call_components      = get_call_components();
-    context->global_external_args = get_global_external_args();
+    _context->out_targets          = get_targets();
+    _context->templates            = get_templates();
+    _context->call_components      = get_call_components();
+    _context->global_external_args = get_global_external_args();
 }
 
 vec<sc::target_out> lang::get_targets() {

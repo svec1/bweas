@@ -24,10 +24,12 @@ static constexpr auto NAME_VARIABLE_GEARGS      = "global_external_args";
 
 static logger _log{"BWCACHE[LUA]"};
 
-lua_cache::lua_cache(bw_context *const _context, string_v src_lua) : base_cache(_context) {
-    if (!context)
-        (_log << bwtools::fatal) << (log_message(log_type::fatal) << "Bweas the context is not defined");
+lua_cache::lua_cache(string_v src_lua) {
     lua.create(src_lua.data());
+}
+
+void lua_cache::init(context *const __context) {
+    base_cache::init(__context);
 
     if (!lua.is_function(NAME_FUNCTION_CREATE))
         (_log << bwtools::fatal) << (log_message(log_type::fatal) << "No entry function for creates cache");
@@ -42,17 +44,17 @@ string lua_cache::create_cache() {
     lua_tools::param_templates ltcmd_s;
     lua_tools::param_ccomponents lccmp_s;
 
-    for (const auto &ltarget_o : context->out_targets)
+    for (const auto &ltarget_o : _context->out_targets)
         ltargets_o.push_back(lua_tools::conv_to_table(ltarget_o));
-    for (const auto &ltcmd : context->templates)
+    for (const auto &ltcmd : _context->templates)
         ltcmd_s.push_back(lua_tools::conv_to_table(ltcmd));
-    for (const auto &lccmp : context->call_components)
+    for (const auto &lccmp : _context->call_components)
         lccmp_s.push_back(lua_tools::conv_to_table(lccmp));
 
     try {
         return lua.call_function<string, lua_tools::param_targets, lua_tools::param_templates,
                                  lua_tools::param_ccomponents, lua_tools::param_geargs>(
-            NAME_FUNCTION_CREATE, ltargets_o, ltcmd_s, lccmp_s, context->global_external_args);
+            NAME_FUNCTION_CREATE, ltargets_o, ltcmd_s, lccmp_s, _context->global_external_args);
     }
     catch (std::exception &what) {
         (_log << bwtools::fatal) << (log_message(log_type::fatal) << what.what());
@@ -86,11 +88,11 @@ void lua_cache::extract_cache_data(const string &cache_str) {
     }
 
     for (auto &ltarget_o : ltargets_o)
-        context->out_targets.push_back(lua_tools::conv_to_target(ltarget_o));
+        _context->out_targets.push_back(lua_tools::conv_to_target(ltarget_o));
     for (auto &ltcmd : ltcmd_s)
-        context->templates.push_back(lua_tools::conv_to_template(ltcmd));
+        _context->templates.push_back(lua_tools::conv_to_template(ltcmd));
     for (auto &lccmp : lccmp_s)
-        context->call_components.push_back(lua_tools::conv_to_call_components(lccmp));
+        _context->call_components.push_back(lua_tools::conv_to_call_components(lccmp));
 
-    context->global_external_args = lglobal_external_args;
+    _context->global_external_args = lglobal_external_args;
 }

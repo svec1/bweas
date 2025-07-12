@@ -30,22 +30,20 @@ template_command template_command::create_template_command(string_v template_nam
     string tmp_param;
 
     std::regex template_command_syntax(
-        R"(^(?:\[(\d+)\])?\s*(\w+)\(\s*(\w+(?:\s*,\s*\w+)*\s*)\)\s*->\s*(\w+):\s*((?:\w+\s*|<\'[-+\.\/\*=\w]*\'>\s*|<\{\w+\}>\s*|<\w+>\s*|<\[(?:\w+(?::[-+\.\/\*=\w+]+)?)\]>\s*)+)$)");
+        R"(^\s*(\w+)\(\s*(\w+(?:\s*,\s*\w+)*\s*)\)\s*->\s*(\w+):\s*((?:\w+\s*|<\'[-+\.\/\*=\w]*\'>\s*|<\{\w+\}>\s*|<\w+>\s*|<\[(?:\w+(?::[-+\.\/\*=\w+]+)?)\]>\s*)+)$)");
 
     std::smatch args_match;
     if (std::regex_match(template_str, args_match, template_command_syntax)) {
-        if (!args_match[1].str().empty())
-            tcmd_tmp.group_id = std::stoi(args_match[1].str());
-        tcmd_tmp.name_call_component = args_match[2].str();
-        tcmd_tmp.returnable          = args_match[4].str();
+        tcmd_tmp.name_call_component = args_match[1].str();
+        tcmd_tmp.returnable          = args_match[3].str();
 
-        string str_params = args_match[3].str();
+        string str_params = args_match[2].str();
         std::regex params(R"(\w+)");
         for (auto it_match = std::sregex_iterator(str_params.begin(), str_params.end(), params);
              it_match != std::sregex_iterator(); ++it_match)
             tcmd_tmp.name_accept_params.push_back(it_match->str());
 
-        string str_args = args_match[5].str();
+        string str_args = args_match[4].str();
         std::regex args(R"(\s*(\w+|<\'[-+\.\/\*=\w]*\'>|<\{\w+\}>|<\w+>|<\[(?:\w+(?::[-+\.\/\*=\w+]+)?)\]>)(?=\s|$))");
         for (auto it_match = std::sregex_iterator(str_args.begin(), str_args.end(), args);
              it_match != std::sregex_iterator(); ++it_match) {
@@ -96,7 +94,7 @@ template_command template_command::create_template_command(string_v template_nam
     }
     else
         (_log << bwtools::fatal) << (log_message(log_type::fatal)
-                                     << "Invalid syntax. Expected: [GROUP_ID] call_component(PARAM1, PARAM2, ...) -> "
+                                     << "Invalid syntax. Expected: call_component(PARAM1, PARAM2, ...) -> "
                                         "returnable: ARG_FEATURE "
                                         "<ARG_EXTERNAL> <'ARG_STRING'> <{ARG_PARAM}> <[ARG_TARGET_FIELD]>:\n"
                                      << template_str);
@@ -125,10 +123,6 @@ vec<template_command> template_command::create_queue_target_templates(const vec<
         (_log << bwtools::fatal) << (log_message(log_type::fatal)
                                      << "There is no template that returns a target with the given type: "
                                      << it_template->name << " - " << sc::target_type_str(target_t));
-    else if (it_template->group_id != 0)
-        (_log << bwtools::fatal) << (log_message(log_type::fatal)
-                                     << "The template returning the target must have a group id of 0: "
-                                     << it_template->name);
 
     target_queue_templates.push_back(*it_template);
     for (size_t i = 0; i < it_template->name_accept_params.size(); ++i)

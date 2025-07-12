@@ -40,7 +40,7 @@ void generator_tools::parse_basic_args(const sc::target_out &target, vec<sc::tem
                                        const vec<pair<string, string>> &global_extern_args) {
     for (auto &trg_template : target_queue_templates) {
         for (size_t i = 0; i < trg_template.args.size(); ++i) {
-            sc::template_command::arg &current_arg = trg_template.args[i];
+            sc::template_command::arg current_arg = trg_template.args[i];
             if (current_arg.arg_t == sc::template_command::arg::type::string ||
                 current_arg.arg_t == sc::template_command::arg::type::features ||
                 current_arg.arg_t == sc::template_command::arg::type::internal)
@@ -63,12 +63,14 @@ void generator_tools::parse_basic_args(const sc::target_out &target, vec<sc::tem
                     for (size_t k = 0; k < target.target_vec_libs.size(); ++k)
                         trg_template.args.emplace(trg_template.args.begin() + i, "-l" + target.target_vec_libs[k],
                                                   sc::template_command::arg::type::string);
+                    continue;
                 }
                 else if (current_arg.str_arg == NAME_FIELD_PROJECT_INCLUDE_PATHS) {
                     trg_template.args.erase(trg_template.args.begin() + i);
                     for (size_t k = 0; k < target.prj.include_paths.size(); ++k)
                         trg_template.args.emplace(trg_template.args.begin() + i, "-I" + target.prj.include_paths[k],
                                                   sc::template_command::arg::type::string);
+                    continue;
                 }
                 else if (current_arg.str_arg == NAME_FIELD_TARGET_TYPE)
                     current_arg.str_arg = sc::target_type_str(target.type);

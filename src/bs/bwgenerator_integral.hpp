@@ -16,13 +16,12 @@ class integral_generator;
 }
 
 class bweas::integral_generator {
-  public:
     integral_generator() = delete;
 
   public:
-    static void get_input_files(bweas::generator_api::data_transfer &data_t);
+    static void get_input_files(context *const _context);
     // First and basic template-based command generator
-    static generator_api::commands generate(bweas::generator_api::data_transfer &data_t);
+    static generator_api::commands generate(context *const _context);
 };
 
 #endif

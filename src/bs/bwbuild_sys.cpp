@@ -29,7 +29,7 @@ static const string INFO_STR =
     "bweas version " + std::string(VERSION_FULL_STR) + "\nrep on github - https://github.com/svec1/bweas";
 
 static constexpr auto HELP_STR =
-    "bweas-call: \n   bweas <parameter>... path_depending\n   bweas context.path_bweas_config <parameter>..."
+    "bweas-call: \n   bweas <parameter>... path_depending\n   bweas path_bweas_config <parameter>..."
     "\nAcceptable parameters:"
     "\n   --build - builds the project (either by executing the configuration file or deserializing the cache file "
     "if it exists)"
@@ -58,8 +58,8 @@ builder::builder(size_t argv, char **args) {
 }
 
 void builder::handle_args(vec<string> &args) {
-    context.path_bweas_config   = fs::current_path().string() + "/";
-    context.path_bweas_to_build = fs::current_path().string() + "/";
+    _context.path_bweas_config   = fs::current_path().string() + "/";
+    _context.path_bweas_to_build = fs::current_path().string() + "/";
 
     if (args.size() == 1)
         mode_bweas = mode_working::collect_cfg;
@@ -105,15 +105,15 @@ void builder::handle_args(vec<string> &args) {
         else {
             // --cfg <arg> or arg
             if (expected_path_bweas_config) {
-                context.path_bweas_config = fs::absolute(args[i]).lexically_normal().string();
-                mode_bweas                = mode_working::collect_cfg;
+                _context.path_bweas_config = fs::absolute(args[i]).lexically_normal().string();
+                mode_bweas                 = mode_working::collect_cfg;
 
                 expected_path_bweas_config = 0;
             }
             // --build <arg>
             else if (expected_path_to_build) {
-                context.path_bweas_to_build = fs::absolute(args[i]).lexically_normal().string();
-                expected_path_to_build      = 0;
+                _context.path_bweas_to_build = fs::absolute(args[i]).lexically_normal().string();
+                expected_path_to_build       = 0;
             }
             // --package <arg>
             else if (expected_path_json_cfg_package) {
@@ -163,9 +163,9 @@ size_t builder::create_package(string path_json_config_package) {
 }
 
 void builder::init() {
-    fs::current_path(context.path_bweas_config);
+    fs::current_path(_context.path_bweas_config);
 
-    context.path_bweas_config     = context.path_bweas_config + CONFIG_FILE;
+    _context.path_bweas_config    = _context.path_bweas_config + CONFIG_FILE;
     string bweas_json_config_path = bwtools::get_path_program() + JSON_CONFIG_FILE;
 
     nlohmann::json config_json;
@@ -189,12 +189,12 @@ void builder::init() {
             return;
         }
         if (config_json["cache-gn"] == "fast_bwcache")
-            cache = std::unique_ptr<cache_api::base_cache>(cache_api::base_cache::create_fast_cache(&context));
+            cache = std::unique_ptr<cache_api::base_cache>(cache_api::base_cache::create_fast_cache());
         else if (config_json["cache-gn"] == "json_bwcache")
-            cache = std::unique_ptr<cache_api::base_cache>(cache_api::base_cache::create_json_cache(&context));
+            cache = std::unique_ptr<cache_api::base_cache>(cache_api::base_cache::create_json_cache());
     }
     else
-        cache = std::unique_ptr<cache_api::base_cache>(cache_api::base_cache::create_fast_cache(&context));
+        cache = std::unique_ptr<cache_api::base_cache>(cache_api::base_cache::create_fast_cache());
 
     if (config_json.contains("packages")) {
         if (!config_json["packages"].is_array()) {
@@ -227,13 +227,15 @@ void builder::init() {
             if (cache == NULL &&
                 loaded_package.cfg_package.cache.name_cache == config_json["cache-gn"].template get<std::string>())
                 cache = std::unique_ptr<cache_api::base_cache>(
-                    cache_api::base_cache::create_lua_cache(&context, loaded_package.cfg_package.cache.src_lua_cache));
+                    cache_api::base_cache::create_lua_cache(loaded_package.cfg_package.cache.src_lua_cache));
             _log << bwtools::success
                  << (log_message(log_type::msg)
                      << "\"" << path_to_package << "\" bweas package was loaded successfully("
                      << raw_data_package.size() << " bytes)");
         }
     }
+
+    cache->init(&_context);
 
     generators.emplace(
         "bwgenerator",
@@ -246,7 +248,7 @@ void builder::init() {
                                std::shared_ptr<generator_api::base_generator>(
                                    generator_api::base_generator::create_generator_lua(generator.src_lua_generator)));
             if (generator.use_custom_build_graph_depends)
-                generators[generator.name_generator]->set_use_build_graph_depends();
+                generators[generator.name_generator]->use_build_graph_depends = 1;
         }
     for (auto &package : loaded_packages) {
         auto module_funcs = module_m.init_mfuncs(package.cfg_package.modules);
@@ -266,15 +268,15 @@ void builder::start() {
         file_it bweas_cache = bwtools::open_file(CACHE_FILE, mf::open::rb);
         string cache_str    = bwtools::read_file(bwtools::get_ref_file(bweas_cache));
 
-        context.path_bweas_config = cache->get_path_config(cache_str);
-        string path_bweas_cache   = context.path_bweas_to_build + CACHE_FILE;
+        _context.path_bweas_config = cache->get_path_config(cache_str);
+        string path_bweas_cache    = _context.path_bweas_to_build + CACHE_FILE;
 
-        if (!bwtools::exist_file(context.path_bweas_config))
+        if (!bwtools::exist_file(_context.path_bweas_config))
             (_log << bwtools::fatal) << (log_message(log_type::fatal) << "Bweas config not found");
         if (!bwtools::exist_file(path_bweas_cache))
             (_log << bwtools::fatal) << (log_message(log_type::fatal) << "Bweas cache not found");
 
-        fs::file_time_type config_ftime = fs::last_write_time(context.path_bweas_config);
+        fs::file_time_type config_ftime = fs::last_write_time(_context.path_bweas_config);
         fs::file_time_type cache_ftime  = fs::last_write_time(path_bweas_cache);
         if (config_ftime > cache_ftime) {
             (_log << bwtools::message) << (log_message(log_type::msg) << "The configuration file has been modified");
@@ -287,18 +289,18 @@ void builder::start() {
 
         (_log << bwtools::success) << (log_message(log_type::msg)
                                        << "Cache deserialization was successful!\n"
-                                       << "Was loaded " << context.templates.size() << " template of command!");
+                                       << "Was loaded " << _context.templates.size() << " template of command!");
     }
     else if (mode_bweas == mode_working::collect_cfg || mode_bweas == mode_working::collect_cfg_w_build) {
-        if (!bwtools::exist_file(context.path_bweas_config))
+        if (!bwtools::exist_file(_context.path_bweas_config))
             (_log << bwtools::fatal) << (log_message(log_type::fatal)
-                                         << "Bweas config not found \'" << context.path_bweas_config << "\'");
+                                         << "Bweas config not found \'" << _context.path_bweas_config << "\'");
 
     interpreter_start:
-        fs::current_path(fs::path(context.path_bweas_config).parent_path());
+        fs::current_path(fs::path(_context.path_bweas_config).parent_path());
         run_interpreter();
 
-        fs::current_path(context.path_bweas_to_build);
+        fs::current_path(_context.path_bweas_to_build);
         if (gen_cache_target())
             return;
     }
@@ -310,7 +312,7 @@ void builder::start() {
 }
 
 void builder::run_interpreter() {
-    lang bwlang{&context};
+    lang bwlang{&_context};
     bwlang.init_external_funcs(external_modules_funcs);
     for (const auto &loaded_package : loaded_packages)
         bwlang.set_custom_ext_fields_project(loaded_package.cfg_package.custom_ext_fields_project);
@@ -323,7 +325,7 @@ void builder::run_interpreter() {
 }
 
 size_t builder::gen_cache_target() {
-    if (!context.out_targets.size()) {
+    if (!_context.out_targets.size()) {
         (_log << bwtools::warning) << (log_message(log_type::warning)
                                        << "Generating a file with a cache will not be performed.");
         return 1;
@@ -341,9 +343,9 @@ size_t builder::gen_cache_target() {
     return 0;
 }
 
-depends_files::depends_map builder::load_depends_file(std::unique_ptr<depends_files> &_depends_files,
-                                                      const sc::target_out target) {
-    _depends_files->set_include_paths(target.prj.include_paths);
+depends_files::depends_map &builder::load_depends_file(std::unique_ptr<depends_files> &dfiles_sys,
+                                                       const sc::target_out target) {
+    dfiles_sys->set_include_paths(target.prj.include_paths);
     string depends_str;
 
     if (bwtools::exist_file(DEPENDS_FILE)) {
@@ -356,7 +358,7 @@ depends_files::depends_map builder::load_depends_file(std::unique_ptr<depends_fi
 
                 if ((it = depends_file_str.find(":")) != depends_file_str.npos)
                     depends_file_str.erase(it, depends_file_str.size());
-                _depends_files->build_graph_depends_file_string(name_file, depends_file_str);
+                dfiles_sys->build_graph_depends_file_string(name_file, depends_file_str);
             }
             else
                 goto find_depends_file;
@@ -365,24 +367,23 @@ depends_files::depends_map builder::load_depends_file(std::unique_ptr<depends_fi
     else {
     find_depends_file:
         for (const auto &name_file : target.prj.src_files) {
-            _depends_files->build_graphs_depends_file_v(name_file);
-            depends_str += name_file + ":\n" + _depends_files->get_string_depends_file(name_file);
+            dfiles_sys->build_graphs_depends_file_v(name_file);
+            depends_str += name_file + ":\n" + dfiles_sys->get_string_depends_file(name_file);
         }
         bwtools::write_file(bwtools::get_ref_file(bwtools::open_file(DEPENDS_FILE, mf::open::w)), depends_str);
     }
 
-    return _depends_files->get_graphs_depends_files();
+    return dfiles_sys->get_graphs_depends_files();
 }
 
 void builder::build_targets() {
     (_log << bwtools::message) << (log_message(log_type::msg) << "Building targets...");
 
-    fs::current_path(context.path_bweas_to_build);
+    fs::current_path(_context.path_bweas_to_build);
 
-    context.global_external_args.push_back(pair<string, string>("", ""));
-    generator_api::data_transfer data_t{&context};
+    _context.global_external_args.push_back(pair<string, string>("", ""));
 
-    for (auto &target : context.out_targets) {
+    for (auto &target : _context.out_targets) {
         if (generators.find(target.name_generator) == generators.end()) {
             (_log << bwtools::error)
                 << (log_message(log_type::error)
@@ -398,43 +399,43 @@ void builder::build_targets() {
         (_log << bwtools::message) << (log_message(log_type::msg) << "Build target: " << target.name);
 
         target.queue_templates = sc::template_command::create_queue_target_templates(
-            context.templates, target.prj.vec_templates, target.type);
-        context.current_target         = &target;
-        context.current_work_directory = context.path_bweas_to_build + target.name;
+            _context.templates, target.prj.vec_templates, target.type);
+        _context.current_target         = &target;
+        _context.current_work_directory = _context.path_bweas_to_build + target.name;
 
-        if (!fs::is_directory(context.current_work_directory))
-            fs::create_directories(context.current_work_directory);
+        if (!fs::is_directory(_context.current_work_directory))
+            fs::create_directories(_context.current_work_directory);
 
         auto &current_generator = generators[target.name_generator];
-        current_generator->init();
+        current_generator->init(&_context);
 
-        std::unique_ptr<depends_files> depends_files;
-        if (current_generator->has_build_graph_depends())
-            depends_files = std::make_unique<depends_generator>(current_generator, target.prj.language,
-                                                                context.current_work_directory);
+        std::unique_ptr<depends_files> dfiles_sys;
+        if (current_generator->use_build_graph_depends)
+            dfiles_sys = std::make_unique<depends_generator>(current_generator, target.prj.language,
+                                                             _context.current_work_directory);
         else
-            depends_files = std::make_unique<depends_integral>(target.prj.language, context.current_work_directory);
+            dfiles_sys = std::make_unique<depends_integral>(target.prj.language, _context.current_work_directory);
 
-        data_t.dfiles = load_depends_file(depends_files, target);
+        _context.dfiles = load_depends_file(dfiles_sys, target);
 
-        current_generator->get_input_files(data_t);
-        generator_api::commands cmd_s = current_generator->generate_commands(data_t);
+        current_generator->get_input_files();
+        generator_api::commands cmd_s = current_generator->generate_commands();
 
         (_log << bwtools::success) << (log_message(log_type::msg) << cmd_s.size() << " commands generated");
 
-        processes_handler p_handler(cmd_s, 4);
-        p_handler.start([&cmd_s](const generator_api::command &cmd) {
-            static double build_state = 0.f;
+        double build_state = 0.f;
 
+        processes_handler p_handler(cmd_s, 4);
+        p_handler.start([&cmd_s, &build_state](const generator_api::command &cmd) {
             if (!cmd.success)
                 (_log << bwtools::fatal) << (log_message(log_type::fatal)
-                                             << "Command execution failed: compile " << cmd.name_used_file);
+                                             << "Command execution failed: compile " << cmd.name_output_file);
             else {
                 build_state += 1.f / (double)cmd_s.size() * 100;
                 (_log << bwtools::success)
                     << (log_message(log_type::msg)
                         << "[" << std::to_string(build_state).erase(std::to_string((size_t)build_state).size() + 2, 5)
-                        << "%] " << cmd.name_used_file);
+                        << "%] " << cmd.name_output_file);
             }
         });
 
