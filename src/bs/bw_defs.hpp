@@ -40,7 +40,7 @@ static constexpr auto FORMAT_PACKAGE = ".bweas-package";
 
 // The structure defining the main data for the build
 struct context {
-    vec<sc::target_out> out_targets;
+    vec<sc::target> targets;
     vec<sc::template_command> templates;
     vec<sc::call_component> call_components;
     vec<pair<string, string>> global_external_args;
@@ -49,7 +49,7 @@ struct context {
     depends_files::depends_map dfiles;
 
   public:
-    sc::target_out *current_target;
+    sc::target *current_target;
     string current_work_directory;
 
     string path_bweas_config, path_bweas_to_build;

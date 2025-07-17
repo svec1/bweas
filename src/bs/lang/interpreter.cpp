@@ -22,7 +22,7 @@ interpreter::interpreter(string_v name_file) : global_scope{_log}, smt_analyzer{
     log_bison     = &_log;
     current_scope = &global_scope;
 
-    global_scope.create_var<decl_func>(STR_KEYWORD_IF, decl_func(STR_KEYWORD_IF, NULL, {param_type::LNUM_OR_ID_VAR}));
+    global_scope.create_var<decl_func>(STR_KEYWORD_IF, decl_func(STR_KEYWORD_IF, NULL, {param_type::LIT_NUM}));
     global_scope.create_var<decl_func>(STR_KEYWORD_ELSE, decl_func(STR_KEYWORD_ELSE, NULL, {}));
     global_scope.create_var<decl_func>(STR_KEYWORD_ENDIF, decl_func(STR_KEYWORD_ENDIF, NULL, {}));
 
@@ -35,21 +35,15 @@ void interpreter::interpret() {
     smt_analyzer.analysis(stm_s, *current_scope);
 }
 
-vec<sc::target> interpreter::export_targets() {
-    const vec<std::pair<string, sc::target>> &vec_targets_ref = global_scope.get_vector_variables_t<sc::target>();
-
-    vec<sc::target> targets;
-    for (size_t i = 0; i < vec_targets_ref.size(); ++i)
-        targets.push_back(vec_targets_ref[i].second);
-
-    return targets;
-}
-
 void interpreter::set_scope(scope *external_scope) {
     current_scope = &(*external_scope);
 }
 
 scope &interpreter::get_scope() {
+    return *current_scope;
+}
+
+const scope &interpreter::get_scope() const {
     return *current_scope;
 }
 

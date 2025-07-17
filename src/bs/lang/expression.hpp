@@ -47,8 +47,6 @@ enum class param_type {
 
     LIT_STR,
     LIT_NUM,
-    LSTR_OR_ID_VAR,
-    LNUM_OR_ID_VAR,
 
     // this type of parameter means that the current parameter at index,
     // and the next ones, will be of the same type as the parameter before it
@@ -84,13 +82,16 @@ struct expression {
 
   public:
     expression() = default;
-    explicit expression(string_v _value, expression_t _type, size_t line = 0, size_t column = 0)
-        : type(_type), value(_value) {
+    explicit expression(string_v _value, expression_t _type, bool _value_by_id = false, size_t _line = 0,
+                        size_t _column = 0)
+        : type(_type), value(_value), value_by_id(_value_by_id), line(_line), column(_column) {
     }
 
   public:
     expression_t type;
     string value;
+
+    bool value_by_id = false;
 
     size_t line, column;
 };
@@ -160,9 +161,9 @@ static inline expression::expression_t conv_param_type_to_expr_type(param_type _
     if (_param == param_type::FUTURE_VAR_ID || _param == param_type::NCHECK_VAR_ID || _param == param_type::VAR_ID ||
         _param == param_type::VAR_STRUCT_ID)
         return expression::expression_t::ID;
-    else if (_param == param_type::LIT_NUM || _param == param_type::LNUM_OR_ID_VAR)
+    else if (_param == param_type::LIT_NUM)
         return expression::expression_t::NUMBER;
-    else if (_param == param_type::LIT_STR || _param == param_type::LSTR_OR_ID_VAR)
+    else if (_param == param_type::LIT_STR)
         return expression::expression_t::STRING;
     return expression::expression_t::SIZE_ENUM_RET_TYPE_EXPR;
 }
@@ -198,10 +199,6 @@ static inline param_type get_string_param_type(string_v str) {
         return param_type::LIT_STR;
     else if (str == "LIT_NUM")
         return param_type::LIT_NUM;
-    else if (str == "LSTR_OR_ID_VAR")
-        return param_type::LSTR_OR_ID_VAR;
-    else if (str == "LNUM_OR_ID_VAR")
-        return param_type::LSTR_OR_ID_VAR;
     else if (str == "NEXT_TOO")
         return param_type::NEXT_TOO;
     else
@@ -262,4 +259,12 @@ inline string statement::get_string_expected_params(size_t offset_index) const {
 
     return expected_params_str;
 }
+
+static bool is_id_param(param_type p) {
+    if (p == param_type::FUTURE_VAR_ID || p == param_type::NCHECK_VAR_ID || p == param_type::VAR_ID ||
+        p == param_type::VAR_STRUCT_ID)
+        return true;
+    return false;
+}
+
 #endif

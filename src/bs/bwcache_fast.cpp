@@ -19,37 +19,32 @@ string fast_cache::create_cache() {
     uset<string> all_used_globally_args;
     uset<string> all_used_call_component;
 
-    auto &out_targets                = _context->out_targets;
+    auto &targets                    = _context->targets;
     const auto &templates            = _context->templates;
     const auto &call_components      = _context->call_components;
     const auto &global_external_args = _context->global_external_args;
 
     serel_target_tmp += "\"" + _context->path_bweas_config + "\" ";
 
-    for (pdiff i = 0; i < out_targets.size(); ++i) {
-        if (!out_targets[i].prj.vec_templates.size())
-            out_targets[i].prj.vec_templates.push_back("null");
-        if (!out_targets[i].prj.custom_ext_fields.size())
-            out_targets[i].prj.custom_ext_fields["null"] = "";
-        if (!out_targets[i].target_vec_libs.size())
-            out_targets[i].target_vec_libs.push_back("null");
+    for (pdiff i = 0; i < targets.size(); ++i) {
+        if (!targets[i].templates.size())
+            targets[i].templates.push_back("null");
+        if (!targets[i].prj.custom_ext_fields.size())
+            targets[i].prj.custom_ext_fields["null"] = "";
+        if (!targets[i].prj.libs.size())
+            targets[i].prj.libs.push_back("null");
+        if (!targets[i].dependencies.size())
+            targets[i].dependencies.push_back("null");
 
-        char *prj_v = (char *)&out_targets[i];
-        serel_target_tmp += std::to_string(out_targets[i].prj.src_files.size()) + " " +
-                            std::to_string(out_targets[i].prj.include_paths.size()) + " " +
-                            std::to_string(out_targets[i].prj.vec_templates.size()) + " " +
-                            std::to_string(out_targets[i].prj.custom_ext_fields.size()) + " " +
-                            std::to_string(out_targets[i].target_vec_libs.size()) + " ";
+        char *prj_v = (char *)&targets[i];
+        serel_target_tmp +=
+            std::to_string(targets[i].prj.src_files.size()) + " " + std::to_string(targets[i].prj.libs.size()) + " " +
+            std::to_string(targets[i].prj.include_paths.size()) + " " +
+            std::to_string(targets[i].prj.custom_ext_fields.size()) + " " +
+            std::to_string(targets[i].templates.size()) + " " + std::to_string(targets[i].dependencies.size()) + " ";
         for (pdiff j = 0; j < sizeof(sc::project); j += sizeof(string)) {
-            // version project
-            if (j == sizeof(string)) {
-                serel_target_tmp += (*(sc::version *)(prj_v + j)).get_str_version() + " " +
-                                    *(string *)(prj_v + j + sizeof(sc::version)) + " ";
-                j += sizeof(sc::version) + sizeof(string);
-            }
-
             // standart c
-            else if (j == sizeof(string) * 7 + sizeof(sc::version) + sizeof(string)) {
+            if (j == sizeof(string) * 7) {
                 serel_target_tmp += std::to_string(*(pdiff *)(prj_v + j)) + " " +
                                     std::to_string(*(pdiff *)(prj_v + j + sizeof(pdiff))) + " ";
                 break;
@@ -59,24 +54,27 @@ string fast_cache::create_cache() {
             else
                 serel_target_tmp += *(string *)(prj_v + j) + " ";
         }
-        for (size_t j = 0; j < out_targets[i].prj.src_files.size(); ++j)
-            serel_target_tmp += out_targets[i].prj.src_files[j] + " ";
-        for (size_t j = 0; j < out_targets[i].prj.include_paths.size(); ++j)
-            serel_target_tmp += out_targets[i].prj.include_paths[j] + " ";
-        for (size_t j = 0; j < out_targets[i].prj.vec_templates.size(); ++j) {
-            used_templates.emplace(out_targets[i].prj.vec_templates[j]);
-            serel_target_tmp += out_targets[i].prj.vec_templates[j] + " ";
-        }
-        for (auto it : out_targets[i].prj.custom_ext_fields)
+        for (size_t j = 0; j < targets[i].prj.src_files.size(); ++j)
+            serel_target_tmp += targets[i].prj.src_files[j] + " ";
+        for (size_t j = 0; j < targets[i].prj.libs.size(); ++j)
+            serel_target_tmp += targets[i].prj.libs[j] + " ";
+        for (size_t j = 0; j < targets[i].prj.include_paths.size(); ++j)
+            serel_target_tmp += targets[i].prj.include_paths[j] + " ";
+
+        for (auto it : targets[i].prj.custom_ext_fields)
             serel_target_tmp += it.first + " " + it.second + " ";
 
         serel_target_tmp.erase(serel_target_tmp.size() - 1, 1);
 
-        serel_target_tmp += sc::target_type_str(out_targets[i].type) + " " + sc::target_cfg_str(out_targets[i].cfg) +
-                            " " + out_targets[i].name + " " + out_targets[i].name_generator + " " +
-                            out_targets[i].ver.get_str_version() + " ";
-        for (size_t j = 0; j < out_targets[i].target_vec_libs.size(); ++j)
-            serel_target_tmp += out_targets[i].target_vec_libs[j] + " ";
+        serel_target_tmp += sc::target_type_str(targets[i].type) + " " + sc::target_cfg_str(targets[i].cfg) + " " +
+                            targets[i].name + " " + targets[i].name_generator + " " + targets[i].ver.get_str_version() +
+                            " ";
+        for (size_t j = 0; j < targets[i].templates.size(); ++j) {
+            used_templates.emplace(targets[i].templates[j]);
+            serel_target_tmp += targets[i].templates[j] + " ";
+        }
+        for (size_t j = 0; j < targets[i].dependencies.size(); ++j)
+            serel_target_tmp += targets[i].dependencies[j] + " ";
     }
 
     serel_target_tmp += "EOET" + std::to_string(templates.size()) + " "; // end of enum targets
@@ -132,17 +130,23 @@ string fast_cache::get_path_config(const string &cache_str) {
     }
 }
 void fast_cache::extract_cache_data(const string &cache_str) {
-    sc::target_out trg_tmp;
+    sc::target trg_tmp;
     sc::template_command tcmd_tmp;
     sc::template_command::arg arg_tmp;
     sc::call_component ccmp_tmp;
 
     string str_tmp, str_tmp_key;
 
+    pdiff count_words_before_first_list = 16;
+
     pdiff count_word = 0, offset_byte_prj = 0, offset_byte_ccmp = 0;
-    pdiff size_src_files = 0, size_include_paths, size_vec_templates = 0, size_custom_ext_fields, size_vec_libs = 0;
+    pdiff size_src_files = 0, size_libs = 0, size_include_paths, size_custom_ext_fields, size_use_templates = 0,
+          size_dependencies  = 0;
     pdiff size_templates     = 0;
     pdiff size_internal_args = 0, size_external_args = 0, size_call_components = 0, size_global_extern_args = 0;
+
+    pdiff end_src_files = 0, end_libs = 0, end_include_paths = 0, end_custom_ext_fields = 0, end_templates = 0,
+          end_dependencies = 0;
 
     char *tproj_p = (char *)&trg_tmp.prj;
     char *ccmp_p  = (char *)&ccmp_tmp;
@@ -250,98 +254,92 @@ void fast_cache::extract_cache_data(const string &cache_str) {
                         size_src_files = std::stoi(str_tmp);
                     }
                     else if (count_word == 2)
-                        size_include_paths = std::stoi(str_tmp);
+                        size_libs = std::stoi(str_tmp);
                     else if (count_word == 3)
-                        size_vec_templates = std::stoi(str_tmp);
+                        size_include_paths = std::stoi(str_tmp);
                     else if (count_word == 4)
                         size_custom_ext_fields = std::stoi(str_tmp);
                     else if (count_word == 5)
-                        size_vec_libs = std::stoi(str_tmp);
-                    else if (count_word > 6) {
-                        if (count_word == 16) {
-                            *(pdiff *)(tproj_p + offset_byte_prj) = std::atoll(str_tmp.c_str());
-                            offset_byte_prj += sizeof(pdiff);
+                        size_use_templates = std::stoi(str_tmp);
+                    else if (count_word == 6) {
+                        size_dependencies = std::stoi(str_tmp);
+
+                        end_src_files         = count_words_before_first_list + size_src_files;
+                        end_libs              = end_src_files + size_libs;
+                        end_include_paths     = end_libs + size_include_paths;
+                        end_custom_ext_fields = end_include_paths + size_custom_ext_fields;
+                        end_templates         = end_custom_ext_fields + size_use_templates;
+                        end_dependencies      = end_templates + size_dependencies;
+                    }
+                    else if (count_word == 14 || count_word == 15) {
+                        *(pdiff *)(tproj_p + offset_byte_prj) = std::atoll(str_tmp.c_str());
+                        offset_byte_prj += sizeof(pdiff);
+                    }
+                    else if (count_word >= count_words_before_first_list) {
+                        if (count_word < end_src_files)
+                            trg_tmp.prj.src_files.push_back(str_tmp);
+                        else if (count_word < end_libs) {
+                            if (str_tmp != "null")
+                                trg_tmp.prj.libs.push_back(str_tmp);
                         }
-                        else if (count_word == 7) {
-                            trg_tmp.prj.ver = str_tmp;
-                            offset_byte_prj += sizeof(sc::version);
+                        else if (count_word < end_include_paths) {
+                            if (str_tmp != "null")
+                                trg_tmp.prj.include_paths.push_back(str_tmp);
                         }
-                        else if (count_word == 8) {
-                            trg_tmp.prj.language = str_tmp;
-                            offset_byte_prj += sizeof(string);
+
+                        else if (count_word < end_custom_ext_fields) {
+                            if (str_tmp == "null")
+                                ;
+                            else if ((is_beg_custom_field = !is_beg_custom_field)) {
+                                trg_tmp.prj.custom_ext_fields[str_tmp] = "";
+                                str_tmp_key                            = str_tmp;
+                                --count_word;
+                            }
+                            else
+                                trg_tmp.prj.custom_ext_fields.find(str_tmp_key)->second = str_tmp;
                         }
-                        else {
-                            if (count_word >= 17 && count_word < 17 + size_src_files)
-                                trg_tmp.prj.src_files.push_back(str_tmp);
-                            else if (count_word >= 17 + size_src_files &&
-                                     count_word < 17 + size_src_files + size_include_paths) {
-                                if (str_tmp != "null")
-                                    trg_tmp.prj.include_paths.push_back(str_tmp);
-                            }
-                            else if (count_word >= 17 + size_src_files + size_include_paths &&
-                                     count_word < 17 + size_src_files + size_include_paths + size_vec_templates) {
-                                if (str_tmp != "null")
-                                    trg_tmp.prj.vec_templates.push_back(str_tmp);
-                            }
-                            else if (count_word >= 17 + size_src_files + size_include_paths + size_vec_templates &&
-                                     count_word < 17 + size_src_files + size_include_paths + size_vec_templates +
-                                                      size_custom_ext_fields) {
-                                if (str_tmp == "null")
-                                    ;
-                                else if ((is_beg_custom_field = !is_beg_custom_field)) {
-                                    trg_tmp.prj.custom_ext_fields[str_tmp] = "";
-                                    str_tmp_key                            = str_tmp;
-                                    --count_word;
-                                }
-                                else
-                                    trg_tmp.prj.custom_ext_fields.find(str_tmp_key)->second = str_tmp;
-                            }
-                            else if (count_word == 17 + size_src_files + size_include_paths + size_vec_templates +
-                                                       size_custom_ext_fields)
-                                trg_tmp.type = sc::to_target_type(str_tmp);
-                            else if (count_word == 17 + size_src_files + size_include_paths + size_vec_templates +
-                                                       size_custom_ext_fields + 1)
-                                trg_tmp.cfg = sc::to_target_cfg(str_tmp);
-                            else if (count_word == 17 + size_src_files + size_include_paths + size_vec_templates +
-                                                       size_custom_ext_fields + 2)
-                                trg_tmp.name = str_tmp;
-                            else if (count_word == 17 + size_src_files + size_include_paths + size_vec_templates +
-                                                       size_custom_ext_fields + 3)
-                                trg_tmp.name_generator = str_tmp;
-                            else if (count_word == 17 + size_src_files + size_include_paths + size_vec_templates +
-                                                       size_custom_ext_fields + 4)
-                                trg_tmp.ver = str_tmp;
-                            else if (count_word >= 17 + size_src_files + size_include_paths + size_vec_templates +
-                                                       size_custom_ext_fields + 5 &&
-                                     count_word < 17 + size_src_files + size_include_paths + size_vec_templates +
-                                                      size_custom_ext_fields + 5 + size_vec_libs)
-                                trg_tmp.target_vec_libs.push_back(str_tmp);
-                            else if (count_word == 17 + size_src_files + size_include_paths + size_vec_templates +
-                                                       size_custom_ext_fields + 5 + size_vec_libs) {
-                                _context->out_targets.push_back(trg_tmp);
-
-                                trg_tmp.target_vec_libs   = {};
-                                trg_tmp.prj.src_files     = {};
-                                trg_tmp.prj.vec_templates = {};
-
-                                offset_byte_prj = 0;
-                                count_word      = 0;
-
-                                if (str_tmp.find("EOET") != str_tmp.npos) {
-                                    str_tmp.erase(0, str_tmp.find("EOET") + 4);
-
-                                    size_templates = std::stoi(str_tmp);
-
-                                    enum_templates = 1;
-                                }
-                                else
-                                    goto next_word;
-                            }
-                            else {
-                                *(string *)(tproj_p + offset_byte_prj) = str_tmp;
-                                offset_byte_prj += sizeof(string);
-                            }
+                        else if (count_word == end_custom_ext_fields)
+                            trg_tmp.type = sc::to_target_type(str_tmp);
+                        else if (count_word == end_custom_ext_fields + 1)
+                            trg_tmp.cfg = sc::to_target_cfg(str_tmp);
+                        else if (count_word == end_custom_ext_fields + 2)
+                            trg_tmp.name = str_tmp;
+                        else if (count_word == end_custom_ext_fields + 3)
+                            trg_tmp.name_generator = str_tmp;
+                        else if (count_word == end_custom_ext_fields + 4)
+                            trg_tmp.ver = str_tmp;
+                        else if (count_word < end_templates + 5) {
+                            if (str_tmp != "null")
+                                trg_tmp.templates.push_back(str_tmp);
                         }
+                        else if (count_word < end_dependencies + 5)
+                            trg_tmp.dependencies.push_back(str_tmp);
+                        else if (count_word == end_dependencies + 5) {
+                            _context->targets.push_back(trg_tmp);
+
+                            trg_tmp.templates         = {};
+                            trg_tmp.dependencies      = {};
+                            trg_tmp.prj.src_files     = {};
+                            trg_tmp.prj.libs          = {};
+                            trg_tmp.prj.include_paths = {};
+
+                            offset_byte_prj = 0;
+                            count_word      = 0;
+
+                            if (str_tmp.find("EOET") != str_tmp.npos) {
+                                str_tmp.erase(0, str_tmp.find("EOET") + 4);
+
+                                size_templates = std::stoi(str_tmp);
+
+                                enum_templates = 1;
+                            }
+                            else
+                                goto next_word;
+                        }
+                    }
+                    else {
+                        *(string *)(tproj_p + offset_byte_prj) = str_tmp;
+                        offset_byte_prj += sizeof(string);
                     }
                 }
 

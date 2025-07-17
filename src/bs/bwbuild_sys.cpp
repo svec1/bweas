@@ -283,8 +283,6 @@ void builder::start() {
             goto interpreter_start;
         }
 
-        (_log << bwtools::message) << (log_message(log_type::msg) << "Cache deserialization...");
-
         cache->extract_cache_data(cache_str);
 
         (_log << bwtools::success) << (log_message(log_type::msg)
@@ -312,26 +310,24 @@ void builder::start() {
 }
 
 void builder::run_interpreter() {
+    (_log << bwtools::message) << (log_message(log_type::msg) << "Interpreting the configuration file...");
+
     lang bwlang{&_context};
     bwlang.init_external_funcs(external_modules_funcs);
     for (const auto &loaded_package : loaded_packages)
         bwlang.set_custom_ext_fields_project(loaded_package.cfg_package.custom_ext_fields_project);
 
-    (_log << bwtools::message) << (log_message(log_type::msg) << "Interpreting the configuration file...");
     bwlang.execute();
-    (_log << bwtools::success) << (log_message(log_type::msg) << "The interpretation was successful!");
 
     bwlang.init_context();
 }
 
 size_t builder::gen_cache_target() {
-    if (!_context.out_targets.size()) {
+    if (!_context.targets.size()) {
         (_log << bwtools::warning) << (log_message(log_type::warning)
                                        << "Generating a file with a cache will not be performed.");
         return 1;
     }
-
-    (_log << bwtools::message) << (log_message(log_type::msg) << "Generating a cache file...");
 
     file_it bweas_cache = bwtools::open_file(CACHE_FILE, mf::open::w);
 
@@ -344,7 +340,7 @@ size_t builder::gen_cache_target() {
 }
 
 depends_files::depends_map &builder::load_depends_file(std::unique_ptr<depends_files> &dfiles_sys,
-                                                       const sc::target_out target) {
+                                                       const sc::target target) {
     dfiles_sys->set_include_paths(target.prj.include_paths);
     string depends_str;
 
@@ -377,13 +373,20 @@ depends_files::depends_map &builder::load_depends_file(std::unique_ptr<depends_f
 }
 
 void builder::build_targets() {
-    (_log << bwtools::message) << (log_message(log_type::msg) << "Building targets...");
-
     fs::current_path(_context.path_bweas_to_build);
 
-    _context.global_external_args.push_back(pair<string, string>("", ""));
+    std::sort(_context.targets.begin(), _context.targets.end(), [](const sc::target &t1, const sc::target &t2) {
+        return std::find(t1.dependencies.begin(), t1.dependencies.end(), t2.name) == t1.dependencies.end() ? 1 : 0;
+    });
 
-    for (auto &target : _context.out_targets) {
+    for (auto &target : _context.targets) {
+        for (const auto &dependence : target.dependencies)
+            if (auto it = std::find_if(_context.targets.begin(), _context.targets.end(),
+                                       [&dependence](const sc::target &target) { return target.name == dependence; });
+                it != _context.targets.end() && !it->built_success)
+                (_log << bwtools::fatal) << (log_message(log_type::fatal)
+                                             << target.name << " target expects a dependency: " << dependence);
+
         if (generators.find(target.name_generator) == generators.end()) {
             (_log << bwtools::error)
                 << (log_message(log_type::error)
@@ -391,15 +394,15 @@ void builder::build_targets() {
                     << ": " << target.name_generator);
             return;
         }
-        else if (target.prj.vec_templates.size() == 0) {
+        else if (target.templates.size() == 0) {
             (_log << bwtools::error) << (log_message(log_type::error)
                                          << "There are no templates for the target - " << target.name);
             return;
         }
         (_log << bwtools::message) << (log_message(log_type::msg) << "Build target: " << target.name);
 
-        target.queue_templates = sc::template_command::create_queue_target_templates(
-            _context.templates, target.prj.vec_templates, target.type);
+        target.queue_templates =
+            sc::template_command::create_queue_target_templates(_context.templates, target.templates, target.type);
         _context.current_target         = &target;
         _context.current_work_directory = _context.path_bweas_to_build + target.name;
 
@@ -421,15 +424,15 @@ void builder::build_targets() {
         current_generator->get_input_files();
         generator_api::commands cmd_s = current_generator->generate_commands();
 
-        (_log << bwtools::success) << (log_message(log_type::msg) << cmd_s.size() << " commands generated");
-
-        double build_state = 0.f;
+        double build_state  = 0.f;
+        size_t count_errors = 0;
 
         processes_handler p_handler(cmd_s, 4);
-        p_handler.start([&cmd_s, &build_state](const generator_api::command &cmd) {
-            if (!cmd.success)
-                (_log << bwtools::fatal) << (log_message(log_type::fatal)
-                                             << "Command execution failed: compile " << cmd.name_output_file);
+        p_handler.start([&cmd_s, &build_state, &count_errors](const generator_api::command &cmd) {
+            if (!cmd.success) {
+                (_log << bwtools::error) << (log_message(log_type::error) << "failed: " << cmd.name_output_file);
+                ++count_errors;
+            }
             else {
                 build_state += 1.f / (double)cmd_s.size() * 100;
                 (_log << bwtools::success)
@@ -439,7 +442,11 @@ void builder::build_targets() {
             }
         });
 
-        (_log << bwtools::success) << (log_message(log_type::msg) << "Successfully built target");
+        if (count_errors)
+            (_log << bwtools::error) << (log_message(log_type::error)
+                                         << target.name << " target was not built: " << count_errors << " errors");
+        else
+            target.built_success = 1;
     }
 }
 

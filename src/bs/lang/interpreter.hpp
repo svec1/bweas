@@ -26,9 +26,9 @@ class interpreter {
     void interpret();
 
     void set_scope(scope *external_scope);
-    scope &get_scope();
 
-    vec<sc::target> export_targets();
+    scope &get_scope();
+    const scope &get_scope() const;
 
     void create_function(const decl_func &func);
     void create_function(string_v name_func, decl_func::func_t func, vec<param> expected_params);

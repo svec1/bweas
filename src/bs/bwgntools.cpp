@@ -36,7 +36,7 @@ bool generator_tools::should_uses_src_file(string_v src_file, string_v output_fi
     return 0;
 }
 
-void generator_tools::parse_basic_args(const sc::target_out &target, vec<sc::template_command> &target_queue_templates,
+void generator_tools::parse_basic_args(const sc::target &target, vec<sc::template_command> &target_queue_templates,
                                        const vec<pair<string, string>> &global_extern_args) {
     for (auto &trg_template : target_queue_templates) {
         for (size_t i = 0; i < trg_template.args.size(); ++i) {
@@ -58,10 +58,10 @@ void generator_tools::parse_basic_args(const sc::target_out &target, vec<sc::tem
             else if (current_arg.arg_t == sc::template_command::arg::type::trgfield) {
                 if (current_arg.str_arg == NAME_FIELD_TARGET_NAME)
                     current_arg.str_arg = target.name;
-                else if (current_arg.str_arg == NAME_FIELD_TARGET_LIBS) {
+                else if (current_arg.str_arg == NAME_FIELD_PROJECT_LIBS) {
                     trg_template.args.erase(trg_template.args.begin() + i);
-                    for (size_t k = 0; k < target.target_vec_libs.size(); ++k)
-                        trg_template.args.emplace(trg_template.args.begin() + i, "-l" + target.target_vec_libs[k],
+                    for (size_t k = 0; k < target.prj.libs.size(); ++k)
+                        trg_template.args.emplace(trg_template.args.begin() + i, "-l" + target.prj.libs[k],
                                                   sc::template_command::arg::type::string);
                     continue;
                 }
@@ -78,10 +78,6 @@ void generator_tools::parse_basic_args(const sc::target_out &target, vec<sc::tem
                     current_arg.str_arg = sc::target_cfg_str(target.cfg);
                 else if (current_arg.str_arg == NAME_FIELD_TARGET_VER)
                     current_arg.str_arg = target.ver.get_str_version();
-                else if (current_arg.str_arg == NAME_FIELD_PROJECT_NAME)
-                    current_arg.str_arg = target.prj.name;
-                else if (current_arg.str_arg == NAME_FIELD_PROJECT_VER)
-                    current_arg.str_arg = target.prj.ver.get_str_version();
                 else if (current_arg.str_arg == NAME_FIELD_PROJECT_LANG)
                     current_arg.str_arg = target.prj.language;
                 else if (current_arg.str_arg == NAME_FIELD_PROJECT_PCOMPILER)

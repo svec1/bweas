@@ -47,13 +47,13 @@ class bweas::lang {
         return _interpreter.get_scope().get_var_value<T>(name_var);
     }
 
-    scope &get_global_scope();
-    template <typename T> vec<pair<string, T>> &get_class_variables();
+    scope &get_global_scope() &;
+    template <typename T> const container_vars<T>::container_type &get_container_vars() const &;
 
     void init_context();
 
   private:
-    vec<sc::target_out> get_targets();
+    vec<sc::target> get_targets();
     vec<sc::template_command> get_templates();
     vec<sc::call_component> get_call_components();
     vec<pair<string, string>> get_global_external_args();
@@ -77,54 +77,45 @@ void lang::init_scope() {
     _interpreter.create_function(
         "set", sl_func::set,
         {param_type::NCHECK_VAR_ID, param_type::ANY_VALUE_WITHOUT_FUTUREID_NEXT, param_type::NEXT_TOO});
-    _interpreter.create_function("file", sl_func::file,
-                                 {{param_type::FUTURE_VAR_ID, "{NULL}"},
-                                  param_type::LNUM_OR_ID_VAR,
-                                  param_type::LSTR_OR_ID_VAR,
-                                  param_type::NEXT_TOO});
+    _interpreter.create_function(
+        "file", sl_func::file,
+        {{param_type::FUTURE_VAR_ID, "{NULL}"}, param_type::LIT_NUM, param_type::LIT_STR, param_type::NEXT_TOO});
 
-    _interpreter.create_function("project", sl_func::project,
-                                 {param_type::FUTURE_VAR_ID,
-                                  {param_type::LNUM_OR_ID_VAR, "1"},
-                                  param_type::LSTR_OR_ID_VAR,
-                                  param_type::NEXT_TOO});
-    _interpreter.create_function("create_target", sl_func::create_target,
-                                 {param_type::FUTURE_VAR_ID, param_type::VAR_STRUCT_ID, param_type::LNUM_OR_ID_VAR});
-
+    _interpreter.create_function(
+        "create_target", sl_func::create_target,
+        {param_type::FUTURE_VAR_ID, param_type::LIT_NUM, {param_type::LIT_STR, "{NULL}"}, param_type::NEXT_TOO});
     _interpreter.create_function("add_dependencies_target", sl_func::add_dependencies_target,
                                  {param_type::VAR_STRUCT_ID, param_type::VAR_STRUCT_ID, param_type::NEXT_TOO});
-    _interpreter.create_function("exp_data", sl_func::exp_data, {param_type::LSTR_OR_ID_VAR});
-    _interpreter.create_function("debug", sl_func::debug, {param_type::LSTR_OR_ID_VAR, param_type::NEXT_TOO});
+
+    _interpreter.create_function("exp_data", sl_func::exp_data, {param_type::LIT_STR});
+    _interpreter.create_function("debug", sl_func::debug, {param_type::LIT_STR, param_type::NEXT_TOO});
     _interpreter.create_function("debug_struct", sl_func::debug_struct, {param_type::VAR_STRUCT_ID});
 
     _interpreter.create_function(
         "flags_compiler", sl_func::flags_compiler,
-        {param_type::VAR_STRUCT_ID, param_type::LNUM_OR_ID_VAR, param_type::LSTR_OR_ID_VAR, param_type::NEXT_TOO});
+        {param_type::VAR_STRUCT_ID, param_type::LIT_NUM, param_type::LIT_STR, param_type::NEXT_TOO});
     _interpreter.create_function(
         "flags_linker", sl_func::flags_linker,
-        {param_type::VAR_STRUCT_ID, param_type::LNUM_OR_ID_VAR, param_type::LSTR_OR_ID_VAR, param_type::NEXT_TOO});
+        {param_type::VAR_STRUCT_ID, param_type::LIT_NUM, param_type::LIT_STR, param_type::NEXT_TOO});
 
     _interpreter.create_function("path_compiler", sl_func::path_compiler,
-                                 {param_type::VAR_STRUCT_ID, param_type::LSTR_OR_ID_VAR});
-    _interpreter.create_function("path_linker", sl_func::path_linker,
-                                 {param_type::VAR_STRUCT_ID, param_type::LSTR_OR_ID_VAR});
-    _interpreter.create_function("standart_c", sl_func::standart_c,
-                                 {param_type::VAR_STRUCT_ID, param_type::LNUM_OR_ID_VAR});
+                                 {param_type::VAR_STRUCT_ID, param_type::LIT_STR});
+    _interpreter.create_function("path_linker", sl_func::path_linker, {param_type::VAR_STRUCT_ID, param_type::LIT_STR});
+    _interpreter.create_function("standart_c", sl_func::standart_c, {param_type::VAR_STRUCT_ID, param_type::LIT_NUM});
     _interpreter.create_function("standart_cpp", sl_func::standart_cpp,
-                                 {param_type::VAR_STRUCT_ID, param_type::LNUM_OR_ID_VAR});
+                                 {param_type::VAR_STRUCT_ID, param_type::LIT_NUM});
 
     _interpreter.create_function("include_directories", sl_func::include_directories,
-                                 {param_type::VAR_STRUCT_ID, param_type::LSTR_OR_ID_VAR, param_type::NEXT_TOO});
+                                 {param_type::VAR_STRUCT_ID, param_type::LIT_STR, param_type::NEXT_TOO});
 
-    _interpreter.create_function("lang", sl_func::lang, {param_type::VAR_STRUCT_ID, param_type::LSTR_OR_ID_VAR});
+    _interpreter.create_function("lang", sl_func::lang, {param_type::VAR_STRUCT_ID, param_type::LIT_STR});
 
-    _interpreter.create_function("generator", sl_func::generator,
-                                 {param_type::VAR_STRUCT_ID, param_type::LSTR_OR_ID_VAR});
+    _interpreter.create_function("generator", sl_func::generator, {param_type::VAR_STRUCT_ID, param_type::LIT_STR});
 
     _interpreter.create_function("create_template", sl_func::create_template,
-                                 {param_type::FUTURE_VAR_ID, param_type::LSTR_OR_ID_VAR});
+                                 {param_type::FUTURE_VAR_ID, param_type::LIT_STR});
     _interpreter.create_function("create_call_component", sl_func::create_call_component,
-                                 {param_type::FUTURE_VAR_ID, param_type::LSTR_OR_ID_VAR, param_type::LSTR_OR_ID_VAR});
+                                 {param_type::FUTURE_VAR_ID, param_type::LIT_STR, param_type::LIT_STR});
     _interpreter.create_function("add_param_template", sl_func::add_param_template,
                                  {param_type::FUTURE_VAR_ID, param_type::VAR_ID});
     _interpreter.create_function("use_templates", sl_func::use_templates,
@@ -143,71 +134,61 @@ void lang::set_custom_ext_fields_project(map<string, string> custom_ext_fields) 
 }
 
 void lang::init_context() {
-    _context->out_targets          = get_targets();
+    _context->targets              = get_targets();
     _context->templates            = get_templates();
     _context->call_components      = get_call_components();
     _context->global_external_args = get_global_external_args();
 }
 
-vec<sc::target_out> lang::get_targets() {
-    vec<sc::target> targets = _interpreter.export_targets();
+vec<sc::target> lang::get_targets() {
+    const container_vars<sc::target>::container_type &container_targets =
+        _interpreter.get_scope().get_container_vars<sc::target>();
 
-    vec<sc::target_out> targets_o;
-    sc::target_out target_tmp;
+    vec<sc::target> targets;
+    for (auto it = container_targets.begin(); it != container_targets.end(); ++it)
+        targets.push_back(it->second);
 
-    for (size_t i = 0; i < targets.size(); ++i) {
-        target_tmp.name            = targets[i].name;
-        target_tmp.type            = targets[i].type;
-        target_tmp.cfg             = targets[i].cfg;
-        target_tmp.ver             = targets[i].ver;
-        target_tmp.name_generator  = targets[i].name_generator;
-        target_tmp.target_vec_libs = targets[i].target_vec_libs;
-        target_tmp.prj             = *targets[i].prj;
-
-        targets_o.push_back(target_tmp);
-    }
-
-    return targets_o;
+    return targets;
 }
 
 vec<sc::template_command> lang::get_templates() {
-    vec<pair<string, sc::template_command>> templates =
-        _interpreter.get_scope().get_vector_variables_t<sc::template_command>();
+    container_vars<sc::template_command>::container_type container_templates =
+        _interpreter.get_scope().get_container_vars<sc::template_command>();
 
-    vec<sc::template_command> templates_out;
-    for (const auto &_template : templates)
-        templates_out.emplace_back(_template.second);
+    vec<sc::template_command> templates;
+    for (auto it = container_templates.begin(); it != container_templates.end(); ++it)
+        templates.emplace_back(it->second);
 
-    return templates_out;
+    return templates;
 }
 
 vec<sc::call_component> lang::get_call_components() {
-    vec<pair<string, sc::call_component>> call_components =
-        _interpreter.get_scope().get_vector_variables_t<sc::call_component>();
+    container_vars<sc::call_component>::container_type container_call_components =
+        _interpreter.get_scope().get_container_vars<sc::call_component>();
 
-    vec<sc::call_component> call_components_out;
-    for (const auto &_template : call_components)
-        call_components_out.emplace_back(_template.second);
+    vec<sc::call_component> call_components;
+    for (auto it = container_call_components.begin(); it != container_call_components.end(); ++it)
+        call_components.emplace_back(it->second);
 
-    return call_components_out;
+    return call_components;
 }
 
 vec<pair<string, string>> lang::get_global_external_args() {
-    vec<pair<string, pair<string, string>>> global_external_args =
-        _interpreter.get_scope().get_vector_variables_t<pair<string, string>>();
+    container_vars<pair<string, string>>::container_type container_global_external_args =
+        _interpreter.get_scope().get_container_vars<pair<string, string>>();
 
-    vec<pair<string, string>> global_external_args_out;
-    for (const auto &global_external_arg : global_external_args)
-        global_external_args_out.emplace_back(global_external_arg.second);
+    vec<pair<string, string>> global_external_args;
+    for (auto it = container_global_external_args.begin(); it != container_global_external_args.end(); ++it)
+        global_external_args.emplace_back(it->second);
 
-    return global_external_args_out;
+    return global_external_args;
 }
 
-scope &lang::get_global_scope() {
+scope &lang::get_global_scope() & {
     return _interpreter.get_scope();
 }
-template <typename T> vec<pair<string, T>> &lang::get_class_variables() {
-    return _interpreter.get_scope().get_vector_variables_t<T>();
+template <typename T> const container_vars<T>::container_type &lang::get_container_vars() const & {
+    return _interpreter.get_scope().get_container_vars<T>();
 }
 
 #endif

@@ -30,7 +30,7 @@ class bweas::generator_tools {
     // Types of arguments that will be parsed:
     //  1. extglobal
     //  2. trgfield(except T_PROJECT_SRC_FILES)
-    static void parse_basic_args(const sc::target_out &target, vec<sc::template_command> &target_queue_templates,
+    static void parse_basic_args(const sc::target &target, vec<sc::template_command> &target_queue_templates,
                                  const vec<pair<string, string>> &global_extern_args);
 
   public:

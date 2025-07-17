@@ -44,7 +44,7 @@ string lua_cache::create_cache() {
     lua_tools::param_templates ltcmd_s;
     lua_tools::param_ccomponents lccmp_s;
 
-    for (const auto &ltarget_o : _context->out_targets)
+    for (const auto &ltarget_o : _context->targets)
         ltargets_o.push_back(lua_tools::conv_to_table(ltarget_o));
     for (const auto &ltcmd : _context->templates)
         ltcmd_s.push_back(lua_tools::conv_to_table(ltcmd));
@@ -88,7 +88,7 @@ void lua_cache::extract_cache_data(const string &cache_str) {
     }
 
     for (auto &ltarget_o : ltargets_o)
-        _context->out_targets.push_back(lua_tools::conv_to_target(ltarget_o));
+        _context->targets.push_back(lua_tools::conv_to_target(ltarget_o));
     for (auto &ltcmd : ltcmd_s)
         _context->templates.push_back(lua_tools::conv_to_template(ltcmd));
     for (auto &lccmp : lccmp_s)

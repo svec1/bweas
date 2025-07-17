@@ -17,105 +17,95 @@ template <typename T> class container_vars {
     container_vars(const container_vars &) = default;
     container_vars(container_vars &&)      = default;
 
-    container_vars<T> &operator=(const container_vars<T> &dt_var);
+    container_vars<T> &operator=(const container_vars<T> &dt_var) = default;
 
     ~container_vars() = default;
 
   public:
-    const pair<string, T> &create_var_r(string name_var, T value = {});
-    size_t create_var(string name_var, T value = NULL);
+    using container_type      = umap<string, T>;
+    using container_pair_type = container_type::value_type;
 
-    size_t delete_var(string name_var);
+    const container_pair_type &create_var_r(string name_var, T value = {}) &;
+    size_t create_var(string name_var, T value = {}) &;
 
-    // ret: 0 - succes; 1 - name_var doesn't exist; 2 - name_var_src doesn't exist
-    size_t copy(string name_var, string name_var_src);
+    size_t delete_var(string name_var) &;
 
-    T get_value(string name_var);
+    T get_value(string name_var) const &;
 
-    const pair<string, T> &get_ref(string name_var);
-    T &get_val_ref(string name_var);
+    const container_pair_type &get_pair_ref(string name_var) const &;
 
-    vec<pair<string, T>> &get_vector_variables();
+    T &get_val_ref(string name_var) &;
+    const T &get_val_ref(string name_var) const &;
 
-    bool is_exist_var(string name_var);
+    container_type &get_container() &;
+    const container_type &get_container() const &;
 
-    void clear();
+    bool is_exist_var(string name_var) const &;
+
+    void clear() &;
 
   private:
-    size_t find_var_ind(string name_var);
-
-    vec<pair<string, T>> variable_s;
+    container_type container;
 };
 
-template <typename T> container_vars<T> &container_vars<T>::operator=(const container_vars<T> &dt_var) {
-    variable_s = dt_var.variable_s;
-    return *this;
-}
-template <typename T> size_t container_vars<T>::find_var_ind(string name_var) {
-    for (size_t i = 0; i < variable_s.size(); ++i) {
-        if (variable_s[i].first == name_var)
-            return i;
-    }
-    return SIZE_MAX;
-}
-
-template <typename T> bool container_vars<T>::is_exist_var(string name_var) {
-    if (find_var_ind(name_var) != SIZE_MAX)
+template <typename T> bool container_vars<T>::is_exist_var(string name_var) const & {
+    if (container.find(name_var) != container.end())
         return 1;
     return 0;
 }
 
-template <typename T> const pair<string, T> &container_vars<T>::create_var_r(string name_var, T value) {
+template <typename T>
+const container_vars<T>::container_pair_type &container_vars<T>::create_var_r(string name_var, T value) & {
     if (is_exist_var(name_var))
         return NULL;
-    variable_s.emplace(name_var, value);
-    return variable_s[variable_s.size() - 1];
+    container.emplace_hint(container.end(), name_var, value);
+    return *(container.end() - 1);
 }
 
-template <typename T> size_t container_vars<T>::create_var(string name_var, T value) {
+template <typename T> size_t container_vars<T>::create_var(string name_var, T value) & {
     if (is_exist_var(name_var))
         return 1;
-    variable_s.emplace_back(name_var, value);
+    container.emplace_hint(container.end(), name_var, value);
     return 0;
 }
 
-template <typename T> size_t container_vars<T>::delete_var(string name_var) {
-    if (!is_exist_var(name_var))
+template <typename T> size_t container_vars<T>::delete_var(string name_var) & {
+    if (auto it = container.find(name_var); it != container.end()) {
+        container.erase(it);
         return 1;
-    variable_s.erase(variable_s.begin() + find_var_ind(name_var));
+    }
     return 0;
 }
 
-template <typename T> size_t container_vars<T>::copy(string name_var, string name_var_src) {
-    if (!is_exist_var(name_var))
-        return 1;
-    else if (!is_exist_var(name_var_src))
-        return 2;
-
-    variable_s[find_var_ind(name_var)].second = variable_s[find_var_ind(name_var_src)].second;
-    return 0;
+template <typename T> T container_vars<T>::get_value(string name_var) const & {
+    if (auto it = container.find(name_var); it != container.end())
+        return it->second;
+    return create_var(name_var, T{});
 }
 
-template <typename T> T container_vars<T>::get_value(string name_var) {
-    if (!is_exist_var(name_var))
-        return T();
-    return variable_s[find_var_ind(name_var)].second;
+template <typename T>
+const container_vars<T>::container_pair_type &container_vars<T>::get_pair_ref(string name_var) const & {
+    return *container.find(name_var);
 }
 
-template <typename T> const pair<string, T> &container_vars<T>::get_ref(string name_var) {
-    return variable_s[find_var_ind(name_var)];
+template <typename T> T &container_vars<T>::get_val_ref(string name_var) & {
+    return container.find(name_var)->second;
 }
 
-template <typename T> T &container_vars<T>::get_val_ref(string name_var) {
-    return variable_s[find_var_ind(name_var)].second;
+template <typename T> const T &container_vars<T>::get_val_ref(string name_var) const & {
+    return container.find(name_var)->second;
 }
 
-template <typename T> vec<pair<string, T>> &container_vars<T>::get_vector_variables() {
-    return variable_s;
+template <typename T> container_vars<T>::container_type &container_vars<T>::get_container() & {
+    return container;
 }
 
-template <typename T> void container_vars<T>::clear() {
-    variable_s.clear();
+template <typename T> const container_vars<T>::container_type &container_vars<T>::get_container() const & {
+    return container;
+}
+
+template <typename T> void container_vars<T>::clear() & {
+    container.clear();
 }
 
 #endif

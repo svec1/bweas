@@ -19,16 +19,15 @@ string json_cache::create_cache() {
 
     cache_data["config_file"] = _context->path_bweas_config;
 
-    for (const auto &target : _context->out_targets)
+    for (const auto &target : _context->targets)
         cache_data["targets"][target.name] = {{"type", sc::target_type_str(target.type)},
                                               {"configuration", sc::target_cfg_str(target.cfg)},
                                               {"version", target.ver.get_str_version()},
                                               {"generator", target.name_generator},
-                                              {"dependencies", target.target_vec_libs},
+                                              {"templates", target.templates},
+                                              {"dependencies", target.dependencies},
                                               {"project",
-                                               {{"name", target.prj.name},
-                                                {"version", target.prj.ver.get_str_version()},
-                                                {"lang", target.prj.language},
+                                               {{"lang", target.prj.language},
                                                 {"path_compiler", target.prj.path_compiler},
                                                 {"path_linker", target.prj.path_linker},
                                                 {"release_flags_compiler", target.prj.rflags_compiler},
@@ -38,8 +37,8 @@ string json_cache::create_cache() {
                                                 {"std_c", target.prj.standart_c},
                                                 {"std_cpp", target.prj.standart_cpp},
                                                 {"files", target.prj.src_files},
+                                                {"libs", target.prj.libs},
                                                 {"include_paths", target.prj.include_paths},
-                                                {"templates", target.prj.vec_templates},
                                                 {"custom_extension_fields", target.prj.custom_ext_fields}}}};
 
     for (const auto &_template : _context->templates) {
@@ -78,19 +77,18 @@ void json_cache::extract_cache_data(const string &cache_str) {
         _context->path_bweas_config = cache_data["config_file"];
 
         for (const auto &target : cache_data["targets"].items()) {
-            sc::target_out target_o_tmp;
+            sc::target target_o_tmp;
             target_o_tmp.name = target.key();
 
-            const auto &fields           = target.value();
-            target_o_tmp.type            = sc::to_target_type(fields["type"]);
-            target_o_tmp.cfg             = sc::to_target_cfg(fields["configuration"]);
-            target_o_tmp.ver             = (string)fields["version"];
-            target_o_tmp.name_generator  = fields["generator"];
-            target_o_tmp.target_vec_libs = fields["dependencies"];
+            const auto &fields          = target.value();
+            target_o_tmp.type           = sc::to_target_type(fields["type"]);
+            target_o_tmp.cfg            = sc::to_target_cfg(fields["configuration"]);
+            target_o_tmp.ver            = (string)fields["version"];
+            target_o_tmp.name_generator = fields["generator"];
+            target_o_tmp.templates      = fields["templates"];
+            target_o_tmp.dependencies   = fields["dependencies"];
 
             const auto &prj                    = fields["project"];
-            target_o_tmp.prj.name              = prj["name"];
-            target_o_tmp.prj.ver               = (string)prj["version"];
             target_o_tmp.prj.language          = prj["lang"];
             target_o_tmp.prj.path_compiler     = prj["path_compiler"];
             target_o_tmp.prj.path_linker       = prj["path_linker"];
@@ -101,11 +99,11 @@ void json_cache::extract_cache_data(const string &cache_str) {
             target_o_tmp.prj.standart_c        = prj["std_c"];
             target_o_tmp.prj.standart_cpp      = prj["std_cpp"];
             target_o_tmp.prj.src_files         = prj["files"];
+            target_o_tmp.prj.libs              = prj["libs"];
             target_o_tmp.prj.include_paths     = prj["include_paths"];
-            target_o_tmp.prj.vec_templates     = prj["templates"];
             target_o_tmp.prj.custom_ext_fields = prj["custom_extension_fields"];
 
-            _context->out_targets.push_back(target_o_tmp);
+            _context->targets.push_back(target_o_tmp);
         }
 
         for (const auto &_template : cache_data["templates"].items()) {

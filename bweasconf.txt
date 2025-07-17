@@ -14,13 +14,13 @@ create_template(template_exec,  "clang_exec(BWEAS_SLIB) -> EXECUTABLE: FBS_CURRE
 file(SRC_FILES, 0, "src/bs/*.cpp", "src/bs/lang/*.cpp", "src/bs/lang/lexer.l", "src/bs/lang/parser.y")
 file(BWEAS_MAIN_FILE, 0, "src/bweas.cpp")
 
-project(BWEAS_SLIB_PROJECT, SRC_FILES)
-project(BWEAS_PROJECT, BWEAS_MAIN_FILE)
+create_target(BWEAS_SLIB, {LIBRARY}, {SRC_FILES})
+create_target(BWEAS, {EXECUTABLE}, {BWEAS_MAIN_FILE})
 
-include_directories(BWEAS_SLIB_PROJECT, "src/bs/")
-include_directories(BWEAS_PROJECT, "src/bs/")
-use_templates(BWEAS_SLIB_PROJECT, template_flex, template_bison, template_obj, template_lib)
-use_templates(BWEAS_PROJECT, template_exec)
+add_dependencies_target(BWEAS, BWEAS_SLIB)
 
-create_target(BWEAS_SLIB, BWEAS_SLIB_PROJECT, LIBRARY)
-create_target(BWEAS, BWEAS_PROJECT, EXECUTABLE)
+include_directories(BWEAS_SLIB, "src/bs/")
+include_directories(BWEAS, "src/bs/")
+
+use_templates(BWEAS_SLIB, template_flex, template_bison, template_obj, template_lib)
+use_templates(BWEAS, template_exec)

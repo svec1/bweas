@@ -48,11 +48,13 @@ logger &logger::operator<<(std::function<logger::handle_func_t> handle_func_call
 
 void logger::operator<<(const log_message &obj) {
     status = obj.log_t;
-    bwtools::write_file(bwtools::get_ref_file(file_log),
-                        string("[") + owner.data() + string("]: ") + obj.ss.str() + "\n");
+
+    string out_str = (!owner.empty() ? string("[") + owner.data() + string("]: ") + obj.ss.str() : obj.ss.str());
+
+    bwtools::write_file(bwtools::get_ref_file(file_log), out_str + "\n");
 
     if (handle_func) {
-        handle_func(string("[") + owner.data() + string("]: ") + obj.ss.str());
+        handle_func(out_str);
         handle_func = nullptr;
     }
 }

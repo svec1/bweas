@@ -17,12 +17,12 @@ bweas::logger _log{"BWCOMMAND_TEMPLATE"};
 
 template_command template_command::create_template_command(string_v template_name, const string &template_str) {
     static const array<string, 18> name_field_target = {
-        NAME_FIELD_TARGET_NAME,        NAME_FIELD_TARGET_LIBS,        NAME_FIELD_TARGET_TYPE,
-        NAME_FIELD_TARGET_CFG,         NAME_FIELD_TARGET_VER,         NAME_FIELD_PROJECT_NAME,
-        NAME_FIELD_PROJECT_VER,        NAME_FIELD_PROJECT_LANG,       NAME_FIELD_PROJECT_PCOMPILER,
-        NAME_FIELD_PROJECT_PLINKER,    NAME_FIELD_PROJECT_RFCOMPILER, NAME_FIELD_PROJECT_RFLINKER,
-        NAME_FIELD_PROJECT_DFCOMPILER, NAME_FIELD_PROJECT_DFLINKER,   NAME_FIELD_PROJECT_STD_C,
-        NAME_FIELD_PROJECT_STD_CPP,    NAME_FIELD_PROJECT_SRC_FILES,  NAME_FIELD_PROJECT_INCLUDE_PATHS};
+        NAME_FIELD_TARGET_NAME,        NAME_FIELD_TARGET_TEMPLATES,  NAME_FIELD_TARGET_DEPENDENCIES,
+        NAME_FIELD_TARGET_TYPE,        NAME_FIELD_TARGET_CFG,        NAME_FIELD_TARGET_VER,
+        NAME_FIELD_PROJECT_LANG,       NAME_FIELD_PROJECT_PCOMPILER, NAME_FIELD_PROJECT_PLINKER,
+        NAME_FIELD_PROJECT_RFCOMPILER, NAME_FIELD_PROJECT_RFLINKER,  NAME_FIELD_PROJECT_DFCOMPILER,
+        NAME_FIELD_PROJECT_DFLINKER,   NAME_FIELD_PROJECT_STD_C,     NAME_FIELD_PROJECT_STD_CPP,
+        NAME_FIELD_PROJECT_SRC_FILES,  NAME_FIELD_PROJECT_LIBS,      NAME_FIELD_PROJECT_INCLUDE_PATHS};
 
     template_command tcmd_tmp;
     tcmd_tmp.name = template_name;
@@ -122,7 +122,7 @@ vec<template_command> template_command::create_queue_target_templates(const vec<
     if (it_template == vec_templates_tmp.end())
         (_log << bwtools::fatal) << (log_message(log_type::fatal)
                                      << "There is no template that returns a target with the given type: "
-                                     << it_template->name << " - " << sc::target_type_str(target_t));
+                                     << sc::target_type_str(target_t));
 
     target_queue_templates.push_back(*it_template);
     for (size_t i = 0; i < it_template->name_accept_params.size(); ++i)

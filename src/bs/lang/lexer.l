@@ -54,29 +54,20 @@ extern string current_statements_str;
                                 yylval.string = strdup(str_tmp.data()); 
                                 return STRING;
                               }
-[a-zA-Z_][a-zA-Z0-9_]+        { 
-                                string str_tmp = yytext;
 
-                                if(str_tmp.find("VAR_") == 0){
-                                    str_tmp.erase(0, 4);
-                                    yylval.string = strdup(str_tmp.data());
-                                    return ID;
-                                }
-                                else{
-                                    size_t type = current_scope->what_type(str_tmp); 
-                                    if(type == 1){
-                                        yylval.number = current_scope->get_var_value<pdiff>(str_tmp);
-                                        return NUMBER;
-                                    }
-                                    else if(type == 2){
-                                        yylval.string = strdup(current_scope->get_var_value<string>(str_tmp).data()); 
-                                        return STRING;    
-                                    }       
-                                
-                                    yylval.string = strdup(str_tmp.data());
-                                    return ID;
-                                }
+[a-zA-Z_][a-zA-Z0-9_]+        { 
+                                yylval.string = strdup(yytext);
+                                return ID;
                               }
+
+\{[a-zA-Z_][a-zA-Z0-9_]+\}    {
+                                string str_tmp = yytext;
+                                str_tmp.erase(0, 1);
+                                str_tmp.erase(str_tmp.size()-1, 1); 
+                                yylval.string = strdup(str_tmp.data());
+                                return VALUE_BY_ID;
+                              }
+
 
 .                 { 
                     printf("Undefined token: %s\n", yytext); 

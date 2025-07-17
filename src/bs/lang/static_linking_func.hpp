@@ -33,9 +33,6 @@ extern "C++"
     //  3. COPY
     void file(const expressions &expr_s, scope &current_scope);
 
-    // Creates a project with a specific language and source files
-    void project(const expressions &expr_s, scope &current_scope);
-
     // Creates a target with a specific configuration (RELEASE/DEBUG)
     // and a main project
     void create_target(const expressions &expr_s, scope &current_scope);

@@ -28,16 +28,14 @@ inline string type_var_to_str(size_t ind) {
     else if (ind == 4)
         return "vector<string>";
     else if (ind == 5)
-        return "project";
-    else if (ind == 6)
         return "target";
-    else if (ind == 7)
+    else if (ind == 6)
         return "template command";
-    else if (ind == 8)
+    else if (ind == 7)
         return "call component";
-    else if (ind == 9)
+    else if (ind == 8)
         return "global external args";
-    else if (ind == 10)
+    else if (ind == 9)
         return "function";
     return "undef";
 }
@@ -59,30 +57,30 @@ class scope {
     ~scope() = default;
 
   public:
-    template <typename T> inline T &create_var(string name_var, T val = T{});
-    template <typename T> inline bool try_create_var(string name_var, T val = T{});
+    template <typename T> inline T &create_var(string name_var, T val = T{}) &;
+    template <typename T> inline bool try_create_var(string name_var, T val = T{}) &;
 
-    template <typename T> inline void delete_var(string name_var);
+    template <typename T> inline void delete_var(string name_var) &;
 
-    template <typename T> inline T &get_var_value(string name_var);
-    template <typename T> inline vec<pair<string, T>> &get_vector_variables_t();
+    template <typename T> inline T &get_var_value(string name_var) &;
 
-    inline bool is_exist(string name_var);
+    template <typename T> inline const container_vars<T>::container_type &get_container_vars() const &;
 
-    inline void clear();
+    inline bool is_exist(string name_var) const &;
+
+    inline void clear() &;
 
     // 1  - int
     // 2  - string
     // 3  - vector<int>
     // 4  - vector<string>
-    // 5  - project
-    // 6  - target
-    // 7  - template command
-    // 8  - call component
-    // 9  - global external args
-    // 10 - function
+    // 5  - target
+    // 6  - template command
+    // 7  - call component
+    // 8  - global external args
+    // 9  - function
     // 0  - undefined
-    inline size_t what_type(string name_var);
+    inline size_t what_type(string name_var) const &;
 
   private:
     logger &_log;
@@ -91,17 +89,16 @@ class scope {
 
     container_vars<pdiff> int_v;
     container_vars<string> str_v;
-    container_vars<sc::project> prj_v;
-    container_vars<sc::target> trg_v;
     container_vars<vec<pdiff>> vec_int_v;
     container_vars<vec<string>> vec_str_v;
 
+    container_vars<sc::target> trg_v;
     container_vars<sc::template_command> tcmd_v;
     container_vars<sc::call_component> ccmp_v;
     container_vars<pair<string, string>> global_ext_args_v;
 };
 
-template <typename T> inline T &scope::create_var(string name_var, T val) {
+template <typename T> inline T &scope::create_var(string name_var, T val) & {
     if constexpr (std::is_same_v<T, pdiff>) {
         if (!int_v.create_var(name_var, val))
             return int_v.get_val_ref(name_var);
@@ -109,10 +106,6 @@ template <typename T> inline T &scope::create_var(string name_var, T val) {
     else if constexpr (std::is_same_v<T, string>) {
         if (!str_v.create_var(name_var, val))
             return str_v.get_val_ref(name_var);
-    }
-    else if constexpr (std::is_same_v<T, sc::project>) {
-        if (!prj_v.create_var(name_var, val))
-            return prj_v.get_val_ref(name_var);
     }
     else if constexpr (std::is_same_v<T, sc::target>) {
         if (!trg_v.create_var(name_var, val))
@@ -150,14 +143,12 @@ template <typename T> inline T &scope::create_var(string name_var, T val) {
     std::unreachable();
 }
 
-template <typename T> inline bool scope::try_create_var(string name_var, T val) {
+template <typename T> inline bool scope::try_create_var(string name_var, T val) & {
     bool creates = 0;
     if constexpr (std::is_same_v<T, pdiff>)
         creates = int_v.create_var(name_var, val);
     else if constexpr (std::is_same_v<T, string>)
         creates = str_v.create_var(name_var, val);
-    else if constexpr (std::is_same_v<T, sc::project>)
-        creates = prj_v.create_var(name_var, val);
     else if constexpr (std::is_same_v<T, sc::target>)
         creates = trg_v.create_var(name_var, val);
     else if constexpr (std::is_same_v<T, vec<pdiff>>)
@@ -176,15 +167,13 @@ template <typename T> inline bool scope::try_create_var(string name_var, T val) 
     return !creates;
 }
 
-template <typename T> inline void scope::delete_var(string name_var) {
+template <typename T> inline void scope::delete_var(string name_var) & {
     bool err_handling = 0;
 
     if constexpr (std::is_same_v<T, pdiff>)
         err_handling = int_v.delete_var(name_var);
     else if constexpr (std::is_same_v<T, string>)
         err_handling = str_v.delete_var(name_var);
-    else if constexpr (std::is_same_v<T, sc::project>)
-        err_handling = prj_v.delete_var(name_var);
     else if constexpr (std::is_same_v<T, sc::target>)
         err_handling = trg_v.delete_var(name_var);
     else if constexpr (std::is_same_v<T, vec<pdiff>>)
@@ -204,7 +193,7 @@ template <typename T> inline void scope::delete_var(string name_var) {
         (_log << bwtools::error) << (log_message(log_type::error) << "The " << name_var << " variable does not exist");
 }
 
-template <typename T> inline T &scope::get_var_value(string name_var) {
+template <typename T> inline T &scope::get_var_value(string name_var) & {
     if constexpr (std::is_same_v<T, pdiff>) {
         if (int_v.is_exist_var(name_var))
             return int_v.get_val_ref(name_var);
@@ -212,10 +201,6 @@ template <typename T> inline T &scope::get_var_value(string name_var) {
     else if constexpr (std::is_same_v<T, string>) {
         if (str_v.is_exist_var(name_var))
             return str_v.get_val_ref(name_var);
-    }
-    else if constexpr (std::is_same_v<T, sc::project>) {
-        if (prj_v.is_exist_var(name_var))
-            return prj_v.get_val_ref(name_var);
     }
     else if constexpr (std::is_same_v<T, sc::target>) {
         if (trg_v.is_exist_var(name_var))
@@ -254,42 +239,39 @@ template <typename T> inline T &scope::get_var_value(string name_var) {
     std::unreachable();
 }
 
-template <typename T> inline vec<pair<string, T>> &scope::get_vector_variables_t() {
+template <typename T> inline const container_vars<T>::container_type &scope::get_container_vars() const & {
     if constexpr (std::is_same_v<T, pdiff>)
-        return int_v.get_vector_variables();
+        return int_v.get_container();
     else if constexpr (std::is_same_v<T, string>)
-        return str_v.get_vector_variables();
-    else if constexpr (std::is_same_v<T, sc::project>)
-        return prj_v.get_vector_variables();
+        return str_v.get_container();
     else if constexpr (std::is_same_v<T, sc::target>)
-        return trg_v.get_vector_variables();
+        return trg_v.get_container();
     else if constexpr (std::is_same_v<T, vec<pdiff>>)
-        return vec_int_v.get_vector_variables();
+        return vec_int_v.get_container();
     else if constexpr (std::is_same_v<T, vec<string>>)
-        return vec_str_v.get_vector_variables();
+        return vec_str_v.get_container();
     else if constexpr (std::is_same_v<T, sc::template_command>)
-        return tcmd_v.get_vector_variables();
+        return tcmd_v.get_container();
     else if constexpr (std::is_same_v<T, sc::call_component>)
-        return ccmp_v.get_vector_variables();
+        return ccmp_v.get_container();
     else if constexpr (std::is_same_v<T, pair<string, string>>)
-        return global_ext_args_v.get_vector_variables();
+        return global_ext_args_v.get_container();
     else if constexpr (std::is_same_v<T, decl_func>)
-        return funcs_v.get_vector_variables();
+        return funcs_v.get_container();
     else
         static_assert(false, "Unsuitable type.");
 
     std::unreachable();
 }
 
-inline bool scope::is_exist(string name_var) {
+inline bool scope::is_exist(string name_var) const & {
     if (int_v.is_exist_var(name_var) || str_v.is_exist_var(name_var) || vec_int_v.is_exist_var(name_var) ||
-        vec_str_v.is_exist_var(name_var) || prj_v.is_exist_var(name_var) || trg_v.is_exist_var(name_var) ||
-        tcmd_v.is_exist_var(name_var) || ccmp_v.is_exist_var(name_var) || global_ext_args_v.is_exist_var(name_var) ||
-        funcs_v.is_exist_var(name_var))
+        vec_str_v.is_exist_var(name_var) || trg_v.is_exist_var(name_var) || tcmd_v.is_exist_var(name_var) ||
+        ccmp_v.is_exist_var(name_var) || global_ext_args_v.is_exist_var(name_var) || funcs_v.is_exist_var(name_var))
         return 1;
     return 0;
 }
-inline size_t scope::what_type(string name_var) {
+inline size_t scope::what_type(string name_var) const & {
     if (int_v.is_exist_var(name_var))
         return 1;
     else if (str_v.is_exist_var(name_var))
@@ -298,28 +280,25 @@ inline size_t scope::what_type(string name_var) {
         return 3;
     else if (vec_str_v.is_exist_var(name_var))
         return 4;
-    else if (prj_v.is_exist_var(name_var))
-        return 5;
     else if (trg_v.is_exist_var(name_var))
-        return 6;
+        return 5;
     else if (tcmd_v.is_exist_var(name_var))
-        return 7;
+        return 6;
     else if (ccmp_v.is_exist_var(name_var))
-        return 8;
+        return 7;
     else if (global_ext_args_v.is_exist_var(name_var))
-        return 9;
+        return 8;
     else if (funcs_v.is_exist_var(name_var))
-        return 10;
+        return 9;
     else
         return 0;
 }
 
-inline void scope::clear() {
+inline void scope::clear() & {
     int_v.clear();
     str_v.clear();
     vec_int_v.clear();
     vec_str_v.clear();
-    prj_v.clear();
     trg_v.clear();
     tcmd_v.clear();
     ccmp_v.clear();

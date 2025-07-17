@@ -109,7 +109,7 @@ class bweas::builder final {
     size_t gen_cache_target();
 
     depends_files::depends_map &load_depends_file(std::unique_ptr<depends_files> &_depends_files,
-                                                  const sc::target_out target);
+                                                  const sc::target target);
 
   private:
     /** \brief Collects projects(out_targets) by initializing the generator and calling(bwIGenerator::gen_commands)

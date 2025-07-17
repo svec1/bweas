@@ -66,9 +66,11 @@ class bweas::logger {
     logger &operator<<(std::function<handle_func_t> handle_func_callback);
     void operator<<(const bweas::log_message &obj);
 
+  public:
+    static bweas::log_type global_status;
+
   private:
     static bwtools::file_it file_log;
-    static bweas::log_type global_status;
 
   private:
     string_v owner;
