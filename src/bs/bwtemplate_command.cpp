@@ -30,7 +30,7 @@ template_command template_command::create_template_command(string_v template_nam
     string tmp_param;
 
     std::regex template_command_syntax(
-        R"(^\s*(\w+)\(\s*(\w+(?:\s*,\s*\w+)*\s*)\)\s*->\s*(\w+):\s*((?:\w+\s*|<\'[-+\.\/\*=\w]*\'>\s*|<\{\w+\}>\s*|<\w+>\s*|<\[(?:\w+(?::[-+\.\/\*=\w+]+)?)\]>\s*)+)$)");
+        R"(^\s*(\w+|[-+\.\/\*=\w+]+:.+)\(\s*(\w+(?:\s*,\s*\w+)*\s*)\)\s*->\s*(\w+):\s*((?:\w+\s*|<\'[-+\.\/\*=\w]*\'>\s*|<\{\w+\}>\s*|<\w+>\s*|<\[(?:\w+(?::[-+\.\/\*=\w+]+)?)\]>\s*)+)$)");
 
     std::smatch args_match;
     if (std::regex_match(template_str, args_match, template_command_syntax)) {

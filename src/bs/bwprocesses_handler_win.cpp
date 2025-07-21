@@ -45,7 +45,6 @@ size_t processes_handler::wait_process(size_t pid) {
     CloseHandle(pid_tmp.hProcess);
     CloseHandle(pid_tmp.hThread);
 
-    completed_pid.insert(pid);
     return pid;
 }
 

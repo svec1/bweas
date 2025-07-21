@@ -9,18 +9,23 @@
 
 using namespace bweas;
 
-string generator_tools::get_name_output_file(string pattern_file, size_t index, string dir_work_endv) {
+string generator_tools::get_name_output_file(string pattern_file, string name_file, size_t index) {
     if (pattern_file.find(".") == pattern_file.npos)
-        return dir_work_endv + "/" + pattern_file + std::to_string(index);
+        return pattern_file + std::to_string(index);
 
     string name_output_file_curr = pattern_file, extension_output_file_curr = pattern_file;
 
     name_output_file_curr.erase(name_output_file_curr.find("."), name_output_file_curr.size());
     extension_output_file_curr.erase(0, extension_output_file_curr.find("."));
 
+    if (name_output_file_curr.find("{}") == name_output_file_curr.size() - 2 && !name_file.empty()) {
+        name_output_file_curr.erase(name_output_file_curr.size() - 2);
+        return name_output_file_curr + fs::path(name_file).filename().c_str() + extension_output_file_curr;
+    }
+
     if (index != 0)
-        return dir_work_endv + "/" + name_output_file_curr + std::to_string(index) + extension_output_file_curr;
-    return dir_work_endv + "/" + name_output_file_curr + extension_output_file_curr;
+        return name_output_file_curr + std::to_string(index) + extension_output_file_curr;
+    return name_output_file_curr + extension_output_file_curr;
 }
 
 bool generator_tools::should_uses_src_file(string_v src_file, string_v output_file, const uset<string> &dfiles) {

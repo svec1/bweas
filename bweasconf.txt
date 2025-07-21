@@ -1,15 +1,9 @@
-create_call_component(flex, "flex", "lexer.cpp")
-create_call_component(bison, "bison", "parser.cpp")
-create_call_component(clang_obj, "clang++", "object.obj")
-create_call_component(arch_lib, "ar", "bweas.a")
-create_call_component(clang_exec, "clang++", "bweas.exe")
+create_template(template_flex,  "flex:lexer.cpp(NULL) -> T_PROJECT_SRC_FILES: <'-o'> FBS_CURRENT_OUTPUT_FILE <[T_PROJECT_SRC_FILES:lexer.l]>")
+create_template(template_bison, "bison:parser.cpp(NULL) -> T_PROJECT_SRC_FILES: <'-o'> FBS_CURRENT_OUTPUT_FILE <'-H'> <[T_PROJECT_SRC_FILES:parser.y]>")
+create_template(template_obj,   "clang++:{}.o(NULL) -> OBJ_S: <'-c'> <[T_PROJECT_SRC_FILES:*.cpp]> <'-o'> FBS_CURRENT_OUTPUT_FILE <'-std=gnu++23'> <'-fPIC'> <[T_PROJECT_INCLUDE_PATHS]>")
+create_template(template_lib,   "ar:bweas.a(OBJ_S) -> LIBRARY: <'rcs'> FBS_CURRENT_OUTPUT_FILE <{OBJ_S}>")
 
-create_template(template_flex,  "flex(NULL) -> T_PROJECT_SRC_FILES: <'-o'> FBS_CURRENT_OUTPUT_FILE <[T_PROJECT_SRC_FILES:lexer.l]>")
-create_template(template_bison, "bison(NULL) -> T_PROJECT_SRC_FILES: <'-o'> FBS_CURRENT_OUTPUT_FILE <'-H'> <[T_PROJECT_SRC_FILES:parser.y]>")
-create_template(template_obj,   "clang_obj(NULL) -> OBJ_S: <'-c'> <[T_PROJECT_SRC_FILES:*.cpp]> <'-o'> FBS_CURRENT_OUTPUT_FILE <'-std=gnu++23'> <'-fPIC'> <[T_PROJECT_INCLUDE_PATHS]>")
-create_template(template_lib,   "arch_lib(OBJ_S) -> LIBRARY: <'rcs'> FBS_CURRENT_OUTPUT_FILE <{OBJ_S}>")
-
-create_template(template_exec,  "clang_exec(BWEAS_SLIB) -> EXECUTABLE: FBS_CURRENT_INPUT_FILE <{BWEAS_SLIB}> <'-o'> FBS_CURRENT_OUTPUT_FILE <[T_PROJECT_INCLUDE_PATHS]> <'-std=gnu++23'> <'-llz4'> <'-llua'> <'-lluajit-5.1'>")
+create_template(template_exec,  "clang++:bweas(BWEAS_SLIB) -> EXECUTABLE: FBS_CURRENT_INPUT_FILE <{BWEAS_SLIB}> <'-o'> FBS_CURRENT_OUTPUT_FILE <[T_PROJECT_INCLUDE_PATHS]> <'-std=gnu++23'> <'-llz4'> <'-llua'> <'-lluajit-5.1'>")
 
 file(SRC_FILES, 0, "src/bs/*.cpp", "src/bs/lang/*.cpp", "src/bs/lang/lexer.l", "src/bs/lang/parser.y")
 file(BWEAS_MAIN_FILE, 0, "src/bweas.cpp")

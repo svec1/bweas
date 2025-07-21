@@ -125,7 +125,8 @@ void integral_generator::get_input_files(context *const _context) {
         if (current_template.returnable == NAME_FIELD_PROJECT_SRC_FILES) {
             for (size_t i = 0; i < current_template.ifiles.size(); ++i)
                 target.prj.src_files.push_back(generator_tools::get_name_output_file(
-                    call_component->pattern_ret_files, i, _context->current_work_directory));
+                    _context->current_work_directory + "/" + call_component->pattern_ret_files,
+                    current_template.ifiles[i]));
         }
         else if (current_template.returnable == target_type_str(target.type))
             current_template.returns_target = 1;
@@ -150,14 +151,18 @@ generator_api::commands integral_generator::generate(context *const _context) {
                              return call_component.name == current_template.name_call_component;
                          });
 
+        string pattern_output_file = _context->current_work_directory + "/" + call_component->pattern_ret_files;
+
         generator_api::command cmd;
         cmd.name = current_template.name + std::to_string(count_use_ifiles);
 
-        string output_file = generator_tools::get_name_output_file(call_component->pattern_ret_files, count_use_ifiles,
-                                                                   _context->current_work_directory);
+        string output_file = generator_tools::get_name_output_file(
+            pattern_output_file,
+            count_use_ifiles < current_template.ifiles.size() ? current_template.ifiles[count_use_ifiles] : "",
+            count_use_ifiles);
 
         auto add_depends_cmd = [&](string_v _returnable) {
-            for (const auto &_template : _context->templates) {
+            for (const auto &_template : target.queue_templates) {
                 if (_template.name == current_template.name)
                     break;
 
@@ -188,16 +193,13 @@ generator_api::commands integral_generator::generate(context *const _context) {
                     for (; count_use_ifiles < current_template.ifiles.size(); ++count_use_ifiles)
                         if (generator_tools::should_uses_src_file(
                                 current_template.ifiles[count_use_ifiles],
-                                generator_tools::get_name_output_file(call_component->pattern_ret_files,
-                                                                      count_use_ifiles,
-                                                                      _context->current_work_directory),
+                                generator_tools::get_name_output_file(
+                                    pattern_output_file, current_template.ifiles[count_use_ifiles], count_use_ifiles),
                                 _context->dfiles[current_template.ifiles[count_use_ifiles]]) ||
                             current_template.returns_target) {
                             cmd.args.push_back(current_template.ifiles[count_use_ifiles]);
                             ++real_count_use_ifiles;
                         }
-
-                add_depends_cmd(NAME_FIELD_PROJECT_SRC_FILES);
             }
             else if (arg.arg_t == sc::template_command::arg::type::features &&
                      arg.str_arg == FEATURE_FIELD_BS_CURRENT_OF) {
@@ -214,8 +216,8 @@ generator_api::commands integral_generator::generate(context *const _context) {
                     }
                     else
                         for (size_t k = 0; k < count_use_ifiles; ++k) {
-                            output_file = generator_tools::get_name_output_file(call_component->pattern_ret_files, k,
-                                                                                _context->current_work_directory);
+                            output_file = generator_tools::get_name_output_file(pattern_output_file,
+                                                                                current_template.ifiles[k], k);
                             if (current_template.returnable != NAME_FIELD_PROJECT_SRC_FILES)
                                 internal_args_stack_tmp[current_template.returnable].push_back(output_file);
 
@@ -234,9 +236,12 @@ generator_api::commands integral_generator::generate(context *const _context) {
             else if (arg.arg_t == sc::template_command::arg::type::string)
                 cmd.args.push_back(arg.str_arg);
         }
+
         if (!real_count_use_ifiles && !current_template.returns_target)
             _log << (log_message(log_type::msg) << "Skipped command generation for the file: " << output_file);
         else {
+            add_depends_cmd(NAME_FIELD_PROJECT_SRC_FILES);
+
             cmd.name_output_file = output_file;
             cmd.name_program     = call_component->name_program;
             cmd_s.push_back(cmd);

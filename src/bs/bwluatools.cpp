@@ -202,7 +202,7 @@ int lua_tools::set_var(lua_State *L) {
 int lua_tools::get_name_output_file_lua(lua_State *L) {
     bwlua::tools::push_stack(
         L,
-        generator_tools::get_name_output_file(lua_tostring(L, -3), lua_tointeger(L, -2), lua_tostring(L, -1)).c_str());
+        generator_tools::get_name_output_file(lua_tostring(L, -3), lua_tostring(L, -2), lua_tointeger(L, -1)).c_str());
     return 1;
 }
 int lua_tools::file_slc_mask_lua(lua_State *L) {

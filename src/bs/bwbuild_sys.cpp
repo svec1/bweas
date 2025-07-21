@@ -428,9 +428,9 @@ void builder::build_targets() {
         size_t count_errors = 0;
 
         processes_handler p_handler(cmd_s, 4);
-        p_handler.start([&cmd_s, &build_state, &count_errors](const generator_api::command &cmd) {
-            if (!cmd.success) {
-                (_log << bwtools::error) << (log_message(log_type::error) << "failed: " << cmd.name_output_file);
+        p_handler.start([&cmd_s, &build_state, &count_errors](string_v name_output_file, bool success) {
+            if (!success) {
+                (_log << bwtools::error) << (log_message(log_type::error) << "failed: " << name_output_file);
                 ++count_errors;
             }
             else {
@@ -438,7 +438,7 @@ void builder::build_targets() {
                 (_log << bwtools::success)
                     << (log_message(log_type::msg)
                         << "[" << std::to_string(build_state).erase(std::to_string((size_t)build_state).size() + 2, 5)
-                        << "%] " << cmd.name_output_file);
+                        << "%] " << name_output_file);
             }
         });
 

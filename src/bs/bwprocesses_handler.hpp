@@ -25,7 +25,7 @@ class bweas::processes_handler {
     }
 
   public:
-    void start(std::function<void(const generator_api::command &cmd)> do_more_func = nullptr);
+    void start(std::function<void(string_v name_output_file, bool success)> do_more_func = nullptr);
 
   private:
     void create_process(generator_api::command &cmd);

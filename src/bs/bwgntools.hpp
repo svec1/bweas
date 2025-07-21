@@ -20,7 +20,7 @@ class bweas::generator_tools {
 
   public:
     // Generates a file name based on the pattern and the passed index of the given file.
-    static string get_name_output_file(string pattern_file, size_t index, string dir_work_endv);
+    static string get_name_output_file(string pattern_file, string name_file = "", size_t index = 0);
 
     // Determines, based on the time of creation or modification of the file and its dependencies, whether it should be
     // passed to the generator.

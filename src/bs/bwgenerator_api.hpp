@@ -9,7 +9,7 @@
 #define BWGENERATOR_HPP
 
 #include <functional>
-#include <string_view>
+#include <optional>
 
 #include <bw_defs.hpp>
 #include <bwluatools.hpp>
@@ -52,7 +52,7 @@ struct bweas::generator_api::command {
 
   public:
     size_t pid_execute_process = 0;
-    bool success               = 0;
+    std::optional<bool> success;
 };
 
 // Interface class that defines the structure of generator classes

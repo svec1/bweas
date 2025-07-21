@@ -9,7 +9,7 @@
 
 using namespace bweas;
 
-void processes_handler::start(std::function<void(const generator_api::command &cmd)> do_more_func) {
+void processes_handler::start(std::function<void(string_v, bool)> do_more_func) {
     for (size_t i = 0; i < cmd_s.size(); ++i) {
         if (count_runable_processes >= max_count_processes) {
             size_t tmp_pid = wait_process();
@@ -19,7 +19,7 @@ void processes_handler::start(std::function<void(const generator_api::command &c
                     return cmd.pid_execute_process == tmp_pid;
                 });
 
-            do_more_func(*completed_cmd);
+            do_more_func(completed_cmd->name_output_file, completed_cmd->success.value());
             --count_runable_processes;
         }
 
@@ -29,25 +29,28 @@ void processes_handler::start(std::function<void(const generator_api::command &c
                     return cmd.name == name_dependence;
                 });
 
-            if (dependence_cmd == cmd_s.end() || std::find(completed_pid.begin(), completed_pid.end(),
-                                                           dependence_cmd->pid_execute_process) != completed_pid.end())
+            if (dependence_cmd->success.has_value())
                 continue;
 
             (void)wait_process(dependence_cmd->pid_execute_process);
-
-            do_more_func(*dependence_cmd);
             --count_runable_processes;
+
+            do_more_func(dependence_cmd->name_output_file, dependence_cmd->success.value());
+            if (!dependence_cmd->success.value())
+                goto wait_all_process;
         }
         create_process(cmd_s[i]);
         ++count_runable_processes;
     }
 
+wait_all_process:
     while (count_runable_processes) {
-        size_t tmp_pid = wait_process();
+        const auto &it =
+            *std::find_if(cmd_s.begin(), cmd_s.end(), [tmp_pid = wait_process()](const generator_api::command &cmd) {
+                return cmd.pid_execute_process == tmp_pid;
+            });
 
-        do_more_func(*std::find_if(cmd_s.begin(), cmd_s.end(), [tmp_pid](const generator_api::command &cmd) {
-            return cmd.pid_execute_process == tmp_pid;
-        }));
+        do_more_func(it.name_output_file, it.success.value());
         --count_runable_processes;
     }
 }
@@ -68,7 +71,6 @@ size_t processes_handler::wait_process(size_t pid) {
             return cmd.pid_execute_process == pid;
         })->success = !WEXITSTATUS(pstatus);
 
-    completed_pid.insert(pid);
     return pid;
 }
 

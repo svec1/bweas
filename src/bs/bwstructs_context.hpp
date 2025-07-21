@@ -310,6 +310,12 @@ struct template_command {
 };
 
 struct call_component {
+    call_component() = default;
+    call_component(string _name, string _name_program, string _pattern_ret_files)
+        : name(_name), name_program(_name_program), pattern_ret_files(_pattern_ret_files) {
+    }
+
+  public:
     string name;
     string name_program;
 

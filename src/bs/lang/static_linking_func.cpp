@@ -573,7 +573,22 @@ void sl_func::add_param_template(const expressions &expr_s, scope &current_scope
 
 void sl_func::create_template(const expressions &expr_s, scope &current_scope) {
     try {
-        auto tcmd_tmp = sc::template_command::create_template_command(expr_s[0].value, expr_s[1].value);
+        sc::template_command tcmd_tmp = sc::template_command::create_template_command(expr_s[0].value, expr_s[1].value);
+        if (current_scope.what_type(tcmd_tmp.name_call_component) != 7) {
+            if (tcmd_tmp.name_call_component.find(":") != tcmd_tmp.name_call_component.npos) {
+                string program = tcmd_tmp.name_call_component, pattern_file = tcmd_tmp.name_call_component;
+                program.erase(program.find(":"));
+                pattern_file.erase(0, pattern_file.find(":") + 1);
+
+                tcmd_tmp.name_call_component = expr_s[0].value + "_anon_cc";
+                current_scope.create_var<sc::call_component>(
+                    tcmd_tmp.name_call_component,
+                    sc::call_component{tcmd_tmp.name_call_component, program, pattern_file});
+            }
+            else
+                _log << bwtools::fatal
+                     << (log_message(log_type::fatal) << "Undefined call component: " << tcmd_tmp.name_call_component);
+        }
         current_scope.create_var<sc::template_command>(expr_s[0].value, tcmd_tmp);
     }
     catch (std::runtime_error &excp) {
