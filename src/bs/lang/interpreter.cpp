@@ -5,14 +5,16 @@
 // ------------------------------------------
 //
 
-#include "interpreter.hpp"
+#include <lang/interpreter.hpp>
+
+using namespace bweas;
 
 static logger _log{"INTERPRETER"};
 
 extern FILE *yyin;
 extern int yyparse(void);
 
-extern bweas::logger *log_bison;
+extern logger *log_bison;
 
 extern scope *current_scope;
 extern statements stm_s;
@@ -27,7 +29,7 @@ interpreter::interpreter(string_v name_file) : global_scope{_log}, smt_analyzer{
     global_scope.create_var<decl_func>(STR_KEYWORD_ENDIF, decl_func(STR_KEYWORD_ENDIF, NULL, {}));
 
     if (yyin == NULL)
-        (_log << bwtools::fatal) << (log_message(log_type::fatal) << "Not found file: " << name_file);
+        _log << (log_message(log_type::fatal) << "Not found file: " << name_file);
 }
 
 void interpreter::interpret() {
@@ -48,7 +50,7 @@ const scope &interpreter::get_scope() const {
 }
 
 void interpreter::create_function(const decl_func &func) {
-    current_scope->create_var<decl_func>(func.name_func, func);
+    current_scope->create_var<decl_func>(func.name, func);
 }
 void interpreter::create_function(string_v name_func, decl_func::func_t func, vec<param> expected_params) {
     current_scope->create_var<decl_func>(name_func.data(), decl_func{name_func, func, expected_params});

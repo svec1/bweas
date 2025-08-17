@@ -12,6 +12,7 @@
 #include <array>
 #include <filesystem>
 #include <map>
+#include <optional>
 #include <regex>
 #include <string>
 #include <string_view>

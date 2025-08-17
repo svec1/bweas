@@ -15,7 +15,7 @@
 
 namespace bweas {
 class lua_tools;
-} // namespace bweas
+}
 
 // A class providing tools for simplified interaction between bweas and lua structures
 class bweas::lua_tools {
@@ -43,7 +43,7 @@ class bweas::lua_tools {
 
     // Functions for converting standard bweas structures into appropriate containers for lua
   public:
-    static table<string_v, any> conv_to_table(const sc::project &prj);
+    static table<string, any> conv_to_table(const sc::profile &ext);
     static array<any> conv_to_table(const vec<sc::template_command::arg> &args);
     static table<string_v, any> conv_to_table(const sc::template_command &tmp_c);
     static table<string_v, string> conv_to_table(const sc::call_component &ccmp);
@@ -52,7 +52,7 @@ class bweas::lua_tools {
 
     // Functions for converting containers for lua to the corresponding bweas structures
   public:
-    static sc::project conv_to_project(table<string, any> prj_t);
+    static sc::profile conv_to_extension(table<string, any> ext);
     static vec<sc::template_command::arg> conv_to_args(array<array<any>> args);
     static sc::template_command conv_to_template(table<string, any> &tcmd);
     static sc::call_component conv_to_call_components(table<string, any> &ccmp);

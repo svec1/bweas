@@ -32,11 +32,11 @@ void lua_cache::init(context *const __context) {
     base_cache::init(__context);
 
     if (!lua.is_function(NAME_FUNCTION_CREATE))
-        (_log << bwtools::fatal) << (log_message(log_type::fatal) << "No entry function for creates cache");
+        _log << (log_message(log_type::fatal) << "No entry function for creates cache");
     else if (!lua.is_function(NAME_FUNCTION_GET_PATH_CONFIG))
-        (_log << bwtools::fatal) << (log_message(log_type::fatal) << "No entry function for get path config file");
+        _log << (log_message(log_type::fatal) << "No entry function for get path config file");
     else if (!lua.is_function(NAME_FUNCTION_GET_DATA))
-        (_log << bwtools::fatal) << (log_message(log_type::fatal) << "No entry function for get data of cache");
+        _log << (log_message(log_type::fatal) << "No entry function for get data of cache");
 }
 
 string lua_cache::create_cache() {
@@ -57,16 +57,20 @@ string lua_cache::create_cache() {
             NAME_FUNCTION_CREATE, ltargets_o, ltcmd_s, lccmp_s, _context->global_external_args);
     }
     catch (std::exception &what) {
-        (_log << bwtools::fatal) << (log_message(log_type::fatal) << what.what());
+        _log << (log_message(log_type::fatal) << what.what());
     }
+
+    std::unreachable();
 }
 string lua_cache::get_path_config(const string &cache_str) {
     try {
         return lua.call_function<string, string>(NAME_FUNCTION_GET_PATH_CONFIG, cache_str);
     }
     catch (std::exception &what) {
-        (_log << bwtools::fatal) << (log_message(log_type::fatal) << what.what());
+        _log << (log_message(log_type::fatal) << what.what());
     }
+
+    std::unreachable();
 }
 
 void lua_cache::extract_cache_data(const string &cache_str) {
@@ -84,7 +88,7 @@ void lua_cache::extract_cache_data(const string &cache_str) {
         lglobal_external_args = lua[NAME_VARIABLE_GEARGS].getval<vec<pair<string, string>>>();
     }
     catch (std::exception &what) {
-        (_log << bwtools::fatal) << (log_message(log_type::fatal) << what.what());
+        _log << (log_message(log_type::fatal) << what.what());
     }
 
     for (auto &ltarget_o : ltargets_o)

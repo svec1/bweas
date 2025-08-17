@@ -73,7 +73,7 @@ class bweas::builder final {
      */
     void start();
 
-  protected:
+  private:
     /**
      * \brief Controls how bweas works, depending on the arguments provided.
      *
@@ -94,7 +94,7 @@ class bweas::builder final {
      *  \param [in] path_json_config_package The path to the package configuration json file.
      *  \return The packet size in bytes.
      */
-    size_t create_package(string path_json_config_package);
+    void create_package(string path_json_config_package);
 
     /// \brief Loads the bweas json config.
     void init();

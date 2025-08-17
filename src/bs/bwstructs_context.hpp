@@ -10,132 +10,86 @@
 
 #include <bwtools.hpp>
 
-#include <bwaliases.hpp>
-#include <bwconf_var.hpp>
-
 namespace bweas {
 
 // The name of a variable that, when set to 1,
 // will allow project functions and many target functions
 // to create configuration variables for quick access to their internals.
-static constexpr auto DECL_VAR_STRUCT = "DECL_CONFIG_VAR";
+inline constexpr auto DECL_VAR_STRUCT = "DECL_CONFIG_VAR";
 
 // enum of str postfix name var a project
-static constexpr auto PRJ_VAR_NAME                   = "_NAME";
-static constexpr auto PRJ_VAR_NAME_LANG              = "_LANG";
-static constexpr auto PRJ_VAR_NAME_DFLAGS_C          = "_DFLAGS_COMPILER";
-static constexpr auto PRJ_VAR_NAME_DFLAGS_L          = "_DFLAGS_LINKER";
-static constexpr auto PRJ_VAR_NAME_RFLAGS_C          = "_RFLAGS_COMPILER";
-static constexpr auto PRJ_VAR_NAME_RFLAGS_L          = "_RFLAGS_LINKER";
-static constexpr auto PRJ_VAR_NAME_PTH_C             = "_PATH_COMPILER";
-static constexpr auto PRJ_VAR_NAME_PTH_L             = "_PATH_LINKER";
-static constexpr auto PRJ_VAR_NAME_STD_C             = "_STANDART_C";
-static constexpr auto PRJ_VAR_NAME_STD_CPP           = "_STANDART_CPP";
-static constexpr auto PRJ_VAR_NAME_SRC_FILES         = "_SRC_FILES";
-static constexpr auto PRJ_VAR_NAME_LIBS              = "_LIBS";
-static constexpr auto PRJ_VAR_NAME_INCLUDE_PATHS     = "_INCLUDE_PATHS";
-static constexpr auto PRJ_VAR_NAME_CUSTOM_EXT_FIELDS = "_CUSTOM_EXTENSION_FIELDS";
+inline constexpr auto PRJ_VAR_NAME                   = "_NAME";
+inline constexpr auto PRJ_VAR_NAME_LANG              = "_LANG";
+inline constexpr auto PRJ_VAR_NAME_DFLAGS_C          = "_DFLAGS_COMPILER";
+inline constexpr auto PRJ_VAR_NAME_DFLAGS_L          = "_DFLAGS_LINKER";
+inline constexpr auto PRJ_VAR_NAME_RFLAGS_C          = "_RFLAGS_COMPILER";
+inline constexpr auto PRJ_VAR_NAME_RFLAGS_L          = "_RFLAGS_LINKER";
+inline constexpr auto PRJ_VAR_NAME_PTH_C             = "_PATH_COMPILER";
+inline constexpr auto PRJ_VAR_NAME_PTH_L             = "_PATH_LINKER";
+inline constexpr auto PRJ_VAR_NAME_STD_C             = "_STANDART_C";
+inline constexpr auto PRJ_VAR_NAME_STD_CPP           = "_STANDART_CPP";
+inline constexpr auto PRJ_VAR_NAME_SRC_FILES         = "_SRC_FILES";
+inline constexpr auto PRJ_VAR_NAME_LIBS              = "_LIBS";
+inline constexpr auto PRJ_VAR_NAME_INCLUDE_PATHS     = "_INCLUDE_PATHS";
+inline constexpr auto PRJ_VAR_NAME_CUSTOM_EXT_FIELDS = "_CUSTOM_EXTENSION_FIELDS";
 
 // enum of str postfix name var a target
-static constexpr auto TRG_VAR_NAME              = "_NAME";
-static constexpr auto TRG_VAR_NAME_VER          = "_VERSION";
-static constexpr auto TRG_VAR_NAME_CFG          = "_CFG";
-static constexpr auto TRG_VAR_NAME_TYPE         = "_TYPE_TARGET";
-static constexpr auto TRG_VAR_NAME_GENERATOR    = "_GENERATOR_NAME";
-static constexpr auto TRG_VAR_NAME_TEMPLATES    = "_TEMPLATES";
-static constexpr auto TRG_VAR_NAME_DEPENDENCIES = "_DEPENDENCIES";
+inline constexpr auto TRG_VAR_NAME              = "_NAME";
+inline constexpr auto TRG_VAR_NAME_VER          = "_VERSION";
+inline constexpr auto TRG_VAR_NAME_CFG          = "_CFG";
+inline constexpr auto TRG_VAR_NAME_TYPE         = "_TYPE_TARGET";
+inline constexpr auto TRG_VAR_NAME_GENERATOR    = "_GENERATOR_NAME";
+inline constexpr auto TRG_VAR_NAME_TEMPLATES    = "_TEMPLATES";
+inline constexpr auto TRG_VAR_NAME_DEPENDENCIES = "_DEPENDENCIES";
 
 // name of additional fields, which are also part of structures,
 // but which cannot be changed by the user
-static constexpr auto TRG_NAME_FIELD_PROJECT = "_PROJECT";
-static constexpr auto TRG_NAME_FIELD_NTARGET = "_NAME_TARGET";
+inline constexpr auto TRG_NAME_FIELD_EXTENSION = "_EXTENSION";
+inline constexpr auto TRG_NAME_FIELD_NTARGET   = "_NAME_TARGET";
 
 // enum of the name field of target struct
-static constexpr auto NAME_FIELD_TARGET_NAME         = "TARGET_NAME";
-static constexpr auto NAME_FIELD_TARGET_VER          = "TARGET_VER";
-static constexpr auto NAME_FIELD_TARGET_CFG          = "TARGET_CFG";
-static constexpr auto NAME_FIELD_TARGET_TYPE         = "TARGET_TYPE";
-static constexpr auto NAME_FIELD_TARGET_GENERATOR    = "_GENERATOR_NAME";
-static constexpr auto NAME_FIELD_TARGET_TEMPLATES    = "TARGET_TEMPLATES";
-static constexpr auto NAME_FIELD_TARGET_DEPENDENCIES = "TARGET_DEPENDENCIES";
+inline constexpr auto NAME_FIELD_TARGET_NAME         = "TARGET_NAME";
+inline constexpr auto NAME_FIELD_TARGET_VER          = "TARGET_VER";
+inline constexpr auto NAME_FIELD_TARGET_CFG          = "TARGET_CFG";
+inline constexpr auto NAME_FIELD_TARGET_TYPE         = "TARGET_TYPE";
+inline constexpr auto NAME_FIELD_TARGET_GENERATOR    = "_GENERATOR_NAME";
+inline constexpr auto NAME_FIELD_TARGET_TEMPLATES    = "TARGET_TEMPLATES";
+inline constexpr auto NAME_FIELD_TARGET_DEPENDENCIES = "TARGET_DEPENDENCIES";
 
 // enum of the name field of project struct
-static constexpr auto NAME_FIELD_PROJECT_LANG          = "T_PROJECT_LANG";
-static constexpr auto NAME_FIELD_PROJECT_PCOMPILER     = "T_PROJECT_PATH_COMPILER";
-static constexpr auto NAME_FIELD_PROJECT_PLINKER       = "T_PROJECT_PATH_LINKER";
-static constexpr auto NAME_FIELD_PROJECT_RFCOMPILER    = "T_PROJECT_RFLAGS_COMPILER";
-static constexpr auto NAME_FIELD_PROJECT_RFLINKER      = "T_PROJECT_RFLAGS_LINKER";
-static constexpr auto NAME_FIELD_PROJECT_DFCOMPILER    = "T_PROJECT_DFLAGS_COMPILER";
-static constexpr auto NAME_FIELD_PROJECT_DFLINKER      = "T_PROJECT_DFLAGS_LINKER";
-static constexpr auto NAME_FIELD_PROJECT_STD_C         = "T_PROJECT_STANDART_C";
-static constexpr auto NAME_FIELD_PROJECT_STD_CPP       = "T_PROJECT_STANDART_CPP";
-static constexpr auto NAME_FIELD_PROJECT_SRC_FILES     = "T_PROJECT_SRC_FILES";
-static constexpr auto NAME_FIELD_PROJECT_LIBS          = "T_PROJECT_LIBS";
-static constexpr auto NAME_FIELD_PROJECT_INCLUDE_PATHS = "T_PROJECT_INCLUDE_PATHS";
+inline constexpr auto NAME_FIELD_PROJECT_LANG          = "T_PROJECT_LANG";
+inline constexpr auto NAME_FIELD_PROJECT_PCOMPILER     = "T_PROJECT_PATH_COMPILER";
+inline constexpr auto NAME_FIELD_PROJECT_PLINKER       = "T_PROJECT_PATH_LINKER";
+inline constexpr auto NAME_FIELD_PROJECT_RFCOMPILER    = "T_PROJECT_RFLAGS_COMPILER";
+inline constexpr auto NAME_FIELD_PROJECT_RFLINKER      = "T_PROJECT_RFLAGS_LINKER";
+inline constexpr auto NAME_FIELD_PROJECT_DFCOMPILER    = "T_PROJECT_DFLAGS_COMPILER";
+inline constexpr auto NAME_FIELD_PROJECT_DFLINKER      = "T_PROJECT_DFLAGS_LINKER";
+inline constexpr auto NAME_FIELD_PROJECT_STD_C         = "T_PROJECT_STANDART_C";
+inline constexpr auto NAME_FIELD_PROJECT_STD_CPP       = "T_PROJECT_STANDART_CPP";
+inline constexpr auto NAME_FIELD_PROJECT_SRC_FILES     = "T_PROJECT_SRC_FILES";
+inline constexpr auto NAME_FIELD_PROJECT_LIBS          = "T_PROJECT_LIBS";
+inline constexpr auto NAME_FIELD_PROJECT_INCLUDE_PATHS = "T_PROJECT_INCLUDE_PATHS";
 
-static constexpr auto FEATURE_FIELD_BS_CURRENT_IF = "FBS_CURRENT_INPUT_FILE";
-static constexpr auto FEATURE_FIELD_BS_CURRENT_OF = "FBS_CURRENT_OUTPUT_FILE";
+inline constexpr auto FEATURE_FIELD_BS_CURRENT_IF = "FBS_CURRENT_INPUT_FILE";
+inline constexpr auto FEATURE_FIELD_BS_CURRENT_OF = "FBS_CURRENT_OUTPUT_FILE";
 
-static constexpr auto NAME_FIELD_TEMPLATE_COMMAND_NAME              = "_NAME";
-static constexpr auto NAME_FIELD_TEMPLATE_COMMAND_NAME_CCMP         = "_NCALL_C";
-static constexpr auto NAME_FIELD_TEMPLATE_COMMAND_NAME_ACCEPTS_ARGS = "_ACP_ARGS";
-static constexpr auto NAME_FIELD_TEMPLATE_COMMAND_RET               = "_RETURN";
-static constexpr auto NAME_FIELD_TEMPLATE_COMMAND_NAME_ARGS         = "_ARGS";
+inline constexpr auto NAME_FIELD_TEMPLATE_COMMAND_NAME              = "_NAME";
+inline constexpr auto NAME_FIELD_TEMPLATE_COMMAND_NAME_CCMP         = "_NCALL_C";
+inline constexpr auto NAME_FIELD_TEMPLATE_COMMAND_NAME_ACCEPTS_ARGS = "_ACP_ARGS";
+inline constexpr auto NAME_FIELD_TEMPLATE_COMMAND_RET               = "_RETURN";
+inline constexpr auto NAME_FIELD_TEMPLATE_COMMAND_NAME_ARGS         = "_ARGS";
 
-static constexpr auto NAME_FIELD_TEMPLATE_COMMAND_IFILES           = "_IFILES";
-static constexpr auto NAME_FIELD_TEMPLATE_COMMAND_SINGLE_GENERATES = "_SINGLE_GENERATE";
+inline constexpr auto NAME_FIELD_TEMPLATE_COMMAND_IFILES           = "_IFILES";
+inline constexpr auto NAME_FIELD_TEMPLATE_COMMAND_SINGLE_GENERATES = "_SINGLE_GENERATE";
 
-static constexpr auto NAME_FIELD_CALL_COMPONENT_NAME          = "_NAME";
-static constexpr auto NAME_FIELD_CALL_COMPONENT_NAME_PROGRAM  = "_NAME_PROGRAM";
-static constexpr auto NAME_FIELD_CALL_COMPONENT_PATTERN_FILES = "_PATTERN_FILES";
+inline constexpr auto NAME_FIELD_CALL_COMPONENT_NAME          = "_NAME";
+inline constexpr auto NAME_FIELD_CALL_COMPONENT_NAME_PROGRAM  = "_NAME_PROGRAM";
+inline constexpr auto NAME_FIELD_CALL_COMPONENT_PATTERN_FILES = "_PATTERN_FILES";
 
 namespace structs_context {
 
+struct target;
 struct template_command;
-
-enum class target_type {
-    exe = 0,
-    lib,
-    interpret
-};
-enum class target_cfg {
-    RELEASE = 0,
-    DEBUG
-};
-
-inline string target_type_str(const target_type &target_t) {
-    if (target_t == target_type::exe)
-        return "EXECUTABLE";
-    else if (target_t == target_type::lib)
-        return "LIBRARY";
-    else if (target_t == target_type::interpret)
-        return "RUN-TIME";
-    return "null";
-}
-inline string target_cfg_str(const target_cfg &target_t) {
-    if (target_t == target_cfg::RELEASE)
-        return "RELEASE";
-    else if (target_t == target_cfg::DEBUG)
-        return "DEBUG";
-    return "null";
-}
-
-inline target_type to_target_type(string target_t) {
-    if (target_t == "EXECUTABLE")
-        return target_type::exe;
-    else if (target_t == "LIBRARY")
-        return target_type::lib;
-    else if (target_t == "RUN-TIME")
-        return target_type::interpret;
-    return target_type::exe;
-}
-inline target_cfg to_target_cfg(string target_t) {
-    if (target_t == "RELEASE")
-        return target_cfg::RELEASE;
-    else if (target_t == "DEBUG")
-        return target_cfg::DEBUG;
-    return target_cfg::RELEASE;
-}
 
 // structure for naming versions in a style MinorMajorPatch
 // --------------------------------------------------------
@@ -205,42 +159,37 @@ struct version {
     size_t patch{0};
 };
 
-// project structure
-// -----------------
-// includes settings that are needed
-// to generate compilation commands, linking, etc.
-struct project {
-    project() {
-        custom_ext_fields.merge(preset_ext_fields);
+struct profile {
+    using fields = umap<string, std::variant<string, vec<string>>>;
+
+    operator fields &() & {
+        return release_fields;
     }
 
   public:
-    string language;
-
-    string path_compiler{DEFAULT_COMPILER_CPP}, path_linker{DEFAULT_COMPILER_CPP};
-    string rflags_compiler{RELEASE_FLAGS_COMPILER_CPP}, rflags_linker{RELEASE_FLAGS_LINKER_CXX};
-    string dflags_compiler{DEBUG_FLAGS_COMPILER_CPP}, dflags_linker{DEBUG_FLAGS_LINKER_CXX};
-    pdiff standart_c = 11, standart_cpp = 17;
-
-    vec<string> src_files;
-    vec<string> libs;
-    vec<string> include_paths{"/usr/include", "/usr/local/include"};
-
-    map<string, string> custom_ext_fields;
-
-    static map<string, string> preset_ext_fields;
+    fields release_fields;
+    std::optional<fields> debug_fields;
 };
-
 // target structure for build system
 // ---------------------------------
 struct target {
     target() = default;
 
-  public:
-    project prj;
+    enum class e_type {
+        exe = 0,
+        lib,
+        interpret
+    };
+    enum class e_cfg {
+        release = 0,
+        debug
+    };
 
-    target_type type;
-    target_cfg cfg;
+  public:
+    profile ext;
+
+    e_type type;
+    e_cfg cfg;
 
     string name;
     string name_generator{DEFAULT_BWEAS_GENERATOR};
@@ -260,8 +209,7 @@ struct template_command {
 
   public:
     struct arg {
-      public:
-        enum class type {
+        enum class e_type {
             extglobal = 0,
             trgfield,
             string,
@@ -269,15 +217,14 @@ struct template_command {
             features
         };
 
-      public:
         arg()            = default;
         arg(const arg &) = default;
-        arg(string _arg, type _arg_t) : str_arg(_arg), arg_t(_arg_t) {
+        arg(string _value, e_type _type) : value(_value), type(_type) {
         }
 
       public:
-        string str_arg;
-        type arg_t;
+        string value;
+        e_type type;
     };
 
   public:
@@ -286,7 +233,7 @@ struct template_command {
     // Creates a stack of templates for the correct sequential generation of commands(for every targets)
     static vec<template_command> create_queue_target_templates(const vec<template_command> &templates,
                                                                const vec<string> &templates_target,
-                                                               target_type target_t);
+                                                               target::e_type target_t);
 
   private:
     // Recursive function, for create_stack_target_templates
@@ -322,6 +269,32 @@ struct call_component {
     // file.txt
     string pattern_ret_files;
 };
+
+inline string target_type_str(target::e_type target_t) {
+    if (target_t == target::e_type::lib)
+        return "LIBRARY";
+    else if (target_t == target::e_type::interpret)
+        return "RUN-TIME";
+    return "EXECUTABLE";
+}
+inline string target_cfg_str(target::e_cfg target_t) {
+    if (target_t == target::e_cfg::debug)
+        return "DEBUG";
+    return "RELEASE";
+}
+
+inline target::e_type to_target_type(string target_t) {
+    if (target_t == "LIBRARY")
+        return target::e_type::lib;
+    else if (target_t == "RUN-TIME")
+        return target::e_type::interpret;
+    return target::e_type::exe;
+}
+inline target::e_cfg to_target_cfg(string target_t) {
+    if (target_t == "DEBUG")
+        return target::e_cfg::debug;
+    return target::e_cfg::release;
+}
 
 } // namespace structs_context
 

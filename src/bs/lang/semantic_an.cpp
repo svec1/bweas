@@ -7,6 +7,8 @@
 
 #include <lang/semantic_an.hpp>
 
+using namespace bweas;
+
 static constexpr auto NOT_MATCHING_W_PARAMETERS  = "The function values passed do not correspond to the expected ones.";
 static constexpr auto INCORECT_DEFINITION_FUNC   = "Incorrect definition of function parameter types was observed";
 static constexpr auto EXPECTED_NEW_SYMBOL        = "A new symbol was expected.";
@@ -43,8 +45,7 @@ void semantic_analyzer::smt_first_pass(statements &st_s, scope &current_scope) {
                         st_s[i].expr_func->expected_params.size() - st_s[i].expr_s.size() ==
                             st_s[i].expr_func->count_default_params())))
                 goto check_valid_exp_type;
-            _log << bwtools::fatal
-                 << (log_message(log_type::fatal)
+            _log << (log_message(log_type::fatal)
                      << st_s[i].build_string_error(PTRDIFF_MAX, NOT_MATCHING_W_PARAMETERS,
                                                    st_s[i].get_string_expected_params(st_s[i].expr_s.size())));
         }
@@ -60,12 +61,11 @@ void semantic_analyzer::smt_first_pass(statements &st_s, scope &current_scope) {
                     (st_s[i].expr_s[j].type != conv_param_type_to_expr_type(
                                                    st_s[i].expr_func->expected_params[current_expected_param].type) &&
                      !(st_s[i].expr_s[j].type == expression::expression_t::ID && st_s[i].expr_s[j].value_by_id))) {
-                    st_s[i].expr_s.emplace(st_s[i].expr_s.begin() + current_expected_param,
-                                           expression{
-                                               st_s[i].expr_func->expected_params[current_expected_param].default_val,
-                                               conv_param_type_to_expr_type(
-                                                   st_s[i].expr_func->expected_params[current_expected_param].type),
-                                           });
+                    st_s[i].expr_s.emplace(
+                        st_s[i].expr_s.begin() + current_expected_param,
+                        expression{st_s[i].expr_func->expected_params[current_expected_param].default_val.value(),
+                                   conv_param_type_to_expr_type(
+                                       st_s[i].expr_func->expected_params[current_expected_param].type)});
                     continue;
                 }
             }
@@ -74,49 +74,42 @@ void semantic_analyzer::smt_first_pass(statements &st_s, scope &current_scope) {
 
             if (is_id_param(st_s[i].expr_func->expected_params[current_expected_param].type) &&
                 (st_s[i].expr_s[j].type != expression::expression_t::ID || st_s[i].expr_s[j].value_by_id))
-                _log << bwtools::fatal
-                     << (log_message(log_type::fatal)
+                _log << (log_message(log_type::fatal)
                          << st_s[i].build_string_error(j + 1, NOT_MATCHING_W_PARAMETERS, "VAR ID"));
             else if (st_s[i].expr_func->expected_params[current_expected_param].type == param_type::NEXT_TOO) {
                 if (current_expected_param == 0 ||
                     current_expected_param != st_s[i].expr_func->expected_params.size() - 1)
-                    _log << bwtools::fatal
-                         << (log_message(log_type::fatal)
+                    _log << (log_message(log_type::fatal)
                              << st_s[i].build_string_error(0, INCORECT_DEFINITION_FUNC, "VAR ID"));
                 for (size_t b = j; b < st_s[i].expr_s.size(); ++b) {
                     if (is_id_param(st_s[i].expr_func->expected_params[current_expected_param - 1].type) &&
                         (st_s[i].expr_s[b].type != expression::expression_t::ID || st_s[i].expr_s[b].value_by_id))
-                        _log << bwtools::fatal
-                             << (log_message(log_type::fatal)
+                        _log << (log_message(log_type::fatal)
                                  << st_s[i].build_string_error(b + 1, NOT_MATCHING_W_PARAMETERS, "[VAR ID]"));
                     else if (st_s[i].expr_func->expected_params[current_expected_param - 1].type ==
                              param_type::ANY_VALUE_WITHOUT_FUTUREID_NEXT) {
                         if (st_s[i].expr_s[j - 1].type == expression::expression_t::NUMBER &&
                             (st_s[i].expr_s[b].type != expression::expression_t::NUMBER &&
                              !st_s[i].expr_s[b].value_by_id))
-                            _log << bwtools::fatal
-                                 << (log_message(log_type::fatal) << st_s[i].build_string_error(
+                            _log << (log_message(log_type::fatal) << st_s[i].build_string_error(
                                          b + 1, NOT_MATCHING_W_PARAMETERS, "[NUMBER] or VAR ID->[NUMBER]"));
                         else if (st_s[i].expr_s[j - 1].type == expression::expression_t::STRING &&
                                  (st_s[i].expr_s[b].type != expression::expression_t::STRING &&
                                   !st_s[i].expr_s[b].value_by_id))
-                            _log << bwtools::fatal
-                                 << (log_message(log_type::fatal) << st_s[i].build_string_error(
+                            _log << (log_message(log_type::fatal) << st_s[i].build_string_error(
                                          b + 1, NOT_MATCHING_W_PARAMETERS, "[STRING] or [VAR ID->[STRING]]"));
                     }
                     else if (st_s[i].expr_func->expected_params[current_expected_param - 1].type ==
                                  param_type::LIT_STR &&
                              (st_s[i].expr_s[b].type != expression::expression_t::STRING &&
                               !st_s[i].expr_s[b].value_by_id))
-                        _log << bwtools::fatal
-                             << (log_message(log_type::fatal)
+                        _log << (log_message(log_type::fatal)
                                  << st_s[i].build_string_error(b + 1, NOT_MATCHING_W_PARAMETERS, "[STRING]"));
                     else if (st_s[i].expr_func->expected_params[current_expected_param - 1].type ==
                                  param_type::LIT_NUM &&
                              (st_s[i].expr_s[b].type != expression::expression_t::NUMBER &&
                               !st_s[i].expr_s[b].value_by_id))
-                        _log << bwtools::fatal
-                             << (log_message(log_type::fatal)
+                        _log << (log_message(log_type::fatal)
                                  << st_s[i].build_string_error(b + 1, NOT_MATCHING_W_PARAMETERS, "[NUMBER]"));
                 }
                 break;
@@ -126,26 +119,22 @@ void semantic_analyzer::smt_first_pass(statements &st_s, scope &current_scope) {
                      st_s[i].expr_s[j].type != expression::expression_t::STRING &&
                      st_s[i].expr_s[j].type != expression::expression_t::NUMBER &&
                      st_s[i].expr_s[j].type != expression::expression_t::ID)
-                _log << bwtools::fatal
-                     << (log_message(log_type::fatal) << st_s[i].build_string_error(j + 1, NOT_MATCHING_W_PARAMETERS,
+                _log << (log_message(log_type::fatal) << st_s[i].build_string_error(j + 1, NOT_MATCHING_W_PARAMETERS,
                                                                                     "[STRING], [NUMBER] OR [VAR ID]"));
             else if (st_s[i].expr_func->expected_params[current_expected_param].type == param_type::LIT_STR &&
                      st_s[i].expr_s[j].type != expression::expression_t::STRING && !st_s[i].expr_s[j].value_by_id)
-                _log << bwtools::fatal
-                     << (log_message(log_type::fatal)
+                _log << (log_message(log_type::fatal)
                          << st_s[i].build_string_error(j + 1, NOT_MATCHING_W_PARAMETERS, "[STRING]"));
             else if (st_s[i].expr_func->expected_params[current_expected_param].type == param_type::LIT_NUM &&
                      st_s[i].expr_s[j].type != expression::expression_t::NUMBER && !st_s[i].expr_s[j].value_by_id)
-                _log << bwtools::fatal
-                     << (log_message(log_type::fatal)
+                _log << (log_message(log_type::fatal)
                          << st_s[i].build_string_error(j + 1, NOT_MATCHING_W_PARAMETERS, "[NUMBER]"));
 
             if (j == st_s[i].expr_s.size() - 1 &&
                 current_expected_param < st_s[i].expr_func->expected_params.size() - 1 &&
                 st_s[i].expr_func->expected_params[current_expected_param + 1].type != param_type::NEXT_TOO &&
                 !st_s[i].expr_func->expected_params[current_expected_param + 1].decl_default_val())
-                _log << bwtools::fatal
-                     << (log_message(log_type::fatal)
+                _log << (log_message(log_type::fatal)
                          << st_s[i].build_string_error(-1, NOT_MATCHING_W_PARAMETERS,
                                                        "[" +
                                                            string(get_string_expr_type(conv_param_type_to_expr_type(
@@ -178,8 +167,7 @@ void semantic_analyzer::smt_second_pass(statements &st_s, scope &current_scope) 
                 if (before_nextt_param == param_type::FUTURE_VAR_ID) {
                     size_t index_type = current_scope.what_type(st_s[i].expr_s[j].value);
                     if (index_type != 0)
-                        _log << bwtools::fatal
-                             << (log_message(log_type::fatal)
+                        _log << (log_message(log_type::fatal)
                                  << st_s[i].build_string_error(j + 1, EXPECTED_NEW_SYMBOL, "NEW [VAR ID]"));
                 }
                 else if (before_nextt_param == param_type::NCHECK_VAR_ID)
@@ -187,8 +175,7 @@ void semantic_analyzer::smt_second_pass(statements &st_s, scope &current_scope) 
                 else if (before_nextt_param == param_type::VAR_STRUCT_ID) {
                     size_t index_type = current_scope.what_type(st_s[i].expr_s[j].value);
                     if (!is_struct(index_type))
-                        _log << bwtools::fatal
-                             << (log_message(log_type::fatal)
+                        _log << (log_message(log_type::fatal)
                                  << st_s[i].build_string_error(j + 1, EXPECTED_EXIST_SYMBOL, "[VAR STRUCT ID]"));
                 }
                 else if (before_nextt_param == param_type::ANY_VALUE_WITHOUT_FUTUREID_NEXT) {
@@ -199,8 +186,7 @@ void semantic_analyzer::smt_second_pass(statements &st_s, scope &current_scope) 
                             if (index_type == 1 || index_type == 3)
                                 continue;
                         }
-                        _log << bwtools::fatal
-                             << (log_message(log_type::fatal)
+                        _log << (log_message(log_type::fatal)
                                  << st_s[i].build_string_error(j + 1, EXPECTED_ANOTHER_EXPR_TYPE, "[NUMBER]"));
                     }
                     else if (st_s[i].expr_s[index_before_nextt_param].type == expression::expression_t::STRING &&
@@ -210,8 +196,7 @@ void semantic_analyzer::smt_second_pass(statements &st_s, scope &current_scope) 
                             if (index_type == 2 || index_type == 4)
                                 continue;
                         }
-                        _log << bwtools::fatal
-                             << (log_message(log_type::fatal)
+                        _log << (log_message(log_type::fatal)
                                  << st_s[i].build_string_error(j + 1, EXPECTED_ANOTHER_EXPR_TYPE, "[STRING]"));
                     }
                     else if (st_s[i].expr_s[index_before_nextt_param].type == expression::expression_t::ID) {
@@ -224,8 +209,7 @@ void semantic_analyzer::smt_second_pass(statements &st_s, scope &current_scope) 
                                 if (index_type == 1 || index_type == 3)
                                     continue;
                             }
-                            _log << bwtools::fatal
-                                 << (log_message(log_type::fatal)
+                            _log << (log_message(log_type::fatal)
                                      << st_s[i].build_string_error(j + 1, EXPECTED_ANOTHER_EXPR_TYPE, "[NUMBER]"));
                         }
                         else if ((index_type == 2 || index_type == 4) &&
@@ -236,8 +220,7 @@ void semantic_analyzer::smt_second_pass(statements &st_s, scope &current_scope) 
                                 if (index_type == 2 || index_type == 4)
                                     continue;
                             }
-                            _log << bwtools::fatal
-                                 << (log_message(log_type::fatal)
+                            _log << (log_message(log_type::fatal)
                                      << st_s[i].build_string_error(j + 1, EXPECTED_ANOTHER_EXPR_TYPE, "[STRING]"));
                         }
                     }
@@ -245,24 +228,20 @@ void semantic_analyzer::smt_second_pass(statements &st_s, scope &current_scope) 
                 else if (st_s[i].expr_s[j].type == expression::expression_t::ID) {
                     size_t index_type = current_scope.what_type(st_s[i].expr_s[j].value);
                     if (index_type == 0)
-                        _log << bwtools::fatal
-                             << (log_message(log_type::fatal) << st_s[i].build_string_error(
+                        _log << (log_message(log_type::fatal) << st_s[i].build_string_error(
                                      j + 1, IMPOSSIBLE_DETERMINE_TYPE_VAR, "exist variable with any type"));
                     else if (before_nextt_param == param_type::LIT_NUM && (index_type != 1 && index_type != 3))
-                        _log << bwtools::fatal
-                             << (log_message(log_type::fatal)
+                        _log << (log_message(log_type::fatal)
                                  << st_s[i].build_string_error(j + 1, NOT_EXIST_VAR_W_EXPECTED_TYPE, "[NUMBER]"));
                     else if (before_nextt_param == param_type::LIT_STR && (index_type != 2 && index_type != 4))
-                        _log << bwtools::fatal
-                             << (log_message(log_type::fatal)
+                        _log << (log_message(log_type::fatal)
                                  << st_s[i].build_string_error(j + 1, NOT_EXIST_VAR_W_EXPECTED_TYPE, "[STRING]"));
                 }
             }
             else if (st_s[i].expr_func->expected_params[j].type == param_type::FUTURE_VAR_ID) {
                 size_t index_type = current_scope.what_type(st_s[i].expr_s[j].value);
                 if (index_type != 0)
-                    _log << bwtools::fatal
-                         << (log_message(log_type::fatal)
+                    _log << (log_message(log_type::fatal)
                              << st_s[i].build_string_error(j + 1, EXPECTED_NEW_SYMBOL, "NEW [VAR ID]"));
             }
             else if (st_s[i].expr_func->expected_params[j].type == param_type::NCHECK_VAR_ID)
@@ -270,27 +249,23 @@ void semantic_analyzer::smt_second_pass(statements &st_s, scope &current_scope) 
             else if (st_s[i].expr_func->expected_params[j].type == param_type::VAR_STRUCT_ID) {
                 size_t index_type = current_scope.what_type(st_s[i].expr_s[j].value);
                 if (!is_struct(index_type))
-                    _log << bwtools::fatal
-                         << (log_message(log_type::fatal)
+                    _log << (log_message(log_type::fatal)
                              << st_s[i].build_string_error(j + 1, EXPECTED_EXIST_SYMBOL, "[VAR STRUCT ID]"));
             }
             else if (st_s[i].expr_s[j].type == expression::expression_t::ID) {
                 size_t index_type = current_scope.what_type(st_s[i].expr_s[j].value);
                 if (index_type == 0)
-                    _log << bwtools::fatal
-                         << (log_message(log_type::fatal) << st_s[i].build_string_error(
+                    _log << (log_message(log_type::fatal) << st_s[i].build_string_error(
                                  j + 1, IMPOSSIBLE_DETERMINE_TYPE_VAR, "exist variable with any type"));
                 else if (st_s[i].expr_func->expected_params[j].type == param_type::LIT_NUM && index_type != 1 &&
                          !(index_type == 3 && j < st_s[i].expr_func->expected_params.size() - 1 &&
                            st_s[i].expr_func->expected_params[j + 1].type == param_type::NEXT_TOO))
-                    _log << bwtools::fatal
-                         << (log_message(log_type::fatal)
+                    _log << (log_message(log_type::fatal)
                              << st_s[i].build_string_error(j + 1, NOT_EXIST_VAR_W_EXPECTED_TYPE, "[NUMBER]"));
                 else if (st_s[i].expr_func->expected_params[j].type == param_type::LIT_STR && index_type != 2 &&
                          !(index_type == 4 && j < st_s[i].expr_func->expected_params.size() - 1 &&
                            st_s[i].expr_func->expected_params[j + 1].type == param_type::NEXT_TOO))
-                    _log << bwtools::fatal
-                         << (log_message(log_type::fatal)
+                    _log << (log_message(log_type::fatal)
                              << st_s[i].build_string_error(j + 1, NOT_EXIST_VAR_W_EXPECTED_TYPE, "[STRING]"));
             }
         }
@@ -299,13 +274,13 @@ void semantic_analyzer::smt_second_pass(statements &st_s, scope &current_scope) 
 
         // skips branches
         if (skip) {
-            if (st_s[i].expr_func->name_func == STR_KEYWORD_IF)
+            if (st_s[i].expr_func->name == STR_KEYWORD_IF)
                 ++nested_if;
 
-            else if (st_s[i].expr_func->name_func == STR_KEYWORD_ELSE)
+            else if (st_s[i].expr_func->name == STR_KEYWORD_ELSE)
                 ++nested_if;
 
-            else if (st_s[i].expr_func->name_func == STR_KEYWORD_ENDIF) {
+            else if (st_s[i].expr_func->name == STR_KEYWORD_ENDIF) {
                 if (!nested_if)
                     goto endif_end;
 
@@ -315,7 +290,7 @@ void semantic_analyzer::smt_second_pass(statements &st_s, scope &current_scope) 
             --i;
         }
         // keyword handler(if, else, endif)
-        if (st_s[i].expr_func->name_func == STR_KEYWORD_IF) {
+        if (st_s[i].expr_func->name == STR_KEYWORD_IF) {
             size_t val = std::stoi(st_s[i].expr_s[0].value);
             if (!val) {
                 skip = 1;
@@ -325,24 +300,22 @@ void semantic_analyzer::smt_second_pass(statements &st_s, scope &current_scope) 
                 branch_s.push_back(std::pair<bool, bool>(1, 0));
             goto delete_entry;
         }
-        else if (st_s[i].expr_func->name_func == STR_KEYWORD_ELSE) {
+        else if (st_s[i].expr_func->name == STR_KEYWORD_ELSE) {
             if (!branch_s.size() || branch_s[branch_s.size() - 1].second)
-                _log << bwtools::fatal
-                     << (log_message(log_type::fatal) << st_s[i].build_string_error(PTRDIFF_MAX, EXPECTED_IF));
+                _log << (log_message(log_type::fatal) << st_s[i].build_string_error(PTRDIFF_MAX, EXPECTED_IF));
 
             if (branch_s[branch_s.size() - 1].first)
                 skip = 1;
             goto delete_entry;
         }
-        else if (st_s[i].expr_func->name_func == STR_KEYWORD_ENDIF) {
+        else if (st_s[i].expr_func->name == STR_KEYWORD_ENDIF) {
         endif_end:
             if (!branch_s.size())
-                _log << bwtools::fatal
-                     << (log_message(log_type::fatal) << st_s[i].build_string_error(PTRDIFF_MAX, INVALID_USAGE_ENDIF));
+                _log << (log_message(log_type::fatal) << st_s[i].build_string_error(PTRDIFF_MAX, INVALID_USAGE_ENDIF));
 
             skip = 0;
             if (branch_s[branch_s.size() - 1].second ||
-                (i < st_s.size() - 1 && st_s[i + 1].expr_func->name_func != STR_KEYWORD_ELSE))
+                (i < st_s.size() - 1 && st_s[i + 1].expr_func->name != STR_KEYWORD_ELSE))
                 branch_s.pop_back();
             goto delete_entry;
         }
@@ -354,7 +327,7 @@ void semantic_analyzer::smt_second_pass(statements &st_s, scope &current_scope) 
     }
 
     if (branch_s.size())
-        _log << bwtools::fatal << (log_message(log_type::fatal) << "End of statements: " << EXPECTED_ENDIF);
+        _log << (log_message(log_type::fatal) << "End of statements: " << EXPECTED_ENDIF);
 }
 void semantic_analyzer::parse_expr_param(expression &expr, expressions &expr_s, size_t &pos_expr_in_vec,
                                          scope &current_scope) {
@@ -407,5 +380,4 @@ void semantic_analyzer::parse_expr_param(expression &expr, expressions &expr_s, 
     }
     if (!parse_expr.value.empty())
         expr = parse_expr;
-    return;
 }

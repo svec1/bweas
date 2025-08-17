@@ -22,7 +22,7 @@ generator_api::lua_generator::lua_generator(string_v src_lua) {
         lua.create(src_lua.data());
     }
     catch (std::exception &excp) {
-        (_log << bwtools::fatal) << (log_message(log_type::fatal) << "Couldn't load lua code");
+        _log << (log_message(log_type::fatal) << "Couldn't load lua code");
     }
 }
 
@@ -30,11 +30,11 @@ void generator_api::lua_generator::init(context *const __context) {
     base_generator::init(__context);
 
     if (!lua.is_created())
-        (_log << bwtools::fatal) << (log_message(log_type::fatal) << "Lua script not loaded");
+        _log << (log_message(log_type::fatal) << "Lua script not loaded");
     else if (!lua.is_function(NAME_FUNCTION_GENERATE))
-        (_log << bwtools::fatal) << (log_message(log_type::fatal) << "No entry function for generator");
+        _log << (log_message(log_type::fatal) << "No entry function for generator");
     else if (!lua.is_function(NAME_FUNCTION_GET_INPUT_FILE))
-        (_log << bwtools::fatal) << (log_message(log_type::fatal) << "No entry function for get input files");
+        _log << (log_message(log_type::fatal) << "No entry function for get input files");
 
     lua["get_name_output_file_lua"] << lua_tools::get_name_output_file_lua;
     lua["file_slc_mask"] << lua_tools::file_slc_mask_lua;
@@ -49,7 +49,7 @@ uset<string> generator_api::lua_generator::build_graph_depends_file(string_v lan
         return uset<string>{dependencies.begin(), dependencies.end()};
     }
     catch (std::exception &what) {
-        (_log << bwtools::fatal) << (log_message(log_type::fatal) << "Run-time error: " << what.what());
+        _log << (log_message(log_type::fatal) << "Run-time error: " << what.what());
     }
 
     return {};
@@ -81,8 +81,7 @@ void generator_api::lua_generator::get_input_files() {
         }
     }
     catch (std::exception &excp) {
-        _log << bwtools::fatal
-             << (log_message(log_type::fatal) << "Couldn't get the input files for the current target's templates("
+        _log << (log_message(log_type::fatal) << "Couldn't get the input files for the current target's templates("
                                               << _context->current_target->name << "):\n"
                                               << excp.what());
     }
@@ -111,8 +110,7 @@ generator_api::commands generator_api::lua_generator::generate_commands() {
         return cmd_s;
     }
     catch (std::exception &excp) {
-        _log << bwtools::fatal
-             << (log_message(log_type::fatal) << "Failed to generate a template command for the current target("
+        _log << (log_message(log_type::fatal) << "Failed to generate a template command for the current target("
                                               << _context->current_target->name << "):\n"
                                               << excp.what());
     }

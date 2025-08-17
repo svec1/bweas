@@ -13,21 +13,15 @@
 
 using namespace bweas;
 
-lua_tools::table<string_v, any> lua_tools::conv_to_table(const sc::project &prj) {
-    return lua_tools::table<string_v, any>{
-        {PRJ_VAR_NAME_LANG, prj.language},
-        {PRJ_VAR_NAME_PTH_C, prj.path_compiler},
-        {PRJ_VAR_NAME_PTH_L, prj.path_linker},
-        {PRJ_VAR_NAME_RFLAGS_C, prj.rflags_compiler},
-        {PRJ_VAR_NAME_RFLAGS_L, prj.rflags_linker},
-        {PRJ_VAR_NAME_DFLAGS_C, prj.dflags_compiler},
-        {PRJ_VAR_NAME_DFLAGS_L, prj.dflags_linker},
-        {PRJ_VAR_NAME_STD_C, (lua_tools::integer)prj.standart_c},
-        {PRJ_VAR_NAME_STD_CPP, (lua_tools::integer)prj.standart_cpp},
-        {PRJ_VAR_NAME_SRC_FILES, prj.src_files},
-        {PRJ_VAR_NAME_LIBS, prj.libs},
-        {PRJ_VAR_NAME_INCLUDE_PATHS, prj.include_paths},
-        {PRJ_VAR_NAME_CUSTOM_EXT_FIELDS, bwlua::lua::to_table(prj.custom_ext_fields)}};
+lua_tools::table<string, any> lua_tools::conv_to_table(const sc::profile &ext) {
+    lua_tools::table<string, any> _ext;
+
+    for (const auto &[key, value] : ext.get())
+        if (std::holds_alternative<string>(value))
+            _ext[key] = std::get<string>(value);
+        else
+            _ext[key] = std::get<vec<string>>(value);
+    return _ext;
 }
 
 lua_tools::array<any> lua_tools::conv_to_table(const vec<sc::template_command::arg> &args) {
@@ -55,9 +49,9 @@ lua_tools::table<string_v, string> lua_tools::conv_to_table(const sc::call_compo
 
 lua_tools::table<string_v, any> lua_tools::conv_to_table(const sc::target &trg_o) {
     return lua_tools::table<string_v, any>{
-        {TRG_NAME_FIELD_PROJECT, conv_to_table(trg_o.prj)}, {TRG_VAR_NAME_TYPE, target_type_str(trg_o.type)},
-        {TRG_VAR_NAME_CFG, target_cfg_str(trg_o.cfg)},      {TRG_NAME_FIELD_NTARGET, trg_o.name},
-        {TRG_VAR_NAME_VER, trg_o.ver.get_str_version()},    {TRG_VAR_NAME_TEMPLATES, trg_o.templates},
+        {TRG_NAME_FIELD_EXTENSION, conv_to_table(trg_o.ext)}, {TRG_VAR_NAME_TYPE, target_type_str(trg_o.type)},
+        {TRG_VAR_NAME_CFG, target_cfg_str(trg_o.cfg)},        {TRG_NAME_FIELD_NTARGET, trg_o.name},
+        {TRG_VAR_NAME_VER, trg_o.ver.get_str_version()},      {TRG_VAR_NAME_TEMPLATES, trg_o.templates},
         {TRG_VAR_NAME_DEPENDENCIES, trg_o.dependencies}};
 }
 lua_tools::table<string, lua_tools::array<string>> lua_tools::conv_to_table(
@@ -68,35 +62,27 @@ lua_tools::table<string, lua_tools::array<string>> lua_tools::conv_to_table(
     return _dfiles;
 }
 
-sc::project lua_tools::conv_to_project(lua_tools::table<string, any> prj_t) {
-    sc::project prj;
+sc::profile lua_tools::conv_to_extension(lua_tools::table<string, any> ext) {
+    sc::profile _ext;
+    sc::profile::fields &ext_fields = _ext.get();
 
-    prj.language          = std::any_cast<string>(prj_t[PRJ_VAR_NAME_LANG]);
-    prj.path_compiler     = std::any_cast<string>(prj_t[PRJ_VAR_NAME_PTH_C]);
-    prj.path_linker       = std::any_cast<string>(prj_t[PRJ_VAR_NAME_PTH_L]);
-    prj.rflags_compiler   = std::any_cast<string>(prj_t[PRJ_VAR_NAME_RFLAGS_C]);
-    prj.rflags_linker     = std::any_cast<string>(prj_t[PRJ_VAR_NAME_RFLAGS_L]);
-    prj.dflags_compiler   = std::any_cast<string>(prj_t[PRJ_VAR_NAME_DFLAGS_C]);
-    prj.dflags_linker     = std::any_cast<string>(prj_t[PRJ_VAR_NAME_DFLAGS_L]);
-    prj.standart_c        = std::any_cast<pdiff>(prj_t[PRJ_VAR_NAME_STD_C]);
-    prj.standart_cpp      = std::any_cast<pdiff>(prj_t[PRJ_VAR_NAME_STD_CPP]);
-    prj.src_files         = std::any_cast<vec<string>>(prj_t[PRJ_VAR_NAME_SRC_FILES]);
-    prj.libs              = std::any_cast<vec<string>>(prj_t[PRJ_VAR_NAME_LIBS]);
-    prj.include_paths     = std::any_cast<vec<string>>(prj_t[PRJ_VAR_NAME_INCLUDE_PATHS]);
-    prj.custom_ext_fields = std::any_cast<map<string, string>>(prj_t[PRJ_VAR_NAME_CUSTOM_EXT_FIELDS]);
-
-    return prj;
+    for (const auto &[key, value] : ext.get())
+        if (value.type() == typeid(std::string))
+            ext_fields[key] = std::any_cast<string>(value);
+        else
+            ext_fields[key] = std::any_cast<vec<string>>(value);
+    return _ext;
 }
 
 sc::target lua_tools::conv_to_target(lua_tools::table<string, any> &trg_o_t) {
     sc::target trg;
 
-    trg.prj          = conv_to_project(std::any_cast<bwlua::lua::table<string, any>>(trg_o_t[TRG_NAME_FIELD_PROJECT]));
-    trg.type         = sc::to_target_type(std::any_cast<string>(trg_o_t[TRG_VAR_NAME_TYPE]));
-    trg.cfg          = sc::to_target_cfg(std::any_cast<string>(trg_o_t[TRG_VAR_NAME_CFG]));
-    trg.name         = std::any_cast<string>(trg_o_t[TRG_NAME_FIELD_NTARGET]);
-    trg.ver          = std::any_cast<string>(trg_o_t[TRG_VAR_NAME_VER]);
-    trg.templates    = std::any_cast<vec<string>>(trg_o_t[TRG_VAR_NAME_TEMPLATES]);
+    trg.ext       = conv_to_extension(std::any_cast<bwlua::lua::table<string, any>>(trg_o_t[TRG_NAME_FIELD_EXTENSION]));
+    trg.type      = sc::to_target_type(std::any_cast<string>(trg_o_t[TRG_VAR_NAME_TYPE]));
+    trg.cfg       = sc::to_target_cfg(std::any_cast<string>(trg_o_t[TRG_VAR_NAME_CFG]));
+    trg.name      = std::any_cast<string>(trg_o_t[TRG_NAME_FIELD_NTARGET]);
+    trg.ver       = std::any_cast<string>(trg_o_t[TRG_VAR_NAME_VER]);
+    trg.templates = std::any_cast<vec<string>>(trg_o_t[TRG_VAR_NAME_TEMPLATES]);
     trg.dependencies = std::any_cast<vec<string>>(trg_o_t[TRG_VAR_NAME_DEPENDENCIES]);
 
     return trg;

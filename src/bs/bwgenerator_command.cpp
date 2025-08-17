@@ -5,59 +5,19 @@
 // ------------------------------------------
 //
 
-#include <bwgenerator_integral.hpp>
+#include <bwgenerator_command.hpp>
 #include <bwgntools.hpp>
 #include <tools/bwfile.hpp>
 
 using namespace bweas;
 
-static logger _log{"BWGENERATOR[INTERNAL]"};
+static logger _log{"BWGENERATOR_COMMAND"};
 
-generator_api::integral_generator::integral_generator(func_build_graph_depends_file _build_graph_depends_file_p,
-                                                      func_get_input_files _get_input_files_p,
-                                                      func_generator _generate_p) {
-    build_graph_depends_file_p = _build_graph_depends_file_p;
-    get_input_files_p          = _get_input_files_p;
-    generate_p                 = _generate_p;
-}
-
-uset<string> generator_api::integral_generator::build_graph_depends_file(string_v language, string_v name_file,
-                                                                         string_v work_directory,
-                                                                         vec<string> include_paths) {
-    return build_graph_depends_file_p(language, name_file, work_directory, include_paths);
-}
-
-void generator_api::integral_generator::get_input_files() {
-    try {
-        get_input_files_p(_context);
-    }
-    catch (std::exception &excp) {
-        _log << (log_message(log_type::fatal) << "Couldn't get the input files for the current target's templates("
-                                              << _context->current_target->name << "):\n"
-                                              << excp.what());
-    }
-}
-
-generator_api::commands generator_api::integral_generator::generate_commands() {
-    try {
-        generator_tools::parse_basic_args(*_context->current_target, _context->current_target->queue_templates,
-                                          _context->global_external_args);
-        return generate_p(_context);
-    }
-    catch (std::exception &excp) {
-        _log << (log_message(log_type::fatal) << "Failed to generate a template command for the current target("
-                                              << _context->current_target->name << "):\n"
-                                              << excp.what());
-    }
-
-    std::unreachable();
-}
-
-void integral_generator::get_input_files(context *const _context) {
-    auto &target = *_context->current_target;
+void generator_command::get_input_files() {
+    auto &target = *_context.current_target;
     for (auto &current_template : target.queue_templates) {
         const auto &call_component =
-            std::find_if(_context->call_components.begin(), _context->call_components.end(),
+            std::find_if(_context.call_components.begin(), _context.call_components.end(),
                          [current_template](const sc::call_component &call_component) {
                              return call_component.name == current_template.name_call_component;
                          });
@@ -125,14 +85,14 @@ void integral_generator::get_input_files(context *const _context) {
         if (current_template.returnable == NAME_FIELD_PROJECT_SRC_FILES) {
             for (size_t i = 0; i < current_template.ifiles.size(); ++i)
                 target.prj.src_files.push_back(generator_tools::get_name_output_file(
-                    _context->current_work_directory + "/" + call_component->pattern_ret_files,
+                    _context.current_work_directory + "/" + call_component->pattern_ret_files,
                     current_template.ifiles[i]));
         }
         else if (current_template.returnable == target_type_str(target.type))
             current_template.returns_target = 1;
     }
 }
-generator_api::commands integral_generator::generate(context *const _context) {
+generator_command::commands generator_command::generate(context *const _context) {
     generator_api::commands cmd_s;
 
     static umap<string, vec<string>> returnable_target;
@@ -142,16 +102,16 @@ generator_api::commands integral_generator::generate(context *const _context) {
 
     size_t count_use_ifiles = 0;
 
-    const auto &target = *_context->current_target;
+    const auto &target = *_context.current_target;
     for (size_t j = 0; j < target.queue_templates.size();) {
         const auto &current_template = target.queue_templates[j];
         const auto &call_component =
-            std::find_if(_context->call_components.begin(), _context->call_components.end(),
+            std::find_if(_context.call_components.begin(), _context.call_components.end(),
                          [current_template](const sc::call_component &call_component) {
                              return call_component.name == current_template.name_call_component;
                          });
 
-        string pattern_output_file = _context->current_work_directory + "/" + call_component->pattern_ret_files;
+        string pattern_output_file = _context.current_work_directory + "/" + call_component->pattern_ret_files;
 
         generator_api::command cmd;
         cmd.name = current_template.name + std::to_string(count_use_ifiles);
@@ -181,7 +141,7 @@ generator_api::commands integral_generator::generate(context *const _context) {
                 if (current_template.single_generates) {
                     if (generator_tools::should_uses_src_file(
                             current_template.ifiles[count_use_ifiles], output_file,
-                            _context->dfiles[current_template.ifiles[count_use_ifiles]]) ||
+                            _context.dfiles[current_template.ifiles[count_use_ifiles]]) ||
                         current_template.returns_target) {
                         cmd.args.push_back(current_template.ifiles[count_use_ifiles++]);
                         ++real_count_use_ifiles;
@@ -195,7 +155,7 @@ generator_api::commands integral_generator::generate(context *const _context) {
                                 current_template.ifiles[count_use_ifiles],
                                 generator_tools::get_name_output_file(
                                     pattern_output_file, current_template.ifiles[count_use_ifiles], count_use_ifiles),
-                                _context->dfiles[current_template.ifiles[count_use_ifiles]]) ||
+                                _context.dfiles[current_template.ifiles[count_use_ifiles]]) ||
                             current_template.returns_target) {
                             cmd.args.push_back(current_template.ifiles[count_use_ifiles]);
                             ++real_count_use_ifiles;

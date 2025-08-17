@@ -93,17 +93,16 @@ template_command template_command::create_template_command(string_v template_nam
         }
     }
     else
-        (_log << bwtools::fatal) << (log_message(log_type::fatal)
-                                     << "Invalid syntax. Expected: call_component(PARAM1, PARAM2, ...) -> "
-                                        "returnable: ARG_FEATURE "
-                                        "<ARG_EXTERNAL> <'ARG_STRING'> <{ARG_PARAM}> <[ARG_TARGET_FIELD]>:\n"
-                                     << template_str);
+        _log << (log_message(log_type::fatal) << "Invalid syntax. Expected: call_component(PARAM1, PARAM2, ...) -> "
+                                                 "returnable: ARG_FEATURE "
+                                                 "<ARG_EXTERNAL> <'ARG_STRING'> <{ARG_PARAM}> <[ARG_TARGET_FIELD]>:\n"
+                                              << template_str);
 
     return tcmd_tmp;
 }
 vec<template_command> template_command::create_queue_target_templates(const vec<template_command> &templates,
                                                                       const vec<string> &templates_target,
-                                                                      target_type target_t) {
+                                                                      target::e_type target_t) {
 
     vec<template_command> vec_templates_tmp;
     vec<template_command> target_queue_templates;
@@ -120,9 +119,8 @@ vec<template_command> template_command::create_queue_target_templates(const vec<
         });
 
     if (it_template == vec_templates_tmp.end())
-        (_log << bwtools::fatal) << (log_message(log_type::fatal)
-                                     << "There is no template that returns a target with the given type: "
-                                     << sc::target_type_str(target_t));
+        _log << (log_message(log_type::fatal) << "There is no template that returns a target with the given type: "
+                                              << sc::target_type_str(target_t));
 
     target_queue_templates.push_back(*it_template);
     for (size_t i = 0; i < it_template->name_accept_params.size(); ++i)

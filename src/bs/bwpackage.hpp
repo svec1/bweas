@@ -14,6 +14,7 @@
 namespace bweas {
 class package;
 }
+
 // Class defining bweas packages
 class bweas::package {
   public:
@@ -24,7 +25,7 @@ class bweas::package {
     struct data_bw_package {
         string json_config;
         string src_lua_cache;
-        vec<string> src_lua_generators;
+        vec<string> src_lua_finders;
     };
 
     // All its configuration is stored here in the usual format.
@@ -34,29 +35,21 @@ class bweas::package {
             cache_lua(string _name_cache, string src_lua_cache)
                 : name_cache(_name_cache), src_lua_cache(src_lua_cache) {
             }
-            string name_cache;
-            string src_lua_cache;
+            string name;
+            string src_lua;
         };
-        struct generator_lua {
-            generator_lua() = default;
-            generator_lua(string _name_generator, vec<string> _features_generator, bool _use_custom_build_graph_depends,
-                          string _src_lua_generator)
-                : name_generator(_name_generator), features_generator(_features_generator),
-                  src_lua_generator(_src_lua_generator),
-                  use_custom_build_graph_depends(_use_custom_build_graph_depends) {
+        struct dependency_finder {
+            dependency_finder() = default;
+            dependency_finder(string _name, string _src_lua) : name(_name), src_lua(_src_lua) {
             }
-            string name_generator;
-            vec<string> features_generator;
-            string src_lua_generator;
 
-            // Use a custom file dependency(search) system
-            bool use_custom_build_graph_depends{0};
+            string name;
+            string src_lua;
         };
 
         cache_lua cache;
-        vec<generator_lua> generators;
+        vec<dependency_finder> finders;
         module_manager::modules modules;
-        map<string, string> custom_ext_fields_project;
     };
 
     // Returns a packet compressed by the lz4 algorithm, with the signature of a bweas packet
@@ -73,10 +66,10 @@ class bweas::package {
     bool is_init();
 
   public:
-    string name_package;
+    string name;
     sc::version bw_version;
 
-    config cfg_package;
+    config cfg;
 };
 
 #endif

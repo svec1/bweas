@@ -25,6 +25,11 @@
 
 using namespace bweas;
 
+static logger _log{"BWEAS"};
+
+static constexpr auto JSON_CONFIG_FILE          = "bweas-config.json";
+static constexpr auto DEFAULT_BWEAS_JSON_CONFIG = "{\n\t\"cache-gn\": \"fast_bwcache\",\n\t\"packages\": []\n}";
+
 static const string INFO_STR =
     "bweas version " + std::string(VERSION_FULL_STR) + "\nrep on github - https://github.com/svec1/bweas";
 
@@ -38,11 +43,6 @@ static constexpr auto HELP_STR =
     "\n   --help - outputs the syntax of the bweas call as well as its possible functions"
     "\n   --version - outputs the version of bweas";
 
-static constexpr auto JSON_CONFIG_FILE          = "bweas-config.json";
-static constexpr auto DEFAULT_BWEAS_JSON_CONFIG = "{\n\t\"cache-gn\": \"fast_bwcache\",\n\t\"packages\": []\n}";
-
-static logger _log{"BWEAS"};
-
 builder::builder(size_t argv, char **args) {
     vec<string> vec_args;
     for (size_t i = 0; i < argv; ++i)
@@ -51,8 +51,7 @@ builder::builder(size_t argv, char **args) {
     handle_args(vec_args);
 
     if (mode_bweas != mode_working::build_package && mode_bweas != mode_working::undef) {
-        (_log << bwtools::message) << (log_message(log_type::msg)
-                                       << "Initializing system build - bweas " + version.get_str_version());
+        _log << (log_message(log_type::msg) << "Initializing system build - bweas " + version.get_str_version());
         init();
     }
 }
@@ -64,8 +63,6 @@ void builder::handle_args(vec<string> &args) {
     if (args.size() == 1)
         mode_bweas = mode_working::collect_cfg;
 
-    string path_json_cfg_package;
-
     bool expected_path_bweas_config = 1, expected_path_to_build = 0;
     bool expected_path_json_cfg_package = 0;
     for (size_t i = 1; i < args.size(); ++i) {
@@ -73,9 +70,8 @@ void builder::handle_args(vec<string> &args) {
             args[i].erase(args[i].find("--"), 2);
 
             if (mode_bweas != undef) {
-                (_log << bwtools::error) << (log_message(log_type::error)
-                                             << "Unknown argument: " + args[i] +
-                                                    ". The bweas mode has already been defined");
+                _log << (log_message(log_type::error)
+                         << "Unknown argument: " + args[i] + ". The bweas mode has already been defined");
                 return;
             }
             if (i == 1)
@@ -94,11 +90,11 @@ void builder::handle_args(vec<string> &args) {
                 expected_path_json_cfg_package = 1;
             }
             else if (args[i] == "help")
-                (_log << bwtools::message) << (log_message(log_type::msg) << HELP_STR);
+                _log << (log_message(log_type::msg) << HELP_STR);
             else if (args[i] == "version")
-                (_log << bwtools::message) << (log_message(log_type::msg) << INFO_STR);
+                _log << (log_message(log_type::msg) << INFO_STR);
             else {
-                (_log << bwtools::error) << (log_message(log_type::error) << "Unknown argument: " + args[i]);
+                _log << (log_message(log_type::error) << "Unknown argument: " + args[i]);
                 return;
             }
         }
@@ -117,49 +113,43 @@ void builder::handle_args(vec<string> &args) {
             }
             // --package <arg>
             else if (expected_path_json_cfg_package) {
-                path_json_cfg_package          = args[i];
                 expected_path_json_cfg_package = 0;
 
-                size_t size_pckg = create_package(path_json_cfg_package);
-
-                (_log << bwtools::message)
-                    << (log_message(log_type::msg) << "Created: " + std::to_string(size_pckg) + " bytes");
+                create_package(args[i]);
             }
             else {
-                (_log << bwtools::error) << (log_message(log_type::error) << "Unknown argument: " + args[i]);
+                _log << (log_message(log_type::error) << "Unknown argument: " + args[i]);
                 return;
             }
         }
     }
 
     if (expected_path_json_cfg_package)
-        (_log << bwtools::error) << (log_message(log_type::error) << "Invalid syntax.\n" << HELP_STR);
+        _log << (log_message(log_type::error) << "Invalid syntax.\n" << HELP_STR);
 }
 
-size_t builder::create_package(string path_json_config_package) {
+void builder::create_package(string path_json_config_package) {
     package::data_bw_package data_package;
-    const file_it &json_config_package = bwtools::open_file(path_json_config_package, mf::open::r);
 
+    file_it json_config_package = bwtools::open_file(path_json_config_package, mf::open::r);
     if (!bwtools::exist_file(json_config_package)) {
-        (_log << bwtools::error) << (log_message(log_type::error)
-                                     << "The bweas-json configuration for package package file was not found");
-        return 0;
+        _log << (log_message(log_type::error) << "The bweas-json configuration for package package file was not found");
+        return;
     }
+
     data_package.json_config = bwtools::read_file(bwtools::get_ref_file(json_config_package), mf::input::read_default);
     bwtools::close_file(json_config_package);
 
     package loaded_package;
     string pckg = loaded_package.init(data_package, 1);
     if (_log.error_status()) {
-        (_log << bwtools::error) << (log_message(log_type::error) << "Failed to create a bweas package");
-        return 0;
+        _log << (log_message(log_type::error) << "Failed to create a bweas package");
+        return;
     }
-    const file_it &package = bwtools::open_file(
+    file_it package = bwtools::open_file(
         fs::current_path().string() + "/" + loaded_package.name_package + FORMAT_PACKAGE, mf::open::wb);
     bwtools::write_file(bwtools::get_ref_file(package), pckg, mf::output::write_binary);
     bwtools::close_file(package);
-
-    return pckg.size();
 }
 
 void builder::init() {
@@ -185,7 +175,7 @@ void builder::init() {
 
     if (config_json.contains("cache-gn")) {
         if (!config_json["cache-gn"].is_string()) {
-            (_log << bwtools::error) << (log_message(log_type::error) << "Cache generator name expected");
+            _log << (log_message(log_type::error) << "Cache generator name expected");
             return;
         }
         if (config_json["cache-gn"] == "fast_bwcache")
@@ -198,14 +188,13 @@ void builder::init() {
 
     if (config_json.contains("packages")) {
         if (!config_json["packages"].is_array()) {
-            (_log << bwtools::error) << (log_message(log_type::error)
-                                         << "Invalid json file structure. At least one package must be defined");
+            _log << (log_message(log_type::error)
+                     << "Invalid json file structure. At least one package must be defined");
             return;
         }
         for (const auto &package : config_json["packages"].items()) {
             if (!package.value().is_string())
-                (_log << bwtools::error) << (log_message(log_type::error)
-                                             << "Invalid json file structure. Package names are expected");
+                _log << (log_message(log_type::error) << "Invalid json file structure. Package names are expected");
 
             bweas::package loaded_package;
             string raw_data_package,
@@ -213,8 +202,7 @@ void builder::init() {
 
             file_it it_package = bwtools::open_file(path_to_package, mf::open::rb);
             if (!bwtools::exist_file(it_package)) {
-                (_log << bwtools::warning)
-                    << (log_message(log_type::warning) << "\"" << path_to_package << "\" bweas package not found");
+                _log << (log_message(log_type::warning) << "\"" << path_to_package << "\" bweas package not found");
                 continue;
             }
 
@@ -228,8 +216,7 @@ void builder::init() {
                 loaded_package.cfg_package.cache.name_cache == config_json["cache-gn"].template get<std::string>())
                 cache = std::unique_ptr<cache_api::base_cache>(
                     cache_api::base_cache::create_lua_cache(loaded_package.cfg_package.cache.src_lua_cache));
-            _log << bwtools::success
-                 << (log_message(log_type::msg)
+            _log << (log_message(log_type::success)
                      << "\"" << path_to_package << "\" bweas package was loaded successfully("
                      << raw_data_package.size() << " bytes)");
         }
@@ -272,27 +259,26 @@ void builder::start() {
         string path_bweas_cache    = _context.path_bweas_to_build + CACHE_FILE;
 
         if (!bwtools::exist_file(_context.path_bweas_config))
-            (_log << bwtools::fatal) << (log_message(log_type::fatal) << "Bweas config not found");
+            _log << (log_message(log_type::fatal) << "Bweas config not found");
         if (!bwtools::exist_file(path_bweas_cache))
-            (_log << bwtools::fatal) << (log_message(log_type::fatal) << "Bweas cache not found");
+            _log << (log_message(log_type::fatal) << "Bweas cache not found");
 
         fs::file_time_type config_ftime = fs::last_write_time(_context.path_bweas_config);
         fs::file_time_type cache_ftime  = fs::last_write_time(path_bweas_cache);
         if (config_ftime > cache_ftime) {
-            (_log << bwtools::message) << (log_message(log_type::msg) << "The configuration file has been modified");
+            _log << (log_message(log_type::msg) << "The configuration file has been modified");
             goto interpreter_start;
         }
 
         cache->extract_cache_data(cache_str);
 
-        (_log << bwtools::success) << (log_message(log_type::msg)
-                                       << "Cache deserialization was successful!\n"
-                                       << "Was loaded " << _context.templates.size() << " template of command!");
+        _log << (log_message(log_type::success)
+                 << "Cache deserialization was successful!\n"
+                 << "Was loaded " << _context.templates.size() << " template of command!");
     }
     else if (mode_bweas == mode_working::collect_cfg || mode_bweas == mode_working::collect_cfg_w_build) {
         if (!bwtools::exist_file(_context.path_bweas_config))
-            (_log << bwtools::fatal) << (log_message(log_type::fatal)
-                                         << "Bweas config not found \'" << _context.path_bweas_config << "\'");
+            _log << (log_message(log_type::fatal) << "Bweas config not found \'" << _context.path_bweas_config << "\'");
 
     interpreter_start:
         fs::current_path(fs::path(_context.path_bweas_config).parent_path());
@@ -304,13 +290,13 @@ void builder::start() {
     }
 
     if (mode_bweas == mode_working::build || mode_bweas == mode_working::collect_cfg_w_build) {
-        (_log << bwtools::message) << (log_message(log_type::msg) << "*Build start time: " << bwtools::get_time());
+        _log << (log_message(log_type::msg) << "*Build start time: " << bwtools::get_time());
         build_targets();
     }
 }
 
 void builder::run_interpreter() {
-    (_log << bwtools::message) << (log_message(log_type::msg) << "Interpreting the configuration file...");
+    _log << (log_message(log_type::msg) << "Interpreting the configuration file...");
 
     lang bwlang{&_context};
     bwlang.init_external_funcs(external_modules_funcs);
@@ -324,8 +310,7 @@ void builder::run_interpreter() {
 
 size_t builder::gen_cache_target() {
     if (!_context.targets.size()) {
-        (_log << bwtools::warning) << (log_message(log_type::warning)
-                                       << "Generating a file with a cache will not be performed.");
+        _log << (log_message(log_type::warning) << "Generating a file with a cache will not be performed.");
         return 1;
     }
 
@@ -334,7 +319,7 @@ size_t builder::gen_cache_target() {
     bwtools::write_file(bwtools::get_ref_file(bweas_cache), cache->create_cache(), mf::output::write_binary);
     bwtools::close_file(bweas_cache);
 
-    (_log << bwtools::success) << (log_message(log_type::msg) << "Cache generation was successful!");
+    _log << (log_message(log_type::success) << "Cache generation was successful!");
 
     return 0;
 }
@@ -384,67 +369,69 @@ void builder::build_targets() {
             if (auto it = std::find_if(_context.targets.begin(), _context.targets.end(),
                                        [&dependence](const sc::target &target) { return target.name == dependence; });
                 it != _context.targets.end() && !it->built_success)
-                (_log << bwtools::fatal) << (log_message(log_type::fatal)
-                                             << target.name << " target expects a dependency: " << dependence);
+                _log << (log_message(log_type::fatal) << target.name << " target expects a dependency: " << dependence);
 
         if (generators.find(target.name_generator) == generators.end()) {
-            (_log << bwtools::error)
-                << (log_message(log_type::error)
-                    << "The provided generator as the primary for the current target was not found - " << target.name
-                    << ": " << target.name_generator);
+            _log << (log_message(log_type::error)
+                     << "The provided generator as the primary for the current target was not found - " << target.name
+                     << ": " << target.name_generator);
             return;
         }
         else if (target.templates.size() == 0) {
-            (_log << bwtools::error) << (log_message(log_type::error)
-                                         << "There are no templates for the target - " << target.name);
+            _log << (log_message(log_type::error) << "There are no templates for the target - " << target.name);
             return;
         }
-        (_log << bwtools::message) << (log_message(log_type::msg) << "Build target: " << target.name);
+        _log << (log_message(log_type::msg) << "Build target: " << target.name);
 
-        target.queue_templates =
-            sc::template_command::create_queue_target_templates(_context.templates, target.templates, target.type);
-        _context.current_target         = &target;
-        _context.current_work_directory = _context.path_bweas_to_build + target.name;
-
-        if (!fs::is_directory(_context.current_work_directory))
-            fs::create_directories(_context.current_work_directory);
-
-        auto &current_generator = generators[target.name_generator];
-        current_generator->init(&_context);
-
-        std::unique_ptr<depends_files> dfiles_sys;
-        if (current_generator->use_build_graph_depends)
-            dfiles_sys = std::make_unique<depends_generator>(current_generator, target.prj.language,
-                                                             _context.current_work_directory);
-        else
-            dfiles_sys = std::make_unique<depends_integral>(target.prj.language, _context.current_work_directory);
-
-        _context.dfiles = load_depends_file(dfiles_sys, target);
-
-        current_generator->get_input_files();
-        generator_api::commands cmd_s = current_generator->generate_commands();
-
-        double build_state  = 0.f;
         size_t count_errors = 0;
+        {
+            log_console_lock lock_c;
 
-        processes_handler p_handler(cmd_s, 4);
-        p_handler.start([&cmd_s, &build_state, &count_errors](string_v name_output_file, bool success) {
-            if (!success) {
-                (_log << bwtools::error) << (log_message(log_type::error) << "failed: " << name_output_file);
-                ++count_errors;
-            }
-            else {
-                build_state += 1.f / (double)cmd_s.size() * 100;
-                (_log << bwtools::success)
-                    << (log_message(log_type::msg)
-                        << "[" << std::to_string(build_state).erase(std::to_string((size_t)build_state).size() + 2, 5)
-                        << "%] " << name_output_file);
-            }
-        });
+            target.queue_templates =
+                sc::template_command::create_queue_target_templates(_context.templates, target.templates, target.type);
+            _context.current_target         = &target;
+            _context.current_work_directory = _context.path_bweas_to_build + target.name;
+
+            if (!fs::is_directory(_context.current_work_directory))
+                fs::create_directories(_context.current_work_directory);
+
+            auto &current_generator = generators[target.name_generator];
+            current_generator->init(&_context);
+
+            std::unique_ptr<depends_files> dfiles_sys;
+            if (current_generator->use_build_graph_depends)
+                dfiles_sys = std::make_unique<depends_generator>(current_generator, target.prj.language,
+                                                                 _context.current_work_directory);
+            else
+                dfiles_sys = std::make_unique<depends_integral>(target.prj.language, _context.current_work_directory);
+
+            _context.dfiles = load_depends_file(dfiles_sys, target);
+
+            current_generator->get_input_files();
+            generator_api::commands cmd_s = current_generator->generate_commands();
+
+            double build_state = 0.f;
+
+            processes_handler p_handler(cmd_s, 4);
+            p_handler.start([&cmd_s, &build_state, &count_errors](string_v name_output_file, bool success) {
+                log_console_unlock unlock_c;
+                if (!success) {
+                    _log << (log_message(log_type::error) << "failed: " << name_output_file);
+                    ++count_errors;
+                }
+                else {
+                    build_state += 1.f / (double)cmd_s.size() * 100;
+                    _log << (log_message(log_type::success)
+                             << "["
+                             << std::to_string(build_state).erase(std::to_string((size_t)build_state).size() + 2, 5)
+                             << "%] " << name_output_file);
+                }
+            });
+        }
 
         if (count_errors)
-            (_log << bwtools::error) << (log_message(log_type::error)
-                                         << target.name << " target was not built: " << count_errors << " errors");
+            _log << (log_message(log_type::error)
+                     << target.name << " target was not built: " << count_errors << " errors");
         else
             target.built_success = 1;
     }

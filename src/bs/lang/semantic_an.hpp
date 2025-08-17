@@ -12,7 +12,7 @@
 
 class semantic_analyzer {
   public:
-    semantic_analyzer(logger &_log);
+    semantic_analyzer(bweas::logger &_log);
 
     semantic_analyzer(semantic_analyzer &&)            = delete;
     semantic_analyzer(const semantic_analyzer &)       = delete;
@@ -53,7 +53,7 @@ class semantic_analyzer {
     void parse_expr_param(expression &expr, expressions &expr_s, size_t &pos_expr_in_vec, scope &current_scope);
 
   private:
-    logger &_log;
+    bweas::logger &_log;
 };
 
 #endif

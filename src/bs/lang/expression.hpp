@@ -12,9 +12,9 @@
 
 #include <bwaliases.hpp>
 
-static constexpr auto STR_KEYWORD_IF    = "if";
-static constexpr auto STR_KEYWORD_ELSE  = "else";
-static constexpr auto STR_KEYWORD_ENDIF = "endif";
+inline constexpr auto STR_KEYWORD_IF    = "if";
+inline constexpr auto STR_KEYWORD_ELSE  = "else";
+inline constexpr auto STR_KEYWORD_ENDIF = "endif";
 
 class scope;
 
@@ -57,15 +57,16 @@ enum class param_type {
 };
 
 struct param {
-    param(param_type _type, string_v _default_val = "") : type(_type), default_val(_default_val) {
+    param(param_type _type, std::optional<string> _default_val = std::nullopt)
+        : type(_type), default_val(_default_val) {
     }
 
-    inline bool decl_default_val() const {
-        return !default_val.empty();
+    bool decl_default_val() const {
+        return default_val.has_value();
     }
 
     param_type type;
-    string default_val;
+    std::optional<string> default_val;
 };
 
 // structure is a list of parameters passed
@@ -108,15 +109,15 @@ struct decl_func {
 
   public:
     decl_func() = default;
-    explicit decl_func(string_v _name_func, func_t _func, vec<param> _expected_params)
-        : name_func(_name_func), func(_func), expected_params(_expected_params) {
+    explicit decl_func(string_v _name, func_t _func, vec<param> _expected_params)
+        : name(_name), func(_func), expected_params(_expected_params) {
     }
 
   public:
     inline size_t count_default_params() const;
 
   public:
-    string name_func;
+    string name;
 
     func_t func;
     vec<param> expected_params;
@@ -151,13 +152,13 @@ struct statement {
 inline size_t decl_func::count_default_params() const {
     size_t count_dp = 0;
     for (const param &_param : expected_params)
-        if (!_param.default_val.empty())
+        if (_param.decl_default_val())
             ++count_dp;
 
     return count_dp;
 }
 
-static inline expression::expression_t conv_param_type_to_expr_type(param_type _param) {
+inline expression::expression_t conv_param_type_to_expr_type(param_type _param) {
     if (_param == param_type::FUTURE_VAR_ID || _param == param_type::NCHECK_VAR_ID || _param == param_type::VAR_ID ||
         _param == param_type::VAR_STRUCT_ID)
         return expression::expression_t::ID;
@@ -168,13 +169,13 @@ static inline expression::expression_t conv_param_type_to_expr_type(param_type _
     return expression::expression_t::SIZE_ENUM_RET_TYPE_EXPR;
 }
 
-static inline bool operator==(expression::expression_t e_type, param_type p_type) {
+inline bool operator==(expression::expression_t e_type, param_type p_type) {
     if (conv_param_type_to_expr_type(p_type) == e_type)
         return true;
     return false;
 }
 
-static inline string_v get_string_expr_type(expression::expression_t type) {
+inline string_v get_string_expr_type(expression::expression_t type) {
     if (type == expression::expression_t::NUMBER)
         return "NUMBER";
     else if (type == expression::expression_t::STRING)
@@ -184,7 +185,7 @@ static inline string_v get_string_expr_type(expression::expression_t type) {
     return "???";
 }
 
-static inline param_type get_string_param_type(string_v str) {
+inline param_type get_string_param_type(string_v str) {
     if (str == "FUTURE_VAR_ID")
         return param_type::FUTURE_VAR_ID;
     else if (str == "VAR_ID")
@@ -224,11 +225,11 @@ inline string statement::build_string_error(pdiff expr_index, string error_str, 
         }
     }
     else if (!expr_index) {
-        for (size_t i = 0; i < expr_func->name_func.size(); ++i)
+        for (size_t i = 0; i < expr_func->name.size(); ++i)
             error += "^";
     }
     else {
-        size_t current_symbol = expr_func->name_func.size() + 1;
+        size_t current_symbol = expr_func->name.size() + 1;
         size_t i              = 1;
         for (; i < expr_index && current_symbol < view_str.size(); ++current_symbol)
             if (view_str[current_symbol] == ',' || view_str[current_symbol] == ')')
@@ -260,7 +261,7 @@ inline string statement::get_string_expected_params(size_t offset_index) const {
     return expected_params_str;
 }
 
-static bool is_id_param(param_type p) {
+inline bool is_id_param(param_type p) {
     if (p == param_type::FUTURE_VAR_ID || p == param_type::NCHECK_VAR_ID || p == param_type::VAR_ID ||
         p == param_type::VAR_STRUCT_ID)
         return true;

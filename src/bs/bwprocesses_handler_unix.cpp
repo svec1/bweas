@@ -10,7 +10,7 @@
 using namespace bweas;
 
 void processes_handler::start(std::function<void(string_v, bool)> do_more_func) {
-    for (size_t i = 0; i < cmd_s.size(); ++i) {
+    for (size_t i = 0; i < cmd_s.size(); ++i, ++count_runable_processes) {
         if (count_runable_processes >= max_count_processes) {
             size_t tmp_pid = wait_process();
 
@@ -29,8 +29,12 @@ void processes_handler::start(std::function<void(string_v, bool)> do_more_func) 
                     return cmd.name == name_dependence;
                 });
 
-            if (dependence_cmd->success.has_value())
-                continue;
+            if (dependence_cmd->success) {
+                if (dependence_cmd->success.value())
+                    continue;
+                else
+                    goto wait_all_process;
+            }
 
             (void)wait_process(dependence_cmd->pid_execute_process);
             --count_runable_processes;
@@ -40,7 +44,6 @@ void processes_handler::start(std::function<void(string_v, bool)> do_more_func) 
                 goto wait_all_process;
         }
         create_process(cmd_s[i]);
-        ++count_runable_processes;
     }
 
 wait_all_process:
@@ -77,8 +80,7 @@ size_t processes_handler::wait_process(size_t pid) {
 void processes_handler::create_process(generator_api::command &cmd) {
     pid_t pid;
     if ((pid = fork()) == -1)
-        _log << bwtools::fatal
-             << (log_message(log_type::fatal) << "Process cannot be created" << " [" << std::strerror(errno) << "]");
+        _log << (log_message(log_type::fatal) << "Process cannot be created" << " [" << std::strerror(errno) << "]");
     else if (!pid) {
         cmd.args.emplace(cmd.args.begin(), cmd.name_program);
 
@@ -89,8 +91,7 @@ void processes_handler::create_process(generator_api::command &cmd) {
         args[cmd.args.size()] = NULL;
 
         if (execvp(cmd.name_program.c_str(), args))
-            _log << bwtools::fatal
-                 << (log_message(log_type::fatal)
+            _log << (log_message(log_type::fatal)
                      << "Execution error: " << cmd.name_program << " [" << std::strerror(errno) << "]");
     }
     cmd.pid_execute_process = pid;

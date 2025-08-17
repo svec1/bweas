@@ -17,10 +17,14 @@ namespace bweas {
 enum class log_type;
 class log_message;
 class logger;
+
+template <bool inv = 1> class log_console_lock;
+using log_console_unlock = log_console_lock<0>;
 } // namespace bweas
 
 enum class bweas::log_type {
     msg = 0,
+    success,
     warning,
     error,
     fatal
@@ -43,6 +47,9 @@ class bweas::log_message {
 
 // A class for logging status
 class bweas::logger {
+    friend bweas::log_console_lock<0>;
+    friend bweas::log_console_lock<1>;
+
   public:
     using handle_func_t = void(string_v);
 
@@ -63,7 +70,6 @@ class bweas::logger {
     bool error_status();
 
   public:
-    logger &operator<<(std::function<handle_func_t> handle_func_callback);
     void operator<<(const bweas::log_message &obj);
 
   public:
@@ -71,12 +77,21 @@ class bweas::logger {
 
   private:
     static bwtools::file_it file_log;
+    static bool output_to_console;
 
   private:
     string_v owner;
     bweas::log_type status;
+};
 
-    std::function<handle_func_t> handle_func;
+template <bool inv> class bweas::log_console_lock {
+  public:
+    log_console_lock() {
+        logger::output_to_console = !inv;
+    }
+    ~log_console_lock() {
+        logger::output_to_console = inv;
+    }
 };
 
 template <typename T> bweas::log_message &bweas::log_message::operator<<(const T &obj) {

@@ -5,12 +5,15 @@
 // ------------------------------------------
 //
 
+#include <format>
+
 #include <bwlogger.hpp>
 
 using namespace bweas;
 
 bwtools::file_it logger::file_log;
 log_type logger::global_status;
+bool logger::output_to_console = true;
 
 log_message::log_message(log_type _log_t) : log_t(_log_t) {
     switch (log_t) {
@@ -41,20 +44,31 @@ bool logger::error_status() {
     return status == log_type::error || status == log_type::fatal;
 }
 
-logger &logger::operator<<(std::function<logger::handle_func_t> handle_func_callback) {
-    handle_func = handle_func_callback;
-    return *this;
-}
-
 void logger::operator<<(const log_message &obj) {
     status = obj.log_t;
 
-    string out_str = (!owner.empty() ? string("[") + owner.data() + string("]: ") + obj.ss.str() : obj.ss.str());
-
-    bwtools::write_file(bwtools::get_ref_file(file_log), out_str + "\n");
-
-    if (handle_func) {
-        handle_func(out_str);
-        handle_func = nullptr;
+    size_t text_color;
+    switch (status) {
+    case log_type::error:
+    case log_type::fatal:
+        text_color = 1;
+        break;
+    case log_type::success:
+        text_color = 2;
+        break;
+    case log_type::warning:
+        text_color = 3;
+        break;
+    default:
+        text_color = 7;
     }
+
+    string _owner  = !owner.empty() ? string("[") + owner.data() + string("]: ") : "";
+    string out_str = std::format("{}\e[3{}m{}\e[0m", _owner, text_color, obj.ss.str());
+
+    bwtools::write_file(bwtools::get_ref_file(file_log), _owner + obj.ss.str() + "\n");
+    if (status == log_type::fatal)
+        bwtools::fatal(out_str);
+    else if (output_to_console)
+        bwtools::message(out_str);
 }

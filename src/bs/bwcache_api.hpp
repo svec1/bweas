@@ -11,18 +11,16 @@
 #include <bw_defs.hpp>
 #include <bwluatools.hpp>
 
-namespace bweas {
+namespace bweas::cache_api {
 
-namespace cache_api {
 class interface_cache;
 class base_cache;
 
 class fast_cache;
 class json_cache;
 class lua_cache;
-} // namespace cache_api
 
-} // namespace bweas
+} // namespace bweas::cache_api
 
 class bweas::cache_api::interface_cache {
   protected:
@@ -57,8 +55,8 @@ class bweas::cache_api::base_cache : public bweas::cache_api::interface_cache {
     // Cache initialization function
     virtual void init(context *const __context) {
         if (!__context)
-            (bweas::logger{"BWCACHE"} << bweas::bwtools::fatal)
-                << (bweas::log_message(bweas::log_type::fatal) << "Bweas the context is not defined");
+            bweas::logger{"BWCACHE"} << (bweas::log_message(bweas::log_type::fatal)
+                                         << "Bweas the context is not defined");
         _context = __context;
     }
 

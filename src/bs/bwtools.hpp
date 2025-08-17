@@ -14,7 +14,7 @@
 
 namespace bweas {
 class bwtools;
-} // namespace bweas
+}
 
 // A base class that implements many auxiliary functions
 class bweas::bwtools {
@@ -146,11 +146,7 @@ class bweas::bwtools {
     using file_it = size_t;
 
     static void message(std::string_view str);
-    static void success(std::string_view str);
-
-    static void warning(std::string_view str_warn);
-    static void error(std::string_view str_error = "");
-    static void fatal(std::string_view str_error = "");
+    static void fatal(std::string_view str_error);
 
     static string get_time();
 

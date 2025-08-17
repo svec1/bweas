@@ -9,20 +9,19 @@
 #define BWDEPENDS_INTEGRAL__H
 
 #include <bwdepends_files.hpp>
-#include <bwgenerator_integral.hpp>
 
 namespace bweas {
 class depends_integral;
 }
 
 // Implementing an internal file dependency system
-class bweas::depends_integral : public bweas::depends_files {
+class bweas::depends_integral : private bweas::depends_files {
   public:
     depends_integral(const string_v language, const string_v work_directory) : depends_files(language, work_directory) {
     }
     ~depends_integral() = default;
 
-  public:
+  private:
     uset<string> build_graph_depends_file(string_v name_file) override final;
 
   private:

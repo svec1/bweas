@@ -1,9 +1,9 @@
-create_template(template_flex,  "flex:lexer.cpp(NULL) -> T_PROJECT_SRC_FILES: <'-o'> FBS_CURRENT_OUTPUT_FILE <[T_PROJECT_SRC_FILES:lexer.l]>")
-create_template(template_bison, "bison:parser.cpp(NULL) -> T_PROJECT_SRC_FILES: <'-o'> FBS_CURRENT_OUTPUT_FILE <'-H'> <[T_PROJECT_SRC_FILES:parser.y]>")
-create_template(template_obj,   "clang++:{}.o(NULL) -> OBJ_S: <'-c'> <[T_PROJECT_SRC_FILES:*.cpp]> <'-o'> FBS_CURRENT_OUTPUT_FILE <'-std=gnu++23'> <'-fPIC'> <[T_PROJECT_INCLUDE_PATHS]>")
-create_template(template_lib,   "ar:bweas.a(OBJ_S) -> LIBRARY: <'rcs'> FBS_CURRENT_OUTPUT_FILE <{OBJ_S}>")
+create_template(t_flex,  "flex:lexer.cpp(NULL) -> T_PROJECT_SRC_FILES: <'-o'> FBS_CURRENT_OUTPUT_FILE <[T_PROJECT_SRC_FILES:lexer.l]>")
+create_template(t_bison, "bison:parser.cpp(NULL) -> T_PROJECT_SRC_FILES: <'-o'> FBS_CURRENT_OUTPUT_FILE <'-H'> <[T_PROJECT_SRC_FILES:parser.y]>")
+create_template(t_obj,   "clang++:{}.o(NULL) -> OBJ_S: <'-c'> <[T_PROJECT_SRC_FILES:*.cpp]> <'-o'> FBS_CURRENT_OUTPUT_FILE <'-Wall'> <'-std=gnu++23'> <'-fPIC'> <[T_PROJECT_INCLUDE_PATHS]>")
+create_template(t_lib,   "ar:bweas.a(OBJ_S) -> LIBRARY: <'rcs'> FBS_CURRENT_OUTPUT_FILE <{OBJ_S}>")
 
-create_template(template_exec,  "clang++:bweas(BWEAS_SLIB) -> EXECUTABLE: FBS_CURRENT_INPUT_FILE <{BWEAS_SLIB}> <'-o'> FBS_CURRENT_OUTPUT_FILE <[T_PROJECT_INCLUDE_PATHS]> <'-std=gnu++23'> <'-llz4'> <'-llua'> <'-lluajit-5.1'>")
+create_template(t_exec,  "clang++:bweas(BWEAS_SLIB) -> EXECUTABLE: FBS_CURRENT_INPUT_FILE <{BWEAS_SLIB}> <'-o'> FBS_CURRENT_OUTPUT_FILE <[T_PROJECT_INCLUDE_PATHS]> <'-std=gnu++23'> <'-llz4'> <'-llua'> <'-lluajit-5.1'>")
 
 file(SRC_FILES, 0, "src/bs/*.cpp", "src/bs/lang/*.cpp", "src/bs/lang/lexer.l", "src/bs/lang/parser.y")
 file(BWEAS_MAIN_FILE, 0, "src/bweas.cpp")
@@ -16,5 +16,5 @@ add_dependencies_target(BWEAS, BWEAS_SLIB)
 include_directories(BWEAS_SLIB, "src/bs/")
 include_directories(BWEAS, "src/bs/")
 
-use_templates(BWEAS_SLIB, template_flex, template_bison, template_obj, template_lib)
-use_templates(BWEAS, template_exec)
+use_templates(BWEAS_SLIB, t_flex, t_bison, t_obj, t_lib)
+use_templates(BWEAS, t_exec)

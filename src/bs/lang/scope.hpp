@@ -16,8 +16,6 @@
 
 extern string get_current_loc();
 
-using namespace bweas;
-
 inline string type_var_to_str(size_t ind) {
     if (ind == 1)
         return "int";
@@ -36,14 +34,10 @@ inline string type_var_to_str(size_t ind) {
     else if (ind == 8)
         return "global external args";
     else if (ind == 9)
+        return "profile";
+    else if (ind == 10)
         return "function";
     return "undef";
-}
-
-inline bool is_struct(size_t ind) {
-    if (ind >= 5 && ind <= 8)
-        return 1;
-    return 0;
 }
 
 class scope {
@@ -51,8 +45,8 @@ class scope {
     scope(bweas::logger &__log) : _log(__log) {
     }
 
-    inline scope(const scope &) = default;
-    inline scope(scope &&)      = default;
+    scope(const scope &) = default;
+    scope(scope &&)      = default;
 
     ~scope() = default;
 
@@ -67,6 +61,7 @@ class scope {
     template <typename T> inline const container_vars<T>::container_type &get_container_vars() const &;
 
     inline bool is_exist(string name_var) const &;
+    inline bool is_struct(size_t ind) const &;
 
     inline void clear() &;
 
@@ -83,7 +78,7 @@ class scope {
     inline size_t what_type(string name_var) const &;
 
   private:
-    logger &_log;
+    bweas::logger &_log;
 
     container_vars<decl_func> funcs_v;
 
@@ -92,13 +87,16 @@ class scope {
     container_vars<vec<pdiff>> vec_int_v;
     container_vars<vec<string>> vec_str_v;
 
-    container_vars<sc::target> trg_v;
-    container_vars<sc::template_command> tcmd_v;
-    container_vars<sc::call_component> ccmp_v;
+    container_vars<bweas::sc::target> trg_v;
+    container_vars<bweas::sc::template_command> tcmd_v;
+    container_vars<bweas::sc::call_component> ccmp_v;
     container_vars<pair<string, string>> global_ext_args_v;
+
+    container_vars<bweas::sc::profile> prf_v;
 };
 
 template <typename T> inline T &scope::create_var(string name_var, T val) & {
+    using namespace bweas;
     if constexpr (std::is_same_v<T, pdiff>) {
         if (!int_v.create_var(name_var, val))
             return int_v.get_val_ref(name_var);
@@ -131,19 +129,26 @@ template <typename T> inline T &scope::create_var(string name_var, T val) & {
         if (!global_ext_args_v.create_var(name_var, val))
             return global_ext_args_v.get_val_ref(name_var);
     }
+    else if constexpr (std::is_same_v<T, sc::profile>) {
+        if (!prf_v.create_var(name_var, val))
+            return prf_v.get_val_ref(name_var);
+    }
     else if constexpr (std::is_same_v<T, decl_func>) {
         if (!funcs_v.create_var(name_var, val))
             return funcs_v.get_val_ref(name_var);
     }
+
     else
         static_assert(false, "Unsuitable type.");
-    (_log << bwtools::fatal) << (log_message(log_type::fatal)
-                                 << get_current_loc() << ": The " << name_var << " variable already exists");
+
+    _log << (log_message(log_type::fatal) << get_current_loc() << ": The " << name_var << " variable already exists");
 
     std::unreachable();
 }
 
 template <typename T> inline bool scope::try_create_var(string name_var, T val) & {
+    using namespace bweas;
+
     bool creates = 0;
     if constexpr (std::is_same_v<T, pdiff>)
         creates = int_v.create_var(name_var, val);
@@ -161,13 +166,16 @@ template <typename T> inline bool scope::try_create_var(string name_var, T val) 
         creates = ccmp_v.create_var(name_var, val);
     else if constexpr (std::is_same_v<T, pair<string, string>>)
         creates = global_ext_args_v.create_var(name_var, val);
+    else if constexpr (std::is_same_v<T, sc::profile>)
+        creates = prf_v.create_var(name_var, val);
     else if constexpr (std::is_same_v<T, decl_func>)
         creates = funcs_v.create_var(name_var, val);
-
     return !creates;
 }
 
 template <typename T> inline void scope::delete_var(string name_var) & {
+    using namespace bweas;
+
     bool err_handling = 0;
 
     if constexpr (std::is_same_v<T, pdiff>)
@@ -186,14 +194,18 @@ template <typename T> inline void scope::delete_var(string name_var) & {
         err_handling = ccmp_v.delete_var(name_var);
     else if constexpr (std::is_same_v<T, pair<string, string>>)
         err_handling = global_ext_args_v.delete_var(name_var);
+    else if constexpr (std::is_same_v<T, sc::profile>)
+        err_handling = prf_v.delete_var(name_var);
     else if constexpr (std::is_same_v<T, decl_func>)
         err_handling = funcs_v.delete_var(name_var);
 
     if (err_handling)
-        (_log << bwtools::error) << (log_message(log_type::error) << "The " << name_var << " variable does not exist");
+        _log << (log_message(log_type::error) << "The " << name_var << " variable does not exist");
 }
 
 template <typename T> inline T &scope::get_var_value(string name_var) & {
+    using namespace bweas;
+
     if constexpr (std::is_same_v<T, pdiff>) {
         if (int_v.is_exist_var(name_var))
             return int_v.get_val_ref(name_var);
@@ -226,6 +238,10 @@ template <typename T> inline T &scope::get_var_value(string name_var) & {
         if (global_ext_args_v.is_exist_var(name_var))
             return global_ext_args_v.get_val_ref(name_var);
     }
+    else if constexpr (std::is_same_v<T, sc::profile>) {
+        if (prf_v.is_exist_var(name_var))
+            return prf_v.get_val_ref(name_var);
+    }
     else if constexpr (std::is_same_v<T, decl_func>) {
         if (funcs_v.is_exist_var(name_var))
             return funcs_v.get_val_ref(name_var);
@@ -233,13 +249,14 @@ template <typename T> inline T &scope::get_var_value(string name_var) & {
     else
         static_assert(false, "Unsuitable type.");
 
-    (_log << bwtools::fatal) << (log_message(log_type::fatal)
-                                 << get_current_loc() << ": The " << name_var << " variable does not exist");
+    _log << (log_message(log_type::fatal) << get_current_loc() << ": The " << name_var << " variable does not exist");
 
     std::unreachable();
 }
 
 template <typename T> inline const container_vars<T>::container_type &scope::get_container_vars() const & {
+    using namespace bweas;
+
     if constexpr (std::is_same_v<T, pdiff>)
         return int_v.get_container();
     else if constexpr (std::is_same_v<T, string>)
@@ -256,6 +273,8 @@ template <typename T> inline const container_vars<T>::container_type &scope::get
         return ccmp_v.get_container();
     else if constexpr (std::is_same_v<T, pair<string, string>>)
         return global_ext_args_v.get_container();
+    else if constexpr (std::is_same_v<T, sc::profile>)
+        return prf_v.get_container();
     else if constexpr (std::is_same_v<T, decl_func>)
         return funcs_v.get_container();
     else
@@ -267,7 +286,13 @@ template <typename T> inline const container_vars<T>::container_type &scope::get
 inline bool scope::is_exist(string name_var) const & {
     if (int_v.is_exist_var(name_var) || str_v.is_exist_var(name_var) || vec_int_v.is_exist_var(name_var) ||
         vec_str_v.is_exist_var(name_var) || trg_v.is_exist_var(name_var) || tcmd_v.is_exist_var(name_var) ||
-        ccmp_v.is_exist_var(name_var) || global_ext_args_v.is_exist_var(name_var) || funcs_v.is_exist_var(name_var))
+        ccmp_v.is_exist_var(name_var) || global_ext_args_v.is_exist_var(name_var) || prf_v.is_exist_var(name_var) ||
+        funcs_v.is_exist_var(name_var))
+        return 1;
+    return 0;
+}
+inline bool scope::is_struct(size_t ind) const & {
+    if (ind >= 5 && ind <= 9)
         return 1;
     return 0;
 }
@@ -288,8 +313,10 @@ inline size_t scope::what_type(string name_var) const & {
         return 7;
     else if (global_ext_args_v.is_exist_var(name_var))
         return 8;
-    else if (funcs_v.is_exist_var(name_var))
+    else if (prf_v.is_exist_var(name_var))
         return 9;
+    else if (funcs_v.is_exist_var(name_var))
+        return 10;
     else
         return 0;
 }
@@ -303,6 +330,7 @@ inline void scope::clear() & {
     tcmd_v.clear();
     ccmp_v.clear();
     global_ext_args_v.clear();
+    prf_v.clear();
     funcs_v.clear();
 }
 

@@ -15,7 +15,7 @@
 
 namespace bweas {
 class processes_handler;
-} // namespace bweas
+}
 
 class bweas::processes_handler {
   public:
@@ -38,8 +38,6 @@ class bweas::processes_handler {
 
     // Platform-independent running process counter
     size_t count_runable_processes = 0;
-
-    uset<size_t> completed_pid;
 
 #if defined(WIN)
     vec<PROCESS_INFORMATION> pids_win;

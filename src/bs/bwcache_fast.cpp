@@ -29,42 +29,21 @@ string fast_cache::create_cache() {
     for (pdiff i = 0; i < targets.size(); ++i) {
         if (!targets[i].templates.size())
             targets[i].templates.push_back("null");
-        if (!targets[i].prj.custom_ext_fields.size())
-            targets[i].prj.custom_ext_fields["null"] = "";
-        if (!targets[i].prj.libs.size())
-            targets[i].prj.libs.push_back("null");
-        if (!targets[i].dependencies.size())
-            targets[i].dependencies.push_back("null");
 
-        char *prj_v = (char *)&targets[i];
-        serel_target_tmp +=
-            std::to_string(targets[i].prj.src_files.size()) + " " + std::to_string(targets[i].prj.libs.size()) + " " +
-            std::to_string(targets[i].prj.include_paths.size()) + " " +
-            std::to_string(targets[i].prj.custom_ext_fields.size()) + " " +
-            std::to_string(targets[i].templates.size()) + " " + std::to_string(targets[i].dependencies.size()) + " ";
-        for (pdiff j = 0; j < sizeof(sc::project); j += sizeof(string)) {
-            // standart c
-            if (j == sizeof(string) * 7) {
-                serel_target_tmp += std::to_string(*(pdiff *)(prj_v + j)) + " " +
-                                    std::to_string(*(pdiff *)(prj_v + j + sizeof(pdiff))) + " ";
-                break;
+        serel_target_tmp += std::to_string(targets[i].ext.size()) + " " + std::to_string(targets[i].templates.size()) +
+                            " " + std::to_string(targets[i].dependencies.size()) + " ";
+
+        for (const auto &[key, value] : targets[i].ext) {
+            serel_target_tmp += key + " ";
+            if (std::holds_alternative<string>(value))
+                serel_target_tmp += "\"" + std::get<string>(value) + "\" ";
+            else {
+                const auto &str_s = std::get<vec<string>>(value);
+                serel_target_tmp += std::to_string(str_s.size()) + " ";
+                for (const auto &str : str_s)
+                    serel_target_tmp += "\"" + str + "\" ";
             }
-            if ((*(string *)(prj_v + j)).find(" ") != serel_target_tmp.npos)
-                serel_target_tmp += "\"" + *(string *)(prj_v + j) + "\" ";
-            else
-                serel_target_tmp += *(string *)(prj_v + j) + " ";
         }
-        for (size_t j = 0; j < targets[i].prj.src_files.size(); ++j)
-            serel_target_tmp += targets[i].prj.src_files[j] + " ";
-        for (size_t j = 0; j < targets[i].prj.libs.size(); ++j)
-            serel_target_tmp += targets[i].prj.libs[j] + " ";
-        for (size_t j = 0; j < targets[i].prj.include_paths.size(); ++j)
-            serel_target_tmp += targets[i].prj.include_paths[j] + " ";
-
-        for (auto it : targets[i].prj.custom_ext_fields)
-            serel_target_tmp += it.first + " " + it.second + " ";
-
-        serel_target_tmp.erase(serel_target_tmp.size() - 1, 1);
 
         serel_target_tmp += sc::target_type_str(targets[i].type) + " " + sc::target_cfg_str(targets[i].cfg) + " " +
                             targets[i].name + " " + targets[i].name_generator + " " + targets[i].ver.get_str_version() +
@@ -126,8 +105,10 @@ string fast_cache::get_path_config(const string &cache_str) {
         return str_tmp;
     }
     catch (const std::logic_error &_excp) {
-        (_log << bwtools::fatal) << (log_message(log_type::fatal) << "Invalid structure of the bweas cache file");
+        _log << (log_message(log_type::fatal) << "Invalid structure of the bweas cache file");
     }
+
+    std::unreachable();
 }
 void fast_cache::extract_cache_data(const string &cache_str) {
     sc::target trg_tmp;
@@ -137,22 +118,23 @@ void fast_cache::extract_cache_data(const string &cache_str) {
 
     string str_tmp, str_tmp_key;
 
-    pdiff count_words_before_first_list = 16;
+    pdiff count_words_before_first_list = 4;
 
     pdiff count_word = 0, offset_byte_prj = 0, offset_byte_ccmp = 0;
-    pdiff size_src_files = 0, size_libs = 0, size_include_paths, size_custom_ext_fields, size_use_templates = 0,
-          size_dependencies  = 0;
+    pdiff size_ext_fields = 0, size_use_templates = 0, size_dependencies = 0;
     pdiff size_templates     = 0;
     pdiff size_internal_args = 0, size_external_args = 0, size_call_components = 0, size_global_extern_args = 0;
 
-    pdiff end_src_files = 0, end_libs = 0, end_include_paths = 0, end_custom_ext_fields = 0, end_templates = 0,
-          end_dependencies = 0;
+    pdiff end_extension = count + words_before_first_list, end_templates = 0, end_dependencies = 0;
 
-    char *tproj_p = (char *)&trg_tmp.prj;
-    char *ccmp_p  = (char *)&ccmp_tmp;
+    u32t count_el_field         = 0;
+    u32t count_words_to_end_ext = 0;
+
+    char *ccmp_p = (char *)&ccmp_tmp;
 
     bool is_beg_file         = 1;
     bool is_beg_custom_field = 0;
+    bool is_key_field        = 0;
 
     bool open_sk                 = 0;
     bool enum_templates          = 0;
@@ -249,72 +231,65 @@ void fast_cache::extract_cache_data(const string &cache_str) {
                     }
                 }
                 else {
-                    if (count_word == 1) {
-                        trg_tmp.prj.include_paths.clear();
-                        size_src_files = std::stoi(str_tmp);
-                    }
-                    else if (count_word == 2)
-                        size_libs = std::stoi(str_tmp);
-                    else if (count_word == 3)
-                        size_include_paths = std::stoi(str_tmp);
-                    else if (count_word == 4)
-                        size_custom_ext_fields = std::stoi(str_tmp);
-                    else if (count_word == 5)
+                    if (count_word == 1)
+                        size_ext_fields = std::stoi(str_tmp);
+                    else if (count_word == 2) {
                         size_use_templates = std::stoi(str_tmp);
-                    else if (count_word == 6) {
-                        size_dependencies = std::stoi(str_tmp);
-
-                        end_src_files         = count_words_before_first_list + size_src_files;
-                        end_libs              = end_src_files + size_libs;
-                        end_include_paths     = end_libs + size_include_paths;
-                        end_custom_ext_fields = end_include_paths + size_custom_ext_fields;
-                        end_templates         = end_custom_ext_fields + size_use_templates;
-                        end_dependencies      = end_templates + size_dependencies;
+                        end_templates      = size_use_templates;
                     }
-                    else if (count_word == 14 || count_word == 15) {
-                        *(pdiff *)(tproj_p + offset_byte_prj) = std::atoll(str_tmp.c_str());
-                        offset_byte_prj += sizeof(pdiff);
+                    else if (count_word == 3) {
+                        size_dependencies = std::stoi(str_tmp);
+                        end_dependencies  = size_dependencies;
                     }
                     else if (count_word >= count_words_before_first_list) {
-                        if (count_word < end_src_files)
-                            trg_tmp.prj.src_files.push_back(str_tmp);
-                        else if (count_word < end_libs) {
-                            if (str_tmp != "null")
-                                trg_tmp.prj.libs.push_back(str_tmp);
-                        }
-                        else if (count_word < end_include_paths) {
-                            if (str_tmp != "null")
-                                trg_tmp.prj.include_paths.push_back(str_tmp);
-                        }
+                        if (size_ext_fields) {
+                            ++end_extension;
 
-                        else if (count_word < end_custom_ext_fields) {
-                            if (str_tmp == "null")
-                                ;
-                            else if ((is_beg_custom_field = !is_beg_custom_field)) {
-                                trg_tmp.prj.custom_ext_fields[str_tmp] = "";
-                                str_tmp_key                            = str_tmp;
-                                --count_word;
+                            if (is_key_field = !is_key_field)
+                                str_tmp_key = str_tmp;
+                            else {
+                                if (count_el_field) {
+                                    static vec<string> tmp_vec_values;
+
+                                push_value_vec:
+                                    tmp_vec_values.push_back(str_tmp);
+                                    --count_el_field;
+                                    if (!count_el_field) {
+                                        trg_tmp.ext[str_tmp_key] = tmp_vec_values;
+                                        --size_ext_fields;
+                                    }
+                                    continue;
+                                }
+
+                                count_el_field = std::atoll(str_tmp.c_str());
+                                if (!count_el_field)
+                                    trg_tmp.ext[str_tmp_key] = str_tmp;
+                                else
+                                    goto push_value_vec;
+                                --size_ext_fields;
                             }
-                            else
-                                trg_tmp.prj.custom_ext_fields.find(str_tmp_key)->second = str_tmp;
                         }
-                        else if (count_word == end_custom_ext_fields)
+                        else if (count_word == end_extension) {
+                            end_templates += end_extension + 5;
+                            end_dependencies += end_templates;
+
                             trg_tmp.type = sc::to_target_type(str_tmp);
-                        else if (count_word == end_custom_ext_fields + 1)
+                        }
+                        else if (count_word == end_extension + 1)
                             trg_tmp.cfg = sc::to_target_cfg(str_tmp);
-                        else if (count_word == end_custom_ext_fields + 2)
+                        else if (count_word == end_extension + 2)
                             trg_tmp.name = str_tmp;
-                        else if (count_word == end_custom_ext_fields + 3)
+                        else if (count_word == end_extension + 3)
                             trg_tmp.name_generator = str_tmp;
-                        else if (count_word == end_custom_ext_fields + 4)
+                        else if (count_word == end_extension + 4)
                             trg_tmp.ver = str_tmp;
-                        else if (count_word < end_templates + 5) {
+                        else if (count_word < end_templates) {
                             if (str_tmp != "null")
                                 trg_tmp.templates.push_back(str_tmp);
                         }
-                        else if (count_word < end_dependencies + 5)
+                        else if (count_word < end_dependencies)
                             trg_tmp.dependencies.push_back(str_tmp);
-                        else if (count_word == end_dependencies + 5) {
+                        else if (count_word == end_dependencies) {
                             _context->targets.push_back(trg_tmp);
 
                             trg_tmp.templates         = {};
@@ -337,10 +312,6 @@ void fast_cache::extract_cache_data(const string &cache_str) {
                                 goto next_word;
                         }
                     }
-                    else {
-                        *(string *)(tproj_p + offset_byte_prj) = str_tmp;
-                        offset_byte_prj += sizeof(string);
-                    }
                 }
 
             next:
@@ -351,7 +322,7 @@ void fast_cache::extract_cache_data(const string &cache_str) {
         }
     }
     catch (const std::logic_error &_excp) {
-        (_log << bwtools::fatal) << (log_message(log_type::fatal) << "Invalid structure of the bweas cache file");
+        _log << (log_message(log_type::fatal) << "Invalid structure of the bweas cache file");
     }
 }
 

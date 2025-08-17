@@ -19,8 +19,7 @@ depends_files::depends_map &depends_files::build_graphs_depends_files(const vec<
                 mdepends[file] = build_graph_depends_file(file);
         }
         catch (std::exception &excp) {
-            _log << bwtools::fatal
-                 << (log_message(log_type::fatal) << "Failed to build a graph of file dependencies: " << excp.what());
+            _log << (log_message(log_type::fatal) << "Failed to build a graph of file dependencies: " << excp.what());
         }
     }
     return mdepends;
@@ -30,8 +29,7 @@ depends_files::depends_map &depends_files::build_graphs_depends_file_v(const str
         mdepends[name_file] = build_graph_depends_file(name_file);
     }
     catch (std::exception &excp) {
-        _log << bwtools::fatal
-             << (log_message(log_type::fatal) << "Failed to build a graph of file dependencies: " << excp.what());
+        _log << (log_message(log_type::fatal) << "Failed to build a graph of file dependencies: " << excp.what());
     }
 
     return mdepends;

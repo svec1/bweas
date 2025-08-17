@@ -12,7 +12,7 @@
 
 namespace bweas {
 class depends_files;
-} // namespace bweas
+}
 
 // File dependency system interface, defines specific functions
 class bweas::depends_files {

@@ -27,19 +27,21 @@ namespace bweas {
 using mf      = bwtools::file::mode_file;
 using file_it = bwtools::file_it;
 
-static constexpr char VERSION_MAJOR_C = '0';
-static constexpr char VERSION_MINOR_C = '1';
-static constexpr char VERSION_PATCH_C = '1';
+inline constexpr char VERSION_MAJOR_C = '0';
+inline constexpr char VERSION_MINOR_C = '1';
+inline constexpr char VERSION_PATCH_C = '1';
 
-static constexpr string VERSION_FULL_STR = {VERSION_MAJOR_C, '.', VERSION_MINOR_C, '.', VERSION_PATCH_C};
+inline constexpr string VERSION_FULL_STR = {VERSION_MAJOR_C, '.', VERSION_MINOR_C, '.', VERSION_PATCH_C};
 
-static constexpr auto CONFIG_FILE    = "bweasconf.txt";
-static constexpr auto CACHE_FILE     = "bwcache";
-static constexpr auto DEPENDS_FILE   = "bwdependencies";
-static constexpr auto FORMAT_PACKAGE = ".bweas-package";
+inline constexpr auto CONFIG_FILE    = "bweasconf.txt";
+inline constexpr auto CACHE_FILE     = "bwcache";
+inline constexpr auto DEPENDS_FILE   = "bwdependencies";
+inline constexpr auto FORMAT_PACKAGE = ".bweas-package";
 
 // The structure defining the main data for the build
 struct context {
+    vec<sc::profile> profiles;
+
     vec<sc::target> targets;
     vec<sc::template_command> templates;
     vec<sc::call_component> call_components;

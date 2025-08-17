@@ -63,9 +63,9 @@ void processes_handler::create_process(generator_api::command &cmd) {
     if (!CreateProcess(NULL, ("\"" + cmd.name_program + "\" " + str_args).data(), NULL, NULL, FALSE, 0, NULL, NULL, &si,
                        &pi)) {
         if (GetLastError() == 2)
-            _log << bwtools::fatal << (log_message(log_type::fatal) << "No such file exists: " << cmd.name_program);
+            _log << (log_message(log_type::fatal) << "No such file exists: " << cmd.name_program);
         else
-            _log << bwtools::fatal << (log_message(log_type::fatal) << "Process cannot be created: " << GetLastError());
+            _log << (log_message(log_type::fatal) << "Process cannot be created: " << GetLastError());
     }
 
     pids_win.push_back(pi);

@@ -24,7 +24,7 @@ vec<decl_func> module_manager::init_mfuncs(modules &mds) {
                                                              bwtools::open_file(md.name_lua_source_file))));
 
                 lua_stream_s[md.name_module].call_function<string_v, lua_tools::integer, lua_tools::integer>(
-                    _decl_func.name_func, *((lua_tools::integer *)&expr_s), *((lua_tools::integer *)&curr_scope));
+                    _decl_func.name, *((lua_tools::integer *)&expr_s), *((lua_tools::integer *)&curr_scope));
             };
             funcs.push_back(_decl_func);
         }

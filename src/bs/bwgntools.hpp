@@ -14,6 +14,7 @@
 namespace bweas {
 class generator_tools;
 }
+
 class bweas::generator_tools {
   public:
     generator_tools() = delete;

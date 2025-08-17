@@ -20,7 +20,7 @@ class lang;
 // the standard bweas functions and also provides interaction with the global scope
 class bweas::lang {
   public:
-    lang(context *const __context);
+    lang(context &__context);
 
     lang(lang &&)            = delete;
     lang(const lang &)       = delete;
@@ -36,9 +36,6 @@ class bweas::lang {
 
     // Loads external functions (passed into this function) into the interpreter (semantic analyzer)
     inline void init_external_funcs(vec<decl_func> funcs);
-
-    // Sets custom extension fields for projects
-    inline void set_custom_ext_fields_project(map<string, string> custom_ext_fields);
 
     template <typename T> inline bool create_global_var(string name_var, T val = {}) {
         return _interpreter.get_scope().try_create_var(name_var, val);
@@ -59,14 +56,14 @@ class bweas::lang {
     vec<pair<string, string>> get_global_external_args();
 
   private:
-    context *const _context;
+    std::reference_wrapper<context> _context;
     interpreter _interpreter;
 };
-lang::lang(context *const __context) : _context(__context), _interpreter(_context->path_bweas_config) {
+bweas::lang::lang(context *const __context) : _context(__context), _interpreter(_context->path_bweas_config) {
     init_scope();
 }
 
-void lang::init_scope() {
+void bweas::lang::init_scope() {
     _interpreter.get_scope().create_var<pdiff>("DEBUG", 0);
     _interpreter.get_scope().create_var<pdiff>("RELEASE", 1);
     _interpreter.get_scope().create_var<pdiff>("FALSE", 0);
@@ -81,9 +78,12 @@ void lang::init_scope() {
         "file", sl_func::file,
         {{param_type::FUTURE_VAR_ID, "{NULL}"}, param_type::LIT_NUM, param_type::LIT_STR, param_type::NEXT_TOO});
 
-    _interpreter.create_function(
-        "create_target", sl_func::create_target,
-        {param_type::FUTURE_VAR_ID, param_type::LIT_NUM, {param_type::LIT_STR, "{NULL}"}, param_type::NEXT_TOO});
+    _interpreter.create_function("create_target", sl_func::create_target,
+                                 {param_type::FUTURE_VAR_ID,
+                                  param_type::VAR_STRUCT_ID,
+                                  param_type::LIT_NUM,
+                                  {param_type::LIT_STR, "{NULL}"},
+                                  param_type::NEXT_TOO});
     _interpreter.create_function("add_dependencies_target", sl_func::add_dependencies_target,
                                  {param_type::VAR_STRUCT_ID, param_type::VAR_STRUCT_ID, param_type::NEXT_TOO});
 
@@ -122,25 +122,22 @@ void lang::init_scope() {
                                  {param_type::VAR_STRUCT_ID, param_type::VAR_STRUCT_ID, param_type::NEXT_TOO});
 }
 
-void lang::execute() {
+void bweas::lang::execute() {
     _interpreter.interpret();
 }
-void lang::init_external_funcs(vec<decl_func> funcs) {
+void bweas::lang::init_external_funcs(vec<decl_func> funcs) {
     for (const auto &func : funcs)
         _interpreter.create_function(func);
 }
-void lang::set_custom_ext_fields_project(map<string, string> custom_ext_fields) {
-    sc::project::preset_ext_fields.merge(custom_ext_fields);
-}
 
-void lang::init_context() {
+void bweas::lang::init_context() {
     _context->targets              = get_targets();
     _context->templates            = get_templates();
     _context->call_components      = get_call_components();
     _context->global_external_args = get_global_external_args();
 }
 
-vec<sc::target> lang::get_targets() {
+vec<bweas::sc::target> bweas::lang::get_targets() {
     const container_vars<sc::target>::container_type &container_targets =
         _interpreter.get_scope().get_container_vars<sc::target>();
 
@@ -151,7 +148,7 @@ vec<sc::target> lang::get_targets() {
     return targets;
 }
 
-vec<sc::template_command> lang::get_templates() {
+vec<bweas::sc::template_command> bweas::lang::get_templates() {
     container_vars<sc::template_command>::container_type container_templates =
         _interpreter.get_scope().get_container_vars<sc::template_command>();
 
@@ -162,7 +159,7 @@ vec<sc::template_command> lang::get_templates() {
     return templates;
 }
 
-vec<sc::call_component> lang::get_call_components() {
+vec<bweas::sc::call_component> bweas::lang::get_call_components() {
     container_vars<sc::call_component>::container_type container_call_components =
         _interpreter.get_scope().get_container_vars<sc::call_component>();
 
@@ -173,7 +170,7 @@ vec<sc::call_component> lang::get_call_components() {
     return call_components;
 }
 
-vec<pair<string, string>> lang::get_global_external_args() {
+vec<pair<string, string>> bweas::lang::get_global_external_args() {
     container_vars<pair<string, string>>::container_type container_global_external_args =
         _interpreter.get_scope().get_container_vars<pair<string, string>>();
 
@@ -184,10 +181,10 @@ vec<pair<string, string>> lang::get_global_external_args() {
     return global_external_args;
 }
 
-scope &lang::get_global_scope() & {
+scope &bweas::lang::get_global_scope() & {
     return _interpreter.get_scope();
 }
-template <typename T> const container_vars<T>::container_type &lang::get_container_vars() const & {
+template <typename T> const container_vars<T>::container_type &bweas::lang::get_container_vars() const & {
     return _interpreter.get_scope().get_container_vars<T>();
 }
 

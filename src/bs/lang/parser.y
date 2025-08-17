@@ -11,7 +11,9 @@
 
 #define YYLLOC_UPDATE_GLOBAL_LOC(loc) last_line = loc.last_line; last_column = loc.last_column; 
 
-bweas::logger *log_bison;
+using namespace bweas;
+
+logger *log_bison;
 scope* current_scope;  
 
 statements               stm_s;
@@ -75,14 +77,14 @@ string get_current_loc(){
 
 statement: 
          | statement ID OPEN_BR params CLOSE_BR {   
-                                                    if(current_scope->what_type($2) != 9){
-                                                        (*log_bison) << bwtools::error << (log_message(log_type::error) << "A variable is expected which is a reference to the function: " << $2); 
+                                                    if(current_scope->what_type($2) != 10){
+                                                        (*log_bison) << (log_message(log_type::error) << "A variable is expected which is a reference to the function: " << $2); 
                                                         YYERROR;        
                                                     }
                                                     init_statement(&current_scope->get_var_value<decl_func>($2));  
                                                 }   
          | error {
-                    (*log_bison) << bwtools::fatal << (log_message(log_type::fatal) << "[" << @1.last_line << ":" << @1.last_column << "]: syntax error: Invalid statement"); 
+                    (*log_bison) << (log_message(log_type::fatal) << "[" << @1.last_line << ":" << @1.last_column << "]: syntax error: Invalid statement"); 
                     YYABORT;
                  }
 ;
@@ -116,7 +118,7 @@ param: ID           {
                         expr_t_tmp = expression::expression_t::STRING;
                     }
      | error        { 
-                        (*log_bison) << bwtools::fatal << (log_message(log_type::fatal) << "[" << @1.last_line << ":" << @1.last_column << "]: syntax error: Invalid parameter definition"); 
+                        (*log_bison) << (log_message(log_type::fatal) << "[" << @1.last_line << ":" << @1.last_column << "]: syntax error: Invalid parameter definition"); 
                         YYABORT;
                     }
 ;
@@ -127,7 +129,7 @@ num_expr: OPEN_BR num_expr CLOSE_BR          { $$ = $2; }
          | num_expr MUL num_expr             { $$ = $1 * $3; }
          | num_expr DIV num_expr             { 
                                                 if($3 == 0){ 
-                                                    (*log_bison) << bwtools::fatal << (log_message(log_type::fatal) << "Division by zero"); 
+                                                    (*log_bison) << (log_message(log_type::fatal) << "Division by zero"); 
                                                     YYERROR;
                                                 }                                                
                                                 $$ = $1 / $3; 

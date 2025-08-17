@@ -41,26 +41,8 @@ vec<bwtools::file> bwtools::files;
 void bwtools::message(std::string_view str) {
     std::fprintf(stdout, "%s\n", str.data());
 }
-void bwtools::success(std::string_view str) {
-    std::fprintf(stdout, "\e[1;32m%s\e[0m\n", str.data());
-}
-void bwtools::warning(std::string_view str_warn) {
-    std::fprintf(stderr, "\e[1;33m%s\e[0m\n", str_warn.data());
-}
-void bwtools::error(std::string_view str_err) {
-    std::fprintf(stderr, "\e[1;31m");
-    if (str_err.empty())
-        std::fprintf(stderr, "%s\e[0m\n", std::strerror(errno));
-    else
-        std::fprintf(stderr, "%s\e[0m\n", str_err.data());
-}
 void bwtools::fatal(std::string_view str_err) {
-    std::fprintf(stderr, "\e[1;31m");
-    if (str_err.empty())
-        std::fprintf(stderr, "%s\e[0m\n", std::strerror(errno));
-    else
-        std::fprintf(stderr, "%s\e[0m\n", str_err.data());
-
+    std::fprintf(stderr, "%s\n", str_err.data());
     exit(1);
 }
 

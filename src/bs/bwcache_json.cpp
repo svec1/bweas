@@ -26,20 +26,7 @@ string json_cache::create_cache() {
                                               {"generator", target.name_generator},
                                               {"templates", target.templates},
                                               {"dependencies", target.dependencies},
-                                              {"project",
-                                               {{"lang", target.prj.language},
-                                                {"path_compiler", target.prj.path_compiler},
-                                                {"path_linker", target.prj.path_linker},
-                                                {"release_flags_compiler", target.prj.rflags_compiler},
-                                                {"release_flags_linker", target.prj.rflags_linker},
-                                                {"debug_flags_compiler", target.prj.dflags_compiler},
-                                                {"debug_flags_linker", target.prj.dflags_linker},
-                                                {"std_c", target.prj.standart_c},
-                                                {"std_cpp", target.prj.standart_cpp},
-                                                {"files", target.prj.src_files},
-                                                {"libs", target.prj.libs},
-                                                {"include_paths", target.prj.include_paths},
-                                                {"custom_extension_fields", target.prj.custom_ext_fields}}}};
+                                              {"extension", (sc::profile::fields)target.ext}};
 
     for (const auto &_template : _context->templates) {
         cache_data["templates"][_template.name] = {{"name_call_component", _template.name_call_component},
@@ -65,9 +52,10 @@ string json_cache::get_path_config(const string &cache_str) {
         return cache_data["config_file"];
     }
     catch (std::exception &what) {
-        (_log << bwtools::fatal) << (log_message(log_type::fatal)
-                                     << "Invalid structure of the bweas cache file: " << what.what());
+        _log << (log_message(log_type::fatal) << "Invalid structure of the bweas cache file: " << what.what());
     }
+
+    std::unreachable();
 }
 
 void json_cache::extract_cache_data(const string &cache_str) {
@@ -88,20 +76,7 @@ void json_cache::extract_cache_data(const string &cache_str) {
             target_o_tmp.templates      = fields["templates"];
             target_o_tmp.dependencies   = fields["dependencies"];
 
-            const auto &prj                    = fields["project"];
-            target_o_tmp.prj.language          = prj["lang"];
-            target_o_tmp.prj.path_compiler     = prj["path_compiler"];
-            target_o_tmp.prj.path_linker       = prj["path_linker"];
-            target_o_tmp.prj.rflags_compiler   = prj["release_flags_compiler"];
-            target_o_tmp.prj.rflags_linker     = prj["release_flags_linker"];
-            target_o_tmp.prj.dflags_compiler   = prj["debug_flags_compiler"];
-            target_o_tmp.prj.dflags_linker     = prj["debug_flags_linker"];
-            target_o_tmp.prj.standart_c        = prj["std_c"];
-            target_o_tmp.prj.standart_cpp      = prj["std_cpp"];
-            target_o_tmp.prj.src_files         = prj["files"];
-            target_o_tmp.prj.libs              = prj["libs"];
-            target_o_tmp.prj.include_paths     = prj["include_paths"];
-            target_o_tmp.prj.custom_ext_fields = prj["custom_extension_fields"];
+            target_o_tmp.ext = fields["extension"];
 
             _context->targets.push_back(target_o_tmp);
         }
@@ -137,7 +112,6 @@ void json_cache::extract_cache_data(const string &cache_str) {
                                                         call_component.value()["value"]);
     }
     catch (std::exception &what) {
-        (_log << bwtools::fatal) << (log_message(log_type::fatal)
-                                     << "Invalid structure of the bweas cache file: " << what.what());
+        _log << (log_message(log_type::fatal) << "Invalid structure of the bweas cache file: " << what.what());
     }
 }

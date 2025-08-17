@@ -118,7 +118,7 @@ class lua {
         symbol &operator=(symbol &&) = delete;
 
         explicit symbol(type _symbol_t, std::string _name_sym, lua *_L)
-            : symbol_t(_symbol_t), name_sym(_name_sym), L(_L) {
+            : name_sym(_name_sym), symbol_t(_symbol_t), L(_L) {
         }
 
       public:
@@ -200,11 +200,12 @@ class lua {
                 return std::any_cast<integer>(op1) < std::any_cast<integer>(op2);
             else if (op1.type() == typeid(number) && op2.type() == typeid(number))
                 return std::any_cast<number>(op1) < std::any_cast<number>(op2);
+
             throw std::runtime_error(LUA_TABLE_KEYCMP + std::string(op1.type().name()));
         }
     };
 
-    template <typename T> using ref = const T &;
+    template <typename T> using ref = T &&;
 
     template <typename T> using array                        = std::vector<T>;
     template <typename Key, typename Value> using key_value  = std::pair<Key, Value>;
@@ -219,7 +220,11 @@ class lua {
 
   private:
     template <typename> struct is_map : std::false_type {};
-    template <typename K, typename V> struct is_map<table<K, V>> : std::true_type {};
+    template <typename K, typename V>
+        requires requires(K k, V v) {
+            { lcomp_anymap(k, v) } noexcept;
+        }
+    struct is_map<table<K, V>> : std::true_type {};
 
     template <typename> struct is_vector : std::false_type {};
     template <typename U, typename A> struct is_vector<std::vector<U, A>> : std::true_type {};
@@ -504,7 +509,7 @@ class lua {
         else if constexpr (std::is_same_v<T, nil>)
             lua_pushnil(L);
         else
-            throw std::runtime_error(LUA_PUSH_TYPE_UNK);
+            static_assert(LUA_PUSH_TYPE_UNK);
     }
     template <typename T> T get_valsymbol(int idx = -1, int pop_last = 1) {
         std::any value;
@@ -601,9 +606,9 @@ class lua {
                 std::move(key), get_valsymbol<typename std::tuple_element<1, T>::type>());
         }
         else
-            throw std::runtime_error(LUA_VARIABLE_UNK);
+            static_assert(LUA_VARIABLE_UNK);
 
-        if (idx == -1 && pop_last || is_pair<T>::value)
+        if ((idx == -1 && pop_last) || is_pair<T>::value)
             lua_pop(L, 1);
         if constexpr (std::is_same_v<T, std::any>)
             return value;

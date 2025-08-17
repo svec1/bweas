@@ -12,7 +12,7 @@
 
 #define YY_USER_ACTION \
     { \
-        int yytext_len = strlen(yytext); \  
+        int yytext_len = strlen(yytext); \
         if(yytext[yytext_len-1] != ' ' && yytext[yytext_len-1] != '\t' && yytext[yytext_len-1] != '\n' && yytext[yytext_len-1] != '\r') \
             current_statements_str += yytext; \
     } \
@@ -26,9 +26,8 @@
         else \
             yylloc.last_column++; 
 
-extern scope* current_scope;
 extern string current_statements_str;
-
+YY_BUFFER_STATE buffer;
 %}
 
 %option noyywrap
@@ -75,3 +74,12 @@ extern string current_statements_str;
                   }
 
 %%
+
+void init_buffer(string_v src){
+    buffer = yy_scan_string(src.data());
+}
+
+void delete_buffer(){
+    yy_delete_buffer(buffer);
+}
+

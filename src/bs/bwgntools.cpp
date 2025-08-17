@@ -11,7 +11,7 @@ using namespace bweas;
 
 string generator_tools::get_name_output_file(string pattern_file, string name_file, size_t index) {
     if (pattern_file.find(".") == pattern_file.npos)
-        return pattern_file + std::to_string(index);
+        return pattern_file + (index ? std::to_string(index) : "");
 
     string name_output_file_curr = pattern_file, extension_output_file_curr = pattern_file;
 
