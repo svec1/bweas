@@ -9,7 +9,6 @@
 #define BWCACHE_API_HPP
 
 #include <bw_defs.hpp>
-#include <bwluatools.hpp>
 
 namespace bweas::cache_api {
 
@@ -53,7 +52,7 @@ class bweas::cache_api::base_cache : public bweas::cache_api::interface_cache {
 
   public:
     // Cache initialization function
-    virtual void init(context *const __context) {
+    void init(context *const __context) {
         if (!__context)
             bweas::logger{"BWCACHE"} << (bweas::log_message(bweas::log_type::fatal)
                                          << "Bweas the context is not defined");
@@ -108,13 +107,9 @@ class bweas::cache_api::lua_cache final : private bweas::cache_api::base_cache {
     ~lua_cache() = default;
 
   public:
-    void init(context *const __context) override;
     string create_cache() override;
     string get_path_config(const string &cache_str) override;
     void extract_cache_data(const string &cache_str) override;
-
-  private:
-    bwlua::lua lua;
 };
 
 bweas::cache_api::base_cache *bweas::cache_api::base_cache::create_fast_cache() {

@@ -6,9 +6,8 @@
 //
 
 #include <bwcache_api.hpp>
-#include <bwluatools.hpp>
 
-#include <tools/bwlua.hpp>
+#include <bwluatools.hpp>
 
 using namespace bweas;
 using namespace cache_api;
@@ -23,13 +22,10 @@ static constexpr auto NAME_VARIABLE_CCOMPONENTS = "call_components";
 static constexpr auto NAME_VARIABLE_GEARGS      = "global_external_args";
 
 static logger _log{"BWCACHE[LUA]"};
+static bwlua::lua lua;
 
 lua_cache::lua_cache(string_v src_lua) {
     lua.create(src_lua.data());
-}
-
-void lua_cache::init(context *const __context) {
-    base_cache::init(__context);
 
     if (!lua.is_function(NAME_FUNCTION_CREATE))
         _log << (log_message(log_type::fatal) << "No entry function for creates cache");

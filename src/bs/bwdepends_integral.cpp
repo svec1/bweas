@@ -10,7 +10,7 @@
 
 using namespace bweas;
 
-static logger _log{"BWDEPENDS_FILES_SYSTEM[INTEGRAL]"};
+static logger _log{"BWDEPENDS_FINDER[INTEGRAL]"};
 
 uset<string> bweas::depends_integral::build_graph_depends_file(string_v name_file, const vec<string> &include_paths) {
     return build_graph_depends_file_c_cpp(name_file, include_paths);

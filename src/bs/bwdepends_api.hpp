@@ -12,7 +12,9 @@
 
 namespace bweas {
 class depends_files;
-}
+class depends_files_integral;
+class depends_files_lua;
+} // namespace bweas
 
 // File dependency system interface, defines specific functions
 class bweas::depends_files {
@@ -54,4 +56,26 @@ class bweas::depends_files {
     depends_map mdepends;
 };
 
+class bweas::depends_lua : private bweas::depends_files {
+  public:
+    depends_lua(const string_v src_lua, const string_v language, const string_v work_directory);
+    ~depends_lua() = default;
+
+  private:
+    uset<string> build_graph_depends_file(string_v name_file) override final;
+};
+
+// Implementing an internal file dependency system
+class bweas::depends_integral : private bweas::depends_files {
+  public:
+    depends_integral(const string_v language, const string_v work_directory) : depends_files(language, work_directory) {
+    }
+    ~depends_integral() = default;
+
+  private:
+    uset<string> build_graph_depends_file(string_v name_file) override final;
+
+  private:
+    static uset<string> build_graph_depends_file_c_cpp(string_v name_file, const vec<string> &include_paths);
+};
 #endif
