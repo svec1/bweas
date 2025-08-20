@@ -11,7 +11,6 @@
 #include "bw_defs.hpp"
 
 #include "bwcache_api.hpp"
-#include "bwgenerator_api.hpp"
 #include "bwmodule.hpp"
 #include "bwpackage.hpp"
 
@@ -108,8 +107,8 @@ class bweas::builder final {
      */
     size_t gen_cache_target();
 
-    depends_files::depends_map &load_depends_file(std::unique_ptr<depends_files> &_depends_files,
-                                                  const sc::target target);
+    depends_files::depends_map &load_depends_file(std::shared_ptr<depends_files> &_depends_files,
+                                                  const vec<string> &include_paths, const vec<string> &source_files);
 
   private:
     /** \brief Collects projects(out_targets) by initializing the generator and calling(bwIGenerator::gen_commands)
@@ -125,13 +124,11 @@ class bweas::builder final {
 
   private:
     std::unique_ptr<cache_api::base_cache> cache;
-    map<string, std::shared_ptr<generator_api::base_generator>> generators;
+    map<string, std::shared_ptr<depends_files>> dependency_finders;
 
   private:
-    vec<package> loaded_packages;
-
     module_manager module_m;
-    vec<decl_func> external_modules_funcs;
+    umap<string, scope::module_data> modules;
 
   private:
     sc::version version{VERSION_FULL_STR};

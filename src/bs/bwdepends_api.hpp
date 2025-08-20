@@ -12,16 +12,14 @@
 
 namespace bweas {
 class depends_files;
-class depends_files_integral;
-class depends_files_lua;
+class depends_integral_cxx;
+class depends_lua;
 } // namespace bweas
 
 // File dependency system interface, defines specific functions
 class bweas::depends_files {
   public:
-    depends_files(const string_v _language, const string_v _work_directory)
-        : language(_language), work_directory(_work_directory) {
-    }
+    depends_files()          = default;
     virtual ~depends_files() = default;
 
   public:
@@ -43,39 +41,52 @@ class bweas::depends_files {
 
     void set_include_paths(const vec<string> _include_paths);
 
+  public:
+    static inline depends_files *create_depends_integral_cxx();
+    static inline depends_files *create_depends_lua(const string_v src_lua);
+
   protected:
     virtual uset<string> build_graph_depends_file(string_v name_file) = 0;
 
   protected:
-    string language;
-    string work_directory;
-
     vec<string> include_paths;
 
   private:
     depends_map mdepends;
 };
 
-class bweas::depends_lua : private bweas::depends_files {
+// Implementing an internal file dependency system
+class bweas::depends_integral_cxx : private bweas::depends_files {
+    friend depends_files *depends_files::create_depends_integral_cxx();
+
+  private:
+    depends_integral_cxx() = default;
+
   public:
-    depends_lua(const string_v src_lua, const string_v language, const string_v work_directory);
+    ~depends_integral_cxx() = default;
+
+  private:
+    uset<string> build_graph_depends_file(string_v name_file) override final;
+};
+
+class bweas::depends_lua : private bweas::depends_files {
+    friend depends_files *depends_files::create_depends_lua(const string_v src_lua);
+
+  private:
+    depends_lua(const string_v src_lua);
+
+  public:
     ~depends_lua() = default;
 
   private:
     uset<string> build_graph_depends_file(string_v name_file) override final;
 };
 
-// Implementing an internal file dependency system
-class bweas::depends_integral : private bweas::depends_files {
-  public:
-    depends_integral(const string_v language, const string_v work_directory) : depends_files(language, work_directory) {
-    }
-    ~depends_integral() = default;
+bweas::depends_files *bweas::depends_files::create_depends_integral_cxx() {
+    return dynamic_cast<depends_files *>(new depends_integral_cxx());
+}
+bweas::depends_files *bweas::depends_files::create_depends_lua(const string_v src_lua) {
+    return dynamic_cast<depends_files *>(new depends_lua(src_lua));
+}
 
-  private:
-    uset<string> build_graph_depends_file(string_v name_file) override final;
-
-  private:
-    static uset<string> build_graph_depends_file_c_cpp(string_v name_file, const vec<string> &include_paths);
-};
 #endif

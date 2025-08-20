@@ -13,7 +13,6 @@
 namespace bweas {
 
 struct command;
-
 class command_generator;
 
 // name_input_file, command
@@ -43,7 +42,7 @@ struct bweas::command {
 // The class defines the API for internal generators, i.e. built into bweas as basic
 class bweas::command_generator {
   public:
-    command_generator(const context &__context) : _context(__context) {
+    command_generator(context *const __context) : _context(__context) {
     }
 
   public:
@@ -51,7 +50,7 @@ class bweas::command_generator {
     commands generate();
 
   private:
-    std::reference_wrapper<const context> _context;
+    context *const _context;
 };
 
 #endif

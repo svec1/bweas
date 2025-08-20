@@ -10,7 +10,7 @@
 
 #include <bw_defs.hpp>
 
-#include <bwgenerator_api.hpp>
+#include <bwgenerator_command.hpp>
 #include <bwgntools.hpp>
 
 namespace bweas {
@@ -19,7 +19,7 @@ class processes_handler;
 
 class bweas::processes_handler {
   public:
-    processes_handler(generator_api::commands &_cmd_s, size_t _max_count_processes)
+    processes_handler(bweas::commands &_cmd_s, size_t _max_count_processes)
         : cmd_s(_cmd_s),
           max_count_processes(_max_count_processes > cmd_s.size() ? cmd_s.size() : _max_count_processes + 1) {
     }
@@ -28,11 +28,11 @@ class bweas::processes_handler {
     void start(std::function<void(string_v name_output_file, bool success)> do_more_func = nullptr);
 
   private:
-    void create_process(generator_api::command &cmd);
+    void create_process(bweas::command &cmd);
     size_t wait_process(size_t pid = 0);
 
   private:
-    generator_api::commands &cmd_s;
+    bweas::commands &cmd_s;
 
     size_t max_count_processes;
 

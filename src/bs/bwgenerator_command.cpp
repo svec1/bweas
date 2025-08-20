@@ -13,45 +13,45 @@ using namespace bweas;
 
 static logger _log{"BWGENERATOR_COMMAND"};
 
-void generator_command::get_input_files() {
-    auto &target = *_context.current_target;
+void command_generator::get_input_files() {
+    auto &target              = *_context->current_target;
+    vec<string> &source_files = target.fields<vec<string>>("source_files");
     for (auto &current_template : target.queue_templates) {
         const auto &call_component =
-            std::find_if(_context.call_components.begin(), _context.call_components.end(),
+            std::find_if(_context->call_components.begin(), _context->call_components.end(),
                          [current_template](const sc::call_component &call_component) {
                              return call_component.name == current_template.name_call_component;
                          });
         size_t count_param_use_src_files = 0;
         for (auto &arg : current_template.args) {
-            if (arg.arg_t == sc::template_command::arg::type::trgfield &&
-                arg.str_arg.find(NAME_FIELD_PROJECT_SRC_FILES) == 0) {
+            if (arg.type == sc::template_command::arg::e_type::trgfield && arg.value.find("source_files") == 0) {
                 string mask;
-                size_t it_str = arg.str_arg.find(":");
-                if (it_str != arg.str_arg.npos) {
-                    mask = arg.str_arg;
+                size_t it_str = arg.value.find(":");
+                if (it_str != arg.value.npos) {
+                    mask = arg.value;
                     mask.erase(0, it_str + 1);
                 }
 
                 if (std::atoll(mask.c_str()) != 0) {
                     if (std::atoll(mask.c_str()) == 1) {
-                        for (size_t i = 0; i < target.prj.src_files.size() &&
+                        for (size_t i = 0; i < source_files.size() &&
                                            std::find(current_template.ifiles.begin(), current_template.ifiles.end(),
-                                                     target.prj.src_files[i]) == current_template.ifiles.end();
+                                                     source_files[i]) == current_template.ifiles.end();
                              ++i)
-                            current_template.ifiles.push_back(target.prj.src_files[i]);
+                            current_template.ifiles.push_back(source_files[i]);
                         current_template.single_generates = 1;
                     }
                     else {
-                        for (size_t k = 0; k < target.prj.src_files.size() && k < std::atoll(mask.c_str()) &&
+                        for (size_t k = 0; k < source_files.size() && k < std::atoll(mask.c_str()) &&
                                            std::find(current_template.ifiles.begin(), current_template.ifiles.end(),
-                                                     target.prj.src_files[k]) == current_template.ifiles.end();
+                                                     source_files[k]) == current_template.ifiles.end();
                              ++k)
-                            current_template.ifiles.push_back(target.prj.src_files[k]);
+                            current_template.ifiles.push_back(source_files[k]);
                     }
                 }
                 else {
                     if (!mask.empty()) {
-                        vec<string> slc_files = bwfile::file_slc_mask(mask, target.prj.src_files);
+                        vec<string> slc_files = bwfile::file_slc_mask(mask, source_files);
                         for (size_t i = 0; i < slc_files.size() &&
                                            std::find(current_template.ifiles.begin(), current_template.ifiles.end(),
                                                      slc_files[i]) == current_template.ifiles.end();
@@ -61,39 +61,40 @@ void generator_command::get_input_files() {
                         current_template.single_generates = 1;
                     }
                     else
-                        current_template.ifiles = target.prj.src_files;
+                        current_template.ifiles = source_files;
                 }
 
                 ++count_param_use_src_files;
             }
-            else if (arg.arg_t == sc::template_command::arg::type::features &&
-                     arg.str_arg == FEATURE_FIELD_BS_CURRENT_IF) {
-                for (size_t i = 0; i < target.prj.src_files.size() &&
+            else if (arg.type == sc::template_command::arg::e_type::features &&
+                     arg.value == FEATURE_FIELD_BS_CURRENT_IF) {
+                for (size_t i = 0; i < source_files.size() &&
                                    std::find(current_template.ifiles.begin(), current_template.ifiles.end(),
-                                             target.prj.src_files[i]) == current_template.ifiles.end();
+                                             source_files[i]) == current_template.ifiles.end();
                      ++i)
-                    current_template.ifiles.push_back(target.prj.src_files[i]);
+                    current_template.ifiles.push_back(source_files[i]);
 
                 current_template.single_generates = 1;
                 ++count_param_use_src_files;
             }
 
             if (count_param_use_src_files > 1)
-                throw std::runtime_error("A template cannot have more than one use-source-files parameter.");
+                _log << (log_message(log_type::fatal)
+                         << "A template cannot have more than one use-source-files parameter.");
         }
 
-        if (current_template.returnable == NAME_FIELD_PROJECT_SRC_FILES) {
+        if (current_template.returnable == "source_files") {
             for (size_t i = 0; i < current_template.ifiles.size(); ++i)
-                target.prj.src_files.push_back(generator_tools::get_name_output_file(
-                    _context.current_work_directory + "/" + call_component->pattern_ret_files,
-                    current_template.ifiles[i]));
+                source_files.push_back(generator_tools::get_name_output_file(_context->current_work_directory + "/" +
+                                                                                 call_component->pattern_ret_files,
+                                                                             current_template.ifiles[i]));
         }
         else if (current_template.returnable == target_type_str(target.type))
             current_template.returns_target = 1;
     }
 }
-generator_command::commands generator_command::generate(context *const _context) {
-    generator_api::commands cmd_s;
+commands command_generator::generate() {
+    commands cmd_s;
 
     static umap<string, vec<string>> returnable_target;
 
@@ -102,18 +103,18 @@ generator_command::commands generator_command::generate(context *const _context)
 
     size_t count_use_ifiles = 0;
 
-    const auto &target = *_context.current_target;
+    const auto &target = *_context->current_target;
     for (size_t j = 0; j < target.queue_templates.size();) {
         const auto &current_template = target.queue_templates[j];
         const auto &call_component =
-            std::find_if(_context.call_components.begin(), _context.call_components.end(),
+            std::find_if(_context->call_components.begin(), _context->call_components.end(),
                          [current_template](const sc::call_component &call_component) {
                              return call_component.name == current_template.name_call_component;
                          });
 
-        string pattern_output_file = _context.current_work_directory + "/" + call_component->pattern_ret_files;
+        string pattern_output_file = _context->current_work_directory + "/" + call_component->pattern_ret_files;
 
-        generator_api::command cmd;
+        command cmd;
         cmd.name = current_template.name + std::to_string(count_use_ifiles);
 
         string output_file = generator_tools::get_name_output_file(
@@ -135,13 +136,47 @@ generator_command::commands generator_command::generate(context *const _context)
         size_t real_count_use_ifiles = 0;
 
         for (auto &arg : current_template.args) {
-            if ((arg.arg_t == sc::template_command::arg::type::features &&
-                 arg.str_arg == FEATURE_FIELD_BS_CURRENT_IF) ||
-                arg.arg_t == sc::template_command::arg::type::trgfield) {
+            if (arg.type == sc::template_command::arg::e_type::string)
+                cmd.args.push_back(arg.value);
+            else if (arg.type == sc::template_command::arg::e_type::extglobal) {
+                const auto &extern_arg = std::find_if(
+                    _context->global_external_args.begin(), _context->global_external_args.end(),
+                    [&arg](const std::pair<string, string> extern_typemp) { return extern_typemp.first == arg.value; });
+                if (extern_arg == _context->global_external_args.end())
+                    _log << (log_message(log_type::fatal)
+                             << "The specified external parameter does not exist: " << arg.value);
+
+                cmd.args.push_back(extern_arg->second);
+            }
+            else if (arg.type == sc::template_command::arg::e_type::trgfield && arg.value.find("source_files") != 0) {
+                if (target.ext.contains(arg.value)) {
+                    if (target.ext.is_string(arg.value))
+                        cmd.args.push_back(target.fields<string>(arg.value));
+                    else {
+                        const auto &str_s = target.fields<vec<string>>(arg.value);
+
+                        for (size_t k = 0; k < str_s.size(); ++k)
+                            cmd.args.push_back(str_s[k]);
+                    }
+                }
+                else if (arg.value == NAME_FIELD_TARGET_NAME)
+                    cmd.args.push_back(target.name);
+                else if (arg.value == NAME_FIELD_TARGET_TYPE)
+                    cmd.args.push_back(sc::target_type_str(target.type));
+                else if (arg.value == NAME_FIELD_TARGET_CFG)
+                    cmd.args.push_back(sc::target_cfg_str(target.cfg));
+                else if (arg.value == NAME_FIELD_TARGET_VER)
+                    cmd.args.push_back(target.ver.get_str_version());
+                else
+                    _log << (log_message(log_type::fatal) << "There is no such parameter: " << arg.value);
+            }
+            else if ((arg.type == sc::template_command::arg::e_type::features &&
+                      arg.value == FEATURE_FIELD_BS_CURRENT_IF) ||
+                     arg.type == sc::template_command::arg::e_type::trgfield) {
                 if (current_template.single_generates) {
                     if (generator_tools::should_uses_src_file(
                             current_template.ifiles[count_use_ifiles], output_file,
-                            _context.dfiles[current_template.ifiles[count_use_ifiles]]) ||
+                            _context->dfiles[current_template.ifiles[count_use_ifiles]]) ||
                         current_template.returns_target) {
                         cmd.args.push_back(current_template.ifiles[count_use_ifiles++]);
                         ++real_count_use_ifiles;
@@ -155,14 +190,14 @@ generator_command::commands generator_command::generate(context *const _context)
                                 current_template.ifiles[count_use_ifiles],
                                 generator_tools::get_name_output_file(
                                     pattern_output_file, current_template.ifiles[count_use_ifiles], count_use_ifiles),
-                                _context.dfiles[current_template.ifiles[count_use_ifiles]]) ||
+                                _context->dfiles[current_template.ifiles[count_use_ifiles]]) ||
                             current_template.returns_target) {
                             cmd.args.push_back(current_template.ifiles[count_use_ifiles]);
                             ++real_count_use_ifiles;
                         }
             }
-            else if (arg.arg_t == sc::template_command::arg::type::features &&
-                     arg.str_arg == FEATURE_FIELD_BS_CURRENT_OF) {
+            else if (arg.type == sc::template_command::arg::e_type::features &&
+                     arg.value == FEATURE_FIELD_BS_CURRENT_OF) {
                 if (current_template.returns_target) {
                     returnable_target[target.name].push_back(output_file);
                     cmd.args.push_back(output_file);
@@ -185,16 +220,14 @@ generator_command::commands generator_command::generate(context *const _context)
                         }
                 }
             }
-            else if (arg.arg_t == sc::template_command::arg::type::internal) {
-                if (auto it = returnable_target.find(arg.str_arg); it != returnable_target.end())
+            else if (arg.type == sc::template_command::arg::e_type::internal) {
+                if (auto it = returnable_target.find(arg.value); it != returnable_target.end())
                     cmd.args.insert(cmd.args.end(), it->second.begin(), it->second.end());
-                else if (auto it = internal_args_stack_tmp.find(arg.str_arg); it != internal_args_stack_tmp.end())
+                else if (auto it = internal_args_stack_tmp.find(arg.value); it != internal_args_stack_tmp.end())
                     cmd.args.insert(cmd.args.end(), it->second.begin(), it->second.end());
 
-                add_depends_cmd(arg.str_arg);
+                add_depends_cmd(arg.value);
             }
-            else if (arg.arg_t == sc::template_command::arg::type::string)
-                cmd.args.push_back(arg.str_arg);
         }
 
         if (!real_count_use_ifiles && !current_template.returns_target)

@@ -16,14 +16,6 @@ using namespace sc;
 bweas::logger _log{"BWCOMMAND_TEMPLATE"};
 
 template_command template_command::create_template_command(string_v template_name, const string &template_str) {
-    static const array<string, 18> name_field_target = {
-        NAME_FIELD_TARGET_NAME,        NAME_FIELD_TARGET_TEMPLATES,  NAME_FIELD_TARGET_DEPENDENCIES,
-        NAME_FIELD_TARGET_TYPE,        NAME_FIELD_TARGET_CFG,        NAME_FIELD_TARGET_VER,
-        NAME_FIELD_PROJECT_LANG,       NAME_FIELD_PROJECT_PCOMPILER, NAME_FIELD_PROJECT_PLINKER,
-        NAME_FIELD_PROJECT_RFCOMPILER, NAME_FIELD_PROJECT_RFLINKER,  NAME_FIELD_PROJECT_DFCOMPILER,
-        NAME_FIELD_PROJECT_DFLINKER,   NAME_FIELD_PROJECT_STD_C,     NAME_FIELD_PROJECT_STD_CPP,
-        NAME_FIELD_PROJECT_SRC_FILES,  NAME_FIELD_PROJECT_LIBS,      NAME_FIELD_PROJECT_INCLUDE_PATHS};
-
     template_command tcmd_tmp;
     tcmd_tmp.name = template_name;
 
@@ -43,51 +35,41 @@ template_command template_command::create_template_command(string_v template_nam
              it_match != std::sregex_iterator(); ++it_match)
             tcmd_tmp.name_accept_params.push_back(it_match->str());
 
-        string str_args = args_match[4].str();
+        string values = args_match[4].str();
         std::regex args(R"(\s*(\w+|<\'[-+\.\/\*=\w]*\'>|<\{\w+\}>|<\w+>|<\[(?:\w+(?::[-+\.\/\*=\w+]+)?)\]>)(?=\s|$))");
-        for (auto it_match = std::sregex_iterator(str_args.begin(), str_args.end(), args);
+        for (auto it_match = std::sregex_iterator(values.begin(), values.end(), args);
              it_match != std::sregex_iterator(); ++it_match) {
             template_command::arg arg_tmp;
-            string str_arg = (*it_match)[1].str();
+            string value = (*it_match)[1].str();
 
-            if (str_arg[0] == '<') {
-                str_arg.erase(0, 1);
-                if (std::isalpha(str_arg[0])) {
-                    arg_tmp.arg_t = template_command::arg::type::extglobal;
-                    str_arg.erase(str_arg.size() - 1, 1);
+            if (value[0] == '<') {
+                value.erase(0, 1);
+                if (std::isalpha(value[0])) {
+                    arg_tmp.type = template_command::arg::e_type::extglobal;
+                    value.erase(value.size() - 1, 1);
                 }
                 else {
-                    if (str_arg[0] == '\'')
-                        arg_tmp.arg_t = template_command::arg::type::string;
-                    else if (str_arg[0] == '{')
-                        arg_tmp.arg_t = template_command::arg::type::internal;
-                    else if (str_arg[0] == '[')
-                        arg_tmp.arg_t = template_command::arg::type::trgfield;
+                    if (value[0] == '\'')
+                        arg_tmp.type = template_command::arg::e_type::string;
+                    else if (value[0] == '{')
+                        arg_tmp.type = template_command::arg::e_type::internal;
+                    else if (value[0] == '[')
+                        arg_tmp.type = template_command::arg::e_type::trgfield;
                     else
-                        throw std::runtime_error("Unexpected type of arg(" + str_arg + "): " + template_str);
+                        throw std::runtime_error("Unexpected type of arg(" + value + "): " + template_str);
 
-                    str_arg.erase(0, 1);
-                    str_arg.erase(str_arg.size() - 2, 2);
-                    if (arg_tmp.arg_t == template_command::arg::type::internal &&
-                        std::find(tcmd_tmp.name_accept_params.begin(), tcmd_tmp.name_accept_params.end(), str_arg) ==
+                    value.erase(0, 1);
+                    value.erase(value.size() - 2, 2);
+                    if (arg_tmp.type == template_command::arg::e_type::internal &&
+                        std::find(tcmd_tmp.name_accept_params.begin(), tcmd_tmp.name_accept_params.end(), value) ==
                             tcmd_tmp.name_accept_params.end())
-                        throw std::runtime_error("Template argument does not exist internally(" + str_arg +
+                        throw std::runtime_error("Template argument does not exist internally(" + value +
                                                  "): " + template_str);
-                    else if (arg_tmp.arg_t == template_command::arg::type::trgfield) {
-                        string target_field_arg = str_arg;
-                        if (target_field_arg.find(":") != target_field_arg.npos)
-                            target_field_arg.erase(target_field_arg.find(":"));
-
-                        if (std::find(name_field_target.begin(), name_field_target.end(), target_field_arg) ==
-                            name_field_target.end())
-                            throw std::runtime_error("Field does not exist in target structure(" + target_field_arg +
-                                                     "): " + template_str);
-                    }
                 }
             }
             else
-                arg_tmp.arg_t = template_command::arg::type::features;
-            arg_tmp.str_arg = str_arg;
+                arg_tmp.type = template_command::arg::e_type::features;
+            arg_tmp.value = value;
 
             tcmd_tmp.args.push_back(arg_tmp);
         }

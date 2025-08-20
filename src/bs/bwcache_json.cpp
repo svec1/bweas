@@ -9,6 +9,30 @@
 
 #include <nlohmann/json.hpp>
 
+namespace nlohmann {
+template <> struct adl_serializer<bweas::sc::profile::fields::mapped_type> {
+    static void to_json(json &j, const bweas::sc::profile::fields::mapped_type &value) {
+        std::visit([&](auto &&_value) { j = std::forward<decltype(_value)>(_value); }, value);
+    }
+    static void from_json(const json &j, bweas::sc::profile::fields::mapped_type &value) {
+        if (j.is_string())
+            value = static_cast<string>(j);
+        else if (j.is_array())
+            value = static_cast<vec<string>>(j);
+        else
+            assert("Invalid type for convert to std::variant");
+    }
+};
+template <> struct adl_serializer<bweas::sc::profile> {
+    static void to_json(json &j, const bweas::sc::profile &value) {
+        j = value.get_fields();
+    }
+    static void from_json(const json &j, bweas::sc::profile &value) {
+        value.get_fields() = j;
+    }
+};
+} // namespace nlohmann
+
 using namespace bweas;
 using namespace cache_api;
 
@@ -20,20 +44,17 @@ string json_cache::create_cache() {
     cache_data["config_file"] = _context->path_bweas_config;
 
     for (const auto &target : _context->targets)
-        cache_data["targets"][target.name] = {{"type", sc::target_type_str(target.type)},
-                                              {"configuration", sc::target_cfg_str(target.cfg)},
-                                              {"version", target.ver.get_str_version()},
-                                              {"generator", target.name_generator},
-                                              {"templates", target.templates},
-                                              {"dependencies", target.dependencies},
-                                              {"extension", (sc::profile::fields)target.ext}};
+        cache_data["targets"][target.name] = {
+            {"type", sc::target_type_str(target.type)}, {"configuration", sc::target_cfg_str(target.cfg)},
+            {"version", target.ver.get_str_version()},  {"templates", target.templates},
+            {"dependencies", target.dependencies},      {"extension", target.ext}};
 
     for (const auto &_template : _context->templates) {
         cache_data["templates"][_template.name] = {{"name_call_component", _template.name_call_component},
                                                    {"returnable", _template.returnable},
                                                    {"accept_params", _template.name_accept_params}};
         for (const auto &arg : _template.args)
-            cache_data["templates"][_template.name]["args"].push_back({{"type", arg.arg_t}, {"str", arg.str_arg}});
+            cache_data["templates"][_template.name]["args"].push_back({{"type", arg.type}, {"str", arg.value}});
     }
 
     for (const auto &call_component : _context->call_components)
@@ -68,13 +89,12 @@ void json_cache::extract_cache_data(const string &cache_str) {
             sc::target target_o_tmp;
             target_o_tmp.name = target.key();
 
-            const auto &fields          = target.value();
-            target_o_tmp.type           = sc::to_target_type(fields["type"]);
-            target_o_tmp.cfg            = sc::to_target_cfg(fields["configuration"]);
-            target_o_tmp.ver            = (string)fields["version"];
-            target_o_tmp.name_generator = fields["generator"];
-            target_o_tmp.templates      = fields["templates"];
-            target_o_tmp.dependencies   = fields["dependencies"];
+            const auto &fields        = target.value();
+            target_o_tmp.type         = sc::to_target_type(fields["type"]);
+            target_o_tmp.cfg          = sc::to_target_cfg(fields["configuration"]);
+            target_o_tmp.ver          = (string)fields["version"];
+            target_o_tmp.templates    = fields["templates"];
+            target_o_tmp.dependencies = fields["dependencies"];
 
             target_o_tmp.ext = fields["extension"];
 
@@ -91,7 +111,7 @@ void json_cache::extract_cache_data(const string &cache_str) {
             template_tmp.name_accept_params  = fields["accept_params"];
             for (const auto &arg : fields["args"])
                 template_tmp.args.push_back(
-                    sc::template_command::arg(arg["str"], (sc::template_command::arg::type)arg["type"]));
+                    sc::template_command::arg(arg["str"], (sc::template_command::arg::e_type)arg["type"]));
 
             _context->templates.push_back(template_tmp);
         }

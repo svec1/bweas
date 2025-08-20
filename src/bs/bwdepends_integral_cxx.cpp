@@ -5,19 +5,14 @@
 // ------------------------------------------
 //
 
-#include <bwdepends_integral.hpp>
+#include <bwdepends_api.hpp>
 #include <tools/bwfile.hpp>
 
 using namespace bweas;
 
 static logger _log{"BWDEPENDS_FINDER[INTEGRAL]"};
 
-uset<string> bweas::depends_integral::build_graph_depends_file(string_v name_file, const vec<string> &include_paths) {
-    return build_graph_depends_file_c_cpp(name_file, include_paths);
-}
-
-uset<string> bweas::depends_integral::build_graph_depends_file_c_cpp(string_v name_file,
-                                                                     const vec<string> &include_paths) {
+uset<string> bweas::depends_integral_cxx::build_graph_depends_file(string_v name_file) {
     if (name_file.find(".cpp") == name_file.npos)
         return {};
 
@@ -51,7 +46,7 @@ uset<string> bweas::depends_integral::build_graph_depends_file_c_cpp(string_v na
                 include_file = bwfile::get_path_file(include_file);
 
             graph_depends_file.insert(include_file);
-            graph_depends_file.merge(build_graph_depends_file_c_cpp(include_file, include_paths));
+            graph_depends_file.merge(build_graph_depends_file(include_file));
         }
 
         bwtools::close_file(file);

@@ -32,24 +32,23 @@ class bweas::package {
     struct config {
         struct cache_lua {
             cache_lua() = default;
-            cache_lua(string _name_cache, string src_lua_cache)
-                : name_cache(_name_cache), src_lua_cache(src_lua_cache) {
+            cache_lua(string _name, string src_lua) : name(_name), src_lua(src_lua) {
             }
             string name;
             string src_lua;
         };
         struct dependency_finder {
             dependency_finder() = default;
-            dependency_finder(string _name, string _src_lua) : name(_name), src_lua(_src_lua) {
+            dependency_finder(string _language, string _src_lua) : language(_language), src_lua(_src_lua) {
             }
 
-            string name;
+            string language;
             string src_lua;
         };
 
         cache_lua cache;
         vec<dependency_finder> finders;
-        module_manager::modules modules;
+        vec<module_manager::module_cfg> modules;
     };
 
     // Returns a packet compressed by the lz4 algorithm, with the signature of a bweas packet

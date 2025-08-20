@@ -8,7 +8,7 @@
 #ifndef BWLUATOOLS_HPP
 #define BWLUATOOLS_HPP
 
-#include <bwdepends_files.hpp>
+#include <bwdepends_api.hpp>
 
 #include <bwstructs_context.hpp>
 #include <tools/bwlua.hpp>

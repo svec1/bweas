@@ -56,6 +56,8 @@ YY_BUFFER_STATE buffer;
 
 [a-zA-Z_][a-zA-Z0-9_]+        { 
                                 yylval.string = strdup(yytext);
+                                if(!strcmp(yylval.string, "import"))
+                                    return IMPORT;
                                 return ID;
                               }
 

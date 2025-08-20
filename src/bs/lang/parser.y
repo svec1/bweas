@@ -64,6 +64,7 @@ string get_current_loc(){
 %token COMMA
 %token PLUS MINUS MUL DIV
 
+%token IMPORT
 %token NUMBER STRING ID
 %token VALUE_BY_ID
 
@@ -71,7 +72,7 @@ string get_current_loc(){
 %left MUL DIV 
 
 %type<number> NUMBER num_term num_expr 
-%type<string> STRING ID VALUE_BY_ID str_term str_expr param 
+%type<string> IMPORT STRING ID VALUE_BY_ID str_term str_expr param 
 
 %%
 
@@ -83,7 +84,14 @@ statement:
                                                     }
                                                     init_statement(&current_scope->get_var_value<decl_func>($2));  
                                                 }   
-         | error {
+        | IMPORT str_term                       {
+                                                    if(!current_scope->import_module($2)){
+                                                        (*log_bison) << (log_message(log_type::error) << "Package - " << $2 << " not found."); 
+                                                        YYERROR;
+                                                    }
+                                                    
+                                                } 
+        | error {
                     (*log_bison) << (log_message(log_type::fatal) << "[" << @1.last_line << ":" << @1.last_column << "]: syntax error: Invalid statement"); 
                     YYABORT;
                  }

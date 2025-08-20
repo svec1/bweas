@@ -16,7 +16,7 @@ using namespace bweas;
 lua_tools::table<string, any> lua_tools::conv_to_table(const sc::profile &ext) {
     lua_tools::table<string, any> _ext;
 
-    for (const auto &[key, value] : ext.get())
+    for (const auto &[key, value] : ext.get_fields())
         if (std::holds_alternative<string>(value))
             _ext[key] = std::get<string>(value);
         else
@@ -27,7 +27,7 @@ lua_tools::table<string, any> lua_tools::conv_to_table(const sc::profile &ext) {
 lua_tools::array<any> lua_tools::conv_to_table(const vec<sc::template_command::arg> &args) {
     lua_tools::array<any> vec_args;
     for (const auto &arg : args)
-        vec_args.emplace_back(lua_tools::array<any>{arg.str_arg, (bwlua::lua::integer)arg.arg_t});
+        vec_args.emplace_back(lua_tools::array<any>{arg.value, (bwlua::lua::integer)arg.type});
     return vec_args;
 }
 
@@ -64,9 +64,9 @@ lua_tools::table<string, lua_tools::array<string>> lua_tools::conv_to_table(
 
 sc::profile lua_tools::conv_to_extension(lua_tools::table<string, any> ext) {
     sc::profile _ext;
-    sc::profile::fields &ext_fields = _ext.get();
+    sc::profile::fields &ext_fields = _ext.get_fields();
 
-    for (const auto &[key, value] : ext.get())
+    for (const auto &[key, value] : ext)
         if (value.type() == typeid(std::string))
             ext_fields[key] = std::any_cast<string>(value);
         else
@@ -92,7 +92,7 @@ vec<sc::template_command::arg> lua_tools::conv_to_args(lua_tools::array<lua_tool
     vec<sc::template_command::arg> _args;
 
     for (const auto &arg : args)
-        _args.emplace_back(std::any_cast<string>(arg[0]), std::any_cast<sc::template_command::arg::type>(arg[1]));
+        _args.emplace_back(std::any_cast<string>(arg[0]), std::any_cast<sc::template_command::arg::e_type>(arg[1]));
 
     return _args;
 }

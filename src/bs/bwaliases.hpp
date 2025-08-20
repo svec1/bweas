@@ -10,6 +10,7 @@
 
 #include <any>
 #include <array>
+#include <cassert>
 #include <filesystem>
 #include <map>
 #include <optional>

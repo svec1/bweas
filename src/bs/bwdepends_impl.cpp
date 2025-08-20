@@ -5,7 +5,7 @@
 // ------------------------------------------
 //
 
-#include <bwdepends_files.hpp>
+#include <bwdepends_api.hpp>
 #include <bwlogger.hpp>
 
 using namespace bweas;

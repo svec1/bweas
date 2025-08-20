@@ -51,6 +51,12 @@ class scope {
     ~scope() = default;
 
   public:
+    struct module_data {
+        umap<string, decl_func> funcs;
+        umap<string, bweas::sc::profile> profiles;
+    };
+
+  public:
     template <typename T> inline T &create_var(string name_var, T val = T{}) &;
     template <typename T> inline bool try_create_var(string name_var, T val = T{}) &;
 
@@ -58,10 +64,12 @@ class scope {
 
     template <typename T> inline T &get_var_value(string name_var) &;
 
-    template <typename T> inline const container_vars<T>::container_type &get_container_vars() const &;
+    inline bool import_module(string name_module);
+
+    template <typename T> inline container_vars<T>::container_type &get_container_vars() &;
 
     inline bool is_exist(string name_var) const &;
-    inline bool is_struct(size_t ind) const &;
+    static inline bool is_struct(size_t ind);
 
     inline void clear() &;
 
@@ -79,6 +87,8 @@ class scope {
 
   private:
     bweas::logger &_log;
+
+    container_vars<module_data> modules;
 
     container_vars<decl_func> funcs_v;
 
@@ -253,8 +263,17 @@ template <typename T> inline T &scope::get_var_value(string name_var) & {
 
     std::unreachable();
 }
+inline bool scope::import_module(string name_module) {
+    if (modules.is_exist_var(name_module)) {
+        module_data &_module = modules.get_val_ref(name_module);
+        prf_v.get_container().merge(_module.profiles);
+        funcs_v.get_container().merge(_module.funcs);
+        return 1;
+    }
+    return 0;
+}
 
-template <typename T> inline const container_vars<T>::container_type &scope::get_container_vars() const & {
+template <typename T> inline container_vars<T>::container_type &scope::get_container_vars() & {
     using namespace bweas;
 
     if constexpr (std::is_same_v<T, pdiff>)
@@ -277,6 +296,8 @@ template <typename T> inline const container_vars<T>::container_type &scope::get
         return prf_v.get_container();
     else if constexpr (std::is_same_v<T, decl_func>)
         return funcs_v.get_container();
+    else if constexpr (std::is_same_v<T, module_data>)
+        return modules.get_container();
     else
         static_assert(false, "Unsuitable type.");
 
@@ -291,7 +312,7 @@ inline bool scope::is_exist(string name_var) const & {
         return 1;
     return 0;
 }
-inline bool scope::is_struct(size_t ind) const & {
+inline bool scope::is_struct(size_t ind) {
     if (ind >= 5 && ind <= 9)
         return 1;
     return 0;

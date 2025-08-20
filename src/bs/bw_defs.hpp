@@ -20,7 +20,7 @@
 #include <bwlogger.hpp>
 #include <lang/interpreter.hpp>
 
-#include <bwdepends_files.hpp>
+#include <bwdepends_api.hpp>
 
 namespace bweas {
 
@@ -40,8 +40,6 @@ inline constexpr auto FORMAT_PACKAGE = ".bweas-package";
 
 // The structure defining the main data for the build
 struct context {
-    vec<sc::profile> profiles;
-
     vec<sc::target> targets;
     vec<sc::template_command> templates;
     vec<sc::call_component> call_components;

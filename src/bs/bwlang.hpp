@@ -20,7 +20,7 @@ class lang;
 // the standard bweas functions and also provides interaction with the global scope
 class bweas::lang {
   public:
-    lang(context &__context);
+    lang(context *const __context);
 
     lang(lang &&)            = delete;
     lang(const lang &)       = delete;
@@ -45,7 +45,7 @@ class bweas::lang {
     }
 
     scope &get_global_scope() &;
-    template <typename T> const container_vars<T>::container_type &get_container_vars() const &;
+    template <typename T> container_vars<T>::container_type &get_container_vars() &;
 
     void init_context();
 
@@ -56,7 +56,7 @@ class bweas::lang {
     vec<pair<string, string>> get_global_external_args();
 
   private:
-    std::reference_wrapper<context> _context;
+    context *const _context;
     interpreter _interpreter;
 };
 bweas::lang::lang(context *const __context) : _context(__context), _interpreter(_context->path_bweas_config) {
@@ -90,27 +90,6 @@ void bweas::lang::init_scope() {
     _interpreter.create_function("exp_data", sl_func::exp_data, {param_type::LIT_STR});
     _interpreter.create_function("debug", sl_func::debug, {param_type::LIT_STR, param_type::NEXT_TOO});
     _interpreter.create_function("debug_struct", sl_func::debug_struct, {param_type::VAR_STRUCT_ID});
-
-    _interpreter.create_function(
-        "flags_compiler", sl_func::flags_compiler,
-        {param_type::VAR_STRUCT_ID, param_type::LIT_NUM, param_type::LIT_STR, param_type::NEXT_TOO});
-    _interpreter.create_function(
-        "flags_linker", sl_func::flags_linker,
-        {param_type::VAR_STRUCT_ID, param_type::LIT_NUM, param_type::LIT_STR, param_type::NEXT_TOO});
-
-    _interpreter.create_function("path_compiler", sl_func::path_compiler,
-                                 {param_type::VAR_STRUCT_ID, param_type::LIT_STR});
-    _interpreter.create_function("path_linker", sl_func::path_linker, {param_type::VAR_STRUCT_ID, param_type::LIT_STR});
-    _interpreter.create_function("standart_c", sl_func::standart_c, {param_type::VAR_STRUCT_ID, param_type::LIT_NUM});
-    _interpreter.create_function("standart_cpp", sl_func::standart_cpp,
-                                 {param_type::VAR_STRUCT_ID, param_type::LIT_NUM});
-
-    _interpreter.create_function("include_directories", sl_func::include_directories,
-                                 {param_type::VAR_STRUCT_ID, param_type::LIT_STR, param_type::NEXT_TOO});
-
-    _interpreter.create_function("lang", sl_func::lang, {param_type::VAR_STRUCT_ID, param_type::LIT_STR});
-
-    _interpreter.create_function("generator", sl_func::generator, {param_type::VAR_STRUCT_ID, param_type::LIT_STR});
 
     _interpreter.create_function("create_template", sl_func::create_template,
                                  {param_type::FUTURE_VAR_ID, param_type::LIT_STR});
@@ -184,7 +163,7 @@ vec<pair<string, string>> bweas::lang::get_global_external_args() {
 scope &bweas::lang::get_global_scope() & {
     return _interpreter.get_scope();
 }
-template <typename T> const container_vars<T>::container_type &bweas::lang::get_container_vars() const & {
+template <typename T> container_vars<T>::container_type &bweas::lang::get_container_vars() & {
     return _interpreter.get_scope().get_container_vars<T>();
 }
 

@@ -30,10 +30,12 @@ string fast_cache::create_cache() {
         if (!targets[i].templates.size())
             targets[i].templates.push_back("null");
 
-        serel_target_tmp += std::to_string(targets[i].ext.size()) + " " + std::to_string(targets[i].templates.size()) +
+        sc::profile::fields &ext_fields = targets[i].ext.get_fields();
+
+        serel_target_tmp += std::to_string(ext_fields.size()) + " " + std::to_string(targets[i].templates.size()) +
                             " " + std::to_string(targets[i].dependencies.size()) + " ";
 
-        for (const auto &[key, value] : targets[i].ext) {
+        for (const auto &[key, value] : ext_fields) {
             serel_target_tmp += key + " ";
             if (std::holds_alternative<string>(value))
                 serel_target_tmp += "\"" + std::get<string>(value) + "\" ";
@@ -46,8 +48,7 @@ string fast_cache::create_cache() {
         }
 
         serel_target_tmp += sc::target_type_str(targets[i].type) + " " + sc::target_cfg_str(targets[i].cfg) + " " +
-                            targets[i].name + " " + targets[i].name_generator + " " + targets[i].ver.get_str_version() +
-                            " ";
+                            targets[i].name + " " + targets[i].ver.get_str_version() + " ";
         for (size_t j = 0; j < targets[i].templates.size(); ++j) {
             used_templates.emplace(targets[i].templates[j]);
             serel_target_tmp += targets[i].templates[j] + " ";
@@ -68,11 +69,11 @@ string fast_cache::create_cache() {
         for (size_t j = 0; j < templates[i].name_accept_params.size(); ++j)
             serel_target_tmp += templates[i].name_accept_params[j] + " ";
         for (size_t j = 0; j < templates[i].args.size(); ++j) {
-            if (templates[i].args[j].arg_t == sc::template_command::arg::type::extglobal)
-                all_used_globally_args.emplace(templates[i].args[j].str_arg);
+            if (templates[i].args[j].type == sc::template_command::arg::e_type::extglobal)
+                all_used_globally_args.emplace(templates[i].args[j].value);
 
-            serel_target_tmp += "\"" + templates[i].args[j].str_arg + "\" ";
-            serel_target_tmp += std::to_string((pdiff)templates[i].args[j].arg_t) + " ";
+            serel_target_tmp += "\"" + templates[i].args[j].value + "\" ";
+            serel_target_tmp += std::to_string((pdiff)templates[i].args[j].type) + " ";
         }
     }
 
@@ -125,10 +126,10 @@ void fast_cache::extract_cache_data(const string &cache_str) {
     pdiff size_templates     = 0;
     pdiff size_internal_args = 0, size_external_args = 0, size_call_components = 0, size_global_extern_args = 0;
 
-    pdiff end_extension = count + words_before_first_list, end_templates = 0, end_dependencies = 0;
+    pdiff end_extension = count_words_before_first_list, end_templates = 0, end_dependencies = 0;
 
-    u32t count_el_field         = 0;
-    u32t count_words_to_end_ext = 0;
+    size_t count_el_field         = 0;
+    size_t count_words_to_end_ext = 0;
 
     char *ccmp_p = (char *)&ccmp_tmp;
 
@@ -202,11 +203,11 @@ void fast_cache::extract_cache_data(const string &cache_str) {
                               count_word < 6 + size_internal_args + (size_external_args * 2)) ||
                              count_word == 6 + size_internal_args) {
                         if (expected_arg_param_str) {
-                            arg_tmp.str_arg        = str_tmp;
+                            arg_tmp.value          = str_tmp;
                             expected_arg_param_str = 0;
                         }
                         else {
-                            arg_tmp.arg_t = (sc::template_command::arg::type)std::stoi(str_tmp);
+                            arg_tmp.type = (sc::template_command::arg::e_type)std::stoi(str_tmp);
                             tcmd_tmp.args.push_back(arg_tmp);
                             expected_arg_param_str = 1;
                         }
@@ -245,7 +246,7 @@ void fast_cache::extract_cache_data(const string &cache_str) {
                         if (size_ext_fields) {
                             ++end_extension;
 
-                            if (is_key_field = !is_key_field)
+                            if ((is_key_field = !is_key_field))
                                 str_tmp_key = str_tmp;
                             else {
                                 if (count_el_field) {
@@ -270,7 +271,7 @@ void fast_cache::extract_cache_data(const string &cache_str) {
                             }
                         }
                         else if (count_word == end_extension) {
-                            end_templates += end_extension + 5;
+                            end_templates += end_extension + 4;
                             end_dependencies += end_templates;
 
                             trg_tmp.type = sc::to_target_type(str_tmp);
@@ -280,8 +281,6 @@ void fast_cache::extract_cache_data(const string &cache_str) {
                         else if (count_word == end_extension + 2)
                             trg_tmp.name = str_tmp;
                         else if (count_word == end_extension + 3)
-                            trg_tmp.name_generator = str_tmp;
-                        else if (count_word == end_extension + 4)
                             trg_tmp.ver = str_tmp;
                         else if (count_word < end_templates) {
                             if (str_tmp != "null")
@@ -292,11 +291,8 @@ void fast_cache::extract_cache_data(const string &cache_str) {
                         else if (count_word == end_dependencies) {
                             _context->targets.push_back(trg_tmp);
 
-                            trg_tmp.templates         = {};
-                            trg_tmp.dependencies      = {};
-                            trg_tmp.prj.src_files     = {};
-                            trg_tmp.prj.libs          = {};
-                            trg_tmp.prj.include_paths = {};
+                            trg_tmp.templates    = {};
+                            trg_tmp.dependencies = {};
 
                             offset_byte_prj = 0;
                             count_word      = 0;

@@ -21,20 +21,21 @@ class bweas::module_manager {
     ~module_manager() = default;
 
   public:
-    struct module {
-        module(string _name_module, string _name_lua_source_file, vec<decl_func> _funcs) :name_module(_name_module),
-            name_lua_source_file(_name_lua_source_file), funcs(_funcs) {
+    struct module_cfg {
+        module_cfg(string _name, umap<string, sc::profile> _profiles, string _name_lua_source_file,
+                   umap<string, decl_func> _funcs)
+            : name(_name), profiles(_profiles), name_lua_source_file(_name_lua_source_file), funcs(_funcs) {
         }
-        string name_module;
+        string name;
         string name_lua_source_file;
-        vec<decl_func> funcs;
-    };
 
-    using modules = vec<module>;
+        umap<string, decl_func> funcs;
+        umap<string, sc::profile> profiles;
+    };
 
   public:
     // Initializes lua modules functions for subsequent calls
-    vec<decl_func> init_mfuncs(modules &mds);
+    umap<string, scope::module_data> init_modules(vec<module_cfg> &modules_cfg);
 };
 
 #endif

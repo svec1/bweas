@@ -15,20 +15,20 @@
 
 using namespace bweas;
 
-map<string, string> sc::project::preset_ext_fields;
-
 static const array<string, 18> vec_name_config_var = {
-    PRJ_VAR_NAME_DFLAGS_C,    PRJ_VAR_NAME_DFLAGS_L,  PRJ_VAR_NAME_RFLAGS_C, PRJ_VAR_NAME_RFLAGS_L,
-    PRJ_VAR_NAME_LANG,        PRJ_VAR_NAME_PTH_C,     PRJ_VAR_NAME_PTH_L,    PRJ_VAR_NAME_STD_C,
-    PRJ_VAR_NAME_STD_CPP,     PRJ_VAR_NAME_SRC_FILES, PRJ_VAR_NAME_LIBS,     PRJ_VAR_NAME_INCLUDE_PATHS,
-    TRG_VAR_NAME_VER,         TRG_VAR_NAME_CFG,       TRG_VAR_NAME_TYPE,     TRG_VAR_NAME_TEMPLATES,
-    TRG_VAR_NAME_DEPENDENCIES};
+    PRJ_VAR_NAME_DFLAGS_C,  PRJ_VAR_NAME_DFLAGS_L, PRJ_VAR_NAME_RFLAGS_C,      PRJ_VAR_NAME_RFLAGS_L,
+    PRJ_VAR_NAME_PTH_C,     PRJ_VAR_NAME_PTH_L,    PRJ_VAR_NAME_STD_C,         PRJ_VAR_NAME_STD_CPP,
+    PRJ_VAR_NAME_SRC_FILES, PRJ_VAR_NAME_LIBS,     PRJ_VAR_NAME_INCLUDE_PATHS, TRG_VAR_NAME_VER,
+    TRG_VAR_NAME_CFG,       TRG_VAR_NAME_TYPE,     TRG_VAR_NAME_TEMPLATES,     TRG_VAR_NAME_DEPENDENCIES};
+
+static vec<string> name_created_targets;
 
 static bweas::logger _log{""};
 
 // ??????
 static void update_target_cfg_struct(const string &name_var, scope &current_scope) {
-    if (current_scope.what_type(DECL_VAR_STRUCT) != 1 && !current_scope.get_var_value<pdiff>(DECL_VAR_STRUCT))
+    if (current_scope.what_type(DECL_VAR_STRUCT) != 1 || !current_scope.get_var_value<pdiff>(DECL_VAR_STRUCT) ||
+        name_var == DECL_VAR_STRUCT)
         return;
 
     size_t tmp_it = 0;
@@ -37,8 +37,8 @@ static void update_target_cfg_struct(const string &name_var, scope &current_scop
             if (name_var.size() - it.size() != tmp_it)
                 return;
 
-            tmp_str_postfix = name_var;
-            tmp_str_prefix  = name_var;
+            string tmp_str_postfix = name_var;
+            string tmp_str_prefix  = name_var;
             tmp_str_postfix.erase(0, tmp_it);
             tmp_str_prefix.erase(tmp_it, tmp_str_prefix.size());
 
@@ -54,26 +54,33 @@ static void update_target_cfg_struct(const string &name_var, scope &current_scop
             else if (tmp_str_postfix == TRG_VAR_NAME_VER && current_scope.what_type(name_var) == 2)
                 trg.ver = sc::version(current_scope.get_var_value<string>(name_var));
             else if (tmp_str_postfix == TRG_VAR_NAME_TYPE && current_scope.what_type(name_var) == 1)
-                trg.type = (sc::target::type)current_scope.get_var_value<pdiff>(name_var);
+                trg.type = (sc::target::e_type)current_scope.get_var_value<pdiff>(name_var);
             else if (tmp_str_postfix == TRG_VAR_NAME_CFG && current_scope.what_type(name_var) == 1)
-                trg.cfg = (sc::target::configuration)current_scope.get_var_value<pdiff>(name_var);
-            else if (tmp_str_postfix == TRG_VAR_NAME_TYPE && current_scope.what_type(name_var) == 1)
-                trg.type = (sc::target_type)current_scope.get_var_value<pdiff>(name_var);
-            else if (tmp_str_postfix == TRG_VAR_NAME_GENERATOR && current_scope.what_type(name_var) == 2)
-                trg.name_generator = current_scope.get_var_value<string>(name_var);
+                trg.cfg = (sc::target::e_cfg)current_scope.get_var_value<pdiff>(name_var);
 
             return;
         }
         else {
-            string tmp_str_postfix = name_var;
-            string tmp_str_prefix  = name_var;
-            tmp_str_postfix.erase(0, name_var.find("_"));
-            tmp_str_prefix.erase(name_var.find("_"), name_var.size());
+            auto suitable_longest = [&](const string &str1, const string &str2) {
+                if ((!name_var.find(str1) && !name_var.find(str2)) || (name_var.find(str1) && name_var.find(str2)))
+                    return str1.size() < str2.size();
+                return !name_var.find(str1) && name_var.find(str2) ? false : true;
+            };
 
-            if (current_scope.what_type(tmp_str_prefix) != 5)
+            string target;
+            if (auto it = std::max_element(name_created_targets.begin(), name_created_targets.end(), suitable_longest);
+                it != name_created_targets.end())
+                target = *it;
+            else
                 return;
 
-            sc::profile::fields &ext_fields = current_scope.get_var_value<sc::target>(tmp_str_prefix).ext.get();
+            string tmp_str_postfix = name_var;
+            tmp_str_postfix.erase(0, target.size() + 1);
+
+            if (current_scope.what_type(target) != 5)
+                return;
+
+            sc::profile::fields &ext_fields = current_scope.get_var_value<sc::target>(target).ext.get_fields();
 
             for (auto &[key, value] : ext_fields)
                 if (std::holds_alternative<string>(value)) {
@@ -198,28 +205,28 @@ void sl_func::create_target(const expressions &expr_s, scope &current_scope) {
 
     trg_ref.name = expr_s[0].value;
     trg_ref.ext  = current_scope.get_var_value<sc::profile>(expr_s[1].value);
-    trg_ref.cfg  = std::stoi(expr_s[2].value);
+    trg_ref.cfg  = sc::to_target_cfg(expr_s[2].value);
+    trg_ref.type = sc::to_target_type(trg_ref.fields<string>("target_type"));
+
+    trg_ref.ext.set_fields((size_t)trg_ref.cfg);
 
     for (size_t i = 3; i < expr_s.size(); ++i)
-        trg_ref.prj.src_files.push_back(expr_s[i].value);
+        trg_ref.fields<vec<string>>("source_files").push_back(expr_s[i].value);
 
     // ??????? - I don't know if this helper function is needed
     if (current_scope.what_type(DECL_VAR_STRUCT) == 1 && current_scope.get_var_value<pdiff>(DECL_VAR_STRUCT) > 0) {
         if (!current_scope.try_create_var<string>(trg_ref.name + TRG_VAR_NAME_VER, trg_ref.ver.get_str_version()))
             trg_ref.ver = sc::version(current_scope.get_var_value<string>(trg_ref.name + TRG_VAR_NAME_VER));
         if (!current_scope.try_create_var<pdiff>(trg_ref.name + TRG_VAR_NAME_CFG, (pdiff)trg_ref.cfg))
-            trg_ref.cfg = (sc::target_cfg)current_scope.get_var_value<pdiff>(trg_ref.name + TRG_VAR_NAME_CFG);
-        if (!current_scope.try_create_var<string>(trg_ref.name + TRG_VAR_NAME_GENERATOR, trg_ref.name_generator))
-            trg_ref.name_generator = current_scope.get_var_value<string>(trg_ref.name + TRG_VAR_NAME_GENERATOR);
+            trg_ref.cfg = (sc::target::e_cfg)current_scope.get_var_value<pdiff>(trg_ref.name + TRG_VAR_NAME_CFG);
         if (!current_scope.try_create_var<vec<string>>(trg_ref.name + TRG_VAR_NAME_TEMPLATES, trg_ref.templates))
             trg_ref.templates = current_scope.get_var_value<vec<string>>(trg_ref.name + TRG_VAR_NAME_TEMPLATES);
         if (!current_scope.try_create_var<vec<string>>(trg_ref.name + TRG_VAR_NAME_DEPENDENCIES, trg_ref.dependencies))
             trg_ref.dependencies = current_scope.get_var_value<vec<string>>(trg_ref.name + TRG_VAR_NAME_DEPENDENCIES);
+        if (!current_scope.try_create_var<pdiff>(trg_ref.name + TRG_VAR_NAME_TYPE, (pdiff)trg_ref.type))
+            trg_ref.type = (sc::target::e_type)current_scope.get_var_value<pdiff>(trg_ref.name + TRG_VAR_NAME_TYPE);
 
-        sc::profile::fields &ext_fields = trg_ref.ext.get<trg_ref.cfg>();
-
-        if (!current_scope.try_create_var<pdiff>(trg_ref.name + "_" + TRG_VAR_NAME_TYPE, std::get<pdiff>(value)))
-            trg_ref.ext.type = current_scope.get_var_value<pdiff>(trg_ref.name + "_" + TRG_VAR_NAME_TYPE);
+        sc::profile::fields &ext_fields = trg_ref.ext.get_fields();
 
         for (auto &[key, value] : ext_fields)
             if (std::holds_alternative<string>(value)) {
@@ -229,6 +236,8 @@ void sl_func::create_target(const expressions &expr_s, scope &current_scope) {
             else if (!current_scope.try_create_var<vec<string>>(trg_ref.name + "_" + key, std::get<vec<string>>(value)))
                 value = current_scope.get_var_value<vec<string>>(trg_ref.name + "_" + key);
     }
+
+    name_created_targets.push_back(trg_ref.name);
 }
 
 void sl_func::add_dependencies_target(const expressions &expr_s, scope &current_scope) {
@@ -268,209 +277,23 @@ void sl_func::debug_struct(const expressions &expr_s, scope &current_scope) {
         _log << (log_message(log_type::fatal) << "Expected var target: " << expr_s[0].value);
 
     string str_out;
-    sc::target &trg_ref  = current_scope.get_var_value<sc::target>(expr_s[0].value);
-    sc::project &prj_ref = trg_ref.prj;
+    sc::target &trg_ref             = current_scope.get_var_value<sc::target>(expr_s[0].value);
+    sc::profile::fields &ext_fields = trg_ref.ext.get_fields();
 
     str_out = "Name Target: " + trg_ref.name + "\nVersion: " + trg_ref.ver.get_str_version() +
-              "\nType Build: " + target_type_str(trg_ref.type) + "\nConfiguration: " + target_cfg_str(trg_ref.cfg) +
-              "\nDependencies: \n";
-    for (size_t i = 0; i < trg_ref.dependencies.size(); ++i) {
-        str_out += trg_ref.dependencies[i];
-        if (i != trg_ref.dependencies.size() - 1)
-            str_out += ", ";
-    }
+              "\nType Build: " + target_type_str(trg_ref.type) + "\nConfiguration: " + target_cfg_str(trg_ref.cfg);
 
-    str_out += "\nTemplates: \n";
-    for (size_t i = 0; i < trg_ref.templates.size(); ++i) {
-        str_out += trg_ref.templates[i];
-        if (i != trg_ref.templates.size() - 1)
-            str_out += ", ";
-    }
+    str_out += "\nDependencies: \n" + std::format("{}", trg_ref.dependencies);
+    str_out += "\nTemplates: \n" + std::format("{}", trg_ref.templates);
 
-    str_out += "\nLang: " + prj_ref.language + "\nCompiler: " + prj_ref.path_compiler +
-               "\nLinker: " + prj_ref.path_linker + "\nDebug Flags Compiler: " + prj_ref.dflags_compiler +
-               "\nRelease Flags Compiler: " + prj_ref.rflags_compiler +
-               "\nDebug Flags Linker: " + prj_ref.dflags_linker + "\nRelease Flags Compiler: " + prj_ref.rflags_linker +
-               "\nStandart C: " + std::to_string(prj_ref.standart_c) +
-               "\nStandart C++: " + std::to_string(prj_ref.standart_cpp) + "\n------\nSRC_FILES: \n";
-    for (size_t i = 0; i < prj_ref.src_files.size(); ++i) {
-        str_out += prj_ref.src_files[i];
-        if (i != prj_ref.src_files.size() - 1)
-            str_out += ", ";
-    }
-    str_out += "\n\nInclude paths: \n";
-    for (size_t i = 0; i < prj_ref.include_paths.size(); ++i) {
-        str_out += prj_ref.include_paths[i];
-        if (i != prj_ref.include_paths.size() - 1)
-            str_out += ", ";
-    }
+    str_out += "\n\nExtension fields: \n";
+    for (const auto &[key, value] : ext_fields)
+        if (std::holds_alternative<string>(value))
+            str_out += std::format("{}: {}\n", key, std::get<string>(value));
+        else
+            str_out += std::format("{}: {}\n", key, std::get<vec<string>>(value));
+
     _log << (log_message(log_type::msg) << str_out);
-}
-
-void sl_func::flags_compiler(const expressions &expr_s, scope &current_scope) {
-    if (current_scope.what_type(expr_s[0].value) != 5)
-        _log << (log_message(log_type::fatal) << "Expected var target: " << expr_s[0].value);
-
-    sc::target &trg_ref  = current_scope.get_var_value<sc::target>(expr_s[0].value);
-    sc::project &prj_ref = trg_ref.prj;
-    sc::target_cfg tmp_cfg;
-
-    if ((tmp_cfg = (sc::target_cfg)std::stoi(expr_s[1].value)) == sc::target_cfg::RELEASE)
-        for (size_t i = 2; i < expr_s.size(); ++i) {
-            prj_ref.rflags_compiler += expr_s[i].value + " ";
-        }
-    else
-        for (size_t i = 2; i < expr_s.size(); ++i) {
-            prj_ref.dflags_compiler += expr_s[i].value + " ";
-        }
-
-    if (current_scope.what_type(DECL_VAR_STRUCT) == 1 && current_scope.get_var_value<pdiff>(DECL_VAR_STRUCT) > 0) {
-        if (tmp_cfg == sc::target_cfg::DEBUG) {
-            if (current_scope.what_type(trg_ref.name + PRJ_VAR_NAME_DFLAGS_C) == 2) {
-                current_scope.get_var_value<string>(trg_ref.name + PRJ_VAR_NAME_DFLAGS_C) = prj_ref.dflags_compiler;
-            }
-            else
-                current_scope.create_var<string>(trg_ref.name + PRJ_VAR_NAME_DFLAGS_C, prj_ref.dflags_compiler);
-        }
-        else if (tmp_cfg == sc::target_cfg::RELEASE) {
-            if (current_scope.what_type(trg_ref.name + PRJ_VAR_NAME_RFLAGS_C) == 2) {
-                current_scope.get_var_value<string>(trg_ref.name + PRJ_VAR_NAME_RFLAGS_C) = prj_ref.rflags_compiler;
-            }
-            else
-                current_scope.create_var<string>(trg_ref.name + PRJ_VAR_NAME_RFLAGS_C, prj_ref.rflags_compiler);
-        }
-    }
-}
-void sl_func::flags_linker(const expressions &expr_s, scope &current_scope) {
-    if (current_scope.what_type(expr_s[0].value) != 5)
-        _log << (log_message(log_type::fatal) << "Expected var target: " << expr_s[0].value);
-
-    sc::target &trg_ref  = current_scope.get_var_value<sc::target>(expr_s[0].value);
-    sc::project &prj_ref = trg_ref.prj;
-    sc::target_cfg tmp_cfg;
-
-    if ((tmp_cfg = (sc::target_cfg)std::stoi(expr_s[1].value)) == sc::target_cfg::RELEASE)
-        for (size_t i = 2; i < expr_s.size(); ++i) {
-            prj_ref.rflags_linker += expr_s[i].value + " ";
-        }
-    else
-        for (size_t i = 2; i < expr_s.size(); ++i) {
-            prj_ref.dflags_linker += expr_s[i].value + " ";
-        }
-
-    if (current_scope.what_type(DECL_VAR_STRUCT) == 1 && current_scope.get_var_value<pdiff>(DECL_VAR_STRUCT) > 0) {
-        if (tmp_cfg == sc::target_cfg::DEBUG) {
-            if (current_scope.what_type(trg_ref.name + PRJ_VAR_NAME_DFLAGS_L) == 2)
-                current_scope.get_var_value<string>(trg_ref.name + PRJ_VAR_NAME_DFLAGS_L) = prj_ref.dflags_linker;
-            else
-                current_scope.create_var<string>(trg_ref.name + PRJ_VAR_NAME_DFLAGS_L, prj_ref.dflags_linker);
-        }
-        else if (tmp_cfg == sc::target_cfg::RELEASE) {
-            if (current_scope.what_type(trg_ref.name + PRJ_VAR_NAME_RFLAGS_L) == 2)
-                current_scope.get_var_value<string>(trg_ref.name + PRJ_VAR_NAME_RFLAGS_L) = prj_ref.rflags_linker;
-            else
-                current_scope.create_var<string>(trg_ref.name + PRJ_VAR_NAME_RFLAGS_L, prj_ref.dflags_linker);
-        }
-    }
-}
-void sl_func::path_compiler(const expressions &expr_s, scope &current_scope) {
-    if (current_scope.what_type(expr_s[0].value) != 5)
-        _log << (log_message(log_type::fatal) << "Expected var target: " << expr_s[0].value);
-
-    sc::target &trg_ref   = current_scope.get_var_value<sc::target>(expr_s[0].value);
-    sc::project &prj_ref  = trg_ref.prj;
-    prj_ref.path_compiler = expr_s[1].value;
-
-    if (current_scope.what_type(DECL_VAR_STRUCT) == 1 && current_scope.get_var_value<pdiff>(DECL_VAR_STRUCT) > 0) {
-        if (current_scope.what_type(trg_ref.name + PRJ_VAR_NAME_PTH_C) == 2)
-            current_scope.get_var_value<string>(trg_ref.name + PRJ_VAR_NAME_PTH_C) = prj_ref.path_compiler;
-        else
-            current_scope.create_var<string>(trg_ref.name + PRJ_VAR_NAME_PTH_C, prj_ref.path_compiler);
-    }
-}
-void sl_func::path_linker(const expressions &expr_s, scope &current_scope) {
-    if (current_scope.what_type(expr_s[0].value) != 5)
-        _log << (log_message(log_type::fatal) << "Expected var target: " << expr_s[0].value);
-
-    sc::target &trg_ref  = current_scope.get_var_value<sc::target>(expr_s[0].value);
-    sc::project &prj_ref = trg_ref.prj;
-    prj_ref.path_linker  = expr_s[1].value;
-
-    if (current_scope.what_type(DECL_VAR_STRUCT) == 1 && current_scope.get_var_value<pdiff>(DECL_VAR_STRUCT) > 0) {
-        if (current_scope.what_type(trg_ref.name + PRJ_VAR_NAME_PTH_C) == 2)
-            current_scope.get_var_value<string>(trg_ref.name + PRJ_VAR_NAME_PTH_C) = prj_ref.path_linker;
-        else
-            current_scope.create_var<string>(trg_ref.name + PRJ_VAR_NAME_PTH_C, prj_ref.path_linker);
-    }
-}
-void sl_func::standart_c(const expressions &expr_s, scope &current_scope) {
-    if (current_scope.what_type(expr_s[0].value) != 5)
-        _log << (log_message(log_type::fatal) << "Expected var target: " << expr_s[0].value);
-
-    sc::target &trg_ref  = current_scope.get_var_value<sc::target>(expr_s[0].value);
-    sc::project &prj_ref = trg_ref.prj;
-    prj_ref.standart_c   = std::stoi(expr_s[1].value);
-
-    if (current_scope.what_type(DECL_VAR_STRUCT) == 1 && current_scope.get_var_value<pdiff>(DECL_VAR_STRUCT) > 0) {
-        if (current_scope.what_type(trg_ref.name + PRJ_VAR_NAME_STD_C) == 1)
-            current_scope.get_var_value<pdiff>(trg_ref.name + PRJ_VAR_NAME_STD_C) = prj_ref.standart_c;
-        else
-            current_scope.create_var<pdiff>(trg_ref.name + PRJ_VAR_NAME_STD_C, prj_ref.standart_c);
-    }
-}
-void sl_func::standart_cpp(const expressions &expr_s, scope &current_scope) {
-    if (current_scope.what_type(expr_s[0].value) != 5)
-        _log << (log_message(log_type::fatal) << "Expected var target: " << expr_s[0].value);
-
-    sc::target &trg_ref  = current_scope.get_var_value<sc::target>(expr_s[0].value);
-    sc::project &prj_ref = trg_ref.prj;
-    prj_ref.standart_cpp = std::stoi(expr_s[1].value);
-
-    if (current_scope.what_type(DECL_VAR_STRUCT) == 1 && current_scope.get_var_value<pdiff>(DECL_VAR_STRUCT) > 0) {
-        if (current_scope.what_type(trg_ref.name + PRJ_VAR_NAME_STD_CPP) == 1)
-            current_scope.get_var_value<pdiff>(trg_ref.name + PRJ_VAR_NAME_STD_CPP) = prj_ref.standart_c;
-        else
-            current_scope.create_var<pdiff>(trg_ref.name + PRJ_VAR_NAME_STD_CPP, prj_ref.standart_c);
-    }
-}
-void sl_func::include_directories(const expressions &expr_s, scope &current_scope) {
-    if (current_scope.what_type(expr_s[0].value) != 5)
-        _log << (log_message(log_type::fatal) << "Expected var target: " << expr_s[0].value);
-
-    sc::target &trg_ref  = current_scope.get_var_value<sc::target>(expr_s[0].value);
-    sc::project &prj_ref = trg_ref.prj;
-    for (size_t i = 1; i < expr_s.size(); ++i)
-        prj_ref.include_paths.push_back(fs::absolute(expr_s[i].value).c_str());
-
-    if (current_scope.what_type(DECL_VAR_STRUCT) == 1 && current_scope.get_var_value<pdiff>(DECL_VAR_STRUCT) > 0) {
-        if (current_scope.what_type(trg_ref.name + PRJ_VAR_NAME_INCLUDE_PATHS) == 4)
-            current_scope.get_var_value<vec<string>>(trg_ref.name + PRJ_VAR_NAME_INCLUDE_PATHS) = prj_ref.include_paths;
-        else
-            current_scope.create_var<vec<string>>(trg_ref.name + PRJ_VAR_NAME_INCLUDE_PATHS, prj_ref.include_paths);
-    }
-}
-void sl_func::lang(const expressions &expr_s, scope &current_scope) {
-    if (current_scope.what_type(expr_s[0].value) != 5)
-        _log << (log_message(log_type::fatal) << "Expected var target: " << expr_s[0].value);
-
-    sc::target &trg_ref  = current_scope.get_var_value<sc::target>(expr_s[0].value);
-    sc::project &prj_ref = trg_ref.prj;
-    prj_ref.language     = expr_s[1].value;
-
-    if (current_scope.what_type(DECL_VAR_STRUCT) == 1 && current_scope.get_var_value<pdiff>(DECL_VAR_STRUCT) > 0) {
-        if (current_scope.what_type(trg_ref.name + PRJ_VAR_NAME_LANG) == 1)
-            current_scope.get_var_value<string>(trg_ref.name + PRJ_VAR_NAME_LANG) = prj_ref.language;
-        else
-            current_scope.create_var<string>(trg_ref.name + PRJ_VAR_NAME_LANG, prj_ref.language);
-    }
-}
-
-void sl_func::generator(const expressions &expr_s, scope &current_scope) {
-    if (current_scope.what_type(expr_s[0].value) != 5)
-        _log << (log_message(log_type::fatal) << "Expected var target: " << expr_s[0].value);
-
-    sc::target &trg_ref    = current_scope.get_var_value<sc::target>(expr_s[0].value);
-    trg_ref.name_generator = expr_s[1].value;
 }
 
 void sl_func::add_param_template(const expressions &expr_s, scope &current_scope) {

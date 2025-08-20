@@ -13,10 +13,7 @@
 #include <unordered_set>
 
 #include <bwbuild_sys.hpp>
-#include <bwdepends_files.hpp>
-#include <bwdepends_generator.hpp>
-#include <bwdepends_integral.hpp>
-#include <bwgenerator_integral.hpp>
+#include <bwgenerator_command.hpp>
 #include <bwlang.hpp>
 #include <bwprocesses_handler.hpp>
 #include <bwstructs_context.hpp>
@@ -146,8 +143,8 @@ void builder::create_package(string path_json_config_package) {
         _log << (log_message(log_type::error) << "Failed to create a bweas package");
         return;
     }
-    file_it package = bwtools::open_file(
-        fs::current_path().string() + "/" + loaded_package.name_package + FORMAT_PACKAGE, mf::open::wb);
+    file_it package =
+        bwtools::open_file(fs::current_path().string() + "/" + loaded_package.name + FORMAT_PACKAGE, mf::open::wb);
     bwtools::write_file(bwtools::get_ref_file(package), pckg, mf::output::write_binary);
     bwtools::close_file(package);
 }
@@ -186,61 +183,48 @@ void builder::init() {
     else
         cache = std::unique_ptr<cache_api::base_cache>(cache_api::base_cache::create_fast_cache());
 
-    if (config_json.contains("packages")) {
-        if (!config_json["packages"].is_array()) {
-            _log << (log_message(log_type::error)
-                     << "Invalid json file structure. At least one package must be defined");
-            return;
+    vec<package> loaded_packages;
+    package loaded_package;
+
+    string path_to_packages{bwtools::get_path_program() + "packages/"};
+    for (const auto &fs_object : fs::directory_iterator(path_to_packages)) {
+        if (!fs::is_regular_file(fs_object))
+            continue;
+
+        file_it it_package = bwtools::open_file(fs_object.path().string(), mf::open::rb);
+        if (!bwtools::exist_file(it_package)) {
+            _log << (log_message(log_type::warning)
+                     << "\"" << fs_object.path().string() << "\" bweas package not found");
+            continue;
         }
-        for (const auto &package : config_json["packages"].items()) {
-            if (!package.value().is_string())
-                _log << (log_message(log_type::error) << "Invalid json file structure. Package names are expected");
+        string raw_data_package = bwtools::read_file(bwtools::get_ref_file(it_package), mf::input::read_binary);
 
-            bweas::package loaded_package;
-            string raw_data_package,
-                path_to_package{bwtools::get_path_program() + "/packages/" + (string)package.value() + FORMAT_PACKAGE};
+        loaded_package.load(raw_data_package);
+        loaded_packages.push_back(loaded_package);
 
-            file_it it_package = bwtools::open_file(path_to_package, mf::open::rb);
-            if (!bwtools::exist_file(it_package)) {
-                _log << (log_message(log_type::warning) << "\"" << path_to_package << "\" bweas package not found");
-                continue;
-            }
+        if (cache == NULL && loaded_package.cfg.cache.name == config_json["cache-gn"].template get<std::string>())
+            cache = std::unique_ptr<cache_api::base_cache>(
+                cache_api::base_cache::create_lua_cache(loaded_package.cfg.cache.src_lua));
 
-            raw_data_package = bwtools::read_file(bwtools::get_ref_file(it_package), mf::input::read_binary);
-            bwtools::close_file(it_package);
+        bwtools::close_file(it_package);
 
-            loaded_package.load(raw_data_package);
-            loaded_packages.push_back(loaded_package);
-
-            if (cache == NULL &&
-                loaded_package.cfg_package.cache.name_cache == config_json["cache-gn"].template get<std::string>())
-                cache = std::unique_ptr<cache_api::base_cache>(
-                    cache_api::base_cache::create_lua_cache(loaded_package.cfg_package.cache.src_lua_cache));
-            _log << (log_message(log_type::success)
-                     << "\"" << path_to_package << "\" bweas package was loaded successfully("
-                     << raw_data_package.size() << " bytes)");
-        }
+        _log << (log_message(log_type::success)
+                 << "\"" << fs_object.path().string() << "\" bweas package was loaded successfully("
+                 << raw_data_package.size() << " bytes)");
     }
 
     cache->init(&_context);
 
-    generators.emplace(
-        "bwgenerator",
-        std::shared_ptr<generator_api::base_generator>(generator_api::base_generator::create_generator_int(
-            nullptr, integral_generator::get_input_files, integral_generator::generate)));
+    dependency_finders.emplace("CXX", std::shared_ptr<depends_files>(depends_files::create_depends_integral_cxx()));
 
-    for (const auto &package : loaded_packages)
-        for (const auto &generator : package.cfg_package.generators) {
-            generators.emplace(generator.name_generator,
-                               std::shared_ptr<generator_api::base_generator>(
-                                   generator_api::base_generator::create_generator_lua(generator.src_lua_generator)));
-            if (generator.use_custom_build_graph_depends)
-                generators[generator.name_generator]->use_build_graph_depends = 1;
-        }
     for (auto &package : loaded_packages) {
-        auto module_funcs = module_m.init_mfuncs(package.cfg_package.modules);
-        for (const auto &module_func : module_funcs)
-            external_modules_funcs.push_back(module_func);
+        for (const auto &finder : package.cfg.finders) {
+            dependency_finders.emplace(
+                finder.language, std::shared_ptr<depends_files>(depends_files::create_depends_lua(finder.src_lua)));
+        }
+
+        auto package_modules = module_m.init_modules(package.cfg.modules);
+        modules.merge(std::move(package_modules));
     }
 }
 
@@ -299,9 +283,8 @@ void builder::run_interpreter() {
     _log << (log_message(log_type::msg) << "Interpreting the configuration file...");
 
     lang bwlang{&_context};
-    bwlang.init_external_funcs(external_modules_funcs);
-    for (const auto &loaded_package : loaded_packages)
-        bwlang.set_custom_ext_fields_project(loaded_package.cfg_package.custom_ext_fields_project);
+
+    bwlang.get_container_vars<scope::module_data>() = std::move(modules);
 
     bwlang.execute();
 
@@ -324,22 +307,23 @@ size_t builder::gen_cache_target() {
     return 0;
 }
 
-depends_files::depends_map &builder::load_depends_file(std::unique_ptr<depends_files> &dfiles_sys,
-                                                       const sc::target target) {
-    dfiles_sys->set_include_paths(target.prj.include_paths);
+depends_files::depends_map &builder::load_depends_file(std::shared_ptr<depends_files> &dfinder,
+                                                       const vec<string> &include_paths,
+                                                       const vec<string> &source_files) {
+    dfinder->set_include_paths(include_paths);
     string depends_str;
 
     if (bwtools::exist_file(DEPENDS_FILE)) {
         depends_str = bwtools::read_file(bwtools::get_ref_file(bwtools::open_file(DEPENDS_FILE)));
 
         size_t it;
-        for (const auto &name_file : target.prj.src_files) {
+        for (const auto &name_file : source_files) {
             if ((it = depends_str.find(name_file + ":")) != depends_str.npos) {
                 string depends_file_str = depends_str.erase(0, it + name_file.size() + 2);
 
                 if ((it = depends_file_str.find(":")) != depends_file_str.npos)
                     depends_file_str.erase(it, depends_file_str.size());
-                dfiles_sys->build_graph_depends_file_string(name_file, depends_file_str);
+                dfinder->build_graph_depends_file_string(name_file, depends_file_str);
             }
             else
                 goto find_depends_file;
@@ -347,14 +331,14 @@ depends_files::depends_map &builder::load_depends_file(std::unique_ptr<depends_f
     }
     else {
     find_depends_file:
-        for (const auto &name_file : target.prj.src_files) {
-            dfiles_sys->build_graphs_depends_file_v(name_file);
-            depends_str += name_file + ":\n" + dfiles_sys->get_string_depends_file(name_file);
+        for (const auto &name_file : source_files) {
+            dfinder->build_graphs_depends_file_v(name_file);
+            depends_str += name_file + ":\n" + dfinder->get_string_depends_file(name_file);
         }
         bwtools::write_file(bwtools::get_ref_file(bwtools::open_file(DEPENDS_FILE, mf::open::w)), depends_str);
     }
 
-    return dfiles_sys->get_graphs_depends_files();
+    return dfinder->get_graphs_depends_files();
 }
 
 void builder::build_targets() {
@@ -371,13 +355,7 @@ void builder::build_targets() {
                 it != _context.targets.end() && !it->built_success)
                 _log << (log_message(log_type::fatal) << target.name << " target expects a dependency: " << dependence);
 
-        if (generators.find(target.name_generator) == generators.end()) {
-            _log << (log_message(log_type::error)
-                     << "The provided generator as the primary for the current target was not found - " << target.name
-                     << ": " << target.name_generator);
-            return;
-        }
-        else if (target.templates.size() == 0) {
+        if (target.templates.size() == 0) {
             _log << (log_message(log_type::error) << "There are no templates for the target - " << target.name);
             return;
         }
@@ -387,6 +365,8 @@ void builder::build_targets() {
         {
             log_console_lock lock_c;
 
+            command_generator generator(&_context);
+
             target.queue_templates =
                 sc::template_command::create_queue_target_templates(_context.templates, target.templates, target.type);
             _context.current_target         = &target;
@@ -395,20 +375,13 @@ void builder::build_targets() {
             if (!fs::is_directory(_context.current_work_directory))
                 fs::create_directories(_context.current_work_directory);
 
-            auto &current_generator = generators[target.name_generator];
-            current_generator->init(&_context);
+            if (dependency_finders.contains(target.fields<string>("language")))
+                _context.dfiles = load_depends_file(dependency_finders[target.fields<string>("language")],
+                                                    target.fields<vec<string>>("inlclude_paths"),
+                                                    target.fields<vec<string>>("source_files"));
 
-            std::unique_ptr<depends_files> dfiles_sys;
-            if (current_generator->use_build_graph_depends)
-                dfiles_sys = std::make_unique<depends_generator>(current_generator, target.prj.language,
-                                                                 _context.current_work_directory);
-            else
-                dfiles_sys = std::make_unique<depends_integral>(target.prj.language, _context.current_work_directory);
-
-            _context.dfiles = load_depends_file(dfiles_sys, target);
-
-            current_generator->get_input_files();
-            generator_api::commands cmd_s = current_generator->generate_commands();
+            generator.get_input_files();
+            commands cmd_s = generator.generate();
 
             double build_state = 0.f;
 

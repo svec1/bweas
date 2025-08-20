@@ -1,20 +1,24 @@
-create_template(t_flex,  "flex:lexer.cpp(NULL) -> T_PROJECT_SRC_FILES: <'-o'> FBS_CURRENT_OUTPUT_FILE <[T_PROJECT_SRC_FILES:lexer.l]>")
-create_template(t_bison, "bison:parser.cpp(NULL) -> T_PROJECT_SRC_FILES: <'-o'> FBS_CURRENT_OUTPUT_FILE <'-H'> <[T_PROJECT_SRC_FILES:parser.y]>")
-create_template(t_obj,   "clang++:{}.o(NULL) -> OBJ_S: <'-c'> <[T_PROJECT_SRC_FILES:*.cpp]> <'-o'> FBS_CURRENT_OUTPUT_FILE <'-Wall'> <'-std=gnu++23'> <'-fPIC'> <[T_PROJECT_INCLUDE_PATHS]>")
+import "base"
+
+set(DECL_CONFIG_VAR, 1)
+
+create_template(t_flex,  "flex:lexer.cpp(NULL) -> source_files: <'-o'> FBS_CURRENT_OUTPUT_FILE <[source_files:lexer.l]>")
+create_template(t_bison, "bison:parser.cpp(NULL) -> source_files: <'-o'> FBS_CURRENT_OUTPUT_FILE <'-H'> <[source_files:parser.y]>")
+create_template(t_obj,   "clang++:{}.o(NULL) -> OBJ_S: <'-c'> <[source_files:*.cpp]> <'-o'> FBS_CURRENT_OUTPUT_FILE <'-Wall'> <'-std=gnu++23'> <'-fPIC'> <[include_paths]>")
 create_template(t_lib,   "ar:bweas.a(OBJ_S) -> LIBRARY: <'rcs'> FBS_CURRENT_OUTPUT_FILE <{OBJ_S}>")
 
-create_template(t_exec,  "clang++:bweas(BWEAS_SLIB) -> EXECUTABLE: FBS_CURRENT_INPUT_FILE <{BWEAS_SLIB}> <'-o'> FBS_CURRENT_OUTPUT_FILE <[T_PROJECT_INCLUDE_PATHS]> <'-std=gnu++23'> <'-llz4'> <'-llua'> <'-lluajit-5.1'>")
+create_template(t_exec,  "clang++:bweas(BWEAS_SLIB) -> EXECUTABLE: FBS_CURRENT_INPUT_FILE <{BWEAS_SLIB}> <'-o'> FBS_CURRENT_OUTPUT_FILE <[include_paths]> <'-std=gnu++23'> <'-llz4'> <'-llua'> <'-lluajit-5.1'>")
 
 file(SRC_FILES, 0, "src/bs/*.cpp", "src/bs/lang/*.cpp", "src/bs/lang/lexer.l", "src/bs/lang/parser.y")
 file(BWEAS_MAIN_FILE, 0, "src/bweas.cpp")
 
-create_target(BWEAS_SLIB, {LIBRARY}, {SRC_FILES})
-create_target(BWEAS, {EXECUTABLE}, {BWEAS_MAIN_FILE})
+create_target(BWEAS_SLIB, CPP_LIBRARY, {LIBRARY}, {SRC_FILES})
+create_target(BWEAS, CPP_EXECUTABLE, {EXECUTABLE}, {BWEAS_MAIN_FILE})
 
 add_dependencies_target(BWEAS, BWEAS_SLIB)
 
-include_directories(BWEAS_SLIB, "src/bs/")
-include_directories(BWEAS, "src/bs/")
+set(BWEAS_SLIB_include_paths, "src/bs/")
+set(BWEAS_include_paths, "src/bs/")
 
 use_templates(BWEAS_SLIB, t_flex, t_bison, t_obj, t_lib)
 use_templates(BWEAS, t_exec)

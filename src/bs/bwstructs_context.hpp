@@ -19,7 +19,6 @@ inline constexpr auto DECL_VAR_STRUCT = "DECL_CONFIG_VAR";
 
 // enum of str postfix name var a project
 inline constexpr auto PRJ_VAR_NAME                   = "_NAME";
-inline constexpr auto PRJ_VAR_NAME_LANG              = "_LANG";
 inline constexpr auto PRJ_VAR_NAME_DFLAGS_C          = "_DFLAGS_COMPILER";
 inline constexpr auto PRJ_VAR_NAME_DFLAGS_L          = "_DFLAGS_LINKER";
 inline constexpr auto PRJ_VAR_NAME_RFLAGS_C          = "_RFLAGS_COMPILER";
@@ -32,6 +31,8 @@ inline constexpr auto PRJ_VAR_NAME_SRC_FILES         = "_SRC_FILES";
 inline constexpr auto PRJ_VAR_NAME_LIBS              = "_LIBS";
 inline constexpr auto PRJ_VAR_NAME_INCLUDE_PATHS     = "_INCLUDE_PATHS";
 inline constexpr auto PRJ_VAR_NAME_CUSTOM_EXT_FIELDS = "_CUSTOM_EXTENSION_FIELDS";
+
+inline constexpr auto EXT_VAR_NAME_LANG = "_LANG";
 
 // enum of str postfix name var a target
 inline constexpr auto TRG_VAR_NAME              = "_NAME";
@@ -103,28 +104,24 @@ struct version {
         if (!std::regex_match(version_str, args_match, version_syntax))
             return;
 
-        size_t i = 0;
-        for (const auto &arg : args_match) {
-            if (arg == args_match[0])
-                continue;
-
-            const auto arg_str = arg.str();
+        for (size_t i = 1; i < args_match.size(); ++i) {
+            if (args_match[i].str().empty())
+                break;
+            const auto arg_str = args_match[i].str();
 
             switch (i) {
-            case 0:
+            case 1:
                 major = std::stoi(arg_str);
                 break;
-            case 1:
+            case 2:
                 minor = std::stoi(arg_str);
                 break;
-            case 2:
+            case 3:
                 patch = std::stoi(arg_str);
                 break;
             default:
                 std::unreachable();
             }
-
-            ++i;
         }
     }
     version(size_t mj, size_t mn, size_t ptch) : major{mj}, minor{mn}, patch{ptch} {
@@ -162,13 +159,67 @@ struct version {
 struct profile {
     using fields = umap<string, std::variant<string, vec<string>>>;
 
-    operator fields &() & {
+    profile() = default;
+    profile(fields _release_fields, std::optional<fields> _debug_fields = std::nullopt)
+        : release_fields(_release_fields), debug_fields(_debug_fields) {
+    }
+
+  public:
+    fields::mapped_type &operator[](string key) {
+        if (cfg)
+            return debug_fields.value()[key];
+        return release_fields[key];
+    }
+    const fields::mapped_type &operator[](string key) const {
+        if (cfg)
+            return debug_fields.value().at(key);
+        return release_fields.at(key);
+    }
+
+    template <typename T,
+              typename = std::enable_if<std::is_same_v<T, string> || std::is_same_v<T, vec<string>>, void>::type>
+    T &get(string key) {
+        return std::get<T>(this->operator[](key));
+    }
+    template <typename T,
+              typename = std::enable_if<std::is_same_v<T, string> || std::is_same_v<T, vec<string>>, void>::type>
+    const T &get(string key) const {
+        return std::get<T>(this->operator[](key));
+    }
+
+    fields &get_fields() {
+        if (cfg)
+            return debug_fields.value();
         return release_fields;
+    }
+    const fields &get_fields() const {
+        if (cfg)
+            return debug_fields.value();
+        return release_fields;
+    }
+
+    bool contains(string key) const {
+        return get_fields().contains(key);
+    }
+
+    bool is_string(string key) const {
+        if (std::holds_alternative<string>(this->operator[](key)))
+            return true;
+        return false;
+    }
+
+  public:
+    void set_fields(size_t _cfg) {
+        cfg = _cfg;
     }
 
   public:
     fields release_fields;
     std::optional<fields> debug_fields;
+
+    fields global_fields; // in package impl
+
+    size_t cfg = 0;
 };
 // target structure for build system
 // ---------------------------------
@@ -192,7 +243,6 @@ struct target {
     e_cfg cfg;
 
     string name;
-    string name_generator{DEFAULT_BWEAS_GENERATOR};
     version ver;
 
     vec<string> templates;
@@ -202,6 +252,14 @@ struct target {
     vec<template_command> queue_templates;
 
     bool built_success = 0;
+
+  public:
+    template <typename T> T &fields(string key) {
+        return ext.get<T>(key);
+    }
+    template <typename T> const T &fields(string key) const {
+        return ext.get<T>(key);
+    }
 };
 
 struct template_command {

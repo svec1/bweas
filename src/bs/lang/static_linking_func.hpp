@@ -12,10 +12,8 @@
 
 // all static global functions of the build system
 // ----------------------------------------------
-// - set, project, executable, link_lib, exp_data, cmd,
-// debug, debug_struct, flags_compiler, flags_linker, path_compiler,
-// path_linker, standart_c, standart_cpp, lang, generator,
-// add_param_template, use_tamplates, use_it_template
+// - set, project, executable, exp_data, debug,
+// debug_struct add_param_template, use_tamplates, use_it_template
 namespace sl_func {
 
 extern "C++"
@@ -50,33 +48,6 @@ extern "C++"
 
     // Outputs the passed info of struct(project, target) to the console
     void debug_struct(const expressions &expr_s, scope &current_scope);
-
-    // Sets compiler flags for the passed project depending on the configuration
-    void flags_compiler(const expressions &expr_s, scope &current_scope);
-
-    // Sets linker flags for the passed project depending on the configuration
-    void flags_linker(const expressions &expr_s, scope &current_scope);
-
-    // Sets the path to the compiler in project which was passed
-    void path_compiler(const expressions &expr_s, scope &current_scope);
-
-    // Sets the path to the linker in project which was passed
-    void path_linker(const expressions &expr_s, scope &current_scope);
-
-    // Sets the standard of the C language in project which was passed
-    void standart_c(const expressions &expr_s, scope &current_scope);
-
-    // Sets the standard of the C++ language in project which was passed
-    void standart_cpp(const expressions &expr_s, scope &current_scope);
-
-    // Sets include directories for header files
-    void include_directories(const expressions &expr_s, scope &current_scope);
-
-    // Sets the language of the project that was passed
-    void lang(const expressions &expr_s, scope &current_scope);
-
-    // Sets the base generator for the target that was passed.
-    void generator(const expressions &expr_s, scope &current_scope);
 
     // Creates a parameter declaration for a command template (variable)
     // that refers to another variable. Therefore, the parameter for the template

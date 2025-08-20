@@ -38,7 +38,7 @@ size_t processes_handler::wait_process(size_t pid) {
     DWORD returned = 0;
     GetExitCodeProcess(pid_tmp.hProcess, &returned);
 
-    std::find_if(cmd_s.begin(), cmd_s.end(), [pid](const generator_api::command &cmd) {
+    std::find_if(cmd_s.begin(), cmd_s.end(), [pid](const command &cmd) {
         return cmd.pid_execute_process == pid;
     })->success = !returned;
 
@@ -48,7 +48,7 @@ size_t processes_handler::wait_process(size_t pid) {
     return pid;
 }
 
-void processes_handler::create_process(generator_api::command &cmd) {
+void processes_handler::create_process(bweas::command &cmd) {
     STARTUPINFO si;
     PROCESS_INFORMATION pi;
 
