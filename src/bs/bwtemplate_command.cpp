@@ -22,12 +22,17 @@ template_command template_command::create_template_command(string_v template_nam
     string tmp_param;
 
     std::regex template_command_syntax(
-        R"(^\s*(\w+|[-+\.\/\*=\w+]+:.+)\(\s*(\w+(?:\s*,\s*\w+)*\s*)\)\s*->\s*(\w+):\s*((?:\w+\s*|<\'[-+\.\/\*=\w]*\'>\s*|<\{\w+\}>\s*|<\w+>\s*|<\[(?:\w+(?::[-+\.\/\*=\w+]+)?)\]>\s*)+)$)");
+        R"(^\s*(\w+|[^'"]+:[^'"]+)\(\s*(\w+(?:\s*,\s*\w+)*\s*)\)\s*->\s+(?:(\w+)|\[(\w+)\]):((?:\s+\w+|\s+<\'[^'"]*\'>|\s+<(?:\'[^'"]+\')?\{\w+\}>|\s+<(?:\'[^'"]+\')?\w+>|\s+<(?:\'[^'"]+\')?\[(?:\w+(?::[^'"]+)?)\]>\s*)+)\s*$)");
 
     std::smatch args_match;
     if (std::regex_match(template_str, args_match, template_command_syntax)) {
         tcmd_tmp.name_call_component = args_match[1].str();
-        tcmd_tmp.returnable          = args_match[3].str();
+        if (args_match[3].str().empty())
+            tcmd_tmp.returnable = template_command::return_value(
+                args_match[4].str(), template_command::return_value::e_type::extension_field);
+        else
+            tcmd_tmp.returnable =
+                template_command::return_value(args_match[3].str(), template_command::return_value::e_type::object);
 
         string str_params = args_match[2].str();
         std::regex params(R"(\w+)");
@@ -35,8 +40,9 @@ template_command template_command::create_template_command(string_v template_nam
              it_match != std::sregex_iterator(); ++it_match)
             tcmd_tmp.name_accept_params.push_back(it_match->str());
 
-        string values = args_match[4].str();
-        std::regex args(R"(\s*(\w+|<\'[-+\.\/\*=\w]*\'>|<\{\w+\}>|<\w+>|<\[(?:\w+(?::[-+\.\/\*=\w+]+)?)\]>)(?=\s|$))");
+        string values = args_match[5].str();
+        std::regex args(
+            R"(((?:\w+|<\'[^'"]*\'>|<(?:\'[^'"]+\')?\{\w+\}>|<(?:\'[^'"]+\')?\w+>|<(?:\'[^'"]+\')?\[(?:\w+(?::[^'"]+)?)\]>)+))");
         for (auto it_match = std::sregex_iterator(values.begin(), values.end(), args);
              it_match != std::sregex_iterator(); ++it_match) {
             template_command::arg arg_tmp;
@@ -48,24 +54,38 @@ template_command template_command::create_template_command(string_v template_nam
                     arg_tmp.type = template_command::arg::e_type::extglobal;
                     value.erase(value.size() - 1, 1);
                 }
-                else {
-                    if (value[0] == '\'')
-                        arg_tmp.type = template_command::arg::e_type::string;
-                    else if (value[0] == '{')
+                else if (value[0] == '\'') {
+                    if (value.find("{") != value.npos)
                         arg_tmp.type = template_command::arg::e_type::internal;
-                    else if (value[0] == '[')
+                    else if (value.find("[") != value.npos)
                         arg_tmp.type = template_command::arg::e_type::trgfield;
-                    else
-                        throw std::runtime_error("Unexpected type of arg(" + value + "): " + template_str);
+                    else if (value.find("\'>") == value.npos)
+                        arg_tmp.type = template_command::arg::e_type::extglobal;
+                    else {
+                        arg_tmp.type = template_command::arg::e_type::string;
+                        goto value_arg_handler;
+                    }
 
-                    value.erase(0, 1);
-                    value.erase(value.size() - 2, 2);
-                    if (arg_tmp.type == template_command::arg::e_type::internal &&
-                        std::find(tcmd_tmp.name_accept_params.begin(), tcmd_tmp.name_accept_params.end(), value) ==
-                            tcmd_tmp.name_accept_params.end())
-                        throw std::runtime_error("Template argument does not exist internally(" + value +
-                                                 "): " + template_str);
+                    size_t offset_to_start_arg = value.find_last_of("\'");
+
+                    arg_tmp.prefix = value.substr(1, offset_to_start_arg - 1);
+                    value.erase(0, offset_to_start_arg + 1);
                 }
+                else if (value[0] == '{')
+                    arg_tmp.type = template_command::arg::e_type::internal;
+                else if (value[0] == '[')
+                    arg_tmp.type = template_command::arg::e_type::trgfield;
+                else
+                    throw std::runtime_error("Unexpected type of arg(" + value + "): " + template_str);
+
+            value_arg_handler:
+                value.erase(0, 1);
+                value.erase(value.size() - 2, 2);
+                if (arg_tmp.type == template_command::arg::e_type::internal &&
+                    std::find(tcmd_tmp.name_accept_params.begin(), tcmd_tmp.name_accept_params.end(), value) ==
+                        tcmd_tmp.name_accept_params.end())
+                    throw std::runtime_error("Template argument does not exist internally(" + value +
+                                             "): " + template_str);
             }
             else
                 arg_tmp.type = template_command::arg::e_type::features;
@@ -97,7 +117,8 @@ vec<template_command> template_command::create_queue_target_templates(const vec<
 
     const auto &it_template =
         find_if(vec_templates_tmp.begin(), vec_templates_tmp.end(), [target_t](const sc::template_command &_template) {
-            return _template.returnable == target_type_str(target_t);
+            return _template.returnable.type == sc::template_command::return_value::e_type::object &&
+                   _template.returnable.value == target_type_str(target_t);
         });
 
     if (it_template == vec_templates_tmp.end())
@@ -110,7 +131,9 @@ vec<template_command> template_command::create_queue_target_templates(const vec<
 
     for (size_t i = 0; i < templates_target.size(); ++i) {
         for (const auto &_template : templates)
-            if (templates_target[i] == _template.name && _template.returnable == NAME_FIELD_PROJECT_SRC_FILES)
+            if (templates_target[i] == _template.name &&
+                (_template.returnable.type == sc::template_command::return_value::e_type::extension_field &&
+                 _template.returnable.value == sc::profile::FIELD_SOURCE_FILES))
                 target_queue_templates.push_back(_template);
     }
 
@@ -124,7 +147,7 @@ void template_command::recovery_queue_target_templates(vec<template_command> &ve
                                                        const string &name_internal_param) {
     const auto &it =
         find_if(vec_templates.begin(), vec_templates.end(), [name_internal_param](const template_command &_template) {
-            return _template.returnable == name_internal_param;
+            return _template.returnable.value == name_internal_param;
         });
     if (it == vec_templates.end())
         return;

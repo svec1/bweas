@@ -171,15 +171,13 @@ string package::init(data_bw_package _data, bool is_create_pckg) {
                                                                   : std::get<vec<string>>(variant_value);
                                 for (const auto &derive_profile : derive_profiles)
                                     if (profiles.contains(derive_profile)) {
-                                        profile_tmp.global_fields.insert(profiles[derive_profile].global_fields.begin(),
-                                                                         profiles[derive_profile].global_fields.end());
-                                        profile_tmp.release_fields.insert(
-                                            profiles[derive_profile].release_fields.begin(),
-                                            profiles[derive_profile].release_fields.end());
+                                        for (const auto &it : profiles[derive_profile].global_fields)
+                                            profile_tmp.global_fields.insert_or_assign(it.first, it.second);
+                                        for (const auto &it : profiles[derive_profile].release_fields)
+                                            profile_tmp.release_fields.insert_or_assign(it.first, it.second);
                                         if (profile_tmp.debug_fields)
-                                            profile_tmp.debug_fields.value().insert(
-                                                profiles[derive_profile].debug_fields.value().begin(),
-                                                profiles[derive_profile].debug_fields.value().end());
+                                            for (const auto &it : *profiles[derive_profile].debug_fields)
+                                                profile_tmp.debug_fields->insert_or_assign(it.first, it.second);
                                         else
                                             profile_tmp.debug_fields = profiles[derive_profile].debug_fields;
                                     }
@@ -192,21 +190,31 @@ string package::init(data_bw_package _data, bool is_create_pckg) {
                                 profile_tmp.global_fields[key] = get_field(value);
                         }
                     }
-
-                    if (!profile_tmp.global_fields.contains("language") ||
-                        !std::holds_alternative<string>(profile_tmp.global_fields["language"]))
+                    if (!profile_tmp.global_fields.contains(sc::profile::FIELD_SOURCE_FILES) ||
+                        !std::holds_alternative<vec<string>>(
+                            profile_tmp.global_fields[sc::profile::FIELD_SOURCE_FILES]))
+                        _log << (log_message(log_type::fatal) << "The profile[" << profile.key()
+                                                              << "] must have source files field of type string.");
+                    else if (!profile_tmp.global_fields.contains(sc::profile::FIELD_INCLUDE_PATHS) ||
+                             !std::holds_alternative<vec<string>>(
+                                 profile_tmp.global_fields[sc::profile::FIELD_INCLUDE_PATHS]))
+                        _log << (log_message(log_type::fatal) << "The profile[" << profile.key()
+                                                              << "] must have include paths field of type string.");
+                    else if (!profile_tmp.global_fields.contains(sc::profile::FIELD_TARGET_TYPE) ||
+                             !std::holds_alternative<string>(profile_tmp.global_fields[sc::profile::FIELD_TARGET_TYPE]))
+                        _log << (log_message(log_type::fatal) << "The profile[" << profile.key()
+                                                              << "] must have type of target field of type string.");
+                    else if (!profile_tmp.global_fields.contains(sc::profile::FIELD_LANGUAGE) ||
+                             !std::holds_alternative<string>(profile_tmp.global_fields[sc::profile::FIELD_LANGUAGE]))
                         _log << (log_message(log_type::fatal)
-                                 << "The profile[" << profile.key() << "] must have language fields of type string.");
+                                 << "The profile[" << profile.key() << "] must have language field of type string.");
 
-                    profile_tmp.release_fields.insert(profile_tmp.global_fields.begin(),
-                                                      profile_tmp.global_fields.end());
+                    for (const auto &it : profile_tmp.global_fields)
+                        profile_tmp.release_fields.insert_or_assign(it.first, it.second);
 
                     if (profile_tmp.debug_fields)
-                        profile_tmp.debug_fields->insert(profile_tmp.global_fields.begin(),
-                                                         profile_tmp.global_fields.end());
-
-                    profile_tmp.release_fields["language"]       = profile_tmp.global_fields["language"];
-                    profile_tmp.debug_fields.value()["language"] = profile_tmp.global_fields["language"];
+                        for (const auto &it : *profile_tmp.debug_fields)
+                            profile_tmp.debug_fields->insert_or_assign(it.first, it.second);
 
                     profiles[profile.key()] = std::move(profile_tmp);
                 }

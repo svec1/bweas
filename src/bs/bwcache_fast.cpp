@@ -62,7 +62,8 @@ string fast_cache::create_cache() {
     for (size_t i = 0; i < templates.size(); ++i) {
         serel_target_tmp += std::to_string(templates[i].name_accept_params.size()) + " " +
                             std::to_string(templates[i].args.size()) + " " + templates[i].name + " " +
-                            templates[i].name_call_component + " " + templates[i].returnable + " ";
+                            templates[i].name_call_component + " " + templates[i].returnable.value + " " +
+                            std::to_string((pdiff)templates[i].returnable.type);
 
         all_used_call_component.emplace(templates[i].name_call_component);
 
@@ -195,8 +196,14 @@ void fast_cache::extract_cache_data(const string &cache_str) {
                         tcmd_tmp.name = str_tmp;
                     else if (count_word == 4)
                         tcmd_tmp.name_call_component = str_tmp;
-                    else if (count_word == 5)
-                        tcmd_tmp.returnable = str_tmp;
+                    else if (count_word == 5) {
+                        if ((is_key_field = !is_key_field)) {
+                            tcmd_tmp.returnable.value = str_tmp;
+                            --count_word;
+                        }
+                        else
+                            tcmd_tmp.returnable.type = (sc::template_command::return_value::e_type)std::stoi(str_tmp);
+                    }
                     else if (count_word >= 6 && count_word < 6 + size_internal_args)
                         tcmd_tmp.name_accept_params.push_back(str_tmp);
                     else if ((count_word >= 6 + size_internal_args &&

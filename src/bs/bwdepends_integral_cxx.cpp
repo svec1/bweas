@@ -6,6 +6,7 @@
 //
 
 #include <bwdepends_api.hpp>
+#include <bwlogger.hpp>
 #include <tools/bwfile.hpp>
 
 using namespace bweas;

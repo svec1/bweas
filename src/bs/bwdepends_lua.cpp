@@ -1,4 +1,5 @@
 #include <bwdepends_api.hpp>
+#include <bwlogger.hpp>
 
 #include <bwluatools.hpp>
 

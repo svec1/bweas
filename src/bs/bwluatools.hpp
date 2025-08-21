@@ -45,6 +45,7 @@ class bweas::lua_tools {
   public:
     static table<string, any> conv_to_table(const sc::profile &ext);
     static array<any> conv_to_table(const vec<sc::template_command::arg> &args);
+    static array<any> conv_to_table(const sc::template_command::return_value &returnable);
     static table<string_v, any> conv_to_table(const sc::template_command &tmp_c);
     static table<string_v, string> conv_to_table(const sc::call_component &ccmp);
     static table<string_v, any> conv_to_table(const sc::target &trg_o);
@@ -54,6 +55,7 @@ class bweas::lua_tools {
   public:
     static sc::profile conv_to_extension(table<string, any> ext);
     static vec<sc::template_command::arg> conv_to_args(array<array<any>> args);
+    static sc::template_command::return_value conv_to_return_value(lua_tools::array<any> returnable);
     static sc::template_command conv_to_template(table<string, any> &tcmd);
     static sc::call_component conv_to_call_components(table<string, any> &ccmp);
     static sc::target conv_to_target(table<string, any> &trg_o_t);

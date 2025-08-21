@@ -32,8 +32,6 @@ inline constexpr auto PRJ_VAR_NAME_LIBS              = "_LIBS";
 inline constexpr auto PRJ_VAR_NAME_INCLUDE_PATHS     = "_INCLUDE_PATHS";
 inline constexpr auto PRJ_VAR_NAME_CUSTOM_EXT_FIELDS = "_CUSTOM_EXTENSION_FIELDS";
 
-inline constexpr auto EXT_VAR_NAME_LANG = "_LANG";
-
 // enum of str postfix name var a target
 inline constexpr auto TRG_VAR_NAME              = "_NAME";
 inline constexpr auto TRG_VAR_NAME_VER          = "_VERSION";
@@ -71,8 +69,8 @@ inline constexpr auto NAME_FIELD_PROJECT_SRC_FILES     = "T_PROJECT_SRC_FILES";
 inline constexpr auto NAME_FIELD_PROJECT_LIBS          = "T_PROJECT_LIBS";
 inline constexpr auto NAME_FIELD_PROJECT_INCLUDE_PATHS = "T_PROJECT_INCLUDE_PATHS";
 
-inline constexpr auto FEATURE_FIELD_BS_CURRENT_IF = "FBS_CURRENT_INPUT_FILE";
-inline constexpr auto FEATURE_FIELD_BS_CURRENT_OF = "FBS_CURRENT_OUTPUT_FILE";
+inline constexpr auto FEATURE_ARG_IF = "INPUT_FILE";
+inline constexpr auto FEATURE_ARG_OF = "OUTPUT_FILE";
 
 inline constexpr auto NAME_FIELD_TEMPLATE_COMMAND_NAME              = "_NAME";
 inline constexpr auto NAME_FIELD_TEMPLATE_COMMAND_NAME_CCMP         = "_NCALL_C";
@@ -167,8 +165,8 @@ struct profile {
   public:
     fields::mapped_type &operator[](string key) {
         if (cfg)
-            return debug_fields.value()[key];
-        return release_fields[key];
+            return debug_fields.value().at(key);
+        return release_fields.at(key);
     }
     const fields::mapped_type &operator[](string key) const {
         if (cfg)
@@ -187,17 +185,6 @@ struct profile {
         return std::get<T>(this->operator[](key));
     }
 
-    fields &get_fields() {
-        if (cfg)
-            return debug_fields.value();
-        return release_fields;
-    }
-    const fields &get_fields() const {
-        if (cfg)
-            return debug_fields.value();
-        return release_fields;
-    }
-
     bool contains(string key) const {
         return get_fields().contains(key);
     }
@@ -212,6 +199,16 @@ struct profile {
     void set_fields(size_t _cfg) {
         cfg = _cfg;
     }
+    fields &get_fields() {
+        if (cfg)
+            return debug_fields.value();
+        return release_fields;
+    }
+    const fields &get_fields() const {
+        if (cfg)
+            return debug_fields.value();
+        return release_fields;
+    }
 
   public:
     fields release_fields;
@@ -220,6 +217,12 @@ struct profile {
     fields global_fields; // in package impl
 
     size_t cfg = 0;
+
+  public:
+    static constexpr auto FIELD_SOURCE_FILES  = "source_files";
+    static constexpr auto FIELD_INCLUDE_PATHS = "include_paths";
+    static constexpr auto FIELD_LANGUAGE      = "language";
+    static constexpr auto FIELD_TARGET_TYPE   = "target_type";
 };
 // target structure for build system
 // ---------------------------------
@@ -266,6 +269,21 @@ struct template_command {
     template_command() = default;
 
   public:
+    struct return_value {
+        enum class e_type {
+            object = 0,
+            extension_field
+        };
+
+        return_value()                     = default;
+        return_value(const return_value &) = default;
+        return_value(string _value, e_type _type) : value(_value), type(_type) {
+        }
+
+      public:
+        string value;
+        e_type type;
+    };
     struct arg {
         enum class e_type {
             extglobal = 0,
@@ -277,12 +295,14 @@ struct template_command {
 
         arg()            = default;
         arg(const arg &) = default;
-        arg(string _value, e_type _type) : value(_value), type(_type) {
+        arg(string _value, e_type _type, string _prefix = "") : value(_value), type(_type), prefix(_prefix) {
         }
 
       public:
         string value;
         e_type type;
+
+        string prefix;
     };
 
   public:
@@ -303,7 +323,7 @@ struct template_command {
     string name;
 
     string name_call_component;
-    string returnable;
+    return_value returnable;
 
     vec<string> name_accept_params;
     vec<arg> args;

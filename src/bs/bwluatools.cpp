@@ -31,12 +31,16 @@ lua_tools::array<any> lua_tools::conv_to_table(const vec<sc::template_command::a
     return vec_args;
 }
 
+lua_tools::array<any> lua_tools::conv_to_table(const sc::template_command::return_value &returnable) {
+    return lua_tools::array<any>{returnable.value, (pdiff)returnable.type};
+}
+
 lua_tools::table<string_v, any> lua_tools::conv_to_table(const sc::template_command &tmp_c) {
     return table<string_v, any>{{NAME_FIELD_TEMPLATE_COMMAND_NAME, tmp_c.name},
                                 {NAME_FIELD_TEMPLATE_COMMAND_NAME_CCMP, tmp_c.name_call_component},
                                 {NAME_FIELD_TEMPLATE_COMMAND_NAME_ACCEPTS_ARGS, tmp_c.name_accept_params},
                                 {NAME_FIELD_TEMPLATE_COMMAND_NAME_ARGS, conv_to_table(tmp_c.args)},
-                                {NAME_FIELD_TEMPLATE_COMMAND_RET, tmp_c.returnable},
+                                {NAME_FIELD_TEMPLATE_COMMAND_RET, conv_to_table(tmp_c.returnable)},
                                 {NAME_FIELD_TEMPLATE_COMMAND_IFILES, tmp_c.ifiles},
                                 {NAME_FIELD_TEMPLATE_COMMAND_SINGLE_GENERATES, (pdiff)tmp_c.single_generates}};
 }
@@ -96,6 +100,14 @@ vec<sc::template_command::arg> lua_tools::conv_to_args(lua_tools::array<lua_tool
 
     return _args;
 }
+sc::template_command::return_value lua_tools::conv_to_return_value(lua_tools::array<any> returnable) {
+    sc::template_command::return_value _returnable;
+
+    _returnable.value = std::any_cast<string>(returnable[0]);
+    _returnable.type  = (sc::template_command::return_value::e_type)std::any_cast<integer>(returnable[1]);
+
+    return _returnable;
+}
 
 sc::template_command lua_tools::conv_to_template(lua_tools::table<string, any> &tcmd) {
     sc::template_command _tcmd;
@@ -105,7 +117,7 @@ sc::template_command lua_tools::conv_to_template(lua_tools::table<string, any> &
     _tcmd.name_accept_params  = std::any_cast<vec<string>>(tcmd[NAME_FIELD_TEMPLATE_COMMAND_NAME_ACCEPTS_ARGS]);
     _tcmd.args                = conv_to_args(
         std::any_cast<bwlua::lua::array<bwlua::lua::array<any>>>(tcmd[NAME_FIELD_TEMPLATE_COMMAND_NAME_ARGS]));
-    _tcmd.returnable       = std::any_cast<string>(tcmd[NAME_FIELD_TEMPLATE_COMMAND_RET]);
+    _tcmd.returnable       = conv_to_return_value(std::any_cast<array<any>>(tcmd[NAME_FIELD_TEMPLATE_COMMAND_RET]));
     _tcmd.ifiles           = std::any_cast<vec<string>>(tcmd[NAME_FIELD_TEMPLATE_COMMAND_IFILES]);
     _tcmd.single_generates = std::any_cast<pdiff>(tcmd[NAME_FIELD_TEMPLATE_COMMAND_SINGLE_GENERATES]);
 
