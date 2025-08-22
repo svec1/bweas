@@ -24,8 +24,8 @@
 
 namespace bweas {
 
-using mf      = bwtools::file::mode_file;
-using file_it = bwtools::file_it;
+using mf      = utils::file_utils::file::mode_file;
+using file_it = utils::file_utils::file_it;
 
 inline constexpr char VERSION_MAJOR_C = '0';
 inline constexpr char VERSION_MINOR_C = '1';

@@ -11,7 +11,7 @@
 #include <bwdepends_api.hpp>
 
 #include <bwstructs_context.hpp>
-#include <tools/bwlua.hpp>
+#include <utils/lua_wrapper.hpp>
 
 namespace bweas {
 class lua_tools;
@@ -23,16 +23,16 @@ class bweas::lua_tools {
     lua_tools() = delete;
 
   public:
-    template <typename T> using ref = bwlua::lua::ref<T>;
+    template <typename T> using ref = utils::lua::ref<T>;
 
-    template <typename T> using array                 = bwlua::lua::array<T>;
-    template <typename K, typename V> using key_value = bwlua::lua::key_value<K, V>;
-    template <typename K, typename V> using table     = bwlua::lua::table<K, V>;
+    template <typename T> using array                 = utils::lua::array<T>;
+    template <typename K, typename V> using key_value = utils::lua::key_value<K, V>;
+    template <typename K, typename V> using table     = utils::lua::table<K, V>;
 
-    using integer = bwlua::lua::integer;
-    using number  = bwlua::lua::number;
+    using integer = utils::lua::integer;
+    using number  = utils::lua::number;
 
-    using nil = bwlua::lua::nil;
+    using nil = utils::lua::nil;
 
     // Ready-made alias parameters for standard bweas structures.
   public:
@@ -64,8 +64,5 @@ class bweas::lua_tools {
   public:
     static int get_var(lua_State *L);
     static int set_var(lua_State *L);
-
-    static int get_name_output_file_lua(lua_State *L);
-    static int file_slc_mask_lua(lua_State *L);
 };
 #endif

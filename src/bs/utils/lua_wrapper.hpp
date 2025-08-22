@@ -59,11 +59,13 @@
         throw std::runtime_error(_err);                                                                                \
     }
 
-namespace bwlua {
+namespace bweas {
+namespace utils {
 
-// Special tools - Wrappers over the lua class,
+// Special utils - Wrappers over the lua class,
 // for simple interaction with the lua stack and others.
-namespace tools {
+
+class lua;
 
 inline void get_symbol(lua_State *L, std::string_view name_symbol);
 template <typename T> inline void push_stack(lua_State *L, T param);
@@ -72,13 +74,14 @@ template <typename T> inline T pop_stack(lua_State *L, int idx = -1);
 // Calls a function that is on the top of the stack
 template <typename T, typename... Types> inline T call_function(lua_State *L, Types... param);
 template <typename T> inline T call_function(lua_State *L, int count_param);
-} // namespace tools
+} // namespace utils
+} // namespace bweas
 
 // A wrapper class for luajit.
 // It contains basic functions for interacting with lua scripts.
 // If an error occurs in any function, an exception is thrown, which at best should be handled!
 // If a function (any) sees that lua_state is not defined, it will not do anything.
-class lua {
+class bweas::utils::lua {
   public:
     lua() = default;
     explicit lua(lua_State *_L) : L(_L) {
@@ -237,10 +240,10 @@ class lua {
     struct is_vec_pairs<std::vector<std::pair<K, V>, A>> : std::true_type {};
 
     friend struct symbol;
-    template <typename T> friend inline void tools::push_stack(lua_State *L, T param);
-    template <typename T> friend inline T tools::pop_stack(lua_State *L, int idx);
-    template <typename T, typename... Types> friend inline T tools::call_function(lua_State *L, Types... param);
-    template <typename T> friend inline T call_function(lua_State *L, int count_param);
+    template <typename T> friend inline void utils::push_stack(lua_State *L, T param);
+    template <typename T> friend inline T utils::pop_stack(lua_State *L, int idx);
+    template <typename T, typename... Types> friend inline T utils::call_function(lua_State *L, Types... param);
+    template <typename T> friend inline T utils::call_function(lua_State *L, int count_param);
 
   public:
     template <typename Key, typename Value> static std::map<Key, Value> to_map(table<Key, Value> _table) {
@@ -707,7 +710,7 @@ class lua {
     lua_State *L{NULL};
 };
 
-namespace tools {
+namespace bweas::utils {
 template <typename T> inline void push_stack(lua_State *L, T param) {
     lua(L).push_stack_param(param);
 }
@@ -725,8 +728,6 @@ template <typename T> inline T call_function(lua_State *L, int count_params) {
 inline void get_symbol(lua_State *L, std::string_view name_symbol) {
     (void)lua(L).get_global_symbol(name_symbol);
 }
-} // namespace tools
-
-} // namespace bwlua
+} // namespace bweas::utils
 
 #endif

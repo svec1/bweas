@@ -6,14 +6,14 @@
 //
 
 #include <bwgenerator_command.hpp>
-#include <bwgntools.hpp>
-#include <tools/bwfile.hpp>
+#include <utils/file_utils.hpp>
 
 using namespace bweas;
+using namespace bweas::utils;
 
 static logger _log{"BWGENERATOR_COMMAND"};
 
-void command_generator::get_input_files() {
+void generator_command::get_input_files() {
     auto &target              = *_context->current_target;
     vec<string> &source_files = target.fields<vec<string>>(sc::profile::FIELD_SOURCE_FILES);
     for (auto &current_template : target.queue_templates) {
@@ -52,7 +52,7 @@ void command_generator::get_input_files() {
                 }
                 else {
                     if (!mask.empty()) {
-                        vec<string> slc_files = bwfile::file_slc_mask(mask, source_files);
+                        vec<string> slc_files = file_utils::file_slc_mask(mask, source_files);
                         for (size_t i = 0; i < slc_files.size() &&
                                            std::find(current_template.ifiles.begin(), current_template.ifiles.end(),
                                                      slc_files[i]) == current_template.ifiles.end();
@@ -98,13 +98,13 @@ void command_generator::get_input_files() {
 
             vec<string> &str_s = target.fields<vec<string>>(current_template.returnable.value);
             for (size_t i = 0; i < current_template.ifiles.size(); ++i)
-                str_s.push_back(generator_tools::get_name_output_file(_context->current_work_directory + "/" +
-                                                                          call_component->pattern_ret_files,
-                                                                      current_template.ifiles[i]));
+                str_s.push_back(
+                    get_name_output_file(_context->current_work_directory + "/" + call_component->pattern_ret_files,
+                                         current_template.ifiles[i]));
         }
     }
 }
-commands command_generator::generate() {
+commands generator_command::generate() {
     commands cmd_s;
 
     static umap<string, vec<string>> returnable_target;
@@ -128,7 +128,7 @@ commands command_generator::generate() {
         command cmd;
         cmd.name = current_template.name + std::to_string(count_use_ifiles);
 
-        string output_file = generator_tools::get_name_output_file(
+        string output_file = get_name_output_file(
             pattern_output_file,
             count_use_ifiles < current_template.ifiles.size() ? current_template.ifiles[count_use_ifiles] : "",
             count_use_ifiles);
@@ -183,9 +183,8 @@ commands command_generator::generate() {
             }
             else if (arg.type == sc::template_command::arg::e_type::features && arg.value == FEATURE_ARG_IF) {
                 if (current_template.single_generates) {
-                    if (generator_tools::should_uses_src_file(
-                            current_template.ifiles[count_use_ifiles], output_file,
-                            _context->dfiles[current_template.ifiles[count_use_ifiles]]) ||
+                    if (should_uses_src_file(current_template.ifiles[count_use_ifiles], output_file,
+                                             _context->dfiles[current_template.ifiles[count_use_ifiles]]) ||
                         current_template.returns_target) {
                         cmd.args.push_back(current_template.ifiles[count_use_ifiles++]);
                         ++real_count_use_ifiles;
@@ -195,11 +194,11 @@ commands command_generator::generate() {
                 }
                 else
                     for (; count_use_ifiles < current_template.ifiles.size(); ++count_use_ifiles)
-                        if (generator_tools::should_uses_src_file(
-                                current_template.ifiles[count_use_ifiles],
-                                generator_tools::get_name_output_file(
-                                    pattern_output_file, current_template.ifiles[count_use_ifiles], count_use_ifiles),
-                                _context->dfiles[current_template.ifiles[count_use_ifiles]]) ||
+                        if (should_uses_src_file(current_template.ifiles[count_use_ifiles],
+                                                 get_name_output_file(pattern_output_file,
+                                                                      current_template.ifiles[count_use_ifiles],
+                                                                      count_use_ifiles),
+                                                 _context->dfiles[current_template.ifiles[count_use_ifiles]]) ||
                             current_template.returns_target) {
                             cmd.args.push_back(current_template.ifiles[count_use_ifiles]);
                             ++real_count_use_ifiles;
@@ -219,8 +218,7 @@ commands command_generator::generate() {
                     }
                     else
                         for (size_t k = 0; k < count_use_ifiles; ++k) {
-                            output_file = generator_tools::get_name_output_file(pattern_output_file,
-                                                                                current_template.ifiles[k], k);
+                            output_file = get_name_output_file(pattern_output_file, current_template.ifiles[k], k);
                             if (current_template.returnable.type == sc::template_command::return_value::e_type::object)
                                 internal_args_stack_tmp[current_template.returnable.value].push_back(output_file);
 
@@ -251,8 +249,7 @@ commands command_generator::generate() {
 
             commands_execute_template[current_template.name].push_back(cmd.name);
 
-            _log << (log_message(log_type::msg)
-                     << "The command has been generated: " << generator_tools::build_string_command(cmd));
+            _log << (log_message(log_type::msg) << "The command has been generated: " << cmd.build_string_command());
         }
 
         if (current_template.single_generates && count_use_ifiles < current_template.ifiles.size())
@@ -263,4 +260,43 @@ commands command_generator::generate() {
         ++j;
     }
     return cmd_s;
+}
+string generator_command::get_name_output_file(string_v pattern_file, string_v name_file, size_t index) {
+    if (pattern_file.find(".") == pattern_file.npos)
+        return pattern_file.data() + (index ? std::to_string(index) : "");
+
+    string name_output_file_curr = pattern_file.data(), extension_output_file_curr = pattern_file.data();
+
+    name_output_file_curr.erase(name_output_file_curr.find("."), name_output_file_curr.size());
+    extension_output_file_curr.erase(0, extension_output_file_curr.find("."));
+
+    if (name_output_file_curr.find("{}") == name_output_file_curr.size() - 2 && !name_file.empty()) {
+        name_output_file_curr.erase(name_output_file_curr.size() - 2);
+        return name_output_file_curr + fs::path(name_file).filename().c_str() + extension_output_file_curr;
+    }
+
+    if (index != 0)
+        return name_output_file_curr + std::to_string(index) + extension_output_file_curr;
+    return name_output_file_curr + extension_output_file_curr;
+}
+
+bool generator_command::should_uses_src_file(string_v src_file, string_v output_file, const uset<string> &dfiles) {
+    if (fs::is_regular_file(output_file) && fs::last_write_time(CACHE_FILE) > fs::last_write_time(output_file))
+        return 1;
+    else if (!fs::is_regular_file(output_file) || fs::last_write_time(output_file) < fs::last_write_time(src_file))
+        return 1;
+
+    for (const auto &dfile : dfiles)
+        if (fs::last_write_time(output_file) < fs::last_write_time(dfile))
+            return 1;
+
+    return 0;
+}
+
+string command::build_string_command() {
+    string cmd_str = name_program + " ";
+    for (const auto &arg : args)
+        cmd_str += arg + " ";
+
+    return cmd_str;
 }

@@ -21,6 +21,7 @@
 #include <nlohmann/json.hpp>
 
 using namespace bweas;
+using namespace bweas::utils;
 
 static logger _log{"BWEAS"};
 
@@ -128,14 +129,15 @@ void builder::handle_args(vec<string> &args) {
 void builder::create_package(string path_json_config_package) {
     package::data_bw_package data_package;
 
-    file_it json_config_package = bwtools::open_file(path_json_config_package, mf::open::r);
-    if (!bwtools::exist_file(json_config_package)) {
+    file_it json_config_package = file_utils::open_file(path_json_config_package, mf::open::r);
+    if (!file_utils::exist_file(json_config_package)) {
         _log << (log_message(log_type::error) << "The bweas-json configuration for package package file was not found");
         return;
     }
 
-    data_package.json_config = bwtools::read_file(bwtools::get_ref_file(json_config_package), mf::input::read_default);
-    bwtools::close_file(json_config_package);
+    data_package.json_config =
+        file_utils::read_file(file_utils::get_ref_file(json_config_package), mf::input::read_default);
+    file_utils::close_file(json_config_package);
 
     package loaded_package;
     string pckg = loaded_package.init(data_package, 1);
@@ -144,30 +146,30 @@ void builder::create_package(string path_json_config_package) {
         return;
     }
     file_it package =
-        bwtools::open_file(fs::current_path().string() + "/" + loaded_package.name + FORMAT_PACKAGE, mf::open::wb);
-    bwtools::write_file(bwtools::get_ref_file(package), pckg, mf::output::write_binary);
-    bwtools::close_file(package);
+        file_utils::open_file(fs::current_path().string() + "/" + loaded_package.name + FORMAT_PACKAGE, mf::open::wb);
+    file_utils::write_file(file_utils::get_ref_file(package), pckg, mf::output::write_binary);
+    file_utils::close_file(package);
 }
 
 void builder::init() {
     fs::current_path(_context.path_bweas_config);
 
     _context.path_bweas_config    = _context.path_bweas_config + CONFIG_FILE;
-    string bweas_json_config_path = bwtools::get_path_program() + JSON_CONFIG_FILE;
+    string bweas_json_config_path = file_utils::get_path_program() + JSON_CONFIG_FILE;
 
     nlohmann::json config_json;
-    file_it file_json_config = bwtools::open_file(bweas_json_config_path, mf::open::r);
-    if (bwtools::exist_file(file_json_config) && !bwtools::get_ref_file(file_json_config).file_opened) {
-        bwtools::get_ref_file(file_json_config).open(mf::open::w);
-        bwtools::write_file(bwtools::get_ref_file(file_json_config), DEFAULT_BWEAS_JSON_CONFIG);
-        bwtools::close_file(file_json_config);
+    file_it file_json_config = file_utils::open_file(bweas_json_config_path, mf::open::r);
+    if (file_utils::exist_file(file_json_config) && !file_utils::get_ref_file(file_json_config).file_opened) {
+        file_utils::get_ref_file(file_json_config).open(mf::open::w);
+        file_utils::write_file(file_utils::get_ref_file(file_json_config), DEFAULT_BWEAS_JSON_CONFIG);
+        file_utils::close_file(file_json_config);
 
         config_json = nlohmann::json::parse(DEFAULT_BWEAS_JSON_CONFIG);
     }
     else {
-        config_json =
-            nlohmann::json::parse(bwtools::read_file(bwtools::get_ref_file(file_json_config), mf::input::read_default));
-        bwtools::close_file(file_json_config);
+        config_json = nlohmann::json::parse(
+            file_utils::read_file(file_utils::get_ref_file(file_json_config), mf::input::read_default));
+        file_utils::close_file(file_json_config);
     }
 
     if (config_json.contains("cache-gn")) {
@@ -186,18 +188,18 @@ void builder::init() {
     vec<package> loaded_packages;
     package loaded_package;
 
-    string path_to_packages{bwtools::get_path_program() + "packages/"};
+    string path_to_packages{file_utils::get_path_program() + "packages/"};
     for (const auto &fs_object : fs::directory_iterator(path_to_packages)) {
         if (!fs::is_regular_file(fs_object))
             continue;
 
-        file_it it_package = bwtools::open_file(fs_object.path().string(), mf::open::rb);
-        if (!bwtools::exist_file(it_package)) {
+        file_it it_package = file_utils::open_file(fs_object.path().string(), mf::open::rb);
+        if (!file_utils::exist_file(it_package)) {
             _log << (log_message(log_type::warning)
                      << "\"" << fs_object.path().string() << "\" bweas package not found");
             continue;
         }
-        string raw_data_package = bwtools::read_file(bwtools::get_ref_file(it_package), mf::input::read_binary);
+        string raw_data_package = file_utils::read_file(file_utils::get_ref_file(it_package), mf::input::read_binary);
 
         loaded_package.load(raw_data_package);
         loaded_packages.push_back(loaded_package);
@@ -206,7 +208,7 @@ void builder::init() {
             cache = std::unique_ptr<cache_api::base_cache>(
                 cache_api::base_cache::create_lua_cache(loaded_package.cfg.cache.src_lua));
 
-        bwtools::close_file(it_package);
+        file_utils::close_file(it_package);
 
         _log << (log_message(log_type::success)
                  << "\"" << fs_object.path().string() << "\" bweas package was loaded successfully("
@@ -236,15 +238,15 @@ void builder::start() {
     if (mode_bweas == mode_working::build_package)
         return;
     else if (mode_bweas == mode_working::build) {
-        file_it bweas_cache = bwtools::open_file(CACHE_FILE, mf::open::rb);
-        string cache_str    = bwtools::read_file(bwtools::get_ref_file(bweas_cache));
+        file_it bweas_cache = file_utils::open_file(CACHE_FILE, mf::open::rb);
+        string cache_str    = file_utils::read_file(file_utils::get_ref_file(bweas_cache));
 
         _context.path_bweas_config = cache->get_path_config(cache_str);
         string path_bweas_cache    = _context.path_bweas_to_build + CACHE_FILE;
 
-        if (!bwtools::exist_file(_context.path_bweas_config))
+        if (!file_utils::exist_file(_context.path_bweas_config))
             _log << (log_message(log_type::fatal) << "Bweas config not found");
-        if (!bwtools::exist_file(path_bweas_cache))
+        if (!file_utils::exist_file(path_bweas_cache))
             _log << (log_message(log_type::fatal) << "Bweas cache not found");
 
         fs::file_time_type config_ftime = fs::last_write_time(_context.path_bweas_config);
@@ -261,7 +263,7 @@ void builder::start() {
                  << "Was loaded " << _context.templates.size() << " template of command!");
     }
     else if (mode_bweas == mode_working::collect_cfg || mode_bweas == mode_working::collect_cfg_w_build) {
-        if (!bwtools::exist_file(_context.path_bweas_config))
+        if (!file_utils::exist_file(_context.path_bweas_config))
             _log << (log_message(log_type::fatal) << "Bweas config not found \'" << _context.path_bweas_config << "\'");
 
     interpreter_start:
@@ -274,7 +276,7 @@ void builder::start() {
     }
 
     if (mode_bweas == mode_working::build || mode_bweas == mode_working::collect_cfg_w_build) {
-        _log << (log_message(log_type::msg) << "*Build start time: " << bwtools::get_time());
+        _log << (log_message(log_type::msg) << "*Build start time: " << file_utils::get_time());
         build_targets();
     }
 }
@@ -297,10 +299,10 @@ size_t builder::gen_cache_target() {
         return 1;
     }
 
-    file_it bweas_cache = bwtools::open_file(CACHE_FILE, mf::open::w);
+    file_it bweas_cache = file_utils::open_file(CACHE_FILE, mf::open::w);
 
-    bwtools::write_file(bwtools::get_ref_file(bweas_cache), cache->create_cache(), mf::output::write_binary);
-    bwtools::close_file(bweas_cache);
+    file_utils::write_file(file_utils::get_ref_file(bweas_cache), cache->create_cache(), mf::output::write_binary);
+    file_utils::close_file(bweas_cache);
 
     _log << (log_message(log_type::success) << "Cache generation was successful!");
 
@@ -313,8 +315,8 @@ depends_files::depends_map &builder::load_depends_file(std::shared_ptr<depends_f
     dfinder->set_include_paths(include_paths);
     string depends_str;
 
-    if (bwtools::exist_file(DEPENDS_FILE)) {
-        depends_str = bwtools::read_file(bwtools::get_ref_file(bwtools::open_file(DEPENDS_FILE)));
+    if (file_utils::exist_file(DEPENDS_FILE)) {
+        depends_str = file_utils::read_file(file_utils::get_ref_file(file_utils::open_file(DEPENDS_FILE)));
 
         size_t it;
         for (const auto &name_file : source_files) {
@@ -335,7 +337,7 @@ depends_files::depends_map &builder::load_depends_file(std::shared_ptr<depends_f
             dfinder->build_graphs_depends_file_v(name_file);
             depends_str += name_file + ":\n" + dfinder->get_string_depends_file(name_file);
         }
-        bwtools::write_file(bwtools::get_ref_file(bwtools::open_file(DEPENDS_FILE, mf::open::w)), depends_str);
+        file_utils::write_file(file_utils::get_ref_file(file_utils::open_file(DEPENDS_FILE, mf::open::w)), depends_str);
     }
 
     return dfinder->get_graphs_depends_files();
@@ -365,7 +367,7 @@ void builder::build_targets() {
         {
             log_console_lock lock_c;
 
-            command_generator generator(&_context);
+            generator_command generator(&_context);
 
             target.queue_templates =
                 sc::template_command::create_queue_target_templates(_context.templates, target.templates, target.type);

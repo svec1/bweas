@@ -7,9 +7,10 @@
 
 #include <bwdepends_api.hpp>
 #include <bwlogger.hpp>
-#include <tools/bwfile.hpp>
+#include <utils/file_utils.hpp>
 
 using namespace bweas;
+using namespace bweas::utils;
 
 static logger _log{"BWDEPENDS_FINDER[INTEGRAL]"};
 
@@ -23,9 +24,9 @@ uset<string> bweas::depends_integral_cxx::build_graph_depends_file(string_v name
     uset<string> graph_depends_file;
 
     try {
-        bwtools::file_it file = bwtools::open_file(name_file);
-        string src_file       = bwtools::read_file(bwtools::get_ref_file(file));
-        bool is_system_header = 0;
+        file_utils::file_it file = file_utils::open_file(name_file);
+        string src_file          = file_utils::read_file(file_utils::get_ref_file(file));
+        bool is_system_header    = 0;
 
         std::regex include_line_syntax(R"(#include\s+((<[\/\w+]+(?:\.\w+)?>)|(\"[\/\w+]+(?:\.\w+)?\")))");
         for (auto it_match = std::sregex_iterator(src_file.begin(), src_file.end(), include_line_syntax);
@@ -42,15 +43,15 @@ uset<string> bweas::depends_integral_cxx::build_graph_depends_file(string_v name
                 continue;
 
             if (is_system_header)
-                include_file = bwfile::get_path_file(include_file, include_paths);
+                include_file = file_utils::get_path_file(include_file, include_paths);
             else
-                include_file = bwfile::get_path_file(include_file);
+                include_file = file_utils::get_path_file(include_file);
 
             graph_depends_file.insert(include_file);
             graph_depends_file.merge(build_graph_depends_file(include_file));
         }
 
-        bwtools::close_file(file);
+        file_utils::close_file(file);
     }
     catch (std::exception &excp) {
         throw std::runtime_error(fs::path(name_file).filename().c_str() + string("->") + excp.what());

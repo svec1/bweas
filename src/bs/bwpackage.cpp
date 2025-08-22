@@ -8,9 +8,10 @@
 #include <bwpackage.hpp>
 
 #include <nlohmann/json.hpp>
-#include <tools/bwlz4.hpp>
+#include <utils/lz4.hpp>
 
 using namespace bweas;
+using namespace bweas::utils;
 
 // The first bytes in the bweas package file are the signature
 static const string PACKAGE_PREFIX_BYTE = "sbw";
@@ -52,7 +53,7 @@ string package::create_data_package(data_bw_package _data) {
     for (const auto &src_lua_generator : _data.src_lua_finders)
         data_str += src_lua_generator + PACKAGE_SEPARATE_LUA_DEPENDENCY_FINDER;
 
-    return bwlz4::compress_data(data_str);
+    return lz4::compress_data(data_str);
 }
 
 string package::init(data_bw_package _data, bool is_create_pckg) {
@@ -77,7 +78,7 @@ string package::init(data_bw_package _data, bool is_create_pckg) {
 
         if (is_create_pckg) {
             cfg.cache.src_lua =
-                bwtools::read_file(bwtools::get_ref_file(bwtools::open_file((string)metainf_ch["lua-file"])));
+                file_utils::read_file(file_utils::get_ref_file(file_utils::open_file((string)metainf_ch["lua-file"])));
             _data.src_lua_cache = cfg.cache.src_lua;
         }
         else
@@ -101,10 +102,10 @@ string package::init(data_bw_package _data, bool is_create_pckg) {
                 _log << (log_message(log_type::fatal) << "dependency-finder metadata must include the path to the lua "
                                                          "(finder) source code file");
 
-            auto lua_file_finder_source = bwtools::open_file((string)metainf_fn["lua-file"]);
+            auto lua_file_finder_source = file_utils::open_file((string)metainf_fn["lua-file"]);
             if (is_create_pckg) {
                 cfg.finders.emplace_back(finder.key(),
-                                         bwtools::read_file(bwtools::get_ref_file(lua_file_finder_source)));
+                                         file_utils::read_file(file_utils::get_ref_file(lua_file_finder_source)));
                 _data.src_lua_finders.push_back(cfg.finders[cfg.finders.size() - 1].src_lua);
             }
             else {
@@ -263,7 +264,7 @@ string package::init(data_bw_package _data, bool is_create_pckg) {
 }
 
 void package::load(string_v raw_data_package) {
-    string data_pckg = bwlz4::decompress_data(raw_data_package, MAX_SIZE_PACKAGE);
+    string data_pckg = lz4::decompress_data(raw_data_package, MAX_SIZE_PACKAGE);
     if (data_pckg.size() == 0)
         _log << (log_message(log_type::fatal) << "Unsuccessful decompression of package bweas");
 

@@ -10,8 +10,9 @@
 #include <bwlogger.hpp>
 
 using namespace bweas;
+using namespace bweas::utils;
 
-bwtools::file_it logger::file_log;
+file_utils::file_it logger::file_log;
 log_type logger::global_status;
 bool logger::output_to_console = true;
 
@@ -66,9 +67,11 @@ void logger::operator<<(const log_message &obj) {
     string _owner  = !owner.empty() ? string("[") + owner.data() + string("]: ") : "";
     string out_str = std::format("{}\e[3{}m{}\e[0m", _owner, text_color, obj.ss.str());
 
-    bwtools::write_file(bwtools::get_ref_file(file_log), _owner + obj.ss.str() + "\n");
+    file_utils::write_file(file_utils::get_ref_file(file_log), _owner + obj.ss.str() + "\n");
+
+    if (output_to_console)
+        std::fprintf(stdout, "%s\n", out_str.data());
+
     if (status == log_type::fatal)
-        bwtools::fatal(out_str);
-    else if (output_to_console)
-        bwtools::message(out_str);
+        exit(1);
 }

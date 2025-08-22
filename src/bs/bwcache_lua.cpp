@@ -22,7 +22,7 @@ static constexpr auto NAME_VARIABLE_CCOMPONENTS = "call_components";
 static constexpr auto NAME_VARIABLE_GEARGS      = "global_external_args";
 
 static logger _log{"BWCACHE[LUA]"};
-static bwlua::lua lua;
+static utils::lua lua;
 
 lua_cache::lua_cache(string_v src_lua) {
     lua.create(src_lua.data());

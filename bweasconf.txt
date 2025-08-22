@@ -9,7 +9,7 @@ create_template(t_lib,   "ar:bweas.a(OBJ_S) -> LIBRARY: <'rcs'> OUTPUT_FILE <{OB
 
 create_template(t_exec,  "clang++:bweas(BWEAS_SLIB) -> EXECUTABLE: INPUT_FILE <{BWEAS_SLIB}> <'-o'> OUTPUT_FILE <'-I'[include_paths]> <'-std=gnu++23'> <'-llz4'> <'-llua'> <'-lluajit-5.1'>")
 
-file(SRC_FILES, 0, "src/bs/*.cpp", "src/bs/lang/*.cpp", "src/bs/lang/lexer.l", "src/bs/lang/parser.y")
+file(SRC_FILES, 0, "src/bs/*.cpp", "src/bs/utils/*.cpp", "src/bs/lang/*.cpp", "src/bs/lang/lexer.l", "src/bs/lang/parser.y")
 file(BWEAS_MAIN_FILE, 0, "src/bweas.cpp")
 
 create_target(BWEAS_SLIB, CPP_LIBRARY, {LIBRARY}, {SRC_FILES})

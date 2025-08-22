@@ -9,7 +9,7 @@
 
 int main(int argc, char **argv) {
 #if defined(WIN)
-    bwtools::virtual_terminal::init();
+    bweas::utils::virtual_terminal::init();
 #endif
 
     bweas::builder bw(argc, argv);

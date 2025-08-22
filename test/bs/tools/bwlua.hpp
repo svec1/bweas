@@ -1,9 +1,11 @@
 #ifndef TEST_BWLUA__H_
 #define TEST_BWLUA__H_
-#include <bs/tools/bwlua.hpp>
+#include <bs/utils/lua_wrapper.hpp>
 #include <gtest/gtest.h>
 
 #include <ctype.h>
+
+using namespace bweas::utils;
 
 #define TEST1_SOURCE_LUA                                                                                               \
     "\
@@ -30,51 +32,49 @@ test_func1_welcome() \
 "
 
 TEST(BWWRAP_LUA, NoThrowInitClassBwLua) {
-    bwlua::lua ltest;
+    lua ltest;
     ASSERT_NO_THROW(ltest.create(TEST1_SOURCE_LUA));
     ASSERT_NO_THROW(ltest.close());
 }
 
 TEST(BWWRAP_LUA, NoThrowClassBwLuaVariablePerformance) {
-    bwlua::lua ltest(TEST1_SOURCE_LUA);
-    bwlua::lua::fast_table<std::string_view, std::any> test_var_vec{{"test", std::string("HELLO WORLD!")},
-                                                                    {"test2", (bwlua::lua::integer)2}};
-    bwlua::lua::array<bwlua::lua::integer> nums = {1, 2, 3, 4, 5};
+    lua ltest(TEST1_SOURCE_LUA);
+    lua::fast_table<std::string_view, std::any> test_var_vec{{"test", std::string("HELLO WORLD!")},
+                                                             {"test2", (lua::integer)2}};
+    lua::array<lua::integer> nums = {1, 2, 3, 4, 5};
     std::string str_tmp;
 
     ASSERT_NO_THROW({
         ltest["test"]  = test_var_vec;
         ltest["test2"] = nums;
     });
-    ASSERT_EQ(std::any_cast<bwlua::lua::number>(
-                  ltest["test"].getval<bwlua::lua::fast_table<std::string_view, std::any>>()[0].second),
+    ASSERT_EQ(std::any_cast<lua::number>(ltest["test"].getval<lua::fast_table<std::string_view, std::any>>()[0].second),
               2);
-    ASSERT_EQ(ltest["test2"].getval<bwlua::lua::array<bwlua::lua::integer>>()[2], 3);
+    ASSERT_EQ(ltest["test2"].getval<lua::array<lua::integer>>()[2], 3);
 }
 
 TEST(BWWRAP_LUA, NoThrowClassBwLuaCallFunction) {
-    bwlua::lua ltest(TEST1_SOURCE_LUA);
-    bwlua::lua::fast_table<std::string_view, std::any> test_var_vec{{"test", "HELLO WORLD!"},
-                                                                    {"test2", "HELLO WORLD!"}};
-    bwlua::lua::array<bwlua::lua::integer> nums = {1, 2, 3, 4, 5};
+    lua ltest(TEST1_SOURCE_LUA);
+    lua::fast_table<std::string_view, std::any> test_var_vec{{"test", "HELLO WORLD!"}, {"test2", "HELLO WORLD!"}};
+    lua::array<lua::integer> nums = {1, 2, 3, 4, 5};
     std::string str_tmp;
     int num_tmp;
 
     ltest.include_libs();
 
     // test_func1_welcome()
-    ASSERT_NO_THROW({ str_tmp = ltest.call_function<std::string>("test_func1_welcome", bwlua::lua::nil{}); });
+    ASSERT_NO_THROW({ str_tmp = ltest.call_function<std::string>("test_func1_welcome", lua::nil{}); });
     ASSERT_EQ(str_tmp, "Hello, World!");
 
     // test_func2()
     ASSERT_NO_THROW({
-        num_tmp = ltest.call_function<bwlua::lua::integer>("test_func2", (bwlua::lua::integer)4, "Hello, ",
-                                                           (bwlua::lua::integer)5, "World!");
+        num_tmp =
+            ltest.call_function<lua::integer>("test_func2", (lua::integer)4, "Hello, ", (lua::integer)5, "World!");
     });
     ASSERT_EQ(num_tmp, 9);
 
     // test_func3()
-    ASSERT_NO_THROW({ num_tmp = ltest.call_function<bwlua::lua::integer>("test_func3", nums); });
+    ASSERT_NO_THROW({ num_tmp = ltest.call_function<lua::integer>("test_func3", nums); });
     ASSERT_EQ(num_tmp, 15);
 
     // test_func4()
@@ -84,12 +84,11 @@ TEST(BWWRAP_LUA, NoThrowClassBwLuaCallFunction) {
 }
 
 TEST(BWWRAP_LUA, NoThrowClassBwLuaVariableAStackNBad) {
-    bwlua::lua ltest(TEST1_SOURCE_LUA);
+    lua ltest(TEST1_SOURCE_LUA);
     int num_tmp;
 
-    for (bwlua::lua::integer i = 0; i < 1000; ++i) {
-        ASSERT_NO_THROW(
-            { num_tmp = ltest.call_function<bwlua::lua::integer>("test_func2", i, "Hello, ", i * 10, "World!"); });
+    for (lua::integer i = 0; i < 1000; ++i) {
+        ASSERT_NO_THROW({ num_tmp = ltest.call_function<lua::integer>("test_func2", i, "Hello, ", i * 10, "World!"); });
         ASSERT_EQ(num_tmp, i + i * 10);
         ASSERT_EQ(ltest.get_var<std::string>("str_g"), "Hello, World!");
     }

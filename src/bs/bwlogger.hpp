@@ -11,7 +11,7 @@
 #include <functional>
 #include <sstream>
 
-#include <bwtools.hpp>
+#include <utils/file_utils.hpp>
 
 namespace bweas {
 enum class log_type;
@@ -55,7 +55,8 @@ class bweas::logger {
 
   public:
     logger(string_v _owner) : owner(_owner) {
-        file_log = bwtools::open_file("bweas-last.log", bwtools::file::mode_file::open::w);
+        using namespace bweas::utils;
+        file_log = file_utils::open_file("bweas-last.log", file_utils::file::mode_file::open::w);
     }
 
     logger(const logger &)            = delete;
@@ -76,10 +77,9 @@ class bweas::logger {
     static bweas::log_type global_status;
 
   private:
-    static bwtools::file_it file_log;
+    static bweas::utils::file_utils::file_it file_log;
     static bool output_to_console;
 
-  private:
     string_v owner;
     bweas::log_type status;
 };

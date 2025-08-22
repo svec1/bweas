@@ -8,7 +8,7 @@
 #ifndef STATIC_STRUCT_HPP
 #define STATIC_STRUCT_HPP
 
-#include <bwtools.hpp>
+#include <bwaliases.hpp>
 
 namespace bweas {
 

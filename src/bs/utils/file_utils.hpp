@@ -5,36 +5,22 @@
 // ------------------------------------------
 //
 
-#ifndef BWTOOLS_HPP
-#define BWTOOLS_HPP
+#ifndef BWFILE__H
+#define BWFILE__H
 
 #include <bwaliases.hpp>
 
-#include <fstream>
-
 namespace bweas {
-class bwtools;
+namespace utils {
+class file_utils;
 }
+} // namespace bweas
 
-// A base class that implements many auxiliary functions
-class bweas::bwtools {
+class bweas::utils::file_utils {
   public:
-    bwtools() = delete;
+    file_utils() = delete;
 
   public:
-#if defined(WIN)
-    class virtual_terminal {
-      public:
-        static void init() {
-            static virtual_terminal vterminal;
-        }
-
-      private:
-        virtual_terminal();
-        ~virtual_terminal();
-    };
-#endif
-
     struct file {
         struct mode_file {
           private:
@@ -145,9 +131,6 @@ class bweas::bwtools {
   public:
     using file_it = size_t;
 
-    static void message(std::string_view str);
-    static void fatal(std::string_view str_error);
-
     static string get_time();
 
     static string get_path_program();
@@ -166,6 +149,17 @@ class bweas::bwtools {
     static string read_file(file &file, file::mode_file::input mode = file::mode_file::input::read_default);
     static void write_file(file &file, string_v buf,
                            file::mode_file::output mode = file::mode_file::output::write_default);
+
+  public:
+    // Creates an array of file names based on the mask
+    // passed to the function and an array of all files.
+    // ### The syntax is fully compliant with the glob() standard.
+    static vec<string> file_slc_mask(string mask, const vec<string> &files);
+
+    // Returns the absolute path to an existing file, considering the current directory.
+    static string get_path_file(string name_file);
+    // Returns the absolute path to an existing file, considering all possible paths, including the current directory.
+    static string get_path_file(string name_file, const vec<string> &possible_paths);
 
   private:
     static vec<file> files;

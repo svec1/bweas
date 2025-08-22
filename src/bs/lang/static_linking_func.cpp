@@ -9,11 +9,12 @@
 
 #include <bwlogger.hpp>
 #include <lang/interpreter.hpp>
-#include <tools/bwfile.hpp>
+#include <utils/file_utils.hpp>
 
 #include <algorithm>
 
 using namespace bweas;
+using namespace bweas::utils;
 
 static const array<string, 18> vec_name_config_var = {
     PRJ_VAR_NAME_DFLAGS_C,  PRJ_VAR_NAME_DFLAGS_L, PRJ_VAR_NAME_RFLAGS_C,      PRJ_VAR_NAME_RFLAGS_L,
@@ -185,7 +186,7 @@ void sl_func::file(const expressions &expr_s, scope &current_scope) {
 
             string mask_regex;
 
-            tmp_path_files_o = bwfile::file_slc_mask(mask, tmp_path_files);
+            tmp_path_files_o = file_utils::file_slc_mask(mask, tmp_path_files);
             for (const auto &path_file : tmp_path_files_o)
                 path_files.push_back(path_file);
         }

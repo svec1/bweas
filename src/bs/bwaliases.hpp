@@ -12,6 +12,7 @@
 #include <array>
 #include <cassert>
 #include <filesystem>
+#include <fstream>
 #include <map>
 #include <optional>
 #include <regex>

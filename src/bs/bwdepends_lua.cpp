@@ -8,7 +8,7 @@ using namespace bweas;
 static constexpr auto NAME_FUNCTION_BUILD_GRAPH = "build_graph_depends";
 
 static logger _log{"BWDEPENDS_FINDER[LUA]"};
-static bwlua::lua lua;
+static utils::lua lua;
 
 depends_lua::depends_lua(const string_v src_lua) {
     lua.create(src_lua.data());

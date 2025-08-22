@@ -10,6 +10,7 @@
 #include <bwluatools.hpp>
 
 using namespace bweas;
+using namespace bweas::utils;
 
 static logger _log{"BWMODULE"};
 
@@ -22,10 +23,10 @@ umap<string, scope::module_data> module_manager::init_modules(vec<module_cfg> &m
         umap<string, decl_func> &funcs = module_data_tmp.funcs;
         for (auto &[name, _decl_func] : md.funcs) {
             _decl_func.func = [&md, &_decl_func](const expressions &expr_s, scope &curr_scope) {
-                static umap<string, bwlua::lua> lua_stream_s;
+                static umap<string, lua> lua_stream_s;
                 if (!lua_stream_s[md.name].is_created())
-                    lua_stream_s.emplace(md.name, bwtools::read_file(bwtools::get_ref_file(
-                                                      bwtools::open_file(md.name_lua_source_file))));
+                    lua_stream_s.emplace(md.name, file_utils::read_file(file_utils::get_ref_file(
+                                                      file_utils::open_file(md.name_lua_source_file))));
 
                 lua_stream_s[md.name].call_function<string_v, lua_tools::integer, lua_tools::integer>(
                     _decl_func.name, *((lua_tools::integer *)&expr_s), *((lua_tools::integer *)&curr_scope));
