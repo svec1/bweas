@@ -5,11 +5,11 @@
 // ------------------------------------------
 //
 
-#ifndef BWLUA__H
+#ifndef LUA_WRAPPER_HPP
 
 // Header-library bwlua - svec
 // This library is a wrapper around luajit
-#define BWLUA__H
+#define LUA_WRAPPER_HPP
 
 #include <any>
 #include <map>

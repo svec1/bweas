@@ -5,8 +5,8 @@
 // ------------------------------------------
 //
 
-#ifndef BWLZ4__h
-#define BWLZ4__h
+#ifndef LZ4_HPP
+#define LZ4_HPP
 
 #include <bwaliases.hpp>
 

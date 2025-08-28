@@ -5,8 +5,8 @@
 // ------------------------------------------
 //
 
-#ifndef BWFILE__H
-#define BWFILE__H
+#ifndef FILE_UTILS_HPP
+#define FILE_UTILS_HPP
 
 #include <bwaliases.hpp>
 

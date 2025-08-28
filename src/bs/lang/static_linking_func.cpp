@@ -10,6 +10,7 @@
 #include <bwlogger.hpp>
 #include <lang/interpreter.hpp>
 #include <utils/file_utils.hpp>
+#include <utils/formatter_ext.hpp>
 
 #include <algorithm>
 
@@ -287,12 +288,7 @@ void sl_func::debug_struct(const expressions &expr_s, scope &current_scope) {
     str_out += "\nDependencies: \n" + std::format("{}", trg_ref.dependencies);
     str_out += "\nTemplates: \n" + std::format("{}", trg_ref.templates);
 
-    str_out += "\n\nExtension fields: \n";
-    for (const auto &[key, value] : ext_fields)
-        if (std::holds_alternative<string>(value))
-            str_out += std::format("{}: {}\n", key, std::get<string>(value));
-        else
-            str_out += std::format("{}: {}\n", key, std::get<vec<string>>(value));
+    str_out += std::format("\n\nExtension fields: {}\n", ext_fields);
 
     _log << (log_message(log_type::msg) << str_out);
 }
