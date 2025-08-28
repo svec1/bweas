@@ -12,9 +12,22 @@
 using namespace bweas;
 using namespace bweas::utils;
 
+bool logger::log = true;
+
 file_utils::file_it logger::file_log;
 log_type logger::global_status;
 bool logger::output_to_console = true;
+
+logger::logger(string_v _owner) : owner(_owner) {
+    file_log = file_utils::open_file(NAME_FILE_LOG, file_utils::file::mode_file::open::w);
+}
+logger::~logger() {
+    if (file_utils::get_ref_file(file_log).file_opened)
+        file_utils::close_file(file_log);
+
+    if (!log && fs::exists(NAME_FILE_LOG))
+        fs::remove(NAME_FILE_LOG);
+}
 
 log_message::log_message(log_type _log_t) : log_t(_log_t) {
     switch (log_t) {
@@ -32,6 +45,9 @@ log_message::log_message(log_type _log_t) : log_t(_log_t) {
         break;
     }
 }
+void logger::set_global_log(bool _log) {
+    log = _log;
+}
 void logger::set_global_status() {
     global_status = status;
 }
@@ -46,6 +62,9 @@ bool logger::error_status() {
 }
 
 void logger::operator<<(const log_message &obj) {
+    if (!log)
+        return;
+
     status = obj.log_t;
 
     size_t text_color;

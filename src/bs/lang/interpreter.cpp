@@ -6,6 +6,7 @@
 //
 
 #include <lang/interpreter.hpp>
+#include <lang/semantic_an.hpp>
 
 using namespace bweas;
 
@@ -17,9 +18,10 @@ extern int yyparse(void);
 extern logger *log_bison;
 
 extern scope *current_scope;
-extern statements stm_s;
 
-interpreter::interpreter(string_v name_file) : global_scope{_log}, smt_analyzer{_log} {
+semantic_analyzer smt_analyzer{_log};
+
+interpreter::interpreter(string_v name_file) : global_scope{_log} {
     yyin          = fopen(name_file.data(), "r");
     log_bison     = &_log;
     current_scope = &global_scope;
@@ -33,8 +35,9 @@ interpreter::interpreter(string_v name_file) : global_scope{_log}, smt_analyzer{
 }
 
 void interpreter::interpret() {
+
     yyparse();
-    smt_analyzer.analysis(stm_s, *current_scope);
+    smt_analyzer.check_end_statements();
 }
 
 void interpreter::set_scope(scope *external_scope) {

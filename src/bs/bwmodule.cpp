@@ -20,7 +20,6 @@ umap<string, scope::module_data> module_manager::init_modules(vec<module_cfg> &m
         scope::module_data module_data_tmp;
         module_data_tmp.profiles = std::move(md.profiles);
 
-        umap<string, decl_func> &funcs = module_data_tmp.funcs;
         for (auto &[name, _decl_func] : md.funcs) {
             _decl_func.func = [&md, &_decl_func](const expressions &expr_s, scope &curr_scope) {
                 static umap<string, lua> lua_stream_s;

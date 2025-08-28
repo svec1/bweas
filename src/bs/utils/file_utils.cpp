@@ -66,11 +66,6 @@ bool file_utils::exist_file(file_it file) {
         return 0;
     return 1;
 }
-bool file_utils::exist_file(std::string_view name_file) {
-    if (fs::exists(name_file))
-        return 1;
-    return 0;
-}
 file_utils::file_it file_utils::get_iterator_file(std::string_view name_file) {
     return std::distance(files.begin(),
                          std::find_if(files.begin(), files.end(), [name_file](const file_utils::file &file) {

@@ -39,13 +39,14 @@ class semantic_analyzer {
     //   ^^^
     //   second pass
     //
-    void analysis(statements &st_s, scope &current_scope);
+    void analysis(statement &st, scope &current_scope);
+    void check_end_statements();
 
   private:
-    void smt_first_pass(statements &st_s, scope &current_scope);
+    void smt_first_pass(statement &st, scope &current_scope);
 
     // The set command (initialization or assignment) is called here
-    void smt_second_pass(statements &st_s, scope &current_scope);
+    void smt_second_pass(statement &st, scope &current_scope);
 
   private:
     // Parses a subexpression if it has not token the type
@@ -54,6 +55,13 @@ class semantic_analyzer {
 
   private:
     bweas::logger &_log;
+
+    // <0 - if_skip, 1 - else_skip; 0 - current if, 1- current else>
+    std::vector<std::pair<bool, bool>> branch_s;
+
+    size_t nested_if      = 0;
+    bool skip             = 0;
+    bool last_st_is_endif = 0;
 };
 
 #endif

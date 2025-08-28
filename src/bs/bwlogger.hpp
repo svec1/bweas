@@ -54,15 +54,15 @@ class bweas::logger {
     using handle_func_t = void(string_v);
 
   public:
-    logger(string_v _owner) : owner(_owner) {
-        using namespace bweas::utils;
-        file_log = file_utils::open_file("bweas-last.log", file_utils::file::mode_file::open::w);
-    }
+    logger(string_v _owner);
 
     logger(const logger &)            = delete;
     logger &operator=(const logger &) = delete;
 
+    ~logger();
+
   public:
+    void set_global_log(bool _log);
     void set_global_status();
 
     bweas::log_type get_status();
@@ -77,11 +77,16 @@ class bweas::logger {
     static bweas::log_type global_status;
 
   private:
+    static bool log;
+
     static bweas::utils::file_utils::file_it file_log;
     static bool output_to_console;
 
     string_v owner;
     bweas::log_type status;
+
+  private:
+    static constexpr auto NAME_FILE_LOG = "bweas-last.log";
 };
 
 template <bool inv> class bweas::log_console_lock {

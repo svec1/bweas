@@ -87,6 +87,8 @@ void builder::handle_args(vec<string> &args) {
                 mode_bweas                     = mode_working::build_package;
                 expected_path_json_cfg_package = 1;
             }
+            else if (args[i] == "nolog")
+                _log.set_global_log(false);
             else if (args[i] == "help")
                 _log << (log_message(log_type::msg) << HELP_STR);
             else if (args[i] == "version")
@@ -217,7 +219,7 @@ void builder::init() {
 
     cache->init(&_context);
 
-    dependency_finders.emplace("CXX", std::shared_ptr<depends_files>(depends_files::create_depends_integral_cxx()));
+    dependency_finders.emplace("CPP", std::shared_ptr<depends_files>(depends_files::create_depends_integral_cxx()));
 
     for (auto &package : loaded_packages) {
         for (const auto &finder : package.cfg.finders) {
@@ -244,9 +246,9 @@ void builder::start() {
         _context.path_bweas_config = cache->get_path_config(cache_str);
         string path_bweas_cache    = _context.path_bweas_to_build + CACHE_FILE;
 
-        if (!file_utils::exist_file(_context.path_bweas_config))
+        if (!fs::exists(_context.path_bweas_config))
             _log << (log_message(log_type::fatal) << "Bweas config not found");
-        if (!file_utils::exist_file(path_bweas_cache))
+        if (!fs::exists(path_bweas_cache))
             _log << (log_message(log_type::fatal) << "Bweas cache not found");
 
         fs::file_time_type config_ftime = fs::last_write_time(_context.path_bweas_config);
@@ -263,7 +265,7 @@ void builder::start() {
                  << "Was loaded " << _context.templates.size() << " template of command!");
     }
     else if (mode_bweas == mode_working::collect_cfg || mode_bweas == mode_working::collect_cfg_w_build) {
-        if (!file_utils::exist_file(_context.path_bweas_config))
+        if (!fs::exists(_context.path_bweas_config))
             _log << (log_message(log_type::fatal) << "Bweas config not found \'" << _context.path_bweas_config << "\'");
 
     interpreter_start:
@@ -312,10 +314,11 @@ size_t builder::gen_cache_target() {
 depends_files::depends_map &builder::load_depends_file(std::shared_ptr<depends_files> &dfinder,
                                                        const vec<string> &include_paths,
                                                        const vec<string> &source_files) {
+    log_console_unlock unlock_c;
     dfinder->set_include_paths(include_paths);
     string depends_str;
 
-    if (file_utils::exist_file(DEPENDS_FILE)) {
+    if (fs::exists(DEPENDS_FILE)) {
         depends_str = file_utils::read_file(file_utils::get_ref_file(file_utils::open_file(DEPENDS_FILE)));
 
         size_t it;
@@ -379,7 +382,7 @@ void builder::build_targets() {
 
             if (dependency_finders.contains(target.fields<string>("language")))
                 _context.dfiles = load_depends_file(dependency_finders[target.fields<string>("language")],
-                                                    target.fields<vec<string>>("inlclude_paths"),
+                                                    target.fields<vec<string>>("include_paths"),
                                                     target.fields<vec<string>>("source_files"));
 
             generator.get_input_files();

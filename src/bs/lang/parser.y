@@ -3,11 +3,11 @@
 #include <cstdio>
 #include <cstring>
 
+#include <lang/semantic_an.hpp>
+
 #if defined(WIN)
 #include <io.h>
 #endif
-
-#include <lang/scope.hpp>
 
 #define YYLLOC_UPDATE_GLOBAL_LOC(loc) last_line = loc.last_line; last_column = loc.last_column; 
 
@@ -16,7 +16,8 @@ using namespace bweas;
 logger *log_bison;
 scope* current_scope;  
 
-statements               stm_s;
+extern semantic_analyzer smt_analyzer;
+
 expressions              current_params; // Current statement expressions 
 expression::expression_t expr_t_tmp;     // Current expression type 
 
@@ -37,9 +38,10 @@ void init_param(char* value){
     current_vbi_param = false;
 }
 
-void init_statement(const decl_func* dfunc){
-    stm_s.emplace_back(dfunc, current_params, last_line, last_column); 
-    stm_s[stm_s.size()-1].view_str = current_statements_str;
+void execute_statement(const decl_func* dfunc){
+    statement st(dfunc, current_params, last_line, last_column); 
+    st.view_str = current_statements_str;
+    smt_analyzer.analysis(st, *current_scope); 
 
     current_params.clear();
     current_statements_str.clear();
@@ -82,7 +84,7 @@ statement:
                                                         (*log_bison) << (log_message(log_type::error) << "A variable is expected which is a reference to the function: " << $2); 
                                                         YYERROR;        
                                                     }
-                                                    init_statement(&current_scope->get_var_value<decl_func>($2));  
+                                                    execute_statement(&current_scope->get_var_value<decl_func>($2));  
                                                 }   
         | IMPORT str_term                       {
                                                     if(!current_scope->import_module($2)){
@@ -150,6 +152,20 @@ str_expr: str_expr PLUS str_term             {
                                                 free($1);
                                                 free($3);
                                              }
+        | str_expr PLUS VALUE_BY_ID          {
+                                                if(current_scope->what_type($3) != 2){
+                                                    (*log_bison) << (log_message(log_type::fatal) << "Expected string variable: " << $3); 
+                                                    YYERROR;
+                                                }
+                                                $$ = strdup(($1 + current_scope->get_var_value<string>($3)).c_str());
+                                             }
+        | VALUE_BY_ID PLUS str_expr          {
+                                                if(current_scope->what_type($1) != 2){
+                                                    (*log_bison) << (log_message(log_type::fatal) << "Expected string variable: " << $1); 
+                                                    YYERROR;
+                                                }
+                                                $$ = strdup((current_scope->get_var_value<string>($1) + $3).c_str());
+                                             } 
         | str_term                           { $$ = $1; }
 ;
 

@@ -17,8 +17,8 @@ create_target(BWEAS, CPP_EXECUTABLE, {EXECUTABLE}, {BWEAS_MAIN_FILE})
 
 add_dependencies_target(BWEAS, BWEAS_SLIB)
 
-set(BWEAS_SLIB_include_paths, "../src/bs/")
-set(BWEAS_include_paths, "../src/bs/")
+set(BWEAS_SLIB_include_paths, {BWEAS_SLIB_include_paths}, {BWEAS_CONFIG_PATH} + "/src/bs/")
+set(BWEAS_include_paths, {BWEAS_SLIB_include_paths})
 
 use_templates(BWEAS_SLIB, t_flex, t_bison, t_obj, t_lib)
 use_templates(BWEAS, t_exec)

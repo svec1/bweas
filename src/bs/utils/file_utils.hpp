@@ -141,7 +141,6 @@ class bweas::utils::file_utils {
     static void close_file(file_it file);
 
     static bool exist_file(file_it file);
-    static bool exist_file(std::string_view name_file);
 
     static file_it get_iterator_file(std::string_view name_file);
     static file &get_ref_file(file_it file);

@@ -70,6 +70,7 @@ void bweas::lang::init_scope() {
     _interpreter.get_scope().create_var<pdiff>("TRUE", 1);
     _interpreter.get_scope().create_var<pdiff>("EXECUTABLE", 0);
     _interpreter.get_scope().create_var<pdiff>("LIBRARY", 1);
+    _interpreter.get_scope().create_var<string>("BWEAS_CONFIG_PATH", fs::current_path().c_str());
 
     _interpreter.create_function(
         "set", sl_func::set,

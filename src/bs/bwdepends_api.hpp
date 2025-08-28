@@ -46,7 +46,7 @@ class bweas::depends_files {
     static inline depends_files *create_depends_lua(const string_v src_lua);
 
   protected:
-    virtual uset<string> build_graph_depends_file(string_v name_file) = 0;
+    virtual void build_graph_depends_file(string_v name_file, uset<string> &graph_depends_file) = 0;
 
   protected:
     vec<string> include_paths;
@@ -66,7 +66,7 @@ class bweas::depends_integral_cxx : private bweas::depends_files {
     ~depends_integral_cxx() = default;
 
   private:
-    uset<string> build_graph_depends_file(string_v name_file) override final;
+    void build_graph_depends_file(string_v name_file, uset<string> &graph_depends_file) override final;
 };
 
 class bweas::depends_lua : private bweas::depends_files {
@@ -79,7 +79,7 @@ class bweas::depends_lua : private bweas::depends_files {
     ~depends_lua() = default;
 
   private:
-    uset<string> build_graph_depends_file(string_v name_file) override final;
+    void build_graph_depends_file(string_v name_file, uset<string> &graph_depends_file) override final;
 };
 
 bweas::depends_files *bweas::depends_files::create_depends_integral_cxx() {

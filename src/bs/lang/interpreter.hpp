@@ -35,8 +35,6 @@ class interpreter {
 
   private:
     scope global_scope;
-
-    semantic_analyzer smt_analyzer;
 };
 
 #endif

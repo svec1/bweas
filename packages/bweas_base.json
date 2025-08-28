@@ -11,7 +11,7 @@
                     "target_type": "",
 
                     "source_files": [],
-                    "include_paths": [],
+                    "include_paths": ["/usr/include", "/usr/local/include"],
                     "RELEASE": {
                         "compilers_flags": [] 
                     },

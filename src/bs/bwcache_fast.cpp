@@ -27,9 +27,6 @@ string fast_cache::create_cache() {
     serel_target_tmp += "\"" + _context->path_bweas_config + "\" ";
 
     for (pdiff i = 0; i < targets.size(); ++i) {
-        if (!targets[i].templates.size())
-            targets[i].templates.push_back("null");
-
         sc::profile::fields &ext_fields = targets[i].ext.get_fields();
 
         serel_target_tmp += std::to_string(ext_fields.size()) + " " + std::to_string(targets[i].templates.size()) +
@@ -123,21 +120,19 @@ void fast_cache::extract_cache_data(const string &cache_str) {
 
     pdiff count_words_before_first_list = 4;
 
-    pdiff count_word = 0, offset_byte_prj = 0, offset_byte_ccmp = 0;
+    pdiff count_word = 0, offset_byte_ccmp = 0;
     pdiff size_ext_fields = 0, size_use_templates = 0, size_dependencies = 0;
     pdiff size_templates     = 0;
     pdiff size_internal_args = 0, size_external_args = 0, size_call_components = 0, size_global_extern_args = 0;
 
     pdiff end_extension = 0, end_templates = 0, end_dependencies = 0;
 
-    size_t count_el_field         = 0;
-    size_t count_words_to_end_ext = 0;
+    size_t count_el_field = 0;
 
     char *ccmp_p = (char *)&ccmp_tmp;
 
-    bool is_beg_file         = 1;
-    bool is_beg_custom_field = 0;
-    bool is_key_field        = 0;
+    bool is_beg_file  = 1;
+    bool is_key_field = 0;
 
     bool open_sk                 = 0;
     bool was_sk                  = 0;
@@ -290,6 +285,7 @@ void fast_cache::extract_cache_data(const string &cache_str) {
                                         if (!count_el_field) {
                                             trg_tmp.ext.get_fields()[str_tmp_key] = tmp_vec_values;
                                             tmp_vec_values.clear();
+                                        new_field:
                                             --size_ext_fields;
                                             is_key_field = 1;
                                         }
@@ -300,14 +296,12 @@ void fast_cache::extract_cache_data(const string &cache_str) {
                                         count_el_field = std::atoll(str_tmp.c_str());
                                         if (!count_el_field) {
                                             trg_tmp.ext.get_fields()[str_tmp_key] = vec<string>();
-                                            --size_ext_fields;
-                                            is_key_field = 1;
+                                            goto new_field;
                                         }
                                     }
                                     else {
                                         trg_tmp.ext.get_fields()[str_tmp_key] = str_tmp;
-                                        --size_ext_fields;
-                                        is_key_field = 1;
+                                        goto new_field;
                                     }
                                 }
                             }
@@ -324,10 +318,8 @@ void fast_cache::extract_cache_data(const string &cache_str) {
                             }
                             else if (count_word == end_extension + 3)
                                 trg_tmp.ver = str_tmp;
-                            else if (count_word < end_templates) {
-                                if (str_tmp != "null")
-                                    trg_tmp.templates.push_back(str_tmp);
-                            }
+                            else if (count_word < end_templates)
+                                trg_tmp.templates.push_back(str_tmp);
                             else if (count_word < end_dependencies)
                                 trg_tmp.dependencies.push_back(str_tmp);
                             else if (count_word == end_dependencies) {
@@ -336,8 +328,7 @@ void fast_cache::extract_cache_data(const string &cache_str) {
                                 trg_tmp.templates    = {};
                                 trg_tmp.dependencies = {};
 
-                                offset_byte_prj = 0;
-                                count_word      = 0;
+                                count_word = 0;
 
                                 if (str_tmp.find("EOET") != str_tmp.npos) {
                                     str_tmp.erase(0, str_tmp.find("EOET") + 4);

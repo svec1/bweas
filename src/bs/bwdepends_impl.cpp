@@ -16,7 +16,7 @@ depends_files::depends_map &depends_files::build_graphs_depends_files(const vec<
     for (const auto &file : src_files) {
         try {
             if (mdepends.find(file) == mdepends.end())
-                mdepends[file] = build_graph_depends_file(file);
+                build_graph_depends_file(file, mdepends[file]);
         }
         catch (std::exception &excp) {
             _log << (log_message(log_type::fatal) << "Failed to build a graph of file dependencies: " << excp.what());
@@ -26,7 +26,7 @@ depends_files::depends_map &depends_files::build_graphs_depends_files(const vec<
 }
 depends_files::depends_map &depends_files::build_graphs_depends_file_v(const string &name_file) {
     try {
-        mdepends[name_file] = build_graph_depends_file(name_file);
+        build_graph_depends_file(name_file, mdepends[name_file]);
     }
     catch (std::exception &excp) {
         _log << (log_message(log_type::fatal) << "Failed to build a graph of file dependencies: " << excp.what());

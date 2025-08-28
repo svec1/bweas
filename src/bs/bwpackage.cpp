@@ -143,10 +143,11 @@ string package::init(data_bw_package _data, bool is_create_pckg) {
                         else if (value.is_string())
                             return static_cast<string>(value);
                         else
-                        invalid_type_value_profile:
                             _log << (log_message(log_type::fatal)
                                      << "Profile[" << profile.key()
                                      << "] fields must be of type string or array: " << value);
+
+                        std::unreachable();
                     };
 
                     for (const auto &[key, value] : profile_info.items()) {
@@ -254,7 +255,7 @@ string package::init(data_bw_package _data, bool is_create_pckg) {
             for (const auto &name_profile : no_export_profiles)
                 profiles.extract(name_profile);
 
-            cfg.modules.emplace_back(_module.key(), std::move(profiles), lua_file, std::move(funcs));
+            cfg.modules.emplace_back(_module.key(), lua_file, std::move(funcs), std::move(profiles));
         }
     }
 

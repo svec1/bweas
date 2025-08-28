@@ -22,9 +22,9 @@ class bweas::module_manager {
 
   public:
     struct module_cfg {
-        module_cfg(string _name, umap<string, sc::profile> _profiles, string _name_lua_source_file,
-                   umap<string, decl_func> _funcs)
-            : name(_name), profiles(_profiles), name_lua_source_file(_name_lua_source_file), funcs(_funcs) {
+        module_cfg(string _name, string _name_lua_source_file, umap<string, decl_func> _funcs,
+                   umap<string, sc::profile> _profiles)
+            : name(_name), name_lua_source_file(_name_lua_source_file), funcs(_funcs), profiles(_profiles) {
         }
         string name;
         string name_lua_source_file;
