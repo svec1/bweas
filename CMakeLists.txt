@@ -54,7 +54,6 @@ else()
         list(GET BWEAS_PACKAGES_OUTPUT ${I_SOURCE_FILE} NAME_PACKAGE)
         add_custom_command(
             OUTPUT ${BWEAS_PACKAGES_OUTPUT}
-            PRE_BUILD
             WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/packages
             COMMAND bweas --nolog --package ${SOURCE_FILE}
             DEPENDS ${SOURCE_FILE} bweas

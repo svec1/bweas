@@ -163,6 +163,21 @@ struct profile {
     }
 
   public:
+    void set_fields(size_t _cfg) {
+        cfg = _cfg;
+    }
+    fields &get_fields() {
+        if (cfg)
+            return debug_fields.value();
+        return release_fields;
+    }
+    const fields &get_fields() const {
+        if (cfg)
+            return debug_fields.value();
+        return release_fields;
+    }
+
+  public:
     fields::mapped_type &operator[](string key) {
         if (cfg)
             return debug_fields.value().at(key);
@@ -193,21 +208,6 @@ struct profile {
         if (std::holds_alternative<string>(this->operator[](key)))
             return true;
         return false;
-    }
-
-  public:
-    void set_fields(size_t _cfg) {
-        cfg = _cfg;
-    }
-    fields &get_fields() {
-        if (cfg)
-            return debug_fields.value();
-        return release_fields;
-    }
-    const fields &get_fields() const {
-        if (cfg)
-            return debug_fields.value();
-        return release_fields;
     }
 
   public:
