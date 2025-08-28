@@ -333,8 +333,13 @@ class bweas::utils::lua {
     // The first parameter of the template is the return type of the function. The remaining parameters are the types of
     // function parameters accepted
     template <typename T, typename... Types> T call_function(std::string name_func, Types... param) {
-        if (!is_created())
-            return T{};
+        if (!is_created()) {
+            if constexpr (std::is_same_v<T, void>)
+                return;
+            else
+                return T{};
+        }
+
         lua_getglobal(L, name_func.data());
         try {
             return call_symbol<T, Types...>(param...);
