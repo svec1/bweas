@@ -12,6 +12,7 @@
 #include <array>
 #include <cassert>
 #include <filesystem>
+#include <format>
 #include <fstream>
 #include <map>
 #include <optional>
