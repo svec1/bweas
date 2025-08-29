@@ -138,10 +138,10 @@ string package::init(data_bw_package _data, bool is_create_pckg) {
 
                     static auto get_field = [&](const nlohmann::json &value) -> sc::profile::fields::mapped_type {
                         if (value.is_array()) {
-                            return static_cast<vec<string>>(value);
+                            return value.get<vec<string>>();
                         }
                         else if (value.is_string())
-                            return static_cast<string>(value);
+                            return value.get<string>();
                         else
                             _log << (log_message(log_type::fatal)
                                      << "Profile[" << profile.key()

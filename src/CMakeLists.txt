@@ -17,11 +17,13 @@ if(NOT WIN32)
 
     add_flex_bison_dependency(BW_LEXER BW_PARSER)
 
+    list(APPEND BWLANG_PARSER_LEXER_SOURCE BW_LEXER BW_PARSER)
+
 else()
     set(FLEX_EXECUTABLE "${CMAKE_BINARY_DIR}/winflexbison-bin/win_flex.exe")
     set(BISON_EXECUTABLE "${CMAKE_BINARY_DIR}/winflexbison-bin/win_bison.exe")
 
-    set(BISON_BW_PARSER_OUTPUTS ${CMAKE_CURRENT_BINARY_DIR}/parser.cpp ${CMAKE_CURRENT_BINARY_DIR}/parser.h)
+    set(BISON_BW_PARSER_OUTPUTS ${CMAKE_CURRENT_BINARY_DIR}/parser.cpp ${CMAKE_CURRENT_BINARY_DIR}/parser.hpp)
     set(FLEX_BW_LEXER_OUTPUTS ${CMAKE_CURRENT_BINARY_DIR}/lexer.cpp)
 
     include(ExternalProject)
@@ -40,10 +42,11 @@ else()
         	"${BISON_EXECUTABLE}"
     )
 
-    add_custom_target(BWLANG_PARSER_LEXER_SOURCE
-  	WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-  	DEPENDS ${BISON_BW_PARSER_OUTPUTS} ${FLEX_BW_LEXER_OUTPUTS}
-  	VERBATIM
+    add_custom_target(
+        BWLANG_PARSER_LEXER_SOURCE
+  	    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+  	    DEPENDS ${BISON_BW_PARSER_OUTPUTS} ${FLEX_BW_LEXER_OUTPUTS}
+  	    VERBATIM
     )
 
     add_dependencies(BWLANG_PARSER_LEXER_SOURCE winflexbison)
@@ -68,8 +71,10 @@ endif()
 
 add_library(${BWEAS_SLIB} STATIC ${FILE_SOURCE} ${BISON_BW_PARSER_OUTPUTS} ${FLEX_BW_LEXER_OUTPUTS})
 
+add_dependencies(${BWEAS_SLIB} BWLANG_PARSER_LEXER_SOURCE)
+
 # Build with vcpkg
-if(BWEAS_BUILD_VCPKG_N)
+if(DEFINED VCPKG_TARGET_TRIPLET)
     set(LuaJIT_LIBRARIES "${CMAKE_SOURCE_DIR}/vcpkg/packages/luajit_x64-windows/lib/lua51.lib")
     set(LuaJIT_INCLUDE_DIRS "${CMAKE_SOURCE_DIR}/vcpkg/packages/luajit_x64-windows/include/luajit")
 

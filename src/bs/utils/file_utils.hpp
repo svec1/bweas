@@ -161,7 +161,7 @@ class bweas::utils::file_utils {
     static string get_path_file(string name_file, const vec<string> &possible_paths);
 
   private:
-    static vec<file> files;
+    static vec<file> &get_files();
 };
 
 #endif

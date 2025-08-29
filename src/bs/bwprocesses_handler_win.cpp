@@ -9,6 +9,8 @@
 
 #if defined(WIN)
 
+using namespace bweas;
+
 static logger _log{"BWPROCESS[WIN]"};
 
 size_t processes_handler::wait_process(size_t pid) {

@@ -22,14 +22,13 @@ class virtual_terminal;
 
 class bweas::utils::virtual_terminal {
   private:
-    virtual_terminal::virtual_terminal() {
+    virtual_terminal() {
         static HANDLE STD_HANDLE = GetStdHandle(STD_OUTPUT_HANDLE);
         DWORD mode;
         GetConsoleMode(STD_HANDLE, &mode);
-        mode |= ENABLE_PROCESSED_OUTPUT | ENABLE_VIRTUAL_TERMINAL_PROCESSING;
-        SetConsoleMode(STD_HANDLE, mode);
+        SetConsoleMode(STD_HANDLE, mode | ENABLE_PROCESSED_OUTPUT | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
     }
-    virtual_terminal::~virtual_terminal() {
+    ~virtual_terminal() {
         static HANDLE STD_HANDLE = GetStdHandle(STD_OUTPUT_HANDLE);
         SetConsoleMode(STD_HANDLE, 0);
     }

@@ -6,6 +6,7 @@
 //
 
 #include "bs/bwbuild_sys.hpp"
+#include "bs/utils/virtual_terminal.hpp"
 
 int main(int argc, char **argv) {
 #if defined(WIN)

@@ -190,7 +190,7 @@ void builder::init() {
     vec<package> loaded_packages;
     package loaded_package;
 
-    string path_to_packages{file_utils::get_path_program() + "packages/"};
+    string path_to_packages{file_utils::get_path_program() + "packages"};
     for (const auto &fs_object : fs::directory_iterator(path_to_packages)) {
         if (!fs::is_regular_file(fs_object))
             continue;

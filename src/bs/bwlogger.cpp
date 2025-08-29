@@ -7,6 +7,7 @@
 
 #include <format>
 
+#include <iostream>
 #include <bwlogger.hpp>
 
 using namespace bweas;
@@ -18,15 +19,15 @@ file_utils::file_it logger::file_log;
 log_type logger::global_status;
 bool logger::output_to_console = true;
 
-logger::logger(string_v _owner) : owner(_owner) {
+logger::logger(string_v _owner) : owner(_owner), status(log_type::msg) {
     file_log = file_utils::open_file(NAME_FILE_LOG, file_utils::file::mode_file::open::w);
 }
 logger::~logger() {
-    if (file_utils::get_ref_file(file_log).file_opened)
+    if (file_utils::exist_file(file_log) && file_utils::get_ref_file(file_log).file_opened)
         file_utils::close_file(file_log);
 
-    if (!log && fs::exists(NAME_FILE_LOG))
-        fs::remove(NAME_FILE_LOG);
+        if (!log && fs::exists(NAME_FILE_LOG))
+            fs::remove(NAME_FILE_LOG);
 }
 
 log_message::log_message(log_type _log_t) : log_t(_log_t) {
@@ -84,7 +85,7 @@ void logger::operator<<(const log_message &obj) {
     }
 
     string _owner  = !owner.empty() ? string("[") + owner.data() + string("]: ") : "";
-    string out_str = std::format("{}\e[3{}m{}\e[0m", _owner, text_color, obj.ss.str());
+    string out_str = std::format("{}\033[3{}m{}\033[0m", _owner, text_color, obj.ss.str());
 
     file_utils::write_file(file_utils::get_ref_file(file_log), _owner + obj.ss.str() + "\n");
 

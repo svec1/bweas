@@ -17,7 +17,7 @@ static logger _log{"BWDEPENDS_FINDER[INTEGRAL]"};
 void bweas::depends_integral_cxx::build_graph_depends_file(string_v name_file, uset<string> &graph_depends_file) {
     if (name_file.find(".c") == name_file.npos && name_file.find(".h") == name_file.npos)
         return;
-    string last_current_path = fs::current_path();
+    string last_current_path = fs::current_path().string();
 
     fs::current_path(fs::path(name_file).parent_path());
 
@@ -57,7 +57,7 @@ void bweas::depends_integral_cxx::build_graph_depends_file(string_v name_file, u
             file_utils::close_file(file);
     }
     catch (std::exception &excp) {
-        throw std::runtime_error(fs::path(name_file).filename().c_str() + string("->") + excp.what());
+        throw std::runtime_error((fs::path(name_file).filename().string() + string("->") + excp.what()));
     }
 
     fs::current_path(last_current_path);

@@ -16,9 +16,9 @@ template <> struct adl_serializer<bweas::sc::profile::fields::mapped_type> {
     }
     static void from_json(const json &j, bweas::sc::profile::fields::mapped_type &value) {
         if (j.is_string())
-            value = static_cast<string>(j);
+            value = j.get<string>();
         else if (j.is_array())
-            value = static_cast<vec<string>>(j);
+            value = j.get<vec<string>>();
         else
             assert("Invalid type for convert to std::variant");
     }

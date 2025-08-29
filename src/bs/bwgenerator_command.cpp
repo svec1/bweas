@@ -272,7 +272,7 @@ string generator_command::get_name_output_file(string_v pattern_file, string_v n
 
     if (name_output_file_curr.find("{}") == name_output_file_curr.size() - 2 && !name_file.empty()) {
         name_output_file_curr.erase(name_output_file_curr.size() - 2);
-        return name_output_file_curr + fs::path(name_file).filename().c_str() + extension_output_file_curr;
+        return name_output_file_curr + fs::path(name_file).filename().string() + extension_output_file_curr;
     }
 
     if (index != 0)

@@ -17,8 +17,6 @@
 
 using namespace bweas::utils;
 
-vec<file_utils::file> file_utils::files;
-
 std::string file_utils::get_time() {
     auto time    = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
     tm *time_now = std::localtime(&time);
@@ -36,17 +34,23 @@ std::string file_utils::get_path_program() {
     std::string str(PATH_MAX, '\0');
     readlink("/proc/self/exe", str.data(), PATH_MAX);
 #endif
-    str.erase(str.find_last_of("/\\"), str.size());
+    str.erase(str.find_last_of("/\\") + 1, str.size());
 
-    return str + "/";
+    return str;
 }
 std::string file_utils::get_current_path() {
     return fs::current_path().string();
 }
+vec<file_utils::file>& bweas::utils::file_utils::get_files() {
+    static vec<file_utils::file> files;
+    return files;
+}
 file_utils::file_it file_utils::open_file(std::string_view name_file, file::mode_file::open mode) {
+    auto &files = get_files();
+
     file_it it = get_iterator_file(name_file);
     if (exist_file(it)) {
-        if ((files.begin() + it)->file_opened)
+        if (files[it].file_opened)
             return it;
 
         files[it].open(mode);
@@ -57,16 +61,20 @@ file_utils::file_it file_utils::open_file(std::string_view name_file, file::mode
     return files.size() - 1;
 }
 void file_utils::close_file(file_utils::file_it file) {
+    auto &files = get_files();
+
     if (!exist_file(file))
         throw std::runtime_error("There are no files with this index.");
     files.erase(files.begin() + file);
 }
 bool file_utils::exist_file(file_it file) {
+    auto &files = get_files();
     if ((files.begin() + file) == files.end())
         return 0;
     return 1;
 }
 file_utils::file_it file_utils::get_iterator_file(std::string_view name_file) {
+    auto &files = get_files();
     return std::distance(files.begin(),
                          std::find_if(files.begin(), files.end(), [name_file](const file_utils::file &file) {
                              return file.path_to == fs::absolute(name_file);
@@ -74,6 +82,7 @@ file_utils::file_it file_utils::get_iterator_file(std::string_view name_file) {
 }
 
 file_utils::file &file_utils::get_ref_file(file_it file) {
+    auto &files = get_files();
     return *(files.begin() + file);
 }
 
@@ -95,7 +104,7 @@ std::string file_utils::read_file(file &file, file::mode_file::input mode) {
 
     return data_file;
 }
-void file_utils::write_file(file &file, std::string_view buf, file::mode_file::output mode) {
+void file_utils::write_file(file &file, string_v buf, file::mode_file::output mode) {
     if (mode == file::mode_file::output::write_binary)
         file.stream.write(buf.data(), buf.size());
     else
