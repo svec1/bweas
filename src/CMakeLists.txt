@@ -16,9 +16,6 @@ if(NOT WIN32)
             ${CMAKE_CURRENT_BINARY_DIR}/lexer.cpp)
 
     add_flex_bison_dependency(BW_LEXER BW_PARSER)
-
-    list(APPEND BWLANG_PARSER_LEXER BW_LEXER BW_PARSER)
-
 else()
     set(FLEX_EXECUTABLE "${CMAKE_BINARY_DIR}/winflexbison-bin/win_flex.exe")
     set(BISON_EXECUTABLE "${CMAKE_BINARY_DIR}/winflexbison-bin/win_bison.exe")
@@ -68,12 +65,13 @@ else()
     )
 
     set(BWLANG_PARSER_LEXER BWLANG_PARSER_LEXER_SOURCE)
-
 endif()
 
 add_library(${BWEAS_SLIB} STATIC ${FILE_SOURCE} ${BISON_BW_PARSER_OUTPUTS} ${FLEX_BW_LEXER_OUTPUTS})
 
-add_dependencies(${BWEAS_SLIB} ${BWLANG_PARSER_LEXER})
+if(DEFINED BWLANG_PARSER_LEXER)
+	add_dependencies(${BWEAS_SLIB} ${BWLANG_PARSER_LEXER})
+endif()
 
 # Build with vcpkg
 if(DEFINED VCPKG_TARGET_TRIPLET)
@@ -127,5 +125,6 @@ set(BWEAS_INCLUDE ${BWEAS_INCLUDE} "bs/")
 
 target_link_libraries(${BWEAS_SLIB} PRIVATE ${BWEAS_LIBS})
 target_precompile_headers(${BWEAS_SLIB} PUBLIC bs/bwaliases.hpp bs/utils/lua_wrapper.hpp bs/bwstructs_context.hpp bs/lang/var.hpp bs/lang/scope.hpp)
+
 
 include_directories(${BWEAS_INCLUDE} ${CMAKE_CURRENT_BINARY_DIR})
