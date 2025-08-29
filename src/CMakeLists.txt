@@ -17,7 +17,7 @@ if(NOT WIN32)
 
     add_flex_bison_dependency(BW_LEXER BW_PARSER)
 
-    list(APPEND BWLANG_PARSER_LEXER_SOURCE BW_LEXER BW_PARSER)
+    list(APPEND BWLANG_PARSER_LEXER BW_LEXER BW_PARSER)
 
 else()
     set(FLEX_EXECUTABLE "${CMAKE_BINARY_DIR}/winflexbison-bin/win_flex.exe")
@@ -67,11 +67,13 @@ else()
     	COMMENT "Flex launched"
     )
 
+    set(BWLANG_PARSER_LEXER BWLANG_PARSER_LEXER_SOURCE)
+
 endif()
 
 add_library(${BWEAS_SLIB} STATIC ${FILE_SOURCE} ${BISON_BW_PARSER_OUTPUTS} ${FLEX_BW_LEXER_OUTPUTS})
 
-add_dependencies(${BWEAS_SLIB} BWLANG_PARSER_LEXER_SOURCE)
+add_dependencies(${BWEAS_SLIB} ${BWLANG_PARSER_LEXER})
 
 # Build with vcpkg
 if(DEFINED VCPKG_TARGET_TRIPLET)
