@@ -1,16 +1,20 @@
-#include "bs/bwbuild_sys.hpp"
+//
+// BWEAS is distributed under the gnu general public license 2.0 (gpl-2.0).
+// you can view the license text at the link:
+//     <https://www.gnu.org/licenses />
+// ------------------------------------------
+//
 
-int main(int argv, char **args) {
-    try {
-        clock_t beg = clock();
-        bweas::bwbuilder bw(argv, args);
-        bw.set_logging();
-        bw.start();
-        assist << std::string("Sec: " + std::to_string((double)(clock() - beg) / CLOCKS_PER_SEC));
-    }
-    catch (bwexception::bweas_exception &excp) {
-        assist.call_err(excp.get_assist_err(), excp.what());
-    }
+#include "bs/bwbuild_sys.hpp"
+#include "bs/utils/virtual_terminal.hpp"
+
+int main(int argc, char **argv) {
+#if defined(WIN)
+    bweas::utils::virtual_terminal::init();
+#endif
+
+    bweas::builder bw(argc, argv);
+    bw.start();
 
     return 0;
 }

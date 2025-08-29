@@ -1,130 +1,60 @@
-#include "interpreter.hpp"
-#include "static_linking_func.hpp"
+//
+// BWEAS is distributed under the gnu general public license 2.0 (gpl-2.0).
+// you can view the license text at the link:
+//     <https://www.gnu.org/licenses />
+// ------------------------------------------
+//
 
-using namespace interpreter;
+#include <lang/interpreter.hpp>
+#include <lang/semantic_an.hpp>
 
-using mf = assistant::file::mode_file;
-using file_it = assistant::file_it;
+using namespace bweas;
 
-interpreter_exec::interpreter_exec() {
-    if (!init_glob) {
-        assist.add_err("RTT003", "It is impossible to find the structure");
-        assist.add_err("RTT004", "Failed to open file");
-        assist.add_err("RTT005", "Internal function error");
-    }
-}
-interpreter_exec::interpreter_exec(config conf) {
-    interpreter_exec();
-    interp_conf = conf;
-}
+static logger _log{"INTERPRETER"};
 
-void interpreter_exec::set_config(config conf) {
-    interp_conf = conf;
-}
-void interpreter_exec::set_external_scope(var::scope *_external_scope) {
-    external_scope = _external_scope;
-}
+extern FILE *yyin;
+extern int yyparse(void);
 
-void interpreter_exec::build_aef() {
-    file_it bweas_config = assist.open_file(interp_conf.filename_interp, mf::open::rb);
+extern logger *log_bison;
 
-    parser.set_additional_const(
-        {{STR_KEYWORD_OP_CONST_RELEASE, token_expr::token(token_expr::token_type::LITERAL, "1")},
-         {STR_KEYWORD_OP_CONST_DEBUG, token_expr::token(token_expr::token_type::LITERAL, "0")},
-         {STR_KEYWORD_OP_CONST_TRUE, token_expr::token(token_expr::token_type::LITERAL, "1")},
-         {STR_KEYWORD_OP_CONST_FALSE, token_expr::token(token_expr::token_type::LITERAL, "0")}});
+extern scope *current_scope;
 
-    lexer.set_symbols(assist.read_file(assist.get_ref_file(bweas_config), mf::input::read_binary));
-    assist.close_file(bweas_config);
+semantic_analyzer smt_analyzer{_log};
 
-    global_scope.clear();
+interpreter::interpreter(string_v name_file) : global_scope{_log} {
+    yyin          = fopen(name_file.data(), "r");
+    log_bison     = &_log;
+    current_scope = &global_scope;
 
-    debug_init_time()
+    global_scope.create_var<decl_func>(STR_KEYWORD_IF, decl_func(STR_KEYWORD_IF, NULL, {param_type::LIT_NUM}));
+    global_scope.create_var<decl_func>(STR_KEYWORD_ELSE, decl_func(STR_KEYWORD_ELSE, NULL, {}));
+    global_scope.create_var<decl_func>(STR_KEYWORD_ENDIF, decl_func(STR_KEYWORD_ENDIF, NULL, {}));
 
-    smt_analyzer.load_external_func_table(external_func_table);
-#if defined(WIN)
-    assist.safe_call_dll_func_begin();
-#endif
-    if (interp_conf.debug_output) {
-        debug_mark_time_func(lexer.analysis(), "lexer")
-        parser.set_tokens(lexer.get_tokens());
-        debug_mark_time_func(parser.analysis(), "parser")
-        aef = parser.get_exprs();
-        if (interp_conf.use_external_scope) {
-            debug_mark_time_func(smt_analyzer.analysis(aef, *external_scope), "semantic analyzer")
-        }
-        else {
-            debug_mark_time_func(smt_analyzer.analysis(aef, global_scope), "semantic analyzer")
-        }
-    }
-    else {
-        parser.set_tokens(lexer.analysis());
-        aef = parser.analysis();
-
-        if (interp_conf.use_external_scope)
-            smt_analyzer.analysis(aef, *external_scope);
-        else
-            smt_analyzer.analysis(aef, global_scope);
-    }
-#ifdef _WIN32
-    assist.safe_call_dll_func_end();
-#endif
+    if (yyin == NULL)
+        _log << (log_message(log_type::fatal) << "Not found file: " << name_file);
 }
 
-void interpreter_exec::interpret() {
-#if defined(WIN)
-    curr_expr = 0;
-    assist.safe_call_dll_func_begin();
-    for (; curr_expr < aef.size(); ++curr_expr) {
-        if (aef[curr_expr].execute_with_semantic_an())
-            continue;
-        aef[curr_expr].expr_func.func_n.func_ref(aef[curr_expr].sub_expr_s, global_scope);
-        assist.check_safe_call_dll_func();
-    }
-    assist.safe_call_dll_func_end();
-#elif defined(UNIX)
-    curr_expr = 0;
-    for (; curr_expr < aef.size(); ++curr_expr) {
-        if (aef[curr_expr].execute_with_semantic_an())
-            continue;
-        aef[curr_expr].expr_func.func_n.func_ref(aef[curr_expr].sub_expr_s, global_scope);
-        assist.check_safe_call_dl_func();
-    }
-#endif
+void interpreter::interpret() {
+
+    yyparse();
+    smt_analyzer.check_end_statements();
 }
 
-std::vector<var::struct_sb::target> interpreter_exec::export_targets() {
-    const std::vector<std::pair<std::string, var::struct_sb::target>> &vec_targets_ref =
-        global_scope.get_vector_variables_t<var::struct_sb::target>();
-
-    std::vector<var::struct_sb::target> targets;
-    for (u32t i = 0; i < vec_targets_ref.size(); ++i) {
-        targets.push_back(vec_targets_ref[i].second);
-    }
-
-    return targets;
+void interpreter::set_scope(scope *external_scope) {
+    current_scope = &(*external_scope);
 }
 
-var::scope &interpreter_exec::get_current_scope() {
-    if (interp_conf.use_external_scope)
-        return *external_scope;
-    return global_scope;
+scope &interpreter::get_scope() {
+    return *current_scope;
 }
 
-void interpreter_exec::load_external_func(const semantic_an::table_func &tfuncs) {
-    std::vector<std::string> tmp_w_smt_funcs;
-    for (auto &func : tfuncs) {
-        if (interp_conf.transmit_smt_name_func_with_smt &&
-            (func.second.is_declaration_var || func.second.only_with_semantic))
-            tmp_w_smt_funcs.push_back(func.first);
-        external_func_table[func.first] = func.second;
-    }
-
-    if (interp_conf.transmit_smt_name_func_with_smt)
-        smt_analyzer.append_external_name_func_w_smt(tmp_w_smt_funcs);
+const scope &interpreter::get_scope() const {
+    return *current_scope;
 }
 
-void interpreter_exec::set_std_function(std::string name_token_func, aef_expr::notion_func::func_t func_ref,
-                                        std::vector<aef_expr::param> expected_param) {
-    smt_analyzer.add_func_flink(name_token_func, func_ref, expected_param);
+void interpreter::create_function(const decl_func &func) {
+    current_scope->create_var<decl_func>(func.name, func);
+}
+void interpreter::create_function(string_v name_func, decl_func::func_t func, vec<param> expected_params) {
+    current_scope->create_var<decl_func>(name_func.data(), decl_func{name_func, func, expected_params});
 }

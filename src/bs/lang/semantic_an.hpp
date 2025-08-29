@@ -1,55 +1,21 @@
+//
+// BWEAS is distributed under the gnu general public license 2.0 (gpl-2.0).
+// you can view the license text at the link:
+//     <https://www.gnu.org/licenses />
+// ------------------------------------------
+//
+
 #ifndef _SEMANTIC_AN__H
 #define _SEMANTIC_AN__H
 
-#include "parser.hpp"
-#include "scope.hpp"
-#include "static_linking_func.hpp"
-
-#include <unordered_map>
-
-namespace semantic_an {
-
-using table_func = std::unordered_map<std::string, aef_expr::notion_func>;
-
-extern var::scope global_scope;
-
-class semantic_excp : public ::bwexception::bweas_exception {
-  public:
-    semantic_excp(std::string _what_hp, std::string number_err)
-        : what_hp(_what_hp), bweas_exception("SMT" + number_err) {
-    }
-    ~semantic_excp() noexcept override final = default;
-
-  public:
-    const char *what() const noexcept override final {
-        return what_hp.c_str();
-    }
-
-  private:
-    std::string what_hp;
-};
-
-class rt_semantic_excp : public ::bwexception::bweas_exception {
-  public:
-    rt_semantic_excp(std::string _what_hp, std::string number_err)
-        : what_hp(_what_hp), bweas_exception("SMT-RT" + number_err) {
-    }
-    ~rt_semantic_excp() noexcept override final = default;
-
-  public:
-    const char *what() const noexcept override final {
-        return what_hp.c_str();
-    }
-
-  private:
-    std::string what_hp;
-};
+#include <lang/scope.hpp>
 
 class semantic_analyzer {
   public:
-    semantic_analyzer();
-    semantic_analyzer(semantic_analyzer &&) = delete;
-    semantic_analyzer(const semantic_analyzer &) = delete;
+    semantic_analyzer(bweas::logger &_log);
+
+    semantic_analyzer(semantic_analyzer &&)            = delete;
+    semantic_analyzer(const semantic_analyzer &)       = delete;
     semantic_analyzer &operator=(semantic_analyzer &&) = delete;
 
     ~semantic_analyzer() = default;
@@ -57,14 +23,6 @@ class semantic_analyzer {
   public:
     // Semantic analysis:
     // ------------------
-    //  - It goes through the vector of expressions
-    //    and determines the use of external functions;
-    //    if an external function was used,
-    //    it will be added to the list of functions that can be called
-    //
-    //    ^^^
-    //    zero pass
-    //
     // - linking all representations of functions
     //   in expressions with functions that describe their behavior.
     //   Checks the correspondence of the transmitted types of indicators
@@ -81,51 +39,29 @@ class semantic_analyzer {
     //   ^^^
     //   second pass
     //
-    void analysis(parser::abstract_expr_func &expr_s, var::scope &global_scope);
-
-    void load_external_func_table(const table_func &notion_external_func);
-    void append_external_name_func_w_smt(const std::vector<std::string> &list_name_func);
-
-    // Adding a function definition to the functions table
-    void add_func_flink(std::string name_token_func, aef_expr::notion_func::func_t func_ref,
-                        std::vector<aef_expr::param> expected_param);
+    void analysis(statement &st, scope &current_scope);
+    void check_end_statements();
 
   private:
-    void smt_zero_pass(const parser::abstract_expr_func &expr_s);
-    void smt_first_pass(parser::abstract_expr_func &expr_s);
+    void smt_first_pass(statement &st, scope &current_scope);
 
     // The set command (initialization or assignment) is called here
-    void smt_second_pass(parser::abstract_expr_func &expr_s, var::scope &curr_scope);
+    void smt_second_pass(statement &st, scope &current_scope);
 
   private:
-    // Converts all variable identifiers to their values and also keyword operators(constant) to literal ​​(for
-    // subsequent processing of keyword operators)
-    void convert_id_to_literal(aef_expr::subexpressions &sub_expr, var::scope &curr_scope,
-                               aef_expr::param_type expected_param);
-
-    // Converts all keyword operators that are unary
-    void convert_kwop_u_to_literal(aef_expr::subexpressions &sub_expr, var::scope &curr_scope,
-                                   aef_expr::param_type expected_param);
     // Parses a subexpression if it has not token the type
     // INT, STRING, or VAR_STRUCT_ID after parsing at the AEF construction
-    void parse_subexpr_param(aef_expr::subexpressions &sub_expr, std::vector<aef_expr::subexpressions> &sub_exprs,
-                             u32t &pos_sub_expr_in_vec, var::scope &curr_scope, aef_expr::param_type expected_param);
-
-    // Auxiliary function for parse_subexpr_param. Processes all keyword operators
-    void parse_keywords_op_param(aef_expr::subexpressions &sub_expr, u32t pos_token_kw_in_subexpr,
-                                 var::scope &curr_scope, aef_expr::param_type expected_param, u32t parse_okeyword = 0);
-    void defining_call_func(const std::string &name, aef_expr::notion_func &nfunc);
+    void parse_expr_param(expression &expr, expressions &expr_s, size_t &pos_expr_in_vec, scope &current_scope);
 
   private:
-    static inline bool init_glob{0};
+    bweas::logger &_log;
 
-    std::vector<std::string> name_func_with_semantic_an{sl_func::name_static_func_sm};
+    // <0 - if_skip, 1 - else_skip; 0 - current if, 1- current else>
+    std::vector<std::pair<bool, bool>> branch_s;
 
-    // functions tables
-    table_func notion_all_func;
-    table_func notion_external_func;
+    size_t nested_if      = 0;
+    bool skip             = 0;
+    bool last_st_is_endif = 0;
 };
-
-} // namespace semantic_an
 
 #endif

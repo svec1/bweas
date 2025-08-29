@@ -1,135 +1,179 @@
-#include "bwcache_api.hpp"
+//
+// BWEAS is distributed under the gnu general public license 2.0 (gpl-2.0).
+// you can view the license text at the link:
+//     <https://www.gnu.org/licenses>
+// ------------------------------------------
+//
+
+#include <bwcache_api.hpp>
 
 #include <nlohmann/json.hpp>
 
+namespace nlohmann {
+template <> struct adl_serializer<bweas::sc::profile::fields::mapped_type> {
+    static void to_json(json &j, const bweas::sc::profile::fields::mapped_type &value) {
+        std::visit([&](auto &&_value) { j = std::forward<decltype(_value)>(_value); }, value);
+    }
+    static void from_json(const json &j, bweas::sc::profile::fields::mapped_type &value) {
+        if (j.is_string())
+            value = j.get<string>();
+        else if (j.is_array())
+            value = j.get<vec<string>>();
+        else
+            assert("Invalid type for convert to std::variant");
+    }
+};
+template <> struct adl_serializer<bweas::sc::profile> {
+    static void to_json(json &j, const bweas::sc::profile &value) {
+        j = value.get_fields();
+    }
+    static void from_json(const json &j, bweas::sc::profile &value) {
+        value.get_fields() = j;
+    }
+};
+template <> struct adl_serializer<bweas::sc::target> {
+    static void to_json(json &j, const bweas::sc::target &value) {
+        j = {{"type", bweas::sc::target_type_str(value.type)},
+             {"cfg", bweas::sc::target_cfg_str(value.cfg)},
+             {"version", value.ver.get_str_version()},
+             {"templates", value.templates},
+             {"dependencies", value.dependencies},
+             {"extension", value.ext}};
+    }
+    static void from_json(const json &j, bweas::sc::target &value) {
+        try {
+            value.type = bweas::sc::to_target_type(j["type"]);
+            value.cfg  = bweas::sc::to_target_cfg(j["cfg"]);
+            value.ver  = j["version"].template get<string>();
+
+            j.at("templates").get_to(value.templates);
+            j.at("dependencies").get_to(value.dependencies);
+            j.at("extension").get_to(value.ext);
+        }
+        catch (const json::exception &) {
+            throw std::runtime_error(j.dump(4));
+        }
+    }
+};
+template <> struct adl_serializer<bweas::sc::template_command::return_value> {
+    static void to_json(json &j, const bweas::sc::template_command::return_value &value) {
+        j["value"] = value.value;
+        j["type"]  = (pdiff)value.type;
+    }
+    static void from_json(const json &j, bweas::sc::template_command::return_value &value) {
+        try {
+            j.at("value").get_to(value.value);
+            j.at("type").get_to(value.type);
+        }
+        catch (const json::exception &) {
+            throw std::runtime_error(j.dump(4));
+        }
+    }
+};
+template <> struct adl_serializer<bweas::sc::template_command::arg> {
+    static void to_json(json &j, const bweas::sc::template_command::arg &value) {
+        j["prefix"] = value.prefix;
+        j["value"]  = value.value;
+        j["type"]   = (pdiff)value.type;
+    }
+    static void from_json(const json &j, bweas::sc::template_command::arg &value) {
+        try {
+            j.at("prefix").get_to(value.prefix);
+            j.at("value").get_to(value.value);
+            j.at("type").get_to(value.type);
+        }
+        catch (const json::exception &) {
+            throw std::runtime_error(j.dump(4));
+        }
+    }
+};
+template <> struct adl_serializer<bweas::sc::template_command> {
+    static void to_json(json &j, const bweas::sc::template_command &value) {
+        j = {{"name_call_component", value.name_call_component},
+             {"returnable", value.returnable},
+             {"accept_params", value.name_accept_params},
+             {"args", value.args}};
+    }
+    static void from_json(const json &j, bweas::sc::template_command &value) {
+        try {
+            j.at("name_call_component").get_to(value.name_call_component);
+            j.at("accept_params").get_to(value.name_accept_params);
+            value.returnable = j["returnable"].template get<bweas::sc::template_command::return_value>();
+            value.args       = j["args"].template get<vec<bweas::sc::template_command::arg>>();
+        }
+        catch (const json::exception &) {
+            throw std::runtime_error(j.dump(4));
+        }
+    }
+};
+template <> struct adl_serializer<bweas::sc::call_component> {
+    static void to_json(json &j, const bweas::sc::call_component &value) {
+        j = {{"name_program", value.name_program}, {"pattern_ret_files", value.pattern_ret_files}};
+    }
+    static void from_json(const json &j, bweas::sc::call_component &value) {
+        try {
+            j.at("name_program").get_to(value.name_program);
+            j.at("pattern_ret_files").get_to(value.pattern_ret_files);
+        }
+        catch (const json::exception &) {
+            throw std::runtime_error(j.dump(4));
+        }
+    }
+};
+} // namespace nlohmann
+
 using namespace bweas;
 using namespace cache_api;
-using namespace bweas::bwexception;
 
-json_bwcache::json_bwcache() {
-    if (!init_glob_chjson) {
-        assist.add_err("BWS-CACHE000", "Incorrect json cache structure");
+static logger _log{"BWCACHE[JSON]"};
 
-        init_glob_chjson = 1;
-    }
-}
-
-void json_bwcache::delete_cache() {
-    delete this;
-}
-
-std::string json_bwcache::create_cache() {
+string json_cache::create_cache() {
     nlohmann::json cache_data;
-    const auto &out_targets = _cache_data.targets_o_p != nullptr ? *_cache_data.targets_o_p : _cache_data.targets_o;
 
-    for (const auto &target : out_targets)
-        cache_data["targets"][target.name_target] = {{"type", var::struct_sb::target_t_str(target.target_t)},
-                                                     {"configuration", var::struct_sb::cfg_str(target.target_cfg)},
-                                                     {"version", target.version_target.get_str_version()},
-                                                     {"generator", target.name_generator},
-                                                     {"dependencies", target.target_vec_libs},
-                                                     {"project",
-                                                      {{"name", target.prj.name_project},
-                                                       {"version", target.prj.version_project.get_str_version()},
-                                                       {"lang", var::struct_sb::lang_str(target.prj.lang)},
-                                                       {"path_compiler", target.prj.path_compiler},
-                                                       {"path_linker", target.prj.path_linker},
-                                                       {"release_flags_compiler", target.prj.rflags_compiler},
-                                                       {"release_flags_linker", target.prj.rflags_linker},
-                                                       {"debug_flags_compiler", target.prj.dflags_compiler},
-                                                       {"debug_flags_linker", target.prj.dflags_linker},
-                                                       {"std_c", target.prj.standart_c},
-                                                       {"std_cpp", target.prj.standart_cpp},
-                                                       {"files", target.prj.src_files},
-                                                       {"use_it_templates", target.prj.use_it_templates},
-                                                       {"templates", target.prj.vec_templates}}}};
+    cache_data["config_file"]          = _context->path_bweas_config;
+    cache_data["global_external_args"] = _context->global_external_args;
 
-    for (const auto &_template : _cache_data.templates) {
-        cache_data["templates"][_template.name] = {{"name_call_component", _template.name_call_component},
-                                                   {"returnable", _template.returnable},
-                                                   {"accept_params", _template.name_accept_params}};
-        for (const auto &arg : _template.args)
-            cache_data["templates"][_template.name]["args"].push_back({{"type", arg.arg_t}, {"str", arg.str_arg}});
-    }
-
-    for (const auto &call_component : _cache_data.call_components)
-        cache_data["call_components"][call_component.name] = {{"name_program", call_component.name_program},
-                                                              {"pattern_ret_files", call_component.pattern_ret_files}};
-
-    for (const auto &global_external_arg : _cache_data.global_external_args)
-        cache_data["global_external_args"].push_back(
-            {{"name", global_external_arg.first}, {"value", global_external_arg.second}});
+    for (const auto &target : _context->targets)
+        cache_data["targets"][target.name] = target;
+    for (const auto &_template : _context->templates)
+        cache_data["templates"][_template.name] = _template;
+    for (const auto &call_component : _context->call_components)
+        cache_data["call_components"][call_component.name] = call_component;
 
     return cache_data.dump(4);
 }
+string json_cache::get_path_config(const string &cache_str) {
+    try {
+        nlohmann::json cache_data = nlohmann::json::parse(cache_str);
+        return cache_data["config_file"];
+    }
+    catch (std::exception &what) {
+        _log << (log_message(log_type::fatal) << "Invalid structure of the bweas cache file: \n" << what.what());
+    }
 
-const base_bwcache::cache_data &json_bwcache::get_cache_data(std::string cache_str) {
+    std::unreachable();
+}
+
+void json_cache::extract_cache_data(const string &cache_str) {
     try {
         nlohmann::json cache_data = nlohmann::json::parse(cache_str);
 
-        for (const auto &target : cache_data["targets"].items()) {
-            var::struct_sb::target_out target_o_tmp;
-            target_o_tmp.name_target = target.key();
+        _context->path_bweas_config = cache_data["config_file"];
 
-            const auto &fields = target.value();
-            target_o_tmp.target_t = var::struct_sb::to_type_target(fields["type"]);
-            target_o_tmp.target_cfg = var::struct_sb::to_cfg(fields["configuration"]);
-            target_o_tmp.version_target = (std::string)fields["version"];
-            target_o_tmp.name_generator = fields["generator"];
-            target_o_tmp.target_vec_libs = fields["dependencies"];
+        auto init_vector = [](const auto &j_items, auto &vec) {
+            for (const auto &it : j_items) {
+                auto value = it.value().template get<typename std::decay_t<decltype(vec)>::value_type>();
+                value.name = it.key();
+                vec.push_back(std::move(value));
+            }
+        };
 
-            const auto &prj = fields["project"];
-            target_o_tmp.prj.name_project = prj["name"];
-            target_o_tmp.prj.version_project = (std::string)prj["version"];
-            target_o_tmp.prj.lang = var::struct_sb::to_lang(prj["lang"]);
-            target_o_tmp.prj.path_compiler = prj["path_compiler"];
-            target_o_tmp.prj.path_linker = prj["path_linker"];
-            target_o_tmp.prj.rflags_compiler = prj["release_flags_compiler"];
-            target_o_tmp.prj.rflags_linker = prj["release_flags_linker"];
-            target_o_tmp.prj.dflags_compiler = prj["debug_flags_compiler"];
-            target_o_tmp.prj.dflags_linker = prj["debug_flags_linker"];
-            target_o_tmp.prj.standart_c = prj["std_c"];
-            target_o_tmp.prj.standart_cpp = prj["std_cpp"];
-            target_o_tmp.prj.src_files = prj["files"];
-            target_o_tmp.prj.use_it_templates = prj["use_it_templates"];
-            target_o_tmp.prj.vec_templates = prj["templates"];
-
-            _cache_data.targets_o.push_back(target_o_tmp);
-        }
-
-        for (const auto &_template : cache_data["templates"].items()) {
-            var::struct_sb::template_command template_tmp;
-            template_tmp.name = _template.key();
-
-            const auto &fields = _template.value();
-            template_tmp.name_call_component = fields["name_call_component"];
-            template_tmp.returnable = fields["returnable"];
-            template_tmp.name_accept_params = fields["accept_params"];
-            for (const auto &arg : fields["args"])
-                template_tmp.args.push_back(var::struct_sb::template_command::arg(
-                    arg["str"], (var::struct_sb::template_command::arg::type)arg["type"]));
-
-            _cache_data.templates.push_back(template_tmp);
-        }
-
-        for (const auto &call_component : cache_data["call_components"].items()) {
-            var::struct_sb::call_component call_component_tmp;
-            call_component_tmp.name = call_component.key();
-
-            const auto &fields = call_component.value();
-            call_component_tmp.name_program = fields["name_program"];
-            call_component_tmp.pattern_ret_files = fields["pattern_ret_files"];
-
-            _cache_data.call_components.push_back(call_component_tmp);
-        }
-
-        for (const auto &call_component : cache_data["global_external_args"].items())
-            _cache_data.global_external_args.emplace_back(call_component.value()["name"],
-                                                          call_component.value()["value"]);
-
-        return _cache_data;
+        init_vector(cache_data["targets"].items(), _context->targets);
+        init_vector(cache_data["templates"].items(), _context->templates);
+        init_vector(cache_data["call_components"].items(), _context->call_components);
+        _context->global_external_args = cache_data["global_external_args"].template get<vec<pair<string, string>>>();
     }
     catch (std::exception &what) {
-        throw bwcache_excp(what.what(), "000");
+        _log << (log_message(log_type::fatal) << "Invalid structure of the bweas cache file: \n" << what.what());
     }
 }

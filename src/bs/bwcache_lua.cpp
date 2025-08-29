@@ -1,80 +1,98 @@
-#include "bwcache_api.hpp"
-#include "bwluatoolslang.hpp"
+//
+// BWEAS is distributed under the gnu general public license 2.0 (gpl-2.0).
+// you can view the license text at the link:
+//     <https://www.gnu.org/licenses>
+// ------------------------------------------
+//
+
+#include <bwcache_api.hpp>
+
+#include <bwluatools.hpp>
 
 using namespace bweas;
 using namespace cache_api;
-using namespace bweas::bwexception;
 
-lua_bwcache::lua_bwcache(std::string src_lua) {
-    if (!init_glob_chlua) {
-        assist.add_err("BWS-CACHE000", "Failed to load lua script");
-        assist.add_err("BWS-CACHE001", "No entry function for creates cache");
-        assist.add_err("BWS-CACHE002", "No entry function for get data of cache");
+static constexpr auto NAME_FUNCTION_CREATE          = "create_cache";
+static constexpr auto NAME_FUNCTION_GET_PATH_CONFIG = "get_path_config";
+static constexpr auto NAME_FUNCTION_GET_DATA        = "get_cache_data";
 
-        init_glob_chlua = 1;
-    }
-    lua.create(src_lua);
+static constexpr auto NAME_VARIABLE_TARGETS     = "targets";
+static constexpr auto NAME_VARIABLE_TEMPLATES   = "templates";
+static constexpr auto NAME_VARIABLE_CCOMPONENTS = "call_components";
+static constexpr auto NAME_VARIABLE_GEARGS      = "global_external_args";
 
-    if (!lua.is_function(NAME_FUNCTION_GENCACHE))
-        throw bwcache_excp("", "001");
-    else if (!lua.is_function(NAME_FUNCTION_GETDATA_CACHE))
-        throw bwcache_excp("", "002");
+static logger _log{"BWCACHE[LUA]"};
+static utils::lua lua;
+
+lua_cache::lua_cache(string_v src_lua) {
+    lua.create(src_lua.data());
+
+    if (!lua.is_function(NAME_FUNCTION_CREATE))
+        _log << (log_message(log_type::fatal) << "No entry function for creates cache");
+    else if (!lua.is_function(NAME_FUNCTION_GET_PATH_CONFIG))
+        _log << (log_message(log_type::fatal) << "No entry function for get path config file");
+    else if (!lua.is_function(NAME_FUNCTION_GET_DATA))
+        _log << (log_message(log_type::fatal) << "No entry function for get data of cache");
 }
 
-void lua_bwcache::delete_cache() {
-    delete this;
-}
+string lua_cache::create_cache() {
+    lua_tools::param_targets ltargets_o;
+    lua_tools::param_templates ltcmd_s;
+    lua_tools::param_ccomponents lccmp_s;
 
-std::string lua_bwcache::create_cache() {
-    std::vector<bwlua::lua::table<std::string, std::any>> ltargets_o;
-    std::vector<bwlua::lua::table<std::string, std::any>> ltcmd_s;
-    std::vector<bwlua::lua::table<std::string, std::any>> lccmp_s;
-
-    for (const auto &ltarget_o : _cache_data.targets_o_p != nullptr ? *_cache_data.targets_o_p : _cache_data.targets_o)
-        ltargets_o.push_back(luatools_lang::conv_to_table(ltarget_o));
-    for (const auto &ltcmd : _cache_data.templates)
-        ltcmd_s.push_back(luatools_lang::conv_to_table(ltcmd));
-    for (const auto &lccmp : _cache_data.call_components)
-        lccmp_s.push_back(luatools_lang::conv_to_table(lccmp));
+    for (const auto &ltarget_o : _context->targets)
+        ltargets_o.push_back(lua_tools::conv_to_table(ltarget_o));
+    for (const auto &ltcmd : _context->templates)
+        ltcmd_s.push_back(lua_tools::conv_to_table(ltcmd));
+    for (const auto &lccmp : _context->call_components)
+        lccmp_s.push_back(lua_tools::conv_to_table(lccmp));
 
     try {
-        return lua.call_function DEFINITION_FUNCTION_GENCACHE(NAME_FUNCTION_GENCACHE, ltargets_o, ltcmd_s, lccmp_s,
-                                                              _cache_data.global_external_args);
+        return lua.call_function<string, lua_tools::param_targets, lua_tools::param_templates,
+                                 lua_tools::param_ccomponents, lua_tools::param_geargs>(
+            NAME_FUNCTION_CREATE, ltargets_o, ltcmd_s, lccmp_s, _context->global_external_args);
     }
     catch (std::exception &what) {
-        throw bwcache_excp(what.what(), "000");
+        _log << (log_message(log_type::fatal) << what.what());
     }
+
+    std::unreachable();
+}
+string lua_cache::get_path_config(const string &cache_str) {
+    try {
+        return lua.call_function<string, string>(NAME_FUNCTION_GET_PATH_CONFIG, cache_str);
+    }
+    catch (std::exception &what) {
+        _log << (log_message(log_type::fatal) << what.what());
+    }
+
+    std::unreachable();
 }
 
-const base_bwcache::cache_data &lua_bwcache::get_cache_data(std::string cache_str) {
-
-    std::vector<bwlua::lua::table<std::string, std::any>> ltargets_o;
-    std::vector<bwlua::lua::table<std::string, std::any>> ltcmd_s;
-    std::vector<bwlua::lua::table<std::string, std::any>> lccmp_s;
-    std::vector<std::pair<std::string, std::string>> lglobal_external_args;
+void lua_cache::extract_cache_data(const string &cache_str) {
+    vec<lua_tools::table<string, any>> ltargets_o;
+    vec<lua_tools::table<string, any>> ltcmd_s;
+    vec<lua_tools::table<string, any>> lccmp_s;
+    vec<pair<string, string>> lglobal_external_args;
 
     try {
-        lua.call_function DEFINITION_FUNCTION_GETDATA_CACHE(NAME_FUNCTION_GETDATA_CACHE, {});
+        lua.call_function<void, string>(NAME_FUNCTION_GET_DATA, cache_str);
 
-        ltargets_o =
-            lua[NAME_VARIABLE_TARGETS_F_EXTERN].getval<std::vector<bwlua::lua::table<std::string, std::any>>>();
-        ltcmd_s = lua[NAME_VARIABLE_TEMPLATES_F_EXTERN].getval<std::vector<bwlua::lua::table<std::string, std::any>>>();
-        lccmp_s =
-            lua[NAME_VARIABLE_CCOMPONENTS_F_EXTERN].getval<std::vector<bwlua::lua::table<std::string, std::any>>>();
-        lglobal_external_args =
-            lua[NAME_VARIABLE_GEARGS_F_EXTERN].getval<std::vector<std::pair<std::string, std::string>>>();
+        ltargets_o            = lua[NAME_VARIABLE_TARGETS].getval<vec<lua_tools::table<string, any>>>();
+        ltcmd_s               = lua[NAME_VARIABLE_TEMPLATES].getval<vec<lua_tools::table<string, any>>>();
+        lccmp_s               = lua[NAME_VARIABLE_CCOMPONENTS].getval<vec<lua_tools::table<string, any>>>();
+        lglobal_external_args = lua[NAME_VARIABLE_GEARGS].getval<vec<pair<string, string>>>();
     }
     catch (std::exception &what) {
-        throw bwcache_excp(what.what(), "000");
+        _log << (log_message(log_type::fatal) << what.what());
     }
+
     for (auto &ltarget_o : ltargets_o)
-        _cache_data.targets_o.push_back(luatools_lang::conv_to_target(ltarget_o));
+        _context->targets.push_back(lua_tools::conv_to_target(ltarget_o));
     for (auto &ltcmd : ltcmd_s)
-        _cache_data.templates.push_back(luatools_lang::conv_to_template(ltcmd));
+        _context->templates.push_back(lua_tools::conv_to_template(ltcmd));
     for (auto &lccmp : lccmp_s)
-        _cache_data.call_components.push_back(luatools_lang::conv_to_call_components(lccmp));
+        _context->call_components.push_back(lua_tools::conv_to_call_components(lccmp));
 
-    _cache_data.global_external_args = lglobal_external_args;
-
-    return _cache_data;
+    _context->global_external_args = lglobal_external_args;
 }

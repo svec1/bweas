@@ -1,198 +1,171 @@
-#ifndef BWLANG__H
-#define BWLANG__H
+//
+// BWEAS is distributed under the gnu general public license 2.0 (gpl-2.0).
+// you can view the license text at the link:
+//     <https://www.gnu.org/licenses>
+// ------------------------------------------
+//
 
-#include "lang/interpreter.hpp"
+#ifndef BWLANG_HPP
+#define BWLANG_HPP
+
+#include <bw_defs.hpp>
+
+#include <lang/static_linking_func.hpp>
 
 namespace bweas {
+class lang;
+}
 
-// A wrapper around the bwlang interpreter that installs all
+// A wrapper around the lang interpreter that installs all
 // the standard bweas functions and also provides interaction with the global scope
-class bwlang {
+class bweas::lang {
   public:
-    bwlang(std::string bwconf_file = "");
+    lang(context *const __context);
 
-    bwlang(bwlang &&) = delete;
-    bwlang(const bwlang &) = delete;
-    bwlang &operator=(bwlang &&) = delete;
+    lang(lang &&)            = delete;
+    lang(const lang &)       = delete;
+    lang &operator=(lang &&) = delete;
 
   private:
     // Sets standard functions and keyword operators corresponding to the bweas specification
-    void set_bwstd_funcs();
-
-  public:
-    void set_config();
-    void set_bwconf_file(std::string bwconf_file);
+    void init_scope();
 
   public:
     // Starts the internal interpreter
     void execute();
 
     // Loads external functions (passed into this function) into the interpreter (semantic analyzer)
-    inline void load_external_tfuncs(const semantic_an::table_func &tfuncs);
+    inline void init_external_funcs(vec<decl_func> funcs);
 
-    template <typename T> inline bool create_global_var(std::string name_var, T val = {}) {
-        return interpreter.get_current_scope().try_create_var(name_var, val);
+    template <typename T> inline bool create_global_var(string name_var, T val = {}) {
+        return _interpreter.get_scope().try_create_var(name_var, val);
     }
-    template <typename T> inline T get_global_var(std::string name_var) {
-        return interpreter.get_current_scope().get_var_value<T>(name_var);
+    template <typename T> inline T get_global_var(string name_var) {
+        return _interpreter.get_scope().get_var_value<T>(name_var);
     }
 
-    var::scope &get_global_scope();
-    template <typename T> std::vector<std::pair<std::string, T>> &get_class_variables();
+    scope &get_global_scope() &;
+    template <typename T> container_vars<T>::container_type &get_container_vars() &;
 
-    std::vector<var::struct_sb::target_out> get_targets();
-    std::vector<var::struct_sb::template_command> get_templates();
-    std::vector<var::struct_sb::call_component> get_call_components();
-    std::vector<std::pair<std::string, std::string>> get_global_external_args();
-
-  public:
-    interpreter::interpreter_exec::config cfg_intp;
+    void init_context();
 
   private:
-    interpreter::interpreter_exec interpreter;
-};
-bwlang::bwlang(std::string bwconf_file) {
-    cfg_intp.debug_output = 0;
-    cfg_intp.filename_interp = bwconf_file;
-    cfg_intp.transmit_smt_name_func_with_smt = 1;
-    cfg_intp.use_external_scope = 0;
+    vec<sc::target> get_targets();
+    vec<sc::template_command> get_templates();
+    vec<sc::call_component> get_call_components();
+    vec<pair<string, string>> get_global_external_args();
 
-    interpreter.set_config(cfg_intp);
-    set_bwstd_funcs();
+  private:
+    context *const _context;
+    interpreter _interpreter;
+};
+bweas::lang::lang(context *const __context) : _context(__context), _interpreter(_context->path_bweas_config) {
+    init_scope();
 }
 
-void bwlang::set_bwstd_funcs() {
-    using namespace aef_expr;
+void bweas::lang::init_scope() {
+    _interpreter.get_scope().create_var<pdiff>("DEBUG", 0);
+    _interpreter.get_scope().create_var<pdiff>("RELEASE", 1);
+    _interpreter.get_scope().create_var<pdiff>("FALSE", 0);
+    _interpreter.get_scope().create_var<pdiff>("TRUE", 1);
+    _interpreter.get_scope().create_var<pdiff>("EXECUTABLE", 0);
+    _interpreter.get_scope().create_var<pdiff>("LIBRARY", 1);
+    _interpreter.get_scope().create_var<string>("BWEAS_CONFIG_PATH", fs::current_path().string());
 
-    interpreter.set_std_function(
+    _interpreter.create_function(
         "set", sl_func::set,
         {param_type::NCHECK_VAR_ID, param_type::ANY_VALUE_WITHOUT_FUTUREID_NEXT, param_type::NEXT_TOO});
-    interpreter.set_std_function("file", sl_func::file,
-                                 {{param_type::FUTURE_VAR_ID, "{NULL}"},
-                                  param_type::LNUM_OR_ID_VAR,
-                                  param_type::LSTR_OR_ID_VAR,
+    _interpreter.create_function(
+        "file", sl_func::file,
+        {{param_type::FUTURE_VAR_ID, "{NULL}"}, param_type::LIT_NUM, param_type::LIT_STR, param_type::NEXT_TOO});
+
+    _interpreter.create_function("create_target", sl_func::create_target,
+                                 {param_type::FUTURE_VAR_ID,
+                                  param_type::VAR_STRUCT_ID,
+                                  param_type::LIT_NUM,
+                                  {param_type::LIT_STR, "{NULL}"},
                                   param_type::NEXT_TOO});
+    _interpreter.create_function("add_dependencies_target", sl_func::add_dependencies_target,
+                                 {param_type::VAR_STRUCT_ID, param_type::VAR_STRUCT_ID, param_type::NEXT_TOO});
 
-    interpreter.set_std_function(
-        "project", sl_func::project,
-        {param_type::FUTURE_VAR_ID, param_type::LNUM_OR_ID_VAR, param_type::LSTR_OR_ID_VAR, param_type::NEXT_TOO});
-    interpreter.set_std_function("executable", sl_func::executable,
-                                 {param_type::FUTURE_VAR_ID, param_type::LNUM_OR_ID_VAR, param_type::VAR_STRUCT_ID});
+    _interpreter.create_function("exp_data", sl_func::exp_data, {param_type::LIT_STR});
+    _interpreter.create_function("debug", sl_func::debug, {param_type::LIT_STR, param_type::NEXT_TOO});
+    _interpreter.create_function("debug_struct", sl_func::debug_struct, {param_type::VAR_STRUCT_ID});
 
-    interpreter.set_std_function("link_lib", sl_func::link_lib,
-                                 {param_type::VAR_STRUCT_ID, param_type::LSTR_OR_ID_VAR, param_type::NEXT_TOO});
-    interpreter.set_std_function("exp_data", sl_func::exp_data, {param_type::LSTR_OR_ID_VAR});
-    interpreter.set_std_function("cmd", sl_func::cmd, {param_type::LNUM_OR_ID_VAR, param_type::LSTR_OR_ID_VAR});
-    interpreter.set_std_function("debug", sl_func::debug, {param_type::LSTR_OR_ID_VAR, param_type::NEXT_TOO});
-    interpreter.set_std_function("debug_struct", sl_func::debug_struct, {param_type::VAR_STRUCT_ID});
-
-    interpreter.set_std_function(
-        "flags_compiler", sl_func::flags_compiler,
-        {param_type::VAR_STRUCT_ID, param_type::LNUM_OR_ID_VAR, param_type::LSTR_OR_ID_VAR, param_type::NEXT_TOO});
-    interpreter.set_std_function(
-        "flags_linker", sl_func::flags_linker,
-        {param_type::VAR_STRUCT_ID, param_type::LNUM_OR_ID_VAR, param_type::LSTR_OR_ID_VAR, param_type::NEXT_TOO});
-
-    interpreter.set_std_function("path_compiler", sl_func::path_compiler,
-                                 {param_type::VAR_STRUCT_ID, param_type::LSTR_OR_ID_VAR});
-    interpreter.set_std_function("path_linker", sl_func::path_linker,
-                                 {param_type::VAR_STRUCT_ID, param_type::LSTR_OR_ID_VAR});
-    interpreter.set_std_function("standart_c", sl_func::standart_c,
-                                 {param_type::VAR_STRUCT_ID, param_type::LNUM_OR_ID_VAR});
-    interpreter.set_std_function("standart_cpp", sl_func::standart_cpp,
-                                 {param_type::VAR_STRUCT_ID, param_type::LNUM_OR_ID_VAR});
-    interpreter.set_std_function("lang", sl_func::lang, {param_type::VAR_STRUCT_ID, param_type::LNUM_OR_ID_VAR});
-
-    interpreter.set_std_function("generator", sl_func::generator,
-                                 {param_type::VAR_STRUCT_ID, param_type::LSTR_OR_ID_VAR});
-
-    interpreter.set_std_function("create_templates", sl_func::create_templates,
-                                 {param_type::FUTURE_VAR_ID, param_type::LSTR_OR_ID_VAR});
-    interpreter.set_std_function("create_call_component", sl_func::create_call_component,
-                                 {param_type::FUTURE_VAR_ID, param_type::LSTR_OR_ID_VAR, param_type::LSTR_OR_ID_VAR});
-    interpreter.set_std_function("add_param_template", sl_func::add_param_template,
+    _interpreter.create_function("create_template", sl_func::create_template,
+                                 {param_type::FUTURE_VAR_ID, param_type::LIT_STR});
+    _interpreter.create_function("create_call_component", sl_func::create_call_component,
+                                 {param_type::FUTURE_VAR_ID, param_type::LIT_STR, param_type::LIT_STR});
+    _interpreter.create_function("add_param_template", sl_func::add_param_template,
                                  {param_type::FUTURE_VAR_ID, param_type::VAR_ID});
-    interpreter.set_std_function("use_templates", sl_func::use_templates,
-                                 {param_type::VAR_STRUCT_ID, param_type::LSTR_OR_ID_VAR, param_type::NEXT_TOO});
-    interpreter.set_std_function("use_it_template", sl_func::use_it_template,
-                                 {param_type::VAR_STRUCT_ID, param_type::LNUM_OR_ID_VAR});
+    _interpreter.create_function("use_templates", sl_func::use_templates,
+                                 {param_type::VAR_STRUCT_ID, param_type::VAR_STRUCT_ID, param_type::NEXT_TOO});
 }
 
-void bwlang::set_config() {
-    interpreter.set_config(cfg_intp);
+void bweas::lang::execute() {
+    _interpreter.interpret();
 }
-void bwlang::set_bwconf_file(std::string bwconf_file) {
-    cfg_intp.filename_interp = bwconf_file;
-    interpreter.set_config(cfg_intp);
-}
-void bwlang::execute() {
-    interpreter.build_aef();
-    interpreter.interpret();
-}
-void bwlang::load_external_tfuncs(const semantic_an::table_func &tfuncs) {
-    interpreter.load_external_func(tfuncs);
-}
-std::vector<var::struct_sb::target_out> bwlang::get_targets() {
-    std::vector<var::struct_sb::target> targets = interpreter.export_targets();
-
-    std::vector<var::struct_sb::target_out> targets_o;
-    var::struct_sb::target_out target_tmp;
-
-    for (u32t i = 0; i < targets.size(); ++i) {
-        target_tmp.name_target = targets[i].name_target;
-        target_tmp.target_t = targets[i].target_t;
-        target_tmp.target_cfg = targets[i].target_cfg;
-        target_tmp.version_target = targets[i].version_target;
-        target_tmp.name_generator = targets[i].name_generator;
-        target_tmp.target_vec_libs = targets[i].target_vec_libs;
-        target_tmp.prj = *targets[i].prj;
-
-        targets_o.push_back(target_tmp);
-    }
-
-    return targets_o;
+void bweas::lang::init_external_funcs(vec<decl_func> funcs) {
+    for (const auto &func : funcs)
+        _interpreter.create_function(func);
 }
 
-std::vector<var::struct_sb::template_command> bwlang::get_templates() {
-    std::vector<std::pair<std::string, var::struct_sb::template_command>> templates =
-        interpreter.get_current_scope().get_vector_variables_t<var::struct_sb::template_command>();
-
-    std::vector<var::struct_sb::template_command> templates_out;
-    for (const auto &_template : templates)
-        templates_out.emplace_back(_template.second);
-
-    return templates_out;
+void bweas::lang::init_context() {
+    _context->targets              = get_targets();
+    _context->templates            = get_templates();
+    _context->call_components      = get_call_components();
+    _context->global_external_args = get_global_external_args();
 }
 
-std::vector<var::struct_sb::call_component> bwlang::get_call_components() {
-    std::vector<std::pair<std::string, var::struct_sb::call_component>> call_components =
-        interpreter.get_current_scope().get_vector_variables_t<var::struct_sb::call_component>();
+vec<bweas::sc::target> bweas::lang::get_targets() {
+    const container_vars<sc::target>::container_type &container_targets =
+        _interpreter.get_scope().get_container_vars<sc::target>();
 
-    std::vector<var::struct_sb::call_component> call_components_out;
-    for (const auto &_template : call_components)
-        call_components_out.emplace_back(_template.second);
+    vec<sc::target> targets;
+    for (auto it = container_targets.begin(); it != container_targets.end(); ++it)
+        targets.push_back(it->second);
 
-    return call_components_out;
+    return targets;
 }
 
-std::vector<std::pair<std::string, std::string>> bwlang::get_global_external_args() {
-    std::vector<std::pair<std::string, std::pair<std::string, std::string>>> global_external_args =
-        interpreter.get_current_scope().get_vector_variables_t<std::pair<std::string, std::string>>();
+vec<bweas::sc::template_command> bweas::lang::get_templates() {
+    container_vars<sc::template_command>::container_type container_templates =
+        _interpreter.get_scope().get_container_vars<sc::template_command>();
 
-    std::vector<std::pair<std::string, std::string>> global_external_args_out;
-    for (const auto &global_external_arg : global_external_args)
-        global_external_args_out.emplace_back(global_external_arg.second);
+    vec<sc::template_command> templates;
+    for (auto it = container_templates.begin(); it != container_templates.end(); ++it)
+        templates.emplace_back(it->second);
 
-    return global_external_args_out;
+    return templates;
 }
 
-var::scope &bwlang::get_global_scope() {
-    return interpreter.get_current_scope();
-}
-template <typename T> std::vector<std::pair<std::string, T>> &bwlang::get_class_variables() {
-    return interpreter.get_current_scope().get_vector_variables_t<T>();
+vec<bweas::sc::call_component> bweas::lang::get_call_components() {
+    container_vars<sc::call_component>::container_type container_call_components =
+        _interpreter.get_scope().get_container_vars<sc::call_component>();
+
+    vec<sc::call_component> call_components;
+    for (auto it = container_call_components.begin(); it != container_call_components.end(); ++it)
+        call_components.emplace_back(it->second);
+
+    return call_components;
 }
 
-} // namespace bweas
+vec<pair<string, string>> bweas::lang::get_global_external_args() {
+    container_vars<pair<string, string>>::container_type container_global_external_args =
+        _interpreter.get_scope().get_container_vars<pair<string, string>>();
+
+    vec<pair<string, string>> global_external_args;
+    for (auto it = container_global_external_args.begin(); it != container_global_external_args.end(); ++it)
+        global_external_args.emplace_back(it->second);
+
+    return global_external_args;
+}
+
+scope &bweas::lang::get_global_scope() & {
+    return _interpreter.get_scope();
+}
+template <typename T> container_vars<T>::container_type &bweas::lang::get_container_vars() & {
+    return _interpreter.get_scope().get_container_vars<T>();
+}
 
 #endif

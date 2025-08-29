@@ -1,52 +1,39 @@
-#include "bwmodule.hpp"
+//
+// BWEAS is distributed under the gnu general public license 2.0 (gpl-2.0).
+// you can view the license text at the link:
+//     <https://www.gnu.org/licenses>
+// ------------------------------------------
+//
+
+#include <bwmodule.hpp>
+
+#include <bwluatools.hpp>
 
 using namespace bweas;
-using namespace bweas::bwexception;
+using namespace bweas::utils;
 
-module::module_mg::module_mg() {
-    if (!init_glob) {
-        assist.add_err("BWS-MDL000", "Failed to load module dependent dll file");
-        assist.add_err("BWS-MDL001", "Failed to get the specified module function");
-    }
-}
+static logger _log{"BWMODULE"};
 
-semantic_an::table_func module::module_mg::init_tfunc(module &md) {
-    semantic_an::table_func tfuncs;
-    try {
-#if defined(WIN)
-        HMODULE dll = assist.load_dll(md.name_dll);
-        if (DWORD it_err = assist.get_error_win32())
-            throw bwmodule_excp("WinAPI error: " + std::to_string(it_err), "000");
-#elif defined(UNIX)
-        u32t dll = assist.load_dl(md.name_dll);
-        if (!assist.get_error_dl().empty())
-            throw bwmodule_excp(assist.get_error_dl(), "000");
-#endif
+umap<string, scope::module_data> module_manager::init_modules(vec<module_cfg> &modules_cfg) {
+    umap<string, scope::module_data> modules;
+    for (auto &md : modules_cfg) {
+        scope::module_data module_data_tmp;
+        module_data_tmp.profiles = std::move(md.profiles);
 
-        for (auto &func : md.funcs) {
-            func.second.func_ref = (aef_expr::notion_func::func_t)assist.get_ptr_func(md.name_dll, func.first);
-#if defined(WIN)
-            if (DWORD it_err = assist.get_error_win32())
-                throw bwmodule_excp("WinAPI error: " + std::to_string(it_err), "001");
-#elif defined(UNIX)
-            if (!assist.get_error_dl().empty())
-                throw bwmodule_excp(assist.get_error_dl(), "001");
-#endif
+        for (auto &[name, _decl_func] : md.funcs) {
+            _decl_func.func = [&md, &_decl_func](const expressions &expr_s, scope &curr_scope) {
+                static umap<string, lua> lua_stream_s;
+                if (!lua_stream_s[md.name].is_created())
+                    lua_stream_s.emplace(md.name, file_utils::read_file(file_utils::get_ref_file(
+                                                      file_utils::open_file(md.name_lua_source_file))));
+
+                lua_stream_s[md.name].call_function<string_v, lua_tools::integer, lua_tools::integer>(
+                    _decl_func.name, *((lua_tools::integer *)&expr_s), *((lua_tools::integer *)&curr_scope));
+            };
         }
-    }
-    catch (bwmodule_excp &_excp) {
-        throw bwmodule_excp(md.name_dll + std::string(" - Module ") + _excp.what(),
-                            std::string(_excp.get_assist_err()).erase(0, 7));
-    }
-    return md.funcs;
-}
 
-semantic_an::table_func module::module_mg::init_tsfunc(modules &mds) {
-    semantic_an::table_func tfuncs;
-    for (auto &md : mds) {
-        semantic_an::table_func tfuncs_md = init_tfunc(md);
-        for (const auto &func_md : tfuncs_md)
-            tfuncs.insert(func_md);
+        modules[md.name] = module_data_tmp;
     }
-    return tfuncs;
+
+    return modules;
 }

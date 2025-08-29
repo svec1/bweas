@@ -1,12 +1,22 @@
+//
+// BWEAS is distributed under the GNU General Public License 2.0 (GPL-2.0).
+// you can view the license text at the link:
+//     <https://www.gnu.org/licenses>
+// ------------------------------------------
+//
+
 #ifndef EXPRESSION__H
 #define EXPRESSION__H
 
-#include "scope.hpp"
-#include "token.hpp"
+#include <functional>
 
-#include <vector>
+#include <bwaliases.hpp>
 
-namespace aef_expr {
+inline constexpr auto STR_KEYWORD_IF    = "if";
+inline constexpr auto STR_KEYWORD_ELSE  = "else";
+inline constexpr auto STR_KEYWORD_ENDIF = "endif";
+
+class scope;
 
 // list of parameters that the function can expect
 enum class param_type {
@@ -14,12 +24,15 @@ enum class param_type {
     // this parameter tells semantic analysis that:
     //  1. the current function (most likely) is a declaring function
     //  2. it needs to check that the name that was passed as a parameter
-    //     of this type does not exist in the symbol table of the global or external scope
+    //     of this type does not exist in the symbol table of the global or
+    //     external scope
     FUTURE_VAR_ID,
 
-    // this parameter tells the semantic parser that it does not need to worry about
+    // this parameter tells the semantic parser that it does not need to worry
+    // about
     // the issue of declaring the identifier; with this parameter it will
-    // not create a declaration of the symbol in the symbol table, and will not check whether it exists
+    // not create a declaration of the symbol in the symbol table, and will not
+    // check whether it exists
     NCHECK_VAR_ID,
 
     VAR_ID,
@@ -34,8 +47,6 @@ enum class param_type {
 
     LIT_STR,
     LIT_NUM,
-    LSTR_OR_ID_VAR,
-    LNUM_OR_ID_VAR,
 
     // this type of parameter means that the current parameter at index,
     // and the next ones, will be of the same type as the parameter before it
@@ -46,171 +57,215 @@ enum class param_type {
 };
 
 struct param {
-    param(param_type _param_t, std::string _default_val = "") : param_t(_param_t), default_val(_default_val) {
+    param(param_type _type, std::optional<string> _default_val = std::nullopt)
+        : type(_type), default_val(_default_val) {
     }
 
-    inline bool decl_default_val() {
-        return !default_val.empty();
+    bool decl_default_val() const {
+        return default_val.has_value();
     }
 
-    param_type param_t;
-    std::string default_val;
-};
-
-struct subexpressions;
-
-// the notion of a function, which contains a reference
-// to the function itself, the parameters that it expects when called,
-// and two fields that define the call to this function
-struct notion_func {
-    notion_func() = default;
-    explicit notion_func(void (*func)(const std::vector<subexpressions> &, var::scope &), std::vector<param> params)
-        : func_ref(func), expected_params(params) {
-    }
-
-    using func_t = void (*)(const std::vector<subexpressions> &, var::scope &);
-
-    inline u32t count_default_param();
-
-    func_t func_ref;
-    std::vector<param> expected_params;
-
-    // does the function declare anyone
-    // (if so, then the function will be called during semantic analysis)
-    bool is_declaration_var{0};
-
-    // whether to call a function in semantic parsing
-    // (provided so that certain functions that cannot declare
-    // anything can be called in semantic analysis)
-    bool only_with_semantic{0};
-};
-
-// a structure that is a representation
-// (notion) of a function
-struct notion_expr_func {
-
-    // function call token
-    token_expr::token func_t;
-    notion_func func_n;
-};
-
-// structure is a representation of a single function call
-struct expression {
-    inline bool execute_with_semantic_an();
-
-    notion_expr_func expr_func;
-    std::vector<subexpressions> sub_expr_s;
+    param_type type;
+    std::optional<string> default_val;
 };
 
 // structure is a list of parameters passed
 // to the function when it is called
-struct subexpressions {
-    // declaration of all possible parameter types
-    enum class type_subexpr {
-        INT_COMPARE,
-        STRING_ADD,
-        INT,
+struct expression {
+  public:
+    enum class expression_t {
+        NUMBER = 0,
         STRING,
         ID,
 
-        KEYWORD_OP,
-
-        SIZE_ENUM_TYPE_SUBEXPR
+        SIZE_ENUM_RET_TYPE_EXPR
     };
-    enum class ret_type_subexpr {
-        INT,
-        STRING,
-        ID,
 
-        SIZE_ENUM_RET_TYPE_SUBEXPR
-    };
-    subexpressions() = default;
-    explicit subexpressions(std::vector<token_expr::token> _token_of_subexpr, type_subexpr _subexpr_t)
-        : token_of_subexpr(_token_of_subexpr), subexpr_t(_subexpr_t) {
+  public:
+    expression() = default;
+    explicit expression(string_v _value, expression_t _type, bool _value_by_id = false, size_t _line = 0,
+                        size_t _column = 0)
+        : type(_type), value(_value), value_by_id(_value_by_id), line(_line), column(_column) {
     }
 
-    inline ret_type_subexpr returned_type_subexpr() const;
-    inline bool param_match_ret_type_subexpr(param_type) const;
+  public:
+    expression_t type;
+    string value;
 
-    // tokens of single parameter
-    std::vector<token_expr::token> token_of_subexpr;
-    type_subexpr subexpr_t;
+    bool value_by_id = false;
+
+    size_t line, column;
 };
 
-// Determines the need to call this function in semantic analysis
-inline bool expression::execute_with_semantic_an() {
-    return expr_func.func_n.is_declaration_var || expr_func.func_n.only_with_semantic;
-}
+struct statement;
+using expressions = vec<expression>;
+using statements  = vec<statement>;
 
-// Defines the return type (expected after semantic analysis)
-inline subexpressions::ret_type_subexpr subexpressions::returned_type_subexpr() const {
-    if (subexpr_t == type_subexpr::INT || subexpr_t == type_subexpr::INT_COMPARE)
-        return ret_type_subexpr::INT;
-    else if (subexpr_t == type_subexpr::STRING || subexpr_t == type_subexpr::STRING_ADD)
-        return ret_type_subexpr::STRING;
-    else if (subexpr_t == type_subexpr::ID)
-        return ret_type_subexpr::ID;
-    else if (subexpr_t == type_subexpr::KEYWORD_OP) {
-        const auto &it =
-            std::find_if(this->token_of_subexpr.begin(), this->token_of_subexpr.end(), [](const token_expr::token &tk) {
-                return tk.token_t == token_expr::token_type::KW_OPERATOR && IS_BIBARY_KW_OP(tk.token_val);
-            });
-        if (it == this->token_of_subexpr.end()) {
-            if (RET_INT_KW_OP(this->token_of_subexpr[0].token_val))
-                return ret_type_subexpr::INT;
-            else if (RET_STR_KW_OP(this->token_of_subexpr[0].token_val))
-                return ret_type_subexpr::STRING;
-        }
-        else if (RET_INT_KW_OP(it->token_val))
-            return ret_type_subexpr::INT;
-        else if (RET_STR_KW_OP(it->token_val))
-            return ret_type_subexpr::STRING;
+// the notion of a function, which contains a reference
+// to the function itself, the parameters that it expects when called,
+// and two fields that define the call to this function
+struct decl_func {
+    using func_t = std::function<void(const expressions &, scope &)>;
+
+  public:
+    decl_func() = default;
+    explicit decl_func(string_v _name, func_t _func, vec<param> _expected_params)
+        : name(_name), func(_func), expected_params(_expected_params) {
     }
-    return ret_type_subexpr::SIZE_ENUM_RET_TYPE_SUBEXPR;
-}
 
-inline bool subexpressions::param_match_ret_type_subexpr(param_type _param) const {
-    ret_type_subexpr subexpr_rt = returned_type_subexpr();
-    if ((subexpr_rt == ret_type_subexpr::ID &&
-         (_param == param_type::FUTURE_VAR_ID || _param == param_type::NCHECK_VAR_ID || _param == param_type::VAR_ID ||
-          _param == param_type::VAR_STRUCT_ID)) ||
-        (subexpr_rt == ret_type_subexpr::INT &&
-         (_param == param_type::LIT_NUM || _param == param_type::LNUM_OR_ID_VAR)) ||
-        (subexpr_rt == ret_type_subexpr::STRING &&
-         (_param == param_type::LIT_STR || _param == param_type::LSTR_OR_ID_VAR)))
-        return 1;
-    return 0;
-}
+  public:
+    inline size_t count_default_params() const;
 
-inline u32t notion_func::count_default_param() {
-    u32t count_dp = 0;
+  public:
+    string name;
+
+    func_t func;
+    vec<param> expected_params;
+};
+
+// structure is a representation of a single function call
+struct statement {
+  public:
+    statement() = default;
+    explicit statement(const decl_func *_expr_func, expressions _expr_s, size_t _line = 0, size_t _column = 0)
+        : expr_func(_expr_func), expr_s(_expr_s), line(_line), column(_column) {
+    }
+
+  public:
+    string get_location() const {
+        return "[" + std::to_string(line) + ":" + std::to_string(column) + "]";
+    }
+
+    string get_string_expected_params(size_t offset_index = 0) const;
+
+  public:
+    inline string build_string_error(pdiff expr_index, string error_str, string expected = "") const;
+
+  public:
+    const decl_func *expr_func;
+    expressions expr_s;
+
+    string view_str;
+    size_t line, column;
+};
+
+inline size_t decl_func::count_default_params() const {
+    size_t count_dp = 0;
     for (const param &_param : expected_params)
-        if (!_param.default_val.empty())
+        if (_param.decl_default_val())
             ++count_dp;
 
     return count_dp;
 }
 
-static inline subexpressions::type_subexpr conv_param_type_to_subexpr_type(param_type _param) {
+inline expression::expression_t conv_param_type_to_expr_type(param_type _param) {
     if (_param == param_type::FUTURE_VAR_ID || _param == param_type::NCHECK_VAR_ID || _param == param_type::VAR_ID ||
         _param == param_type::VAR_STRUCT_ID)
-        return subexpressions::type_subexpr::ID;
-    else if (_param == param_type::LIT_NUM || _param == param_type::LNUM_OR_ID_VAR)
-        return subexpressions::type_subexpr::INT;
-    else if (_param == param_type::LIT_STR || _param == param_type::LSTR_OR_ID_VAR)
-        return subexpressions::type_subexpr::STRING;
-    return subexpressions::type_subexpr::SIZE_ENUM_TYPE_SUBEXPR;
-}
-static inline token_expr::token_type conv_param_type_to_token_type(param_type _param) {
-    if (_param == param_type::FUTURE_VAR_ID || _param == param_type::NCHECK_VAR_ID || _param == param_type::VAR_ID ||
-        _param == param_type::VAR_STRUCT_ID)
-        return token_expr::token_type::ID;
-    else if (_param == param_type::LIT_NUM || _param == param_type::LNUM_OR_ID_VAR)
-        return token_expr::token_type::LITERAL;
-    else if (_param == param_type::LIT_STR || _param == param_type::LSTR_OR_ID_VAR)
-        return token_expr::token_type::LITERALS;
-    return token_expr::token_type::SIZE_ENUM_TOKEN_TYPE;
+        return expression::expression_t::ID;
+    else if (_param == param_type::LIT_NUM)
+        return expression::expression_t::NUMBER;
+    else if (_param == param_type::LIT_STR)
+        return expression::expression_t::STRING;
+    return expression::expression_t::SIZE_ENUM_RET_TYPE_EXPR;
 }
 
-} // namespace aef_expr
+inline bool operator==(expression::expression_t e_type, param_type p_type) {
+    if (conv_param_type_to_expr_type(p_type) == e_type)
+        return true;
+    return false;
+}
+
+inline string_v get_string_expr_type(expression::expression_t type) {
+    if (type == expression::expression_t::NUMBER)
+        return "NUMBER";
+    else if (type == expression::expression_t::STRING)
+        return "STRING";
+    else if (type == expression::expression_t::ID)
+        return "ID";
+    return "???";
+}
+
+inline param_type get_string_param_type(string_v str) {
+    if (str == "FUTURE_VAR_ID")
+        return param_type::FUTURE_VAR_ID;
+    else if (str == "VAR_ID")
+        return param_type::VAR_ID;
+    else if (str == "NCHECK_VAR")
+        return param_type::NCHECK_VAR_ID;
+    else if (str == "VAR_STRUCT_ID")
+        return param_type::VAR_STRUCT_ID;
+    else if (str == "ANY_VALUE_WITHOUT_FUTUREID_NEXT")
+        return param_type::ANY_VALUE_WITHOUT_FUTUREID_NEXT;
+    else if (str == "LIT_STR")
+        return param_type::LIT_STR;
+    else if (str == "LIT_NUM")
+        return param_type::LIT_NUM;
+    else if (str == "NEXT_TOO")
+        return param_type::NEXT_TOO;
+    else
+        return param_type::SIZE_ENUM_PARAMS;
+}
+
+inline string statement::build_string_error(pdiff expr_index, string error_str, string expected) const {
+    string location_str = get_location();
+    string error = error_str + "\n" + location_str + ": " + view_str + "\n" + string(location_str.size() + 2, ' ');
+
+    size_t offset_failure_expr = location_str.size() + 2;
+
+    if (expr_index < 0)
+        error += string(view_str.size(), '^');
+    else if (expr_index == PTRDIFF_MAX) {
+        for (size_t i = 0; i < view_str.size(); ++i) {
+            if (view_str[i] == ')') {
+                error += '^';
+                offset_failure_expr += i;
+                break;
+            }
+            error += ' ';
+        }
+    }
+    else if (!expr_index) {
+        for (size_t i = 0; i < expr_func->name.size(); ++i)
+            error += "^";
+    }
+    else {
+        size_t current_symbol = expr_func->name.size() + 1;
+        size_t i              = 1;
+        for (; i < expr_index && current_symbol < view_str.size(); ++current_symbol)
+            if (view_str[current_symbol] == ',' || view_str[current_symbol] == ')')
+                ++i;
+
+        error += string(current_symbol, ' ');
+        offset_failure_expr += current_symbol;
+
+        for (; current_symbol < view_str.size(); ++current_symbol) {
+            if (view_str[current_symbol] == ',' || view_str[current_symbol] == ')')
+                break;
+            error += "^";
+        }
+    }
+
+    error += !expected.empty() ? "\n" + string(offset_failure_expr, ' ') + "Expected: " + expected : "";
+    return error;
+}
+
+inline string statement::get_string_expected_params(size_t offset_index) const {
+    string expected_params_str;
+    for (size_t i = offset_index; i < expr_func->expected_params.size(); ++i) {
+        expected_params_str += get_string_expr_type(conv_param_type_to_expr_type(expr_func->expected_params[i].type));
+
+        if (i < expr_func->expected_params.size() - 1)
+            expected_params_str += " ";
+    }
+
+    return expected_params_str;
+}
+
+inline bool is_id_param(param_type p) {
+    if (p == param_type::FUTURE_VAR_ID || p == param_type::NCHECK_VAR_ID || p == param_type::VAR_ID ||
+        p == param_type::VAR_STRUCT_ID)
+        return true;
+    return false;
+}
+
 #endif

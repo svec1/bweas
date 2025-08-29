@@ -1,538 +1,417 @@
-#include "bwbuild_sys.hpp"
-#include "bwgenerator_integral.hpp"
-#include "bwlang.hpp"
-#include "lang/static_struct.hpp"
+//
+// BWEAS is distributed under the GNU General Public License 2.0 (GPL-2.0).
+// you can view the license text at the link:
+//     <https://www.gnu.org/licenses>
+// ------------------------------------------
+//
 
 #include <algorithm>
+#include <cmath>
 #include <filesystem>
 #include <memory>
-#include <nlohmann/json.hpp>
 #include <string>
 #include <unordered_set>
 
+#include <bwbuild_sys.hpp>
+#include <bwgenerator_command.hpp>
+#include <bwlang.hpp>
+#include <bwprocesses_handler.hpp>
+#include <bwstructs_context.hpp>
+
+#include <nlohmann/json.hpp>
+
 using namespace bweas;
-using namespace bweas::bwexception;
+using namespace bweas::utils;
 
-using mf = assistant::file::mode_file;
-using file_it = assistant::file_it;
+static logger _log{"BWEAS"};
 
-bwlang _bwlang{MAIN_FILE};
+static constexpr auto JSON_CONFIG_FILE          = "bweas-config.json";
+static constexpr auto DEFAULT_BWEAS_JSON_CONFIG = "{\n\t\"cache-gn\": \"fast_bwcache\",\n\t\"packages\": []\n}";
 
-bwbuilder::bwbuilder(int argv, char **args) {
-    if (!init_glob) {
-        assist.add_err("BWS000", "Unable to open configuration file \'bweasconf.txt\'");
-        assist.add_err("BWS001", "Incorrect cache structure");
-        assist.add_err("BWS002", "Unable to generate command for target");
-        assist.add_err("BWS003", "Unable to generate cache");
-        assist.add_err("BWS004", "Failed build, external error while calling command");
-        assist.add_err("BWS005", "Incorrect structure of the bweas-json configuration file");
-        assist.add_err("BWS006", "The bweas-json configuration for package package file was not found");
-        assist.add_err("BWS007", "Bweas package not found");
+static const string INFO_STR =
+    "bweas version " + std::string(VERSION_FULL_STR) + "\nrep on github - https://github.com/svec1/bweas";
 
-        assist.add_err("BWS-HAX000", "Unknown parameter");
-        assist.add_err("BWS-HAX001", "The package command is a separate subroutine");
-        assist.add_err("BWS-HAX002", "The package routine takes two parameters");
+static constexpr auto HELP_STR =
+    "bweas-call: \n   bweas <parameter>... path_depending\n   bweas path_bweas_config <parameter>..."
+    "\nAcceptable parameters:"
+    "\n   --build - builds the project (either by executing the configuration file or deserializing the cache file "
+    "if it exists)"
+    "\n   --cfg - executes the configuration file if it has been changed and creates a new cache file"
+    "\n   --package - creates a bweas package based on the transferred json file(json config)"
+    "\n   --help - outputs the syntax of the bweas call as well as its possible functions"
+    "\n   --version - outputs the version of bweas";
 
-        init_glob = 1;
-    }
-
-    std::vector<std::string> vec_args;
-    for (u32t i = 0; i < argv; ++i)
+builder::builder(size_t argv, char **args) {
+    vec<string> vec_args;
+    for (size_t i = 0; i < argv; ++i)
         vec_args.push_back(args[i]);
 
     handle_args(vec_args);
 
-    if (mode_bweas != mode_working::build_package) {
-        assist << "Initializing system build - bweas " + bwbuilde_ver.get_str_version();
+    if (mode_bweas != mode_working::build_package && mode_bweas != mode_working::undef) {
+        _log << (log_message(log_type::msg) << "Initializing system build - bweas " + version.get_str_version());
         init();
     }
 }
 
-bwbuilder::~bwbuilder() {
-    if (_bwcache)
-        _bwcache->delete_cache();
-    for (const auto &generator : generators)
-        generator.second->deleteGenerator();
-}
-
-void bwbuilder::handle_args(std::vector<std::string> args) {
-    args[0].erase(0, args[0].find_last_of("/\\") + 1);
-    name_bweas_prg = args[0];
-    path_bweas_config = std::filesystem::current_path().string();
+void builder::handle_args(vec<string> &args) {
+    _context.path_bweas_config   = fs::current_path().string() + "/";
+    _context.path_bweas_to_build = fs::current_path().string() + "/";
 
     if (args.size() == 1)
         mode_bweas = mode_working::collect_cfg;
 
-    std::string path_json_cfg_package;
-
     bool expected_path_bweas_config = 1, expected_path_to_build = 0;
     bool expected_path_json_cfg_package = 0;
-    for (u32t i = 1; i < args.size(); ++i) {
+    for (size_t i = 1; i < args.size(); ++i) {
         if (args[i].find("--") == 0) {
+            args[i].erase(args[i].find("--"), 2);
+
+            if (mode_bweas != undef) {
+                _log << (log_message(log_type::error)
+                         << "Unknown argument: " + args[i] + ". The bweas mode has already been defined");
+                return;
+            }
             if (i == 1)
                 expected_path_bweas_config = 0;
-            args[i].erase(args[i].find("--"), 2);
-            if (args[i] == "build") {
-                if (!path_bweas_to_build.empty()) {
-                    assist.next_output_important();
-                    assist << " - [BWEAS]: The build folder has already been set";
-                    continue;
-                }
-                else if (mode_bweas == mode_working::build_package)
-                    throw bwbuilder_excp(args[i], "001", "-HAX");
 
-                if (mode_bweas == mode_working::collect_cfg)
-                    mode_bweas = mode_working::collect_cfg_w_build;
-                else
-                    mode_bweas = mode_working::build;
+            if (args[i] == "build") {
+                mode_bweas             = mode_working::build;
                 expected_path_to_build = 1;
             }
             else if (args[i] == "cfg") {
-                if (mode_bweas == mode_working::build)
-                    mode_bweas = mode_working::collect_cfg_w_build;
-                else
-                    mode_bweas = mode_working::collect_cfg;
+                mode_bweas                 = mode_working::collect_cfg;
                 expected_path_bweas_config = 1;
             }
             else if (args[i] == "package") {
-                if ((mode_bweas == mode_working::build || mode_bweas == mode_working::collect_cfg) && i != 2)
-                    throw bwbuilder_excp(path_json_cfg_package, "001", "-HAX");
-                mode_bweas = mode_working::build_package;
+                mode_bweas                     = mode_working::build_package;
                 expected_path_json_cfg_package = 1;
             }
-            else
-                throw bwbuilder_excp("Parameter: " + args[i] + "\n" + BWEAS_HELP, "000", "-HAX");
+            else if (args[i] == "nolog")
+                _log.set_global_log(false);
+            else if (args[i] == "help")
+                _log << (log_message(log_type::msg) << HELP_STR);
+            else if (args[i] == "version")
+                _log << (log_message(log_type::msg) << INFO_STR);
+            else {
+                _log << (log_message(log_type::error) << "Unknown argument: " + args[i]);
+                return;
+            }
         }
         else {
             // --cfg <arg> or arg
             if (expected_path_bweas_config) {
-                path_bweas_config = std::filesystem::absolute(args[i]).string();
+                _context.path_bweas_config = fs::absolute(args[i]).lexically_normal().string();
+                mode_bweas                 = mode_working::collect_cfg;
+
                 expected_path_bweas_config = 0;
             }
             // --build <arg>
             else if (expected_path_to_build) {
-                path_bweas_to_build = std::filesystem::absolute(args[i]).string();
-                expected_path_to_build = 0;
+                _context.path_bweas_to_build = fs::absolute(args[i]).lexically_normal().string();
+                expected_path_to_build       = 0;
             }
             // --package <arg>
             else if (expected_path_json_cfg_package) {
-                path_json_cfg_package = args[i];
                 expected_path_json_cfg_package = 0;
 
-                u32t size_pckg = create_package(path_json_cfg_package);
-
-                assist.next_output_important();
-                assist << "[Bweas-Package] Created: " + std::to_string(size_pckg) + " bytes";
+                create_package(args[i]);
             }
-            else
-                throw bwbuilder_excp("Parameter: " + args[i] + "\n" + BWEAS_HELP, "000", "-HAX");
+            else {
+                _log << (log_message(log_type::error) << "Unknown argument: " + args[i]);
+                return;
+            }
         }
     }
 
     if (expected_path_json_cfg_package)
-        throw bwbuilder_excp(BWEAS_HELP, "002", "-HAX");
+        _log << (log_message(log_type::error) << "Invalid syntax.\n" << HELP_STR);
 }
 
-u32t bwbuilder::create_package(std::string path_json_config_package) {
-    bwpackage::data_bw_package data_package;
-    const file_it &json_config_package = assist.open_file(path_json_config_package, mf::open::r);
-    if (!assist.exist_file(json_config_package))
-        throw bwbuilder_excp(path_json_config_package, "006");
+void builder::create_package(string path_json_config_package) {
+    package::data_bw_package data_package;
 
-    data_package.json_config = assist.read_file(assist.get_ref_file(json_config_package), mf::input::read_default);
-    assist.close_file(json_config_package);
+    file_it json_config_package = file_utils::open_file(path_json_config_package, mf::open::r);
+    if (!file_utils::exist_file(json_config_package)) {
+        _log << (log_message(log_type::error) << "The bweas-json configuration for package package file was not found");
+        return;
+    }
 
-    bweas::bwpackage loaded_package;
-    std::string pckg = loaded_package.init(data_package, 1);
-    const file_it &package = assist.open_file(
-        std::filesystem::current_path().string() + "/" + loaded_package.name_package + BW_FORMAT_PACKAGE, mf::open::wb);
-    assist.write_file(assist.get_ref_file(package), pckg, mf::output::write_binary);
-    assist.close_file(package);
+    data_package.json_config =
+        file_utils::read_file(file_utils::get_ref_file(json_config_package), mf::input::read_default);
+    file_utils::close_file(json_config_package);
 
-    return pckg.size();
+    package loaded_package;
+    string pckg = loaded_package.init(data_package, 1);
+    if (_log.error_status()) {
+        _log << (log_message(log_type::error) << "Failed to create a bweas package");
+        return;
+    }
+    file_it package =
+        file_utils::open_file(fs::current_path().string() + "/" + loaded_package.name + FORMAT_PACKAGE, mf::open::wb);
+    file_utils::write_file(file_utils::get_ref_file(package), pckg, mf::output::write_binary);
+    file_utils::close_file(package);
 }
 
-void bwbuilder::init() {
-    std::string bweas_path = assist.get_path_program() + "/" + JSON_CONFIG_FILE;
+void builder::init() {
+    fs::current_path(_context.path_bweas_config);
+
+    _context.path_bweas_config    = _context.path_bweas_config + CONFIG_FILE;
+    string bweas_json_config_path = file_utils::get_path_program() + JSON_CONFIG_FILE;
 
     nlohmann::json config_json;
-    file_it file_json_config = assist.open_file(bweas_path, mf::open::r);
-    if (!assist.exist_file(file_json_config)) {
-        assist.get_ref_file(file_json_config).open(mf::open::w);
-        assist.write_file(assist.get_ref_file(file_json_config), DEFAULT_BWEAS_JSON_CONFIG);
-        assist.close_file(file_json_config);
+    file_it file_json_config = file_utils::open_file(bweas_json_config_path, mf::open::r);
+    if (file_utils::exist_file(file_json_config) && !file_utils::get_ref_file(file_json_config).file_opened) {
+        file_utils::get_ref_file(file_json_config).open(mf::open::w);
+        file_utils::write_file(file_utils::get_ref_file(file_json_config), DEFAULT_BWEAS_JSON_CONFIG);
+        file_utils::close_file(file_json_config);
 
         config_json = nlohmann::json::parse(DEFAULT_BWEAS_JSON_CONFIG);
     }
     else {
-        config_json =
-            nlohmann::json::parse(assist.read_file(assist.get_ref_file(file_json_config), mf::input::read_default));
-        assist.close_file(file_json_config);
+        config_json = nlohmann::json::parse(
+            file_utils::read_file(file_utils::get_ref_file(file_json_config), mf::input::read_default));
+        file_utils::close_file(file_json_config);
     }
 
     if (config_json.contains("cache-gn")) {
-        if (!config_json["cache-gn"].is_string())
-            throw bwbuilder_excp("Cache generator name expected", "005");
-
+        if (!config_json["cache-gn"].is_string()) {
+            _log << (log_message(log_type::error) << "Cache generator name expected");
+            return;
+        }
         if (config_json["cache-gn"] == "fast_bwcache")
-            _bwcache = cache_api::base_bwcache::create_fast_bwcache();
+            cache = std::unique_ptr<cache_api::base_cache>(cache_api::base_cache::create_fast_cache());
         else if (config_json["cache-gn"] == "json_bwcache")
-            _bwcache = cache_api::base_bwcache::create_json_bwcache();
+            cache = std::unique_ptr<cache_api::base_cache>(cache_api::base_cache::create_json_cache());
     }
     else
-        _bwcache = cache_api::base_bwcache::create_fast_bwcache();
+        cache = std::unique_ptr<cache_api::base_cache>(cache_api::base_cache::create_fast_cache());
 
-    if (config_json.contains("packages")) {
-        if (!config_json["packages"].is_array())
-            throw bwbuilder_excp("At least one package must be defined", "005");
-        for (const auto &package : config_json["packages"].items()) {
-            if (!package.value().is_string())
-                throw bwbuilder_excp("Package names are expected", "005");
-            bweas::bwpackage loaded_package;
+    vec<package> loaded_packages;
+    package loaded_package;
 
-            std::string path_to_package =
-                assist.get_path_program() + "/packages/" + (std::string)package.value() + BW_FORMAT_PACKAGE;
-            std::string raw_data_package;
-            file_it it_package = assist.open_file(path_to_package, mf::open::rb);
-            if (!assist.exist_file(it_package))
-                throw bwbuilder_excp(path_to_package, "007");
-            raw_data_package = assist.read_file(assist.get_ref_file(it_package), mf::input::read_binary);
-            assist.close_file(it_package);
+    string path_to_packages{file_utils::get_path_program() + "packages"};
+    for (const auto &fs_object : fs::directory_iterator(path_to_packages)) {
+        if (!fs::is_regular_file(fs_object))
+            continue;
 
-            loaded_package.load(raw_data_package);
-            loaded_packages.push_back(loaded_package);
-
-            if (_bwcache == NULL && loaded_package.cfg_package.cache.name_cache == config_json["cache-gn"])
-                _bwcache = cache_api::base_bwcache::create_lua_bwcache(loaded_package.cfg_package.cache.src_lua_cache);
-            assist.next_output_success();
-            assist << " - [BWEAS]: The package was loaded successfully(" + std::to_string(raw_data_package.size()) +
-                          " bytes)";
+        file_it it_package = file_utils::open_file(fs_object.path().string(), mf::open::rb);
+        if (!file_utils::exist_file(it_package)) {
+            _log << (log_message(log_type::warning)
+                     << "\"" << fs_object.path().string() << "\" bweas package not found");
+            continue;
         }
+        string raw_data_package = file_utils::read_file(file_utils::get_ref_file(it_package), mf::input::read_binary);
+
+        loaded_package.load(raw_data_package);
+        loaded_packages.push_back(loaded_package);
+
+        if (cache == NULL && loaded_package.cfg.cache.name == config_json["cache-gn"].template get<std::string>())
+            cache = std::unique_ptr<cache_api::base_cache>(
+                cache_api::base_cache::create_lua_cache(loaded_package.cfg.cache.src_lua));
+
+        file_utils::close_file(it_package);
+
+        _log << (log_message(log_type::success)
+                 << "\"" << fs_object.path().string() << "\" bweas package was loaded successfully("
+                 << raw_data_package.size() << " bytes)");
     }
 
-    generators.emplace("bwgenerator", generator_api::base_generator::createGeneratorInt(generator::bwgenerator,
-                                                                                        generator::bwfile_inputs));
-    for (const auto &package : loaded_packages)
-        for (const auto &generator : package.cfg_package.generators)
-            generators.emplace(generator.name_generator,
-                               generator_api::base_generator::createGeneratorLua(generator.src_lua_generator));
+    cache->init(&_context);
+
+    dependency_finders.emplace("CPP", std::shared_ptr<depends_files>(depends_files::create_depends_integral_cxx()));
 
     for (auto &package : loaded_packages) {
-        semantic_an::table_func tfuncs = module_mg.init_tsfunc(package.cfg_package.mds);
-        for (const auto &func : tfuncs)
-            module_tfuncs.insert(func);
+        for (const auto &finder : package.cfg.finders) {
+            dependency_finders.emplace(
+                finder.language, std::shared_ptr<depends_files>(depends_files::create_depends_lua(finder.src_lua)));
+        }
+
+        auto package_modules = module_m.init_modules(package.cfg.modules);
+        modules.merge(std::move(package_modules));
     }
 }
 
-bwbuilder::mode_working bwbuilder::get_current_mode() {
+builder::mode_working builder::get_current_mode() {
     return mode_bweas;
 }
 
-void bwbuilder::start() {
+void builder::start() {
     if (mode_bweas == mode_working::build_package)
         return;
-    file_it bweas_config = assist.open_file(path_bweas_config + "/" MAIN_FILE, mf::open::r);
-    if (!assist.exist_file(bweas_config))
-        assist.call_err("BWS000");
-    assist.close_file(bweas_config);
+    else if (mode_bweas == mode_working::build) {
+        file_it bweas_cache = file_utils::open_file(CACHE_FILE, mf::open::rb);
+        string cache_str    = file_utils::read_file(file_utils::get_ref_file(bweas_cache));
 
-    if (mode_bweas == mode_working::build) {
-        std::filesystem::path cache_file = std::filesystem::current_path() / CACHE_FILE;
-        if (!std::filesystem::exists(cache_file)) {
-            assist.next_output_unsuccess();
-            assist << " - [BWEAS]: Bweas cache not found";
-            return;
-        }
-        std::filesystem::path main_file = std::filesystem::current_path() / MAIN_FILE;
+        _context.path_bweas_config = cache->get_path_config(cache_str);
+        string path_bweas_cache    = _context.path_bweas_to_build + CACHE_FILE;
 
-        std::filesystem::file_time_type cftime = std::filesystem::last_write_time(cache_file);
-        std::filesystem::file_time_type mftime = std::filesystem::last_write_time(main_file);
-        if (mftime >= cftime) {
-            assist.next_output_important();
-            assist << " - [BWEAS]: The configuration file has been modified";
+        if (!fs::exists(_context.path_bweas_config))
+            _log << (log_message(log_type::fatal) << "Bweas config not found");
+        if (!fs::exists(path_bweas_cache))
+            _log << (log_message(log_type::fatal) << "Bweas cache not found");
+
+        fs::file_time_type config_ftime = fs::last_write_time(_context.path_bweas_config);
+        fs::file_time_type cache_ftime  = fs::last_write_time(path_bweas_cache);
+        if (config_ftime > cache_ftime) {
+            _log << (log_message(log_type::msg) << "The configuration file has been modified");
             goto interpreter_start;
         }
 
-        deserl_cache();
+        cache->extract_cache_data(cache_str);
+
+        _log << (log_message(log_type::success)
+                 << "Cache deserialization was successful!\n"
+                 << "Was loaded " << _context.templates.size() << " template of command!");
     }
     else if (mode_bweas == mode_working::collect_cfg || mode_bweas == mode_working::collect_cfg_w_build) {
+        if (!fs::exists(_context.path_bweas_config))
+            _log << (log_message(log_type::fatal) << "Bweas config not found \'" << _context.path_bweas_config << "\'");
+
     interpreter_start:
+        fs::current_path(fs::path(_context.path_bweas_config).parent_path());
         run_interpreter();
-        gen_cache_target();
-        imp_data_interpreter_for_bs();
+
+        fs::current_path(_context.path_bweas_to_build);
+        if (gen_cache_target())
+            return;
     }
 
     if (mode_bweas == mode_working::build || mode_bweas == mode_working::collect_cfg_w_build) {
-        assist.next_output_important();
-        assist << "*Build start time: " + assist.get_time();
+        _log << (log_message(log_type::msg) << "*Build start time: " << file_utils::get_time());
         build_targets();
     }
 }
 
-void bwbuilder::set_logging() {
-    assist.set_file_log_name(LOG_FILE);
+void builder::run_interpreter() {
+    _log << (log_message(log_type::msg) << "Interpreting the configuration file...");
+
+    lang bwlang{&_context};
+
+    bwlang.get_container_vars<scope::module_data>() = std::move(modules);
+
+    bwlang.execute();
+
+    bwlang.init_context();
 }
 
-void bwbuilder::switch_output_log(u32t value) {
-    output_log = value;
-    assist.switch_otp(output_log);
-}
-
-void bwbuilder::run_interpreter() {
-    _bwlang.load_external_tfuncs(std::move(module_tfuncs));
-
-    assist << " - [BWEAS]: Interpreting the configuration file...";
-    _bwlang.execute();
-    assist << " - [BWEAS]: The interpretation was successful!";
-
-    out_targets = _bwlang.get_targets();
-    templates = _bwlang.get_templates();
-    call_components = _bwlang.get_call_components();
-    global_extern_args = _bwlang.get_global_external_args();
-}
-
-u32t bwbuilder::gen_cache_target() {
-    if (!out_targets.size()) {
-        assist << "Generating a file with a cache will not be performed.";
+size_t builder::gen_cache_target() {
+    if (!_context.targets.size()) {
+        _log << (log_message(log_type::warning) << "Generating a file with a cache will not be performed.");
         return 1;
     }
-    assist << " - [BWEAS]: Generating a cache file...";
 
-    file_it bweas_cache = assist.open_file(CACHE_FILE, mf::open::w);
+    file_it bweas_cache = file_utils::open_file(CACHE_FILE, mf::open::w);
 
-    _bwcache->_cache_data.targets_o_p = &out_targets;
-    _bwcache->_cache_data.templates = templates;
-    _bwcache->_cache_data.call_components = call_components;
-    _bwcache->_cache_data.global_external_args = global_extern_args;
+    file_utils::write_file(file_utils::get_ref_file(bweas_cache), cache->create_cache(), mf::output::write_binary);
+    file_utils::close_file(bweas_cache);
 
-    assist.write_file(assist.get_ref_file(bweas_cache), _bwcache->create_cache(), mf::output::write_binary);
-    assist.close_file(bweas_cache);
-
-    assist.next_output_success();
-    assist << " - [BWEAS]: Cache generation was successful!";
+    _log << (log_message(log_type::success) << "Cache generation was successful!");
 
     return 0;
 }
 
-void bwbuilder::deserl_cache() {
-    file_it bweas_cache = assist.open_file(CACHE_FILE, mf::open::rb);
+depends_files::depends_map &builder::load_depends_file(std::shared_ptr<depends_files> &dfinder,
+                                                       const vec<string> &include_paths,
+                                                       const vec<string> &source_files) {
+    log_console_unlock unlock_c;
+    dfinder->set_include_paths(include_paths);
+    string depends_str;
 
-    assist << " - [BWEAS]: Cache deserialization...";
+    if (fs::exists(DEPENDS_FILE)) {
+        depends_str = file_utils::read_file(file_utils::get_ref_file(file_utils::open_file(DEPENDS_FILE)));
 
-    _bwcache->get_cache_data(assist.read_file(assist.get_ref_file(bweas_cache)));
+        size_t it;
+        for (const auto &name_file : source_files) {
+            if ((it = depends_str.find(name_file + ":")) != depends_str.npos) {
+                string depends_file_str = depends_str.erase(0, it + name_file.size() + 2);
 
-    out_targets = _bwcache->_cache_data.targets_o;
-    templates = _bwcache->_cache_data.templates;
-    call_components = _bwcache->_cache_data.call_components;
-    global_extern_args = _bwcache->_cache_data.global_external_args;
-
-    assist << " - [BWEAS]: Cache deserialization was successful!";
-
-    assist.next_output_success();
-    assist << " - [BWEAS]: Was loaded " + std::to_string(templates.size()) + " template of command!";
-}
-
-void bwbuilder::build_targets() {
-    assist << " - [BWEAS]: Building targets...";
-
-    global_extern_args.push_back(std::pair<std::string, std::string>("", ""));
-
-    for (u32t i = 0; i < out_targets.size(); ++i) {
-        if (generators.find(out_targets[i].name_generator) == generators.end())
-            throw bwbuilder_excp("The provided generator as the primary for the current target was not found - " +
-                                     out_targets[i].name_target + ": " + out_targets[i].name_generator,
-                                 "002");
-        auto &current_generator = generators[out_targets[i].name_generator];
-        current_generator->set_ccomponents(call_components);
-        current_generator->init();
-        if (out_targets[i].prj.vec_templates.size() == 0)
-            throw bwbuilder_excp("There are no templates for the target - " + out_targets[i].name_target, "002");
-        std::string dir_target = std::string(DIRWORK_ENV) + "/" + out_targets[i].name_target;
-        if (!std::filesystem::is_directory(dir_target))
-            std::filesystem::create_directories(dir_target);
-
-        assist << "BUILDING A TARGET -" + out_targets[i].name_target;
-
-        bwqueue_templates bw_tcmd;
-        set_queue_templates(create_stack_target_templates(out_targets[i]), bw_tcmd);
-        parse_basic_args(out_targets[i], bw_tcmd);
-
-        assist.switch_otp(0);
-        auto cmd_s = current_generator->gen_commands(
-            out_targets[i], bw_tcmd, dir_target, current_generator->input_files(out_targets[i], bw_tcmd, dir_target));
-        assist.switch_otp(1);
-
-        for (const auto &cmd : cmd_s) {
-
-            assist.next_output_important();
-            assist << "Compile - " + cmd.first;
-
-#if defined(WIN)
-            if (system(cmd.second.c_str()))
-#elif defined(UNIX)
-            if (((int (*)(const char *))assist.get_realsystem_func())(cmd.second.c_str()))
-#endif
-                throw bwbuilder_excp("Failed build. Command execution error - " + cmd.second, "004");
+                if ((it = depends_file_str.find(":")) != depends_file_str.npos)
+                    depends_file_str.erase(it, depends_file_str.size());
+                dfinder->build_graph_depends_file_string(name_file, depends_file_str);
+            }
+            else
+                goto find_depends_file;
         }
     }
-}
-
-std::stack<std::string> bwbuilder::create_stack_target_templates(const var::struct_sb::target_out &target) {
-    std::vector<var::struct_sb::template_command> vec_templates_tmp;
-    std::stack<std::string> stack_templates;
-
-    for (u32t i = 0; i < target.prj.vec_templates.size(); ++i) {
-        for (u32t j = 0; j < templates.size(); ++j)
-            if (target.prj.vec_templates[i] == templates[j].name)
-                vec_templates_tmp.push_back(templates[j]);
+    else {
+    find_depends_file:
+        for (const auto &name_file : source_files) {
+            dfinder->build_graphs_depends_file_v(name_file);
+            depends_str += name_file + ":\n" + dfinder->get_string_depends_file(name_file);
+        }
+        file_utils::write_file(file_utils::get_ref_file(file_utils::open_file(DEPENDS_FILE, mf::open::w)), depends_str);
     }
 
-    const auto &it_template = find_if(vec_templates_tmp.begin(), vec_templates_tmp.end(),
-                                      [target](const var::struct_sb::template_command &_template) {
-                                          return _template.returnable == var::struct_sb::target_t_str(target.target_t);
-                                      });
-
-    if (it_template == vec_templates_tmp.end())
-        throw bwbuilder_excp("There is no template that returns a target with the given type - " +
-                                 var::struct_sb::target_t_str(target.target_t),
-                             "002");
-
-    stack_templates.push(it_template->name);
-    for (u32t i = 0; i < it_template->name_accept_params.size(); ++i)
-        recovery_stack_templates(vec_templates_tmp, it_template->name_accept_params[i], stack_templates);
-
-    return stack_templates;
+    return dfinder->get_graphs_depends_files();
 }
 
-u32t bwbuilder::recovery_stack_templates(std::vector<var::struct_sb::template_command> &vec_templates,
-                                         const std::string &name_internal_param,
-                                         std::stack<std::string> &stack_templates) {
-    const auto &it = find_if(vec_templates.begin(), vec_templates.end(),
-                             [name_internal_param](const var::struct_sb::template_command &_template) {
-                                 return _template.returnable == name_internal_param;
-                             });
-    if (it == vec_templates.end())
-        return 1;
+void builder::build_targets() {
+    fs::current_path(_context.path_bweas_to_build);
 
-    stack_templates.push(it->name);
-    for (u32t i = 0; i < it->name_accept_params.size(); ++i)
-        recovery_stack_templates(vec_templates, it->name_accept_params[i], stack_templates);
+    std::sort(_context.targets.begin(), _context.targets.end(), [](const sc::target &t1, const sc::target &t2) {
+        return std::find(t1.dependencies.begin(), t1.dependencies.end(), t2.name) == t1.dependencies.end() ? 1 : 0;
+    });
 
-    return 0;
-}
-void bwbuilder::set_queue_templates(std::stack<std::string> &&stack_target_templates,
-                                    bwqueue_templates &target_queue_templates) {
-    while (stack_target_templates.size()) {
-        const auto &it_templates = find_if(templates.begin(), templates.end(),
-                                           [stack_target_templates](const var::struct_sb::template_command &tcmd) {
-                                               return tcmd.name == stack_target_templates.top();
-                                           });
-        target_queue_templates.push_back(*it_templates);
-        stack_target_templates.pop();
-    }
-}
+    for (auto &target : _context.targets) {
+        for (const auto &dependence : target.dependencies)
+            if (auto it = std::find_if(_context.targets.begin(), _context.targets.end(),
+                                       [&dependence](const sc::target &target) { return target.name == dependence; });
+                it != _context.targets.end() && !it->built_success)
+                _log << (log_message(log_type::fatal) << target.name << " target expects a dependency: " << dependence);
 
-void bwbuilder::parse_basic_args(const var::struct_sb::target_out &target, bwqueue_templates &target_queue_templates) {
-    for (auto &trg_template : target_queue_templates) {
-        for (u32t i = 0; i < trg_template.args.size(); ++i) {
-            var::struct_sb::template_command::arg &current_arg = trg_template.args[i];
-            if (current_arg.arg_t == var::struct_sb::template_command::arg::type::string ||
-                current_arg.arg_t == var::struct_sb::template_command::arg::type::features ||
-                current_arg.arg_t == var::struct_sb::template_command::arg::type::internal)
-                continue;
-            else if (current_arg.arg_t == var::struct_sb::template_command::arg::type::extglobal) {
-                const auto &extern_arg =
-                    std::find_if(global_extern_args.begin(), global_extern_args.end(),
-                                 [current_arg](const std::pair<std::string, std::string> extern_arg_tmp) {
-                                     return extern_arg_tmp.first == current_arg.str_arg;
-                                 });
-                if (extern_arg == global_extern_args.end())
-                    throw bwbuilder_excp("[" + trg_template.name +
-                                             "] The specified external parameter does not exist - " +
-                                             current_arg.str_arg,
-                                         "002");
+        if (target.templates.size() == 0) {
+            _log << (log_message(log_type::error) << "There are no templates for the target - " << target.name);
+            return;
+        }
+        _log << (log_message(log_type::msg) << "Build target: " << target.name);
 
-                current_arg.str_arg = extern_arg->second;
-            }
-            else if (current_arg.arg_t == var::struct_sb::template_command::arg::type::trgfield) {
-                if (current_arg.str_arg == NAME_FIELD_TARGET_NAME)
-                    current_arg.str_arg = target.name_target;
-                else if (current_arg.str_arg == NAME_FIELD_TARGET_LIBS) {
-                    current_arg.str_arg = "";
-                    for (u32t k = 0; k < target.target_vec_libs.size(); ++k) {
-                        current_arg.str_arg += target.target_vec_libs[k];
-                        if (k < target.target_vec_libs.size() - 1)
-                            current_arg.str_arg += " ";
-                    }
+        size_t count_errors = 0;
+        {
+            log_console_lock lock_c;
+
+            generator_command generator(&_context);
+
+            target.queue_templates =
+                sc::template_command::create_queue_target_templates(_context.templates, target.templates, target.type);
+            _context.current_target         = &target;
+            _context.current_work_directory = _context.path_bweas_to_build + target.name;
+
+            if (!fs::is_directory(_context.current_work_directory))
+                fs::create_directories(_context.current_work_directory);
+
+            if (dependency_finders.contains(target.fields<string>("language")))
+                _context.dfiles = load_depends_file(dependency_finders[target.fields<string>("language")],
+                                                    target.fields<vec<string>>("include_paths"),
+                                                    target.fields<vec<string>>("source_files"));
+
+            generator.get_input_files();
+            commands cmd_s = generator.generate();
+
+            double build_state = 0.f;
+
+            processes_handler p_handler(cmd_s, 4);
+            p_handler.start([&cmd_s, &build_state, &count_errors](string_v name_output_file, bool success) {
+                log_console_unlock unlock_c;
+                if (!success) {
+                    _log << (log_message(log_type::error) << "failed: " << name_output_file);
+                    ++count_errors;
                 }
-                else if (current_arg.str_arg == NAME_FIELD_TARGET_TYPE)
-                    current_arg.str_arg = var::struct_sb::target_t_str(target.target_t);
-                else if (current_arg.str_arg == NAME_FIELD_TARGET_CFG)
-                    current_arg.str_arg = var::struct_sb::cfg_str(target.target_cfg);
-                else if (current_arg.str_arg == NAME_FIELD_TARGET_VER)
-                    current_arg.str_arg = target.version_target.get_str_version();
-                else if (current_arg.str_arg == NAME_FIELD_PROJECT_NAME)
-                    current_arg.str_arg = target.prj.name_project;
-                else if (current_arg.str_arg == NAME_FIELD_PROJECT_VER)
-                    current_arg.str_arg = target.prj.version_project.get_str_version();
-                else if (current_arg.str_arg == NAME_FIELD_PROJECT_LANG)
-                    current_arg.str_arg = var::struct_sb::lang_str(target.prj.lang);
-                else if (current_arg.str_arg == NAME_FIELD_PROJECT_PCOMPILER)
-                    current_arg.str_arg = target.prj.path_compiler;
-                else if (current_arg.str_arg == NAME_FIELD_PROJECT_PLINKER)
-                    current_arg.str_arg = target.prj.path_linker;
-                else if (current_arg.str_arg == NAME_FIELD_PROJECT_RFCOMPILER)
-                    current_arg.str_arg = target.prj.rflags_compiler;
-                else if (current_arg.str_arg == NAME_FIELD_PROJECT_RFLINKER)
-                    current_arg.str_arg = target.prj.rflags_linker;
-                else if (current_arg.str_arg == NAME_FIELD_PROJECT_DFCOMPILER)
-                    current_arg.str_arg = target.prj.dflags_compiler;
-                else if (current_arg.str_arg == NAME_FIELD_PROJECT_DFLINKER)
-                    current_arg.str_arg = target.prj.dflags_linker;
-                else if (current_arg.str_arg == NAME_FIELD_PROJECT_STD_C)
-                    current_arg.str_arg = std::to_string(target.prj.standart_c);
-                else if (current_arg.str_arg == NAME_FIELD_PROJECT_STD_CPP)
-                    current_arg.str_arg = std::to_string(target.prj.standart_cpp);
-                else if (current_arg.str_arg.find(NAME_FIELD_PROJECT_SRC_FILES) == 0)
-                    continue;
-                else
-                    throw bwbuilder_excp(
-                        "[" + trg_template.name + "] There is no such parameter - " + current_arg.str_arg, "002");
-            }
-
-            current_arg.arg_t = var::struct_sb::template_command::arg::type::string;
+                else {
+                    build_state += 1.f / (double)cmd_s.size() * 100;
+                    _log << (log_message(log_type::success)
+                             << "["
+                             << std::to_string(build_state).erase(std::to_string((size_t)build_state).size() + 2, 5)
+                             << "%] " << name_output_file);
+                }
+            });
         }
+
+        if (count_errors)
+            _log << (log_message(log_type::error)
+                     << target.name << " target was not built: " << count_errors << " errors");
+        else
+            target.built_success = 1;
     }
 }
 
-void bwbuilder::imp_data_interpreter_for_bs() {
-    const auto &global_templates =
-        _bwlang.get_global_scope().get_vector_variables_t<var::struct_sb::template_command>();
-    std::unordered_set<std::string> name_global_external_args;
-
-    for (const auto &global_template_it : global_templates) {
-        for (const auto &arg : global_template_it.second.args)
-            if (arg.arg_t == var::struct_sb::template_command::arg::type::extglobal)
-                name_global_external_args.emplace(arg.str_arg);
-        templates.push_back(global_template_it.second);
-    }
-
-    const auto &global_call_components =
-        _bwlang.get_global_scope().get_vector_variables_t<var::struct_sb::call_component>();
-    for (const auto &global_call_component : global_call_components)
-        call_components.push_back(global_call_component.second);
-
-    const auto &string_variables = _bwlang.get_global_scope().get_vector_variables_t<std::string>();
-    for (const auto &name_global_external_arg : name_global_external_args) {
-        const auto &ref_extern_arg =
-            find_if(string_variables.begin(), string_variables.end(),
-                    [name_global_external_arg](const std::pair<std::string, std::string> &str_var) {
-                        return str_var.first == name_global_external_arg;
-                    });
-        if (_bwlang.get_global_scope().what_type(ref_extern_arg->second) != 2)
-            throw bwbuilder_excp(
-                "The parameter reference(name) points to a non-existent variable - " + ref_extern_arg->second, "002");
-        const auto &extern_arg = _bwlang.get_global_scope().get_var_value<std::string>(ref_extern_arg->second);
-        global_extern_args.push_back(std::pair<std::string, std::string>(ref_extern_arg->first, extern_arg));
-    }
-}

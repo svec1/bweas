@@ -1,42 +1,41 @@
-#ifndef BWMODULE__H
-#define BWMODULE__H
+//
+// BWEAS is distributed under the gnu general public license 2.0 (gpl-2.0).
+// you can view the license text at the link:
+//     <https://www.gnu.org/licenses>
+// ------------------------------------------
+//
 
-#include "bw_defs.hpp"
+#ifndef BWMODULE_HPP
+#define BWMODULE_HPP
+
+#include <bw_defs.hpp>
 
 namespace bweas {
-namespace module {
+class module_manager;
+}
 
 // Class defining modules
-class module_mg {
+class bweas::module_manager {
   public:
-    module_mg();
-    ~module_mg() = default;
+    module_manager()  = default;
+    ~module_manager() = default;
 
   public:
-    struct module {
-        module(std::string _name_module, std::string _name_dll,
-               semantic_an::table_func _funcs) :name_module(_name_module),
-            name_dll(_name_dll), funcs(_funcs) {
+    struct module_cfg {
+        module_cfg(string _name, string _name_lua_source_file, umap<string, decl_func> _funcs,
+                   umap<string, sc::profile> _profiles)
+            : name(_name), name_lua_source_file(_name_lua_source_file), funcs(_funcs), profiles(_profiles) {
         }
-        std::string name_module;
-        std::string name_dll;
-        semantic_an::table_func funcs;
+        string name;
+        string name_lua_source_file;
+
+        umap<string, decl_func> funcs;
+        umap<string, sc::profile> profiles;
     };
 
-    using modules = std::vector<module>;
-
   public:
-    // Load the dynamic library corresponding to the passed module,
-    // and initialize (receive) function pointers
-    semantic_an::table_func init_tfunc(module &md);
-
-    // Initializes multiple modules, returning a common function table
-    semantic_an::table_func init_tsfunc(modules &mds);
-
-  private:
-    static inline bool init_glob{0};
+    // Initializes lua modules functions for subsequent calls
+    umap<string, scope::module_data> init_modules(vec<module_cfg> &modules_cfg);
 };
-} // namespace module
-} // namespace bweas
 
 #endif

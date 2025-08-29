@@ -1,89 +1,59 @@
-#ifndef BWDEFS__H
-#define BWDEFS__H
+//
+// BWEAS is distributed under the GNU General Public License 2.0 (GPL-2.0).
+// you can view the license text at the link:
+//     <https://www.gnu.org/licenses>
+// ------------------------------------------
+//
+
+#ifndef BWDEFS_HPP
+#define BWDEFS_HPP
 
 // bweas main header file
 
-#include "lang/interpreter.hpp"
-#include "tools/bwexception.hpp"
-
+#include <algorithm>
+#include <cstring>
 #include <memory>
-#include <vector>
 
-#define BWEAS_VERSION_STR "0.1.0"
+#include <bwaliases.hpp>
+#include <bwmacros_platform.h>
 
-#define BWEAS_VERSION_MAJOR "0"
-#define BWEAS_VERSION_MINOR "1"
-#define BWEAS_VERSION_PATCH "0"
+#include <bwlogger.hpp>
+#include <lang/interpreter.hpp>
 
-#define BWEAS_HELP                                                                                                     \
-    "bweas-call: \n   bweas <parameter>... path_depending\n   bweas path_bweas_config <parameter>..."                  \
-    "\nAcceptable parameters:"                                                                                         \
-    "\n   --build - builds the project (either by executing the configuration file or deserializing the cache file "   \
-    "if it exists)"                                                                                                    \
-    "\n   --cfg - executes the configuration file if it has been changed and creates a new cache file"                 \
-    "\n   --package - creates a bweas package based on the transferred json file(json config)"
+#include <bwdepends_api.hpp>
 
 namespace bweas {
-using bwarg = std::pair<std::string, std::string>;
-using bwargs = std::vector<bwarg>;
-using bwarg_files = std::pair<std::string, std::vector<std::string>>;
-using bwargs_files = std::vector<bwarg_files>;
-using bwqueue_templates = std::vector<var::struct_sb::template_command>;
 
-using command = std::string;
-using commands = std::vector<command>;
+using mf      = utils::file_utils::file::mode_file;
+using file_it = utils::file_utils::file_it;
 
-namespace bwexception {
+inline constexpr char VERSION_MAJOR_C = '0';
+inline constexpr char VERSION_MINOR_C = '1';
+inline constexpr char VERSION_PATCH_C = '1';
 
-// Exception class for builder only.
-class bwbuilder_excp : public ::bwexception::bweas_exception {
+inline const string VERSION_FULL_STR = {VERSION_MAJOR_C, '.', VERSION_MINOR_C, '.', VERSION_PATCH_C};
+
+inline constexpr auto CONFIG_FILE    = "bweasconf.txt";
+inline constexpr auto CACHE_FILE     = "bwcache";
+inline constexpr auto DEPENDS_FILE   = "bwdependencies";
+inline constexpr auto FORMAT_PACKAGE = ".bweas-package";
+
+// The structure defining the main data for the build
+struct context {
+    vec<sc::target> targets;
+    vec<sc::template_command> templates;
+    vec<sc::call_component> call_components;
+    vec<pair<string, string>> global_external_args;
+
   public:
-    bwbuilder_excp(std::string _what_hp, std::string number_err, std::string prefix_err = "")
-        : what_hp(_what_hp), bweas_exception("BWS" + prefix_err + number_err) {
-    }
-    ~bwbuilder_excp() noexcept override = default;
+    depends_files::depends_map dfiles;
 
   public:
-    const char *what() const noexcept override final {
-        return what_hp.c_str();
-    }
+    sc::target *current_target;
+    string current_work_directory;
 
-  protected:
-    std::string what_hp;
+    string path_bweas_config, path_bweas_to_build;
 };
-
-// Exception class for bweas-module only.
-class bwmodule_excp : public bwbuilder_excp {
-  public:
-    bwmodule_excp(std::string _what_hp, std::string number_err) : bwbuilder_excp(_what_hp, number_err, "-MDL") {
-    }
-    ~bwmodule_excp() noexcept override final = default;
-};
-
-// Exception class for bweas-package only.
-class bwpackage_excp : public bwbuilder_excp {
-  public:
-    bwpackage_excp(std::string _what_hp, std::string number_err) : bwbuilder_excp(_what_hp, number_err, "-PCKG") {
-    }
-    ~bwpackage_excp() noexcept override final = default;
-};
-
-// Exception class for bweas-generator only.
-class bwcache_excp : public bwbuilder_excp {
-  public:
-    bwcache_excp(std::string _what_hp, std::string number_err) : bwbuilder_excp(_what_hp, number_err, "-CACHE") {
-    }
-    ~bwcache_excp() noexcept override final = default;
-};
-
-// Exception class for bweas-generator only.
-class bwgenerator_excp : public bwbuilder_excp {
-  public:
-    bwgenerator_excp(std::string _what_hp, std::string number_err) : bwbuilder_excp(_what_hp, number_err, "-GNRT") {
-    }
-    ~bwgenerator_excp() noexcept override final = default;
-};
-} // namespace bwexception
 
 } // namespace bweas
 

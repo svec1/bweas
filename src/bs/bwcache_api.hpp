@@ -1,113 +1,125 @@
-#ifndef BWCACHE__H
-#define BWCACHE__H
+//
+// BWEAS is distributed under the gnu general public license 2.0 (gpl-2.0).
+// you can view the license text at the link:
+//     <https://www.gnu.org/licenses>
+// ------------------------------------------
+//
 
-#include "bw_defs.hpp"
-#include "tools/bwlua.hpp"
+#ifndef BWCACHE_API_HPP
+#define BWCACHE_API_HPP
 
-#define NAME_FUNCTION_GENCACHE "create_cache"
-#define DEFINITION_FUNCTION_GENCACHE                                                                                   \
-<std::string, bwlua::lua::array<bwlua::lua::table<std::string, std::any>>, bwlua::lua::array<bwlua::lua::table<std::string, std::any>>, bwlua::lua::array<bwlua::lua::table<std::string, std::any>>, bwlua::lua::array<bwlua::lua::keyValue<std::string, std::string>>>
+#include <bw_defs.hpp>
 
-#define NAME_FUNCTION_GETDATA_CACHE "get_cache_data"
-#define DEFINITION_FUNCTION_GETDATA_CACHE <void, bwlua::lua::nil>
+namespace bweas::cache_api {
 
-#define NAME_VARIABLE_TARGETS_F_EXTERN "targets"
-#define NAME_VARIABLE_TEMPLATES_F_EXTERN "templates"
-#define NAME_VARIABLE_CCOMPONENTS_F_EXTERN "call_components"
-#define NAME_VARIABLE_GEARGS_F_EXTERN "global_external_args"
+class interface_cache;
+class base_cache;
 
-namespace bweas {
+class fast_cache;
+class json_cache;
+class lua_cache;
 
-namespace cache_api {
+} // namespace bweas::cache_api
 
-class base_bwcache {
-  public:
-    struct cache_data {
-        cache_data() = default;
-
-      public:
-        std::vector<var::struct_sb::target_out> *targets_o_p{NULL};
-
-        std::vector<var::struct_sb::target_out> targets_o;
-        std::vector<var::struct_sb::template_command> templates;
-        std::vector<var::struct_sb::call_component> call_components;
-        std::vector<std::pair<std::string, std::string>> global_external_args;
-    };
-
-    base_bwcache() = default;
+class bweas::cache_api::interface_cache {
+  protected:
+    virtual ~interface_cache() = default;
 
   public:
-    virtual std::string create_cache() = 0;
-    virtual const cache_data &get_cache_data(std::string cache_str) = 0;
+    // A function that must be defined in a child class, and return a cache of data
+    virtual string create_cache() = 0;
 
-    virtual void delete_cache() = 0;
+    // A function that should be defined in the child class and extract the path to the configuration file from the
+    // cache file
+    virtual string get_path_config(const string &cache_str) = 0;
+
+    // A function that must be defined in a child class and return cache data
+    virtual void extract_cache_data(const string &cache_str) = 0;
+};
+// Abstract class that bases API for creating cache generators
+class bweas::cache_api::base_cache : public bweas::cache_api::interface_cache {
+  public:
+    base_cache() = default;
+
+    virtual ~base_cache() = default;
+
+    // A number of factory functions to create all possible child classes that implement the bwcache cache generator
+    // based on the bwcache API
+  public:
+    static inline base_cache *create_fast_cache();
+    static inline base_cache *create_json_cache();
+    static inline base_cache *create_lua_cache(string_v src_lua);
 
   public:
-    static inline base_bwcache *create_fast_bwcache();
-    static inline base_bwcache *create_json_bwcache();
-    static inline base_bwcache *create_lua_bwcache(std::string src_lua);
+    // Cache initialization function
+    void init(context *const __context) {
+        if (!__context)
+            bweas::logger{"BWCACHE"} << (bweas::log_message(bweas::log_type::fatal)
+                                         << "Bweas the context is not defined");
+        _context = __context;
+    }
 
-  public:
-    cache_data _cache_data;
+  protected:
+    context *_context;
 };
 
-class fast_bwcache final : private base_bwcache {
-  public:
-    fast_bwcache();
-
-  public:
-    std::string create_cache() override final;
-    const cache_data &get_cache_data(std::string cache_str) override final;
-
-    void delete_cache() override final;
+// A basic cache generator that is fast but also creates a hard-to-read cache for humans to use
+class bweas::cache_api::fast_cache final : private bweas::cache_api::base_cache {
+    friend base_cache *base_cache::create_fast_cache();
 
   private:
-    static inline bool init_glob_chfast{0};
+    fast_cache() = default;
+
+  public:
+    ~fast_cache() = default;
+
+  public:
+    string create_cache() override;
+    string get_path_config(const string &cache_str) override;
+    void extract_cache_data(const string &cache_str) override;
 };
 
-class json_bwcache final : private base_bwcache {
-  public:
-    json_bwcache();
-
-  public:
-    std::string create_cache() override final;
-    const cache_data &get_cache_data(std::string cache_str) override final;
-
-    void delete_cache() override final;
+// The second basic cache generator, which in turn has a human readable form,
+// but is also slow compared to fast_bwcache
+class bweas::cache_api::json_cache final : private bweas::cache_api::base_cache {
+    friend base_cache *base_cache::create_json_cache();
 
   private:
-    static inline bool init_glob_chjson{0};
+    json_cache() = default;
+
+  public:
+    ~json_cache() = default;
+
+  public:
+    string create_cache() override;
+    string get_path_config(const string &cache_str) override;
+    void extract_cache_data(const string &cache_str) override;
 };
 
-class lua_bwcache final : private base_bwcache {
-  public:
-    lua_bwcache() = delete;
-    lua_bwcache(std::string);
-
-  public:
-    std::string create_cache() override final;
-    const cache_data &get_cache_data(std::string cache_str) override final;
-
-    void delete_cache() override final;
+// A class providing an API for creating cache generators in lua, based on the bwcache API
+class bweas::cache_api::lua_cache final : private bweas::cache_api::base_cache {
+    friend base_cache *base_cache::create_lua_cache(string_v src_lua);
 
   private:
-    static inline bool init_glob_chlua{0};
+    lua_cache(string_v);
 
-    bwlua::lua lua;
+  public:
+    ~lua_cache() = default;
+
+  public:
+    string create_cache() override;
+    string get_path_config(const string &cache_str) override;
+    void extract_cache_data(const string &cache_str) override;
 };
 
-base_bwcache *base_bwcache::create_fast_bwcache() {
-    return (base_bwcache *)new fast_bwcache;
+bweas::cache_api::base_cache *bweas::cache_api::base_cache::create_fast_cache() {
+    return dynamic_cast<base_cache *>(new fast_cache);
 }
-base_bwcache *base_bwcache::create_json_bwcache() {
-    return (base_bwcache *)new json_bwcache;
+bweas::cache_api::base_cache *bweas::cache_api::base_cache::create_json_cache() {
+    return dynamic_cast<base_cache *>(new json_cache);
 }
-base_bwcache *base_bwcache::create_lua_bwcache(std::string src_lua) {
-    return (base_bwcache *)new lua_bwcache(src_lua);
+bweas::cache_api::base_cache *bweas::cache_api::base_cache::create_lua_cache(string_v src_lua) {
+    return dynamic_cast<base_cache *>(new lua_cache(src_lua));
 }
-
-} // namespace cache_api
-
-} // namespace bweas
 
 #endif

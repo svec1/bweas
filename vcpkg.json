@@ -2,10 +2,9 @@
     "name": "bweas",
     "version-string": "0.1.0",
     "dependencies": [
-      "detours",
       "luajit",
       "nlohmann-json",
       "lz4",
       "gtest"
     ]
-  }
+}
