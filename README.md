@@ -64,8 +64,8 @@ vcpkg\bootstrap-vcpkg.bat
 vcpkg\vcpkg integrate install
 mkdir build
 cd build
-cmake -DBWEAS_BUILD_VCPKG=ON ..
-cmake --build .
+cmake -DCMAKE_TOOLCHAIN_FILE=D:\rep\bweas\vcpkg\scripts\buildsystems\vcpkg.cmake ..
+cmake --build . --config Release
 ```
 > [!TIP]
 > To build tests, pass -DBWEAS_TEST=ON as an option to cmake
