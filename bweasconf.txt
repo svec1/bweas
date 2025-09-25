@@ -1,24 +1,31 @@
-import "base"
+import 'base'
 
-set(DECL_CONFIG_VAR, 1)
+t_object: ctemplate = {str = 'clang++:{}.o(NULL) -> objects: -c [source_files:*.cpp] -o OUTPUT_FILE -I[include_paths] [compile_flags]'}
+t_lib: ctemplate = {str = 'ar:bweas.a(objects) -> LIBRARY: rcs OUTPUT_FILE {objects}'}
+t_exe: ctemplate = {str =' clang++:bweas.a(bweas_slib) -> EXECUTABLE: INPUT_FILE {bweas_slib} -o OUTPUT_FILE -I[include_paths] -l[libs] [compile_flags]'}
 
-create_template(t_flex,  "flex:lexer.cpp(NULL) -> [source_files]: <'-o'> OUTPUT_FILE <[source_files:lexer.l]>")
-create_template(t_bison, "bison:parser.cpp(NULL) -> [source_files]: <'-o'> OUTPUT_FILE <'-H'> <[source_files:parser.y]>")
-create_template(t_obj,   "clang++:{}.o(NULL) -> OBJ_S: <'-c'> <[source_files:*.cpp]> <'-o'> OUTPUT_FILE <'-Wall'> <'-std=gnu++23'> <'-fPIC'> <'-I'[include_paths]>")
-create_template(t_lib,   "ar:bweas.a(OBJ_S) -> LIBRARY: <'rcs'> OUTPUT_FILE <{OBJ_S}>")
+lib_names: string[] = ['lz4', 'lua', 'luajit-5.1']
+target_compile_flags: string[] = ['-std=gnu++23', '-Wall', '-fPIC']
+target_include_paths: string[] = ['/usr/include', '/usr/local/include', config_path+'/src/bs']
 
-create_template(t_exec,  "clang++:bweas(BWEAS_SLIB) -> EXECUTABLE: INPUT_FILE <{BWEAS_SLIB}> <'-o'> OUTPUT_FILE <'-I'[include_paths]> <'-std=gnu++23'> <'-llz4'> <'-llua'> <'-lluajit-5.1'>")
+bweas_slib: target = {
+                        type = library,
+                        profile = cpp,
+                        templates = ['t_object', 't_lib'],
+                        compile_flags = target_compile_flags,
+                        include_paths = target_include_paths,
+                        source_files = file(get_files, 'src/bs/*.cpp')
+}
 
-file(SRC_FILES, 0, "src/bs/*.cpp", "src/bs/utils/*.cpp", "src/bs/lang/*.cpp", "src/bs/lang/lexer.l", "src/bs/lang/parser.y")
-file(BWEAS_MAIN_FILE, 0, "src/bweas.cpp")
+bweas_exe: target = {
+                    type = executable,
+                    profile = cpp,
+                    templates = ['t_exe'],
+                    dependencies = ['bweas_slib'],
+                    libs = lib_names,
+                    compile_flags = target_compile_flags,
+                    include_paths = target_include_paths,
+                    source_files = file(get_files, 'src/bweas.cpp')
+}
 
-create_target(BWEAS_SLIB, CPP_LIBRARY, {LIBRARY}, {SRC_FILES})
-create_target(BWEAS, CPP_EXECUTABLE, {EXECUTABLE}, {BWEAS_MAIN_FILE})
-
-add_dependencies_target(BWEAS, BWEAS_SLIB)
-
-set(BWEAS_SLIB_include_paths, {BWEAS_SLIB_include_paths}, {BWEAS_CONFIG_PATH} + "/src/bs/")
-set(BWEAS_include_paths, {BWEAS_SLIB_include_paths})
-
-use_templates(BWEAS_SLIB, t_flex, t_bison, t_obj, t_lib)
-use_templates(BWEAS, t_exec)
+build(bweas_slib, bweas_exe)

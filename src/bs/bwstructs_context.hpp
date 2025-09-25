@@ -163,6 +163,26 @@ struct profile {
     }
 
   public:
+    void merge(const profile &prf) {
+        cfg = prf.cfg;
+        for (const auto &[key, value] : prf.global_fields)
+            if (!global_fields.contains(key))
+                global_fields[key] = value;
+        for (const auto &[key, value] : prf.release_fields)
+            if (!release_fields.contains(key))
+                release_fields[key] = value;
+
+        if (prf.debug_fields) {
+            if (!debug_fields)
+                debug_fields = prf.debug_fields;
+            else
+                for (const auto &[key, value] : *prf.debug_fields)
+                    if (!debug_fields->contains(key))
+                        (*debug_fields)[key] = value;
+        }
+    }
+
+  public:
     void set_fields(size_t _cfg) {
         cfg = _cfg;
     }
@@ -222,7 +242,6 @@ struct profile {
     static constexpr auto FIELD_SOURCE_FILES  = "source_files";
     static constexpr auto FIELD_INCLUDE_PATHS = "include_paths";
     static constexpr auto FIELD_LANGUAGE      = "language";
-    static constexpr auto FIELD_TARGET_TYPE   = "target_type";
 };
 // target structure for build system
 // ---------------------------------
@@ -289,8 +308,7 @@ struct template_command {
             extglobal = 0,
             trgfield,
             string,
-            internal,
-            features
+            internal
         };
 
         arg()            = default;

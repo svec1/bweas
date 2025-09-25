@@ -1,8 +1,6 @@
 # bweas
 > *system build*
 
-<image src="/dev/bweas_logo.png" width=156 height=128>
-
 [Documentation of the internal device](https://github.com/svec1/bweas/blob/main/docs/en/main_page.md)
 
 
@@ -78,29 +76,26 @@ cmake --build . --config Release
 Simple configurations for assembly will be described here. These examples are for informational purposes only and do not include complex structures and new features.
 
 ```
-# For example(how create variable)
-set(VAR, 1)
-
-# We create a call component - what will be called
-# This also stores the name pattern of files that the current calling component may create.
-create_call_component(CC_OBJ, "clang++", "object.obj")
-create_call_component(CC_EXE, "clang++", "program.exe")
+import 'base'
 
 # Create a command template. You can use the capabilities that the current generator provides
 # In this case, the nth number of commands is generated (based on the number of source files), 
 # since the "feature" of the built-in generator is used: 
-# FBS_CURRENT_INPUT_FILE(single-generate parameter) in conjunction with FBS_CURRENT_OUTPUT_FILE.)
-create_templates(object_file_t, "CC_OBJ(NULL) -> OBJECTS: FBS_CURRENT_INPUT_FILE <'-o'> FBS_CURRENT_OUTPUT_FILE")
-create_templates(executable_file_t, "CC_EXE(OBJECTS) -> EXECUTABLE: <{OBJECTS}> <'-o'> FBS_CURRENT_OUTPUT_FILE")
+# INPUT_FILE(single-generate parameter) in conjunction with OUTPUT_FILE.)
+t_obj: ctemplate = {str =' clang++:{}.o() -> OBJECTS: INPUT_FILE -o OUTPUT_FILE [compile_flags]'}
+t_exe: ctemplate = {str =' clang++:my_program(OBJECTS) -> EXECUTABLE: {OBJECT} -o OUTPUT_FILE'}
 
-# Creating a project (there can be as many of them as you like)
-# The number 1 as the second parameter indicates the programming language number
-project(test, 1, "*.cpp")
+# Creating a target object that will continue to be built
+my_target: target = {
+                    type = executable,
+                    profile = cpp,
+                    templates = ['t_exe', 't_obj'],
+                    compile_flags = ['-std=gnu++23', '-Wall'],
+                    source_files = file(get_files, 'main.cpp')
+}
 
-# We specify the templates on the basis of which the commands will be generated
-use_templates(test, "object_file_t", "executable_file_t")
+# Registering the target object for the build
+build(my_target)
 
-# Create a target in the form of an executable file (there can be as many of them as you like)
-executable(test_program, RELEASE, test)
 ```
 

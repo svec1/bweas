@@ -65,7 +65,7 @@ class bweas::utils::file_utils {
         file(const file &)            = delete;
         file &operator=(const file &) = delete;
         file(file &&_file) noexcept {
-            if (_file.file_opened)
+            if (_file.is_open)
                 _file.stream.close();
             path_to   = _file.path_to;
             mode_open = _file.mode_open;
@@ -78,7 +78,7 @@ class bweas::utils::file_utils {
             close();
         }
         file &operator=(file &&_file) noexcept {
-            if (_file.file_opened)
+            if (_file.is_open)
                 _file.stream.close();
             path_to   = _file.path_to;
             mode_open = _file.mode_open;
@@ -110,14 +110,14 @@ class bweas::utils::file_utils {
                 stream.open(path_to.string(), std::ios::out | std::ios::app);
 
             if (stream.is_open())
-                file_opened = 1;
+                is_open = 1;
         }
 
         // Closes the file if the stream is open
         void close() {
-            if (file_opened) {
+            if (is_open) {
                 stream.close();
-                file_opened = 0;
+                is_open = 0;
             }
         }
 
@@ -125,28 +125,23 @@ class bweas::utils::file_utils {
         std::fstream stream;
         fs::path path_to;
         mode_file::open mode_open;
-        bool file_opened{0};
+        bool is_open = 0;
     };
 
   public:
-    using file_it = size_t;
-
     static string get_time();
 
     static string get_path_program();
     static string get_current_path();
 
   public:
-    static file_it open_file(std::string_view name_file, file::mode_file::open mode = file::mode_file::open::r);
-    static void close_file(file_it file);
-
-    static bool exist_file(file_it file);
-
-    static file_it get_iterator_file(std::string_view name_file);
-    static file &get_ref_file(file_it file);
+    static file open_file(std::string_view name_file, file::mode_file::open mode = file::mode_file::open::r);
 
     static string read_file(file &file, file::mode_file::input mode = file::mode_file::input::read_default);
+    static string read_file(file &&file, file::mode_file::input mode = file::mode_file::input::read_default);
     static void write_file(file &file, string_v buf,
+                           file::mode_file::output mode = file::mode_file::output::write_default);
+    static void write_file(file &&file, string_v buf,
                            file::mode_file::output mode = file::mode_file::output::write_default);
 
   public:
@@ -159,9 +154,6 @@ class bweas::utils::file_utils {
     static string get_path_file(string name_file);
     // Returns the absolute path to an existing file, considering all possible paths, including the current directory.
     static string get_path_file(string name_file, const vec<string> &possible_paths);
-
-  private:
-    static vec<file> &get_files();
 };
 
 #endif

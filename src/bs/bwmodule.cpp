@@ -6,6 +6,7 @@
 //
 
 #include <bwmodule.hpp>
+#include <lang/parser.hpp>
 
 #include <bwluatools.hpp>
 
@@ -14,26 +15,24 @@ using namespace bweas::utils;
 
 static logger _log{"BWMODULE"};
 
-umap<string, scope::module_data> module_manager::init_modules(vec<module_cfg> &modules_cfg) {
-    umap<string, scope::module_data> modules;
-    for (auto &md : modules_cfg) {
-        scope::module_data module_data_tmp;
-        module_data_tmp.profiles = std::move(md.profiles);
+vec<module_manager::_module> module_manager::init_modules(vec<module_cfg> &modules_cfg) {
+    vec<module_manager::_module> md_s;
 
-        for (auto &[name, _decl_func] : md.funcs) {
-            _decl_func.func = [&md, &_decl_func](const expressions &expr_s, scope &curr_scope) {
-                static umap<string, lua> lua_stream_s;
-                if (!lua_stream_s[md.name].is_created())
-                    lua_stream_s.emplace(md.name, file_utils::read_file(file_utils::get_ref_file(
-                                                      file_utils::open_file(md.name_lua_source_file))));
-
-                lua_stream_s[md.name].call_function<string_v, lua_tools::integer, lua_tools::integer>(
-                    _decl_func.name, *((lua_tools::integer *)&expr_s), *((lua_tools::integer *)&curr_scope));
-            };
+    for (const auto &module_cfg : modules_cfg) {
+        if (!module_cfg.name_src_file.empty()) {
+            auto src_file = file_utils::open_file(module_cfg.name_src_file);
+            bwlang::parser p(file_utils::read_file(src_file));
+            p.parse();
+            md_s.emplace_back(module_cfg.name, p.get_context());
         }
-
-        modules[md.name] = module_data_tmp;
+        else {
+            static bwlang::parser_utils::scope sc;
+            static bwlang::parser_utils::context t_ctx{sc};
+            md_s.emplace_back(module_cfg.name, t_ctx);
+        }
+        for (const auto &[name, profile] : module_cfg.profiles)
+            md_s[md_s.size() - 1].sc[name] = profile;
     }
 
-    return modules;
+    return md_s;
 }

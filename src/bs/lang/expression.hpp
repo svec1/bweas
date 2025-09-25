@@ -1,271 +1,414 @@
-//
-// BWEAS is distributed under the GNU General Public License 2.0 (GPL-2.0).
-// you can view the license text at the link:
-//     <https://www.gnu.org/licenses>
-// ------------------------------------------
-//
-
-#ifndef EXPRESSION__H
-#define EXPRESSION__H
-
-#include <functional>
+#ifndef EXPRESSION_HPP
+#define EXPRESSION_HPP
 
 #include <bwaliases.hpp>
+#include <utility>
 
-inline constexpr auto STR_KEYWORD_IF    = "if";
-inline constexpr auto STR_KEYWORD_ELSE  = "else";
-inline constexpr auto STR_KEYWORD_ENDIF = "endif";
+#include <bwstructs_context.hpp>
+#include <lang/parser_utils.hpp>
+#include <lang/tokens.hpp>
 
-class scope;
+namespace bwlang {
 
-// list of parameters that the function can expect
-enum class param_type {
+namespace expression {
 
-    // this parameter tells semantic analysis that:
-    //  1. the current function (most likely) is a declaring function
-    //  2. it needs to check that the name that was passed as a parameter
-    //     of this type does not exist in the symbol table of the global or
-    //     external scope
-    FUTURE_VAR_ID,
+template <typename T> class base {
+  public:
+    base(parser_utils::context &_ctx) : ctx(_ctx) {
+    }
+    virtual ~base() = default;
 
-    // this parameter tells the semantic parser that it does not need to worry
-    // about
-    // the issue of declaring the identifier; with this parameter it will
-    // not create a declaration of the symbol in the symbol table, and will not
-    // check whether it exists
-    NCHECK_VAR_ID,
+    using value_type = T;
 
-    VAR_ID,
+  public:
+    virtual value_type get_value() = 0;
+    virtual constexpr bool is_identifier() const {
+        return false;
+    }
+    virtual constexpr bool is_keyword() const {
+        return false;
+    }
+    virtual constexpr bool is_type() const {
+        return false;
+    }
+    virtual constexpr bool is_access() const {
+        return false;
+    }
 
-    // this parameter means that the passed identifier is a link
-    // to either a project or target variable
-    VAR_STRUCT_ID,
-
-    // a parameter that indicates that the function
-    // accepts any value at a given parameter index
-    ANY_VALUE_WITHOUT_FUTUREID_NEXT,
-
-    LIT_STR,
-    LIT_NUM,
-
-    // this type of parameter means that the current parameter at index,
-    // and the next ones, will be of the same type as the parameter before it
-    NEXT_TOO,
-
-    // end enum
-    SIZE_ENUM_PARAMS
+  public:
+    parser_utils::context &ctx;
 };
 
-struct param {
-    param(param_type _type, std::optional<string> _default_val = std::nullopt)
-        : type(_type), default_val(_default_val) {
+template <typename T> class constant : public base<T> {
+  public:
+    constant(parser_utils::context &_ctx, base<T>::value_type _val) : base<T>(_ctx), val(_val) {
+    }
+    virtual ~constant() = default;
+
+  public:
+    base<T>::value_type get_value() override {
+        return val;
     }
 
-    bool decl_default_val() const {
-        return default_val.has_value();
-    }
-
-    param_type type;
-    std::optional<string> default_val;
+  private:
+    base<T>::value_type val;
 };
 
-// structure is a list of parameters passed
-// to the function when it is called
-struct expression {
+template <typename T> class identifier : public constant<T> {
   public:
-    enum class expression_t {
-        NUMBER = 0,
-        STRING,
-        ID,
-
-        SIZE_ENUM_RET_TYPE_EXPR
-    };
-
-  public:
-    expression() = default;
-    explicit expression(string_v _value, expression_t _type, bool _value_by_id = false, size_t _line = 0,
-                        size_t _column = 0)
-        : type(_type), value(_value), value_by_id(_value_by_id), line(_line), column(_column) {
+    identifier(parser_utils::context &_ctx, constant<T>::value_type _val) : constant<T>(_ctx, _val) {
     }
+    ~identifier() override = default;
 
   public:
-    expression_t type;
-    string value;
-
-    bool value_by_id = false;
-
-    size_t line, column;
-};
-
-struct statement;
-using expressions = vec<expression>;
-using statements  = vec<statement>;
-
-// the notion of a function, which contains a reference
-// to the function itself, the parameters that it expects when called,
-// and two fields that define the call to this function
-struct decl_func {
-    using func_t = std::function<void(const expressions &, scope &)>;
-
-  public:
-    decl_func() = default;
-    explicit decl_func(string_v _name, func_t _func, vec<param> _expected_params)
-        : name(_name), func(_func), expected_params(_expected_params) {
-    }
-
-  public:
-    inline size_t count_default_params() const;
-
-  public:
-    string name;
-
-    func_t func;
-    vec<param> expected_params;
-};
-
-// structure is a representation of a single function call
-struct statement {
-  public:
-    statement() = default;
-    explicit statement(const decl_func *_expr_func, expressions _expr_s, size_t _line = 0, size_t _column = 0)
-        : expr_func(_expr_func), expr_s(_expr_s), line(_line), column(_column) {
-    }
-
-  public:
-    string get_location() const {
-        return "[" + std::to_string(line) + ":" + std::to_string(column) + "]";
-    }
-
-    string get_string_expected_params(size_t offset_index = 0) const;
-
-  public:
-    inline string build_string_error(pdiff expr_index, string error_str, string expected = "") const;
-
-  public:
-    const decl_func *expr_func;
-    expressions expr_s;
-
-    string view_str;
-    size_t line, column;
-};
-
-inline size_t decl_func::count_default_params() const {
-    size_t count_dp = 0;
-    for (const param &_param : expected_params)
-        if (_param.decl_default_val())
-            ++count_dp;
-
-    return count_dp;
-}
-
-inline expression::expression_t conv_param_type_to_expr_type(param_type _param) {
-    if (_param == param_type::FUTURE_VAR_ID || _param == param_type::NCHECK_VAR_ID || _param == param_type::VAR_ID ||
-        _param == param_type::VAR_STRUCT_ID)
-        return expression::expression_t::ID;
-    else if (_param == param_type::LIT_NUM)
-        return expression::expression_t::NUMBER;
-    else if (_param == param_type::LIT_STR)
-        return expression::expression_t::STRING;
-    return expression::expression_t::SIZE_ENUM_RET_TYPE_EXPR;
-}
-
-inline bool operator==(expression::expression_t e_type, param_type p_type) {
-    if (conv_param_type_to_expr_type(p_type) == e_type)
+    constexpr bool is_identifier() const override {
         return true;
-    return false;
-}
+    }
+};
 
-inline string_v get_string_expr_type(expression::expression_t type) {
-    if (type == expression::expression_t::NUMBER)
-        return "NUMBER";
-    else if (type == expression::expression_t::STRING)
-        return "STRING";
-    else if (type == expression::expression_t::ID)
-        return "ID";
-    return "???";
-}
+template <typename T> class keyword : public constant<T> {
+  public:
+    keyword(parser_utils::context &_ctx, constant<T>::value_type _val, bool __is_type = false)
+        : constant<T>(_ctx, _val), _is_type(__is_type) {
+    }
+    ~keyword() override = default;
 
-inline param_type get_string_param_type(string_v str) {
-    if (str == "FUTURE_VAR_ID")
-        return param_type::FUTURE_VAR_ID;
-    else if (str == "VAR_ID")
-        return param_type::VAR_ID;
-    else if (str == "NCHECK_VAR")
-        return param_type::NCHECK_VAR_ID;
-    else if (str == "VAR_STRUCT_ID")
-        return param_type::VAR_STRUCT_ID;
-    else if (str == "ANY_VALUE_WITHOUT_FUTUREID_NEXT")
-        return param_type::ANY_VALUE_WITHOUT_FUTUREID_NEXT;
-    else if (str == "LIT_STR")
-        return param_type::LIT_STR;
-    else if (str == "LIT_NUM")
-        return param_type::LIT_NUM;
-    else if (str == "NEXT_TOO")
-        return param_type::NEXT_TOO;
-    else
-        return param_type::SIZE_ENUM_PARAMS;
-}
+  public:
+    constexpr bool is_keyword() const override {
+        return true;
+    }
+    constexpr bool is_type() const override {
+        return _is_type;
+    }
 
-inline string statement::build_string_error(pdiff expr_index, string error_str, string expected) const {
-    string location_str = get_location();
-    string error = error_str + "\n" + location_str + ": " + view_str + "\n" + string(location_str.size() + 2, ' ');
+  private:
+    bool _is_type;
+};
 
-    size_t offset_failure_expr = location_str.size() + 2;
+template <typename T, typename A1, typename A2, typename Op,
+          typename = std::enable_if_t<
+              std::is_same_v<T, decltype(std::declval<Op>()(std::declval<parser_utils::context &>(),
+                                                            std::declval<A1 &>(), std::declval<A2 &>()))>>>
+class binary : public base<T> {
+  public:
+    binary(parser_utils::context &_ctx, std::unique_ptr<base<A1>> _lhs, std::unique_ptr<base<A2>> _rhs)
+        : base<T>(_ctx), lhs(std::move(_lhs)), rhs(std::move(_rhs)) {
+    }
+    virtual ~binary() = default;
 
-    if (expr_index < 0)
-        error += string(view_str.size(), '^');
-    else if (expr_index == PTRDIFF_MAX) {
-        for (size_t i = 0; i < view_str.size(); ++i) {
-            if (view_str[i] == ')') {
-                error += '^';
-                offset_failure_expr += i;
-                break;
+  public:
+    base<T>::value_type get_value() override {
+        return Op{}(this->ctx, lhs->get_value(), rhs->get_value());
+    }
+
+  public:
+    const std::unique_ptr<base<A1>> &get_lhs() {
+        return lhs;
+    }
+    const std::unique_ptr<base<A2>> &get_rhs() {
+        return rhs;
+    }
+
+  private:
+    std::unique_ptr<base<A1>> lhs;
+    std::unique_ptr<base<A2>> rhs;
+};
+
+template <typename T, typename Op,
+          typename = std::enable_if_t<std::is_same_v<
+              decltype(std::declval<Op>()(std::declval<parser_utils::context &>(), std::declval<T &>())), T>>>
+class unary : public base<T> {
+  public:
+    unary(parser_utils::context &_ctx, std::unique_ptr<base<T>> _rhs) : base<T>(_ctx), rhs(std::move(_rhs)) {
+    }
+    virtual ~unary() = default;
+
+  public:
+    base<T>::value_type get_value() override {
+        return Op{}(this->ctx, rhs->get_value());
+    }
+
+  public:
+    const std::unique_ptr<base<T>> &get_rhs() {
+        return rhs;
+    }
+
+  private:
+    std::unique_ptr<base<T>> rhs;
+};
+
+template <typename T, typename Construct, typename = std::void_t<decltype(T{Construct{}})>>
+class pack : public base<T> {
+  public:
+    pack(parser_utils::context &_ctx, parser_utils::match_pack mpack) : base<T>(_ctx) {
+        using namespace bweas;
+        for (const auto &[name, value] : mpack) {
+            parser_utils::value gen_value = std::visit([](auto &&val) -> parser_utils::value { return val; }, value);
+
+            try {
+                parser_utils::set_field(obj, name, gen_value);
             }
-            error += ' ';
+            catch (std::runtime_error &excp) {
+                throw parser_utils::parser_error(excp.what() + string("\nMatch: \'") + name + "\'");
+            }
         }
     }
-    else if (!expr_index) {
-        for (size_t i = 0; i < expr_func->name.size(); ++i)
-            error += "^";
+    ~pack() override = default;
+
+  public:
+    base<T>::value_type get_value() override {
+        return obj;
     }
-    else {
-        size_t current_symbol = expr_func->name.size() + 1;
-        size_t i              = 1;
-        for (; i < expr_index && current_symbol < view_str.size(); ++current_symbol)
-            if (view_str[current_symbol] == ',' || view_str[current_symbol] == ')')
-                ++i;
 
-        error += string(current_symbol, ' ');
-        offset_failure_expr += current_symbol;
+  private:
+    Construct obj;
+};
 
-        for (; current_symbol < view_str.size(); ++current_symbol) {
-            if (view_str[current_symbol] == ',' || view_str[current_symbol] == ')')
-                break;
-            error += "^";
+template <typename T> class call : public base<T> {
+  public:
+    call(parser_utils::context &_ctx, string _name, vec<parser_utils::value> &&_args)
+        : base<T>(_ctx), name(_name), args(_args) {
+    }
+    ~call() override = default;
+
+  public:
+    base<T>::value_type get_value() override {
+        parser_utils::scope sc;
+        const auto &func = this->ctx.funcs.at(name);
+        if (func.declared) {
+            if (func.name_args.size() != args.size())
+                throw parser_utils::parser_error("The number of values passed does not match the number "
+                                                 "accepted by the function.");
+
+            for (pdiff i = 0; i < func.name_args.size(); ++i)
+                sc[func.name_args[i]] = args[i];
+        }
+        else
+            for (pdiff i = 0; i < args.size(); ++i)
+                sc[std::to_string(i)] = args[i];
+        try {
+            return func.ref(name, sc);
+        }
+        catch (std::exception &excp) {
+            throw parser_utils::parser_error(excp.what());
         }
     }
 
-    error += !expected.empty() ? "\n" + string(offset_failure_expr, ' ') + "Expected: " + expected : "";
-    return error;
+  private:
+    string name;
+    vec<parser_utils::value> args;
+};
+
+namespace ext {
+
+using base       = base<parser_utils::value>;
+using constant   = constant<parser_utils::value>;
+using keyword    = keyword<parser_utils::value>;
+using identifier = identifier<parser_utils::value>;
+using call       = call<parser_utils::value>;
+
+template <typename Construct> using pack = pack<parser_utils::value, Construct>;
+template <typename Op> using binary      = binary<parser_utils::value, parser_utils::value, parser_utils::value, Op>;
+template <typename Op> using unary       = unary<parser_utils::value, Op>;
+
+namespace convention {
+
+static bool is_identifier(const std::unique_ptr<base> &expr) {
+    return expr->is_identifier() && std::holds_alternative<string>(expr->get_value());
 }
+static bool is_keyword(const std::unique_ptr<base> &expr) {
+    return expr->is_keyword() && std::holds_alternative<string>(expr->get_value());
+}
+static bool is_variable(const std::unique_ptr<base> &expr) {
+    return is_identifier(expr) && expr->ctx.sc->contains(std::get<string>(expr->get_value()));
+}
+static bool is_accessing_variable(const std::unique_ptr<base> &expr) {
+    return expr->is_access() && expr->ctx.sc->contains(std::get<parser_utils::access>(expr->get_value()).first);
+}
+static bool is_value(const std::unique_ptr<base> &expr) {
+    return !expr->is_identifier() && !expr->is_keyword();
+}
+} // namespace convention
 
-inline string statement::get_string_expected_params(size_t offset_index) const {
-    string expected_params_str;
-    for (size_t i = offset_index; i < expr_func->expected_params.size(); ++i) {
-        expected_params_str += get_string_expr_type(conv_param_type_to_expr_type(expr_func->expected_params[i].type));
+namespace binary_operation {
 
-        if (i < expr_func->expected_params.size() - 1)
-            expected_params_str += " ";
+struct init_binary_operation {
+    static parser_utils::value operator()(parser_utils::context &ctx, const parser_utils::value &lhs,
+                                          const parser_utils::value &rhs) {
+        using namespace bweas;
+
+        decltype(auto) sc = *ctx.sc;
+
+        string name_var    = std::get<string>(lhs);
+        string kw_var_type = std::get<string>(rhs);
+
+        if (kw_var_type == tokens::number_t::s_value)
+            sc[name_var] = pdiff{};
+        else if (kw_var_type == tokens::string_t::s_value)
+            sc[name_var] = string{};
+        else if (kw_var_type == tokens::cc_t::s_value)
+            sc[name_var] = sc::call_component{};
+        else if (kw_var_type == tokens::ctemplate_t::s_value)
+            sc[name_var] = sc::template_command{};
+        else if (kw_var_type == tokens::target_t::s_value)
+            sc[name_var] = sc::target{};
+        else if (kw_var_type == tokens::string_matching::anumber_t)
+            sc[name_var] = vec<pdiff>{};
+        else if (kw_var_type == tokens::string_matching::astring_t)
+            sc[name_var] = vec<string>{};
+        else if (kw_var_type == tokens::string_matching::atarget_t)
+            sc[name_var] = vec<sc::target>{};
+        else
+            throw parser_utils::parser_error("Unknown type \'" + kw_var_type + "\'");
+        return name_var;
     }
+};
+struct access_binary_operation {
+    static parser_utils::value operator()(parser_utils::context &ctx, const parser_utils::value &lhs,
+                                          const parser_utils::value &rhs) {
+        return parser_utils::access{std::get<string>(lhs), std::get<string>(rhs)};
+    }
+};
+struct assign_binary_operation {
+    static parser_utils::value operator()(parser_utils::context &ctx, const parser_utils::value &lhs,
+                                          const parser_utils::value &rhs) {
+        using namespace bweas;
 
-    return expected_params_str;
-}
+        if (std::holds_alternative<parser_utils::access>(lhs)) {
+            const auto &acc = std::get<parser_utils::access>(lhs);
+            std::visit([&](auto &&val) { parser_utils::set_field(val, acc.second, rhs); }, ctx.sc->at(acc.first));
+            return rhs;
+        }
 
-inline bool is_id_param(param_type p) {
-    if (p == param_type::FUTURE_VAR_ID || p == param_type::NCHECK_VAR_ID || p == param_type::VAR_ID ||
-        p == param_type::VAR_STRUCT_ID)
+        string name = std::get<string>(lhs);
+
+        std::visit(
+            [&](auto &&val) {
+                using T = std::decay_t<decltype(val)>;
+                if (!std::holds_alternative<T>(rhs))
+                    throw parser_utils::parser_error("Expected \'" + parser_utils::get_type_name<T>() + "\' type.");
+                val = std::get<T>(rhs);
+            },
+            ctx.sc->at(name));
+
+        return rhs;
+    }
+};
+
+template <typename Op,
+          typename = std::void_t<decltype(std::declval<Op>()(std::declval<typename Op::arguments_type &>(),
+                                                             std::declval<typename Op::arguments_type &>())),
+                                 decltype(parser_utils::value{typename Op::result_type{}})>>
+struct basic_binary_operation {
+    static parser_utils::value operator()(parser_utils::context &ctx, const parser_utils::value &lhs,
+                                          const parser_utils::value &rhs) {
+        using T = typename Op::arguments_type;
+
+        if (!std::holds_alternative<T>(lhs))
+            throw parser_utils::parser_error("Lhs is expected with type \'" + parser_utils::get_type_name<T>() + "\'");
+        if (!std::holds_alternative<T>(rhs))
+            throw parser_utils::parser_error("Rhs is expected with type \'" + parser_utils::get_type_name<T>() + "\'");
+        return Op{}(std::get<T>(lhs), std::get<T>(rhs));
+    }
+};
+
+template <typename Op> class basic : public binary<basic_binary_operation<Op>> {
+  public:
+    basic(parser_utils::context &_ctx, std::unique_ptr<base> _lhs, std::unique_ptr<base> _rhs)
+        : binary<basic_binary_operation<Op>>(_ctx, std::move(_lhs), std::move(_rhs)) {
+        const auto &lhs = this->get_lhs();
+        const auto &rhs = this->get_rhs();
+
+        if (!convention::is_value(lhs) || !convention::is_value(rhs))
+            throw parser_utils::parser_error("Lhs and rhs are expected values.");
+    };
+    ~basic() override = default;
+};
+
+class init : public binary<init_binary_operation> {
+  public:
+    init(parser_utils::context &_ctx, std::unique_ptr<base> _lhs, std::unique_ptr<base> _rhs)
+        : ext::binary<init_binary_operation>(_ctx, std::move(_lhs), std::move(_rhs)) {
+        const auto &lhs = get_lhs();
+        const auto &rhs = get_rhs();
+
+        if (!convention::is_identifier(lhs) || convention::is_variable(lhs))
+            throw parser_utils::parser_error("Expected non-existent variable identifier.", tokens::init_type{});
+        if (!convention::is_keyword(rhs) || !rhs->is_type())
+            throw parser_utils::parser_error("The type for initializing the variable was expected.",
+                                             tokens::init_type{});
+    };
+    ~init() override = default;
+
+    constexpr bool is_identifier() const override {
         return true;
-    return false;
-}
+    }
+};
+class access : public binary<access_binary_operation> {
+  public:
+    access(parser_utils::context &_ctx, std::unique_ptr<base> _lhs, std::unique_ptr<base> _rhs)
+        : ext::binary<access_binary_operation>(_ctx, std::move(_lhs), std::move(_rhs)) {
+        const auto &lhs = get_lhs();
+        const auto &rhs = get_rhs();
 
+        if (!convention::is_variable(lhs))
+            throw parser_utils::parser_error("An existing variable is expected", tokens::dot{});
+        if (!convention::is_identifier(rhs))
+            throw parser_utils::parser_error("The ID of the structure field is expected.", tokens::dot{});
+    };
+    ~access() override = default;
+
+    constexpr bool is_identifier() const override {
+        return true;
+    }
+    constexpr bool is_access() const override {
+        return true;
+    }
+};
+class assign : public binary<assign_binary_operation> {
+  public:
+    assign(parser_utils::context &_ctx, std::unique_ptr<base> _lhs, std::unique_ptr<base> _rhs)
+        : ext::binary<assign_binary_operation>(_ctx, std::move(_lhs), std::move(_rhs)) {
+        const auto &lhs = get_lhs();
+        const auto &rhs = get_rhs();
+
+        if (!convention::is_variable(lhs) && !convention::is_accessing_variable(lhs))
+            throw parser_utils::parser_error("A reference to the variable is expected.", tokens::equal{});
+        if (!convention::is_value(rhs))
+            throw parser_utils::parser_error("Expected expression with value.", tokens::equal{});
+    };
+    ~assign() override = default;
+};
+} // namespace binary_operation
+
+namespace unary_operation {
+struct negative_unary_operation {
+    parser_utils::value operator()(parser_utils::context &ctx, const parser_utils::value &rhs) {
+        if (!std::holds_alternative<pdiff>(rhs))
+            throw parser_utils::parser_error("Expected number type",
+                                             tokens::token{tokens::keyword<>{tokens::string_matching::_not}});
+
+        return !std::get<pdiff>(rhs);
+    }
+};
+
+class negative : public unary<negative_unary_operation> {
+  public:
+    negative(parser_utils::context &_ctx, std::unique_ptr<base> _rhs)
+        : ext::unary<negative_unary_operation>(_ctx, std::move(_rhs)) {
+        const auto &rhs = get_rhs();
+
+        if (!convention::is_value(rhs))
+            throw parser_utils::parser_error("A reference to the variable is expected.",
+                                             tokens::token{tokens::keyword<>{tokens::string_matching::_not}});
+        if (!convention::is_value(rhs))
+            throw parser_utils::parser_error("Expected expression with value.",
+                                             tokens::token{tokens::keyword<>{tokens::string_matching::_not}});
+    };
+    ~negative() override = default;
+};
+} // namespace unary_operation
+} // namespace ext
+} // namespace expression
+} // namespace bwlang
 #endif

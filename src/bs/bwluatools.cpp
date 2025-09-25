@@ -7,7 +7,6 @@
 
 #include <bwluatools.hpp>
 
-#include <lang/scope.hpp>
 #include <utils/file_utils.hpp>
 
 using namespace bweas;
@@ -134,67 +133,4 @@ sc::call_component lua_tools::conv_to_call_components(lua_tools::table<string, a
     _ccmp.pattern_ret_files = std::any_cast<string>(ccmp[NAME_FIELD_CALL_COMPONENT_PATTERN_FILES]);
 
     return _ccmp;
-}
-
-int lua_tools::get_var(lua_State *L) {
-    string name_var    = pop_stack<string>(L);
-    lua::integer var_t = pop_stack<lua_tools::integer>(L);
-    scope *ref         = (scope *)pop_stack<lua_tools::integer>(L);
-    try {
-        if (var_t == 1)
-            push_stack(L, (lua_tools::integer)ref->get_var_value<pdiff>(name_var));
-        else if (var_t == 2)
-            push_stack(L, ref->get_var_value<string>(name_var));
-        else if (var_t == 3)
-            push_stack(L, ref->get_var_value<vec<pdiff>>(name_var));
-        else if (var_t == 4)
-            push_stack(L, ref->get_var_value<vec<string>>(name_var));
-        else if (var_t == 5)
-            push_stack(L, conv_to_table(ref->get_var_value<sc::target>(name_var)));
-        else if (var_t == 6)
-            push_stack(L, conv_to_table(ref->get_var_value<sc::template_command>(name_var)));
-        else if (var_t == 7)
-            push_stack(L, conv_to_table(ref->get_var_value<sc::call_component>(name_var)));
-        else if (var_t == 8)
-            push_stack(L, ref->get_var_value<std::pair<string, string>>(name_var));
-    }
-    catch (...) {
-        push_stack(L, "\"" + name_var + "\" variable was not found.");
-    };
-
-    return 1;
-}
-
-int lua_tools::set_var(lua_State *L) {
-    string name_var = pop_stack<string>(L);
-    any value       = pop_stack<any>(L);
-    scope *ref      = (scope *)pop_stack<lua_tools::integer>(L);
-    try {
-        if (value.type() == typeid(pdiff) && !ref->try_create_var(name_var, std::any_cast<pdiff>(value)))
-            ref->get_var_value<pdiff>(name_var) = std::any_cast<pdiff>(value);
-        else if (value.type() == typeid(string) && !ref->try_create_var(name_var, std::any_cast<string>(value)))
-            ref->get_var_value<string>(name_var) = std::any_cast<string>(value);
-        else if (value.type() == typeid(vec<any>)) {
-            vec<any> any_vec = std::any_cast<vec<any>>(value);
-            auto el_tmp      = std::any_cast<any>(any_vec[0]);
-            if (el_tmp.type() == typeid(pdiff)) {
-                vec<pdiff> tmp_vec;
-                for (const auto &it : any_vec)
-                    tmp_vec.push_back(std::any_cast<pdiff>(it));
-                if (!ref->try_create_var(name_var, tmp_vec))
-                    ref->get_var_value<vec<pdiff>>(name_var) = tmp_vec;
-            }
-            else if (el_tmp.type() == typeid(string)) {
-                vec<string> tmp_vec;
-                for (const auto &it : any_vec)
-                    tmp_vec.push_back(std::any_cast<string>(it));
-                if (!ref->try_create_var(name_var, tmp_vec))
-                    ref->get_var_value<vec<string>>(name_var) = tmp_vec;
-            }
-        }
-    }
-    catch (...) {
-    }
-
-    return 0;
 }

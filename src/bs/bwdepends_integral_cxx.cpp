@@ -22,8 +22,8 @@ void bweas::depends_integral_cxx::build_graph_depends_file(string_v name_file, u
     fs::current_path(fs::path(name_file).parent_path());
 
     try {
-        file_utils::file_it file = file_utils::open_file(name_file);
-        string src_file          = file_utils::read_file(file_utils::get_ref_file(file));
+        auto file       = file_utils::open_file(name_file);
+        string src_file = file_utils::read_file(file);
         bool is_system_header;
 
         std::regex include_line_syntax(R"(#include\s+((<[\/\w+]+(?:\.\w+)?>)|(\"[\/\w+]+(?:\.\w+)?\")))");
@@ -52,9 +52,6 @@ void bweas::depends_integral_cxx::build_graph_depends_file(string_v name_file, u
             graph_depends_file.insert(include_file);
             build_graph_depends_file(include_file, graph_depends_file);
         }
-
-        if (file_utils::get_ref_file(file).file_opened)
-            file_utils::close_file(file);
     }
     catch (std::exception &excp) {
         throw std::runtime_error((fs::path(name_file).filename().string() + string("->") + excp.what()));

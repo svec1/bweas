@@ -8,6 +8,8 @@
 #include <bwgenerator_command.hpp>
 #include <utils/file_utils.hpp>
 
+#include <iostream>
+
 using namespace bweas;
 using namespace bweas::utils;
 
@@ -64,13 +66,12 @@ void generator_command::get_input_files() {
                     else
                         current_template.ifiles = source_files;
                 }
-
                 ++count_param_use_src_files;
 
                 arg.value = FEATURE_ARG_IF;
-                arg.type  = sc::template_command::arg::e_type::features;
+                arg.type  = sc::template_command::arg::e_type::string;
             }
-            else if (arg.type == sc::template_command::arg::e_type::features && arg.value == FEATURE_ARG_IF) {
+            else if (arg.type == sc::template_command::arg::e_type::string && arg.value == FEATURE_ARG_IF) {
                 for (size_t i = 0; i < source_files.size() &&
                                    std::find(current_template.ifiles.begin(), current_template.ifiles.end(),
                                              source_files[i]) == current_template.ifiles.end();
@@ -147,9 +148,7 @@ commands generator_command::generate() {
         size_t real_count_use_ifiles = 0;
 
         for (auto &arg : current_template.args) {
-            if (arg.type == sc::template_command::arg::e_type::string)
-                cmd.args.push_back(arg.value);
-            else if (arg.type == sc::template_command::arg::e_type::extglobal) {
+            if (arg.type == sc::template_command::arg::e_type::extglobal) {
                 const auto &extern_arg = std::find_if(
                     _context->global_external_args.begin(), _context->global_external_args.end(),
                     [&arg](const std::pair<string, string> extern_typemp) { return extern_typemp.first == arg.value; });
@@ -181,51 +180,7 @@ commands generator_command::generate() {
                 else
                     _log << (log_message(log_type::fatal) << "There is no such parameter: " << arg.value);
             }
-            else if (arg.type == sc::template_command::arg::e_type::features && arg.value == FEATURE_ARG_IF) {
-                if (current_template.single_generates) {
-                    if (should_uses_src_file(current_template.ifiles[count_use_ifiles], output_file,
-                                             _context->dfiles[current_template.ifiles[count_use_ifiles]]) ||
-                        current_template.returns_target) {
-                        cmd.args.push_back(current_template.ifiles[count_use_ifiles++]);
-                        ++real_count_use_ifiles;
-                    }
-                    else
-                        ++count_use_ifiles;
-                }
-                else
-                    for (; count_use_ifiles < current_template.ifiles.size(); ++count_use_ifiles)
-                        if (should_uses_src_file(current_template.ifiles[count_use_ifiles],
-                                                 get_name_output_file(pattern_output_file,
-                                                                      current_template.ifiles[count_use_ifiles],
-                                                                      count_use_ifiles),
-                                                 _context->dfiles[current_template.ifiles[count_use_ifiles]]) ||
-                            current_template.returns_target) {
-                            cmd.args.push_back(current_template.ifiles[count_use_ifiles]);
-                            ++real_count_use_ifiles;
-                        }
-            }
-            else if (arg.type == sc::template_command::arg::e_type::features && arg.value == FEATURE_ARG_OF) {
-                if (current_template.returns_target) {
-                    returnable_target[target.name].push_back(output_file);
-                    cmd.args.push_back(output_file);
-                }
-                else {
-                    if (current_template.single_generates) {
-                        if (current_template.returnable.type == sc::template_command::return_value::e_type::object)
-                            internal_args_stack_tmp[current_template.returnable.value].push_back(output_file);
 
-                        cmd.args.push_back(output_file);
-                    }
-                    else
-                        for (size_t k = 0; k < count_use_ifiles; ++k) {
-                            output_file = get_name_output_file(pattern_output_file, current_template.ifiles[k], k);
-                            if (current_template.returnable.type == sc::template_command::return_value::e_type::object)
-                                internal_args_stack_tmp[current_template.returnable.value].push_back(output_file);
-
-                            cmd.args.push_back(output_file);
-                        }
-                }
-            }
             else if (arg.type == sc::template_command::arg::e_type::internal) {
                 if (auto it = returnable_target.find(arg.value); it != returnable_target.end())
                     for (const auto &str : it->second)
@@ -233,8 +188,62 @@ commands generator_command::generate() {
                 else if (auto it = internal_args_stack_tmp.find(arg.value); it != internal_args_stack_tmp.end())
                     for (const auto &str : it->second)
                         cmd.args.push_back(arg.prefix + str);
+                else
+                    _log << (log_message(log_type::fatal) << "The parameter was not passed \'" << arg.value << "\'.");
 
                 add_depends_cmd(arg.value);
+            }
+            else if (arg.type == sc::template_command::arg::e_type::string) {
+                if (arg.value == FEATURE_ARG_IF) {
+                    if (!current_template.ifiles.size())
+                        continue;
+                    if (current_template.single_generates) {
+                        if (should_uses_src_file(current_template.ifiles[count_use_ifiles], output_file,
+                                                 _context->dfiles[current_template.ifiles[count_use_ifiles]]) ||
+                            current_template.returns_target) {
+                            cmd.args.push_back(current_template.ifiles[count_use_ifiles++]);
+                            ++real_count_use_ifiles;
+                        }
+                        else
+                            ++count_use_ifiles;
+                    }
+                    else
+                        for (; count_use_ifiles < current_template.ifiles.size(); ++count_use_ifiles)
+                            if (should_uses_src_file(current_template.ifiles[count_use_ifiles],
+                                                     get_name_output_file(pattern_output_file,
+                                                                          current_template.ifiles[count_use_ifiles],
+                                                                          count_use_ifiles),
+                                                     _context->dfiles[current_template.ifiles[count_use_ifiles]]) ||
+                                current_template.returns_target) {
+                                cmd.args.push_back(current_template.ifiles[count_use_ifiles]);
+                                ++real_count_use_ifiles;
+                            }
+                }
+                else if (arg.value == FEATURE_ARG_OF) {
+                    if (current_template.returns_target) {
+                        returnable_target[target.name].push_back(output_file);
+                        cmd.args.push_back(output_file);
+                    }
+                    else {
+                        if (current_template.single_generates) {
+                            if (current_template.returnable.type == sc::template_command::return_value::e_type::object)
+                                internal_args_stack_tmp[current_template.returnable.value].push_back(output_file);
+
+                            cmd.args.push_back(output_file);
+                        }
+                        else
+                            for (size_t k = 0; k < count_use_ifiles; ++k) {
+                                output_file = get_name_output_file(pattern_output_file, current_template.ifiles[k], k);
+                                if (current_template.returnable.type ==
+                                    sc::template_command::return_value::e_type::object)
+                                    internal_args_stack_tmp[current_template.returnable.value].push_back(output_file);
+
+                                cmd.args.push_back(output_file);
+                            }
+                    }
+                }
+                else
+                    cmd.args.push_back(arg.value);
             }
         }
 
@@ -249,7 +258,7 @@ commands generator_command::generate() {
 
             commands_execute_template[current_template.name].push_back(cmd.name);
 
-            _log << (log_message(log_type::msg) << "The command has been generated: " << cmd.build_string_command());
+            _log << (log_message(log_type::success) << "Generated: " << cmd.build_string_command());
         }
 
         if (current_template.single_generates && count_use_ifiles < current_template.ifiles.size())

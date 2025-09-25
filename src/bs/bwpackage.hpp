@@ -25,7 +25,7 @@ class bweas::package {
     struct data_bw_package {
         string json_config;
         string src_lua_cache;
-        vec<string> src_lua_finders;
+        vec<string> src_finders;
     };
 
     // All its configuration is stored here in the usual format.
@@ -39,11 +39,11 @@ class bweas::package {
         };
         struct dependency_finder {
             dependency_finder() = default;
-            dependency_finder(string _language, string _src_lua) : language(_language), src_lua(_src_lua) {
+            dependency_finder(string _language, string _src) : language(_language), src(_src) {
             }
 
             string language;
-            string src_lua;
+            string src;
         };
 
         cache_lua cache;

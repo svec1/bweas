@@ -6,14 +6,10 @@
 //
 
 #include <algorithm>
-
-#include <bwlogger.hpp>
 #include <bwstructs_context.hpp>
 
 using namespace bweas;
 using namespace sc;
-
-bweas::logger _log{"BWCOMMAND_TEMPLATE"};
 
 template_command template_command::create_template_command(string_v template_name, const string &template_str) {
     template_command tcmd_tmp;
@@ -22,7 +18,7 @@ template_command template_command::create_template_command(string_v template_nam
     string tmp_param;
 
     std::regex template_command_syntax(
-        R"(^\s*(\w+|[^'"]+:[^'"]+)\(\s*(\w+(?:\s*,\s*\w+)*\s*)\)\s*->\s+(?:(\w+)|\[(\w+)\]):((?:\s+\w+|\s+<\'[^'"]*\'>|\s+<(?:\'[^'"]+\')?\{\w+\}>|\s+<(?:\'[^'"]+\')?\w+>|\s+<(?:\'[^'"]+\')?\[(?:\w+(?::[^'"]+)?)\]>\s*)+)\s*$)");
+        R"(^\s*(\w+|[^'"\]\[:]+:[^'"\]\[:]+)\(\s*(\w+(?:\s*,\s*\w+)*\s*)?\)\s*->\s+(?:(\w+)|\[(\w+)\]):((?:\s+(?:[^'"]+)?\{\w+\}|\s+(?:[^'"]+)?\[(?:\w+(?::[^'"]+)?)\]|\s+[^'"\]\[:]+\s*)+)\s*$)");
 
     std::smatch args_match;
     if (std::regex_match(template_str, args_match, template_command_syntax)) {
@@ -41,46 +37,37 @@ template_command template_command::create_template_command(string_v template_nam
             tcmd_tmp.name_accept_params.push_back(it_match->str());
 
         string values = args_match[5].str();
-        std::regex args(
-            R"(((?:\w+|<\'[^'"]*\'>|<(?:\'[^'"]+\')?\{\w+\}>|<(?:\'[^'"]+\')?\w+>|<(?:\'[^'"]+\')?\[(?:\w+(?::[^'"]+)?)\]>)+))");
+        std::regex args(R"((?:[^'"\s]+)?\{\w+\}|(?:[^'"\s]+)?\[(?:\w+(?::[^'"\s]+)?)\]|[^'"\]\[:\s]+)");
         for (auto it_match = std::sregex_iterator(values.begin(), values.end(), args);
              it_match != std::sregex_iterator(); ++it_match) {
             template_command::arg arg_tmp;
-            string value = (*it_match)[1].str();
+            string value = (*it_match)[0].str();
 
-            if (value[0] == '<') {
-                value.erase(0, 1);
-                if (std::isalpha(value[0])) {
+            if (value.find_first_of("<{[") != value.npos) {
+                if (value[0] == '<')
                     arg_tmp.type = template_command::arg::e_type::extglobal;
-                    value.erase(value.size() - 1, 1);
-                }
-                else if (value[0] == '\'') {
-                    if (value.find("{") != value.npos)
-                        arg_tmp.type = template_command::arg::e_type::internal;
-                    else if (value.find("[") != value.npos)
-                        arg_tmp.type = template_command::arg::e_type::trgfield;
-                    else if (value.find("\'>") == value.npos)
-                        arg_tmp.type = template_command::arg::e_type::extglobal;
-                    else {
-                        arg_tmp.type = template_command::arg::e_type::string;
-                        goto value_arg_handler;
-                    }
-
-                    size_t offset_to_start_arg = value.find_last_of("\'");
-
-                    arg_tmp.prefix = value.substr(1, offset_to_start_arg - 1);
-                    value.erase(0, offset_to_start_arg + 1);
-                }
                 else if (value[0] == '{')
                     arg_tmp.type = template_command::arg::e_type::internal;
                 else if (value[0] == '[')
                     arg_tmp.type = template_command::arg::e_type::trgfield;
-                else
-                    throw std::runtime_error("Unexpected type of arg(" + value + "): " + template_str);
+                else {
+                    if (value.find("<") != value.npos)
+                        arg_tmp.type = template_command::arg::e_type::extglobal;
+                    else if (value.find("{") != value.npos)
+                        arg_tmp.type = template_command::arg::e_type::internal;
+                    else if (value.find("[") != value.npos)
+                        arg_tmp.type = template_command::arg::e_type::trgfield;
+                    else
+                        throw std::runtime_error("Unexpected type of arg(" + value + "): " + template_str);
 
-            value_arg_handler:
+                    size_t offset_to_start_arg = value.find_last_of("<{[");
+
+                    arg_tmp.prefix = value.substr(0, offset_to_start_arg);
+                    value.erase(0, offset_to_start_arg);
+                }
+
                 value.erase(0, 1);
-                value.erase(value.size() - 2, 2);
+                value.erase(value.size() - 1, 1);
                 if (arg_tmp.type == template_command::arg::e_type::internal &&
                     std::find(tcmd_tmp.name_accept_params.begin(), tcmd_tmp.name_accept_params.end(), value) ==
                         tcmd_tmp.name_accept_params.end())
@@ -88,24 +75,25 @@ template_command template_command::create_template_command(string_v template_nam
                                              "): " + template_str);
             }
             else
-                arg_tmp.type = template_command::arg::e_type::features;
+                arg_tmp.type = template_command::arg::e_type::string;
             arg_tmp.value = value;
 
             tcmd_tmp.args.push_back(arg_tmp);
         }
     }
     else
-        _log << (log_message(log_type::fatal) << "Invalid syntax. Expected: call_component(PARAM1, PARAM2, ...) -> "
-                                                 "returnable: ARG_FEATURE "
-                                                 "<ARG_EXTERNAL> <'ARG_STRING'> <{ARG_PARAM}> <[ARG_TARGET_FIELD]>:\n"
-                                              << template_str);
+        throw std::runtime_error("Invalid syntax. Expected: call_component(PARAM1, PARAM2, "
+                                 "...) -> "
+                                 "returnable: ARG_FEATURE "
+                                 "<ARG_EXTERNAL> <'ARG_STRING'> <{ARG_PARAM}> "
+                                 "<[ARG_TARGET_FIELD]>:\n" +
+                                 template_str);
 
     return tcmd_tmp;
 }
 vec<template_command> template_command::create_queue_target_templates(const vec<template_command> &templates,
                                                                       const vec<string> &templates_target,
                                                                       target::e_type target_t) {
-
     vec<template_command> vec_templates_tmp;
     vec<template_command> target_queue_templates;
 
@@ -122,8 +110,9 @@ vec<template_command> template_command::create_queue_target_templates(const vec<
         });
 
     if (it_template == vec_templates_tmp.end())
-        _log << (log_message(log_type::fatal) << "There is no template that returns a target with the given type: "
-                                              << sc::target_type_str(target_t));
+        throw std::runtime_error("There is no template that returns a target with the given "
+                                 "type: " +
+                                 sc::target_type_str(target_t));
 
     target_queue_templates.push_back(*it_template);
     for (size_t i = 0; i < it_template->name_accept_params.size(); ++i)

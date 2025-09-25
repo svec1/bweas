@@ -9,6 +9,7 @@
 #define BWMODULE_HPP
 
 #include <bw_defs.hpp>
+#include <lang/parser_utils.hpp>
 
 namespace bweas {
 class module_manager;
@@ -22,20 +23,28 @@ class bweas::module_manager {
 
   public:
     struct module_cfg {
-        module_cfg(string _name, string _name_lua_source_file, umap<string, decl_func> _funcs,
-                   umap<string, sc::profile> _profiles)
-            : name(_name), name_lua_source_file(_name_lua_source_file), funcs(_funcs), profiles(_profiles) {
+        module_cfg(string _name, string _name_src_file, const umap<string, bweas::sc::profile> &_profiles)
+            : name(_name), name_src_file(_name_src_file), profiles(_profiles) {
         }
         string name;
-        string name_lua_source_file;
+        string name_src_file;
+        umap<string, bweas::sc::profile> profiles;
+    };
 
-        umap<string, decl_func> funcs;
-        umap<string, sc::profile> profiles;
+    struct _module {
+        _module(string_v _name, const bwlang::parser_utils::context &_ctx) : name(_name) {
+            *ctx.sc   = *_ctx.sc;
+            ctx.funcs = _ctx.funcs;
+        }
+
+        string name;
+        bwlang::parser_utils::scope sc;
+        bwlang::parser_utils::context ctx{sc};
     };
 
   public:
     // Initializes lua modules functions for subsequent calls
-    umap<string, scope::module_data> init_modules(vec<module_cfg> &modules_cfg);
+    vec<_module> init_modules(vec<module_cfg> &modules_cfg);
 };
 
 #endif

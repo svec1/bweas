@@ -27,6 +27,7 @@ string fast_cache::create_cache() {
     serel_target_tmp += "\"" + _context->path_bweas_config + "\" ";
 
     for (pdiff i = 0; i < targets.size(); ++i) {
+
         sc::profile::fields &ext_fields = targets[i].ext.get_fields();
 
         serel_target_tmp += std::to_string(ext_fields.size()) + " " + std::to_string(targets[i].templates.size()) +
@@ -79,20 +80,28 @@ string fast_cache::create_cache() {
     serel_target_tmp += std::to_string(all_used_call_component.size()) + " ";
 
     for (const auto &call_component : all_used_call_component) {
-        const auto &ref_call_component =
-            find_if(call_components.begin(), call_components.end(),
-                    [call_component](const sc::call_component &ccmp) { return ccmp.name == call_component; });
-        serel_target_tmp += ref_call_component->name + " \"" + ref_call_component->name_program + "\" " +
-                            ref_call_component->pattern_ret_files + " ";
+        if (const auto &it =
+                find_if(call_components.begin(), call_components.end(),
+                        [call_component](const sc::call_component &ccmp) { return ccmp.name == call_component; });
+            it != call_components.end())
+            serel_target_tmp += it->name + " \"" + it->name_program + "\" " + it->pattern_ret_files + " ";
+        else
+            _log << (log_message(log_type::fatal)
+                     << "It is impossible to get a used call_component \'" + call_component + "\'.");
     }
 
     serel_target_tmp += std::to_string(all_used_globally_args.size()) + " ";
 
     for (const auto &g_arg : all_used_globally_args) {
-        const auto &g_arg_it = std::find_if(
-            global_external_args.begin(), global_external_args.end(),
-            [g_arg](const pair<string, string> &global_external_arg) { return global_external_arg.first == g_arg; });
-        serel_target_tmp += g_arg_it->first + "-\"" + g_arg_it->second + "\" ";
+        if (const auto &it = std::find_if(global_external_args.begin(), global_external_args.end(),
+                                          [g_arg](const pair<string, string> &global_external_arg) {
+                                              return global_external_arg.first == g_arg;
+                                          });
+            it != global_external_args.end())
+            serel_target_tmp += it->first + "-\"" + it->second + "\" ";
+        else
+            _log << (log_message(log_type::fatal)
+                     << "It is impossible to get a used global external arg \'" + g_arg + "\'.");
     }
 
     return serel_target_tmp;

@@ -9,8 +9,9 @@
 #define BWLANG_HPP
 
 #include <bw_defs.hpp>
+#include <bwmodule.hpp>
 
-#include <lang/static_linking_func.hpp>
+#include <lang/parser.hpp>
 
 namespace bweas {
 class lang;
@@ -35,19 +36,23 @@ class bweas::lang {
     void execute();
 
     // Loads external functions (passed into this function) into the interpreter (semantic analyzer)
-    inline void init_external_funcs(vec<decl_func> funcs);
+    inline void import_modules(vec<module_manager::_module> modules);
 
-    template <typename T> inline bool create_global_var(string name_var, T val = {}) {
-        return _interpreter.get_scope().try_create_var(name_var, val);
+    template <typename T> inline T get_variable(string name_var) {
+        if (std::holds_alternative<T>((*p.get_context().sc)[name_var]))
+            return std::get<T>(p.get_context().sc->at(name_var));
+        return T{};
     }
-    template <typename T> inline T get_global_var(string name_var) {
-        return _interpreter.get_scope().get_var_value<T>(name_var);
-    }
-
-    scope &get_global_scope() &;
-    template <typename T> container_vars<T>::container_type &get_container_vars() &;
 
     void init_context();
+
+  private:
+    template <typename t> inline void create_variable(string name_var, t val = {}) {
+        (*p.get_context().sc)[name_var] = val;
+    }
+    void create_function(string name_func, bwlang::parser_utils::func::func_t func_ref) {
+        p.get_context().funcs[name_func] = bwlang::parser_utils::func{func_ref, {}, false};
+    }
 
   private:
     vec<sc::target> get_targets();
@@ -57,115 +62,128 @@ class bweas::lang {
 
   private:
     context *const _context;
-    interpreter _interpreter;
+    bwlang::parser p;
 };
-bweas::lang::lang(context *const __context) : _context(__context), _interpreter(_context->path_bweas_config) {
+bweas::lang::lang(context *const __context)
+    : _context(__context), p(utils::file_utils::read_file(utils::file_utils::open_file(_context->path_bweas_config))) {
     init_scope();
 }
 
 void bweas::lang::init_scope() {
-    _interpreter.get_scope().create_var<pdiff>("DEBUG", 0);
-    _interpreter.get_scope().create_var<pdiff>("RELEASE", 1);
-    _interpreter.get_scope().create_var<pdiff>("FALSE", 0);
-    _interpreter.get_scope().create_var<pdiff>("TRUE", 1);
-    _interpreter.get_scope().create_var<pdiff>("EXECUTABLE", 0);
-    _interpreter.get_scope().create_var<pdiff>("LIBRARY", 1);
-    _interpreter.get_scope().create_var<string>("BWEAS_CONFIG_PATH", fs::current_path().string());
+    create_variable<pdiff>("debug", 0);
+    create_variable<pdiff>("release", 1);
+    create_variable<pdiff>("false", 0);
+    create_variable<pdiff>("true", 1);
+    create_variable<pdiff>("executable", 0);
+    create_variable<pdiff>("library", 1);
+    create_variable<pdiff>("get_files", 0);
+    create_variable<string>("config_path", fs::current_path().string());
 
-    _interpreter.create_function(
-        "set", sl_func::set,
-        {param_type::NCHECK_VAR_ID, param_type::ANY_VALUE_WITHOUT_FUTUREID_NEXT, param_type::NEXT_TOO});
-    _interpreter.create_function(
-        "file", sl_func::file,
-        {{param_type::FUTURE_VAR_ID, "{NULL}"}, param_type::LIT_NUM, param_type::LIT_STR, param_type::NEXT_TOO});
+    auto expected_argument = [](auto &&type, bwlang::parser_utils::scope &sc,
+                                string name_arg) -> std::decay_t<decltype(type)> {
+        using T = std::decay_t<decltype(type)>;
 
-    _interpreter.create_function("create_target", sl_func::create_target,
-                                 {param_type::FUTURE_VAR_ID,
-                                  param_type::VAR_STRUCT_ID,
-                                  param_type::LIT_NUM,
-                                  {param_type::LIT_STR, "{NULL}"},
-                                  param_type::NEXT_TOO});
-    _interpreter.create_function("add_dependencies_target", sl_func::add_dependencies_target,
-                                 {param_type::VAR_STRUCT_ID, param_type::VAR_STRUCT_ID, param_type::NEXT_TOO});
+        if (!sc.contains(name_arg) || !std::holds_alternative<T>(sc.at(name_arg)))
+            throw std::runtime_error("Expected " + name_arg + " args as " + bwlang::parser_utils::get_type_name<T>());
 
-    _interpreter.create_function("exp_data", sl_func::exp_data, {param_type::LIT_STR});
-    _interpreter.create_function("debug", sl_func::debug, {param_type::LIT_STR, param_type::NEXT_TOO});
-    _interpreter.create_function("debug_struct", sl_func::debug_struct, {param_type::VAR_STRUCT_ID});
+        const auto &val = std::get<T>(sc.at(name_arg));
+        sc.erase(name_arg);
+        return val;
+    };
 
-    _interpreter.create_function("create_template", sl_func::create_template,
-                                 {param_type::FUTURE_VAR_ID, param_type::LIT_STR});
-    _interpreter.create_function("create_call_component", sl_func::create_call_component,
-                                 {param_type::FUTURE_VAR_ID, param_type::LIT_STR, param_type::LIT_STR});
-    _interpreter.create_function("add_param_template", sl_func::add_param_template,
-                                 {param_type::FUTURE_VAR_ID, param_type::VAR_ID});
-    _interpreter.create_function("use_templates", sl_func::use_templates,
-                                 {param_type::VAR_STRUCT_ID, param_type::VAR_STRUCT_ID, param_type::NEXT_TOO});
+    create_function("build", [&](string, bwlang::parser_utils::scope &sc) -> bwlang::parser_utils::value {
+        for (const auto &[key, value] : sc) {
+            if (std::holds_alternative<sc::target>(value))
+                _context->targets.emplace_back(std::move(std::get<sc::target>(value)));
+            else if (std::holds_alternative<vec<sc::target>>(value)) {
+                const auto &targets = std::get<vec<sc::target>>(value);
+                for (const auto &target : targets)
+                    _context->targets.emplace_back(std::move(target));
+            }
+            else
+                std::runtime_error("Expected target type.");
+        }
+        return {};
+    });
+    create_function("file", [&](string, bwlang::parser_utils::scope &sc) -> bwlang::parser_utils::value {
+        static constexpr pdiff GET_FILES = 0;
+        static auto get_files            = [](string file) -> vec<string> {
+            if (fs::exists(file))
+                return {utils::file_utils::get_path_file(file)};
+            else {
+                std::function<vec<string>(string file)> get_dir_files = [&](string file) -> vec<string> {
+                    vec<string> dir_files;
+                    string dir = file.substr(0, file.find_last_of("/\\"));
+                    for (const auto &it : fs::directory_iterator{dir}) {
+                        if (fs::is_regular_file(it))
+                            dir_files.push_back(utils::file_utils::get_path_file(it.path().c_str()));
+                        else if (fs::is_directory(it)) {
+                            auto vec_tmp = get_dir_files(string(it.path()) + "/");
+                            dir_files.insert(dir_files.end(), vec_tmp.begin(), vec_tmp.end());
+                        }
+                    }
+
+                    return dir_files;
+                };
+
+                vec<string> files = get_dir_files(file);
+                if (auto it = file.find_last_of("/\\"); it != file.npos)
+                    files = utils::file_utils::file_slc_mask(file.substr(it + 1), files);
+
+                return files;
+            }
+        };
+
+        if (sc.size() < 2)
+            std::runtime_error("Expected a more args.");
+
+        vec<string> return_value;
+        pdiff number_function = expected_argument(pdiff{}, sc, "0");
+
+        if (number_function == GET_FILES) {
+            for (const auto &[key, value] : sc) {
+                if (std::holds_alternative<string>(value)) {
+                    vec<string> vec_tmp = get_files(std::get<string>(value));
+                    return_value.insert(return_value.end(), vec_tmp.begin(), vec_tmp.end());
+                }
+                else if (std::holds_alternative<vec<string>>(value)) {
+                    for (const auto &file : std::get<vec<string>>(value)) {
+                        vec<string> vec_tmp = get_files(file);
+                        return_value.insert(return_value.end(), vec_tmp.begin(), vec_tmp.end());
+                    }
+                }
+                else
+                    std::runtime_error("Expected string type.");
+            }
+        }
+        return return_value;
+    });
 }
 
 void bweas::lang::execute() {
-    _interpreter.interpret();
+    p.parse();
 }
-void bweas::lang::init_external_funcs(vec<decl_func> funcs) {
-    for (const auto &func : funcs)
-        _interpreter.create_function(func);
+void bweas::lang::import_modules(vec<module_manager::_module> modules) {
+    p.import_modules(std::move(modules));
 }
 
 void bweas::lang::init_context() {
-    _context->targets              = get_targets();
-    _context->templates            = get_templates();
-    _context->call_components      = get_call_components();
-    _context->global_external_args = get_global_external_args();
-}
+    for (auto &[key, value] : *p.get_context().sc)
+        if (std::holds_alternative<sc::template_command>(value)) {
+            auto &tcmd = std::get<sc::template_command>(value);
+            if (size_t it = tcmd.name_call_component.find(":"); it != tcmd.name_call_component.npos) {
+                string name_ccmp = "anon_cc_" + tcmd.name;
+                _context->call_components.emplace_back(name_ccmp, tcmd.name_call_component.substr(0, it),
+                                                       tcmd.name_call_component.substr(it + 1));
 
-vec<bweas::sc::target> bweas::lang::get_targets() {
-    const container_vars<sc::target>::container_type &container_targets =
-        _interpreter.get_scope().get_container_vars<sc::target>();
-
-    vec<sc::target> targets;
-    for (auto it = container_targets.begin(); it != container_targets.end(); ++it)
-        targets.push_back(it->second);
-
-    return targets;
-}
-
-vec<bweas::sc::template_command> bweas::lang::get_templates() {
-    container_vars<sc::template_command>::container_type container_templates =
-        _interpreter.get_scope().get_container_vars<sc::template_command>();
-
-    vec<sc::template_command> templates;
-    for (auto it = container_templates.begin(); it != container_templates.end(); ++it)
-        templates.emplace_back(it->second);
-
-    return templates;
-}
-
-vec<bweas::sc::call_component> bweas::lang::get_call_components() {
-    container_vars<sc::call_component>::container_type container_call_components =
-        _interpreter.get_scope().get_container_vars<sc::call_component>();
-
-    vec<sc::call_component> call_components;
-    for (auto it = container_call_components.begin(); it != container_call_components.end(); ++it)
-        call_components.emplace_back(it->second);
-
-    return call_components;
-}
-
-vec<pair<string, string>> bweas::lang::get_global_external_args() {
-    container_vars<pair<string, string>>::container_type container_global_external_args =
-        _interpreter.get_scope().get_container_vars<pair<string, string>>();
-
-    vec<pair<string, string>> global_external_args;
-    for (auto it = container_global_external_args.begin(); it != container_global_external_args.end(); ++it)
-        global_external_args.emplace_back(it->second);
-
-    return global_external_args;
-}
-
-scope &bweas::lang::get_global_scope() & {
-    return _interpreter.get_scope();
-}
-template <typename T> container_vars<T>::container_type &bweas::lang::get_container_vars() & {
-    return _interpreter.get_scope().get_container_vars<T>();
+                tcmd.name_call_component = name_ccmp;
+            }
+            _context->templates.push_back(tcmd);
+        }
+        else if (std::holds_alternative<sc::call_component>(value))
+            _context->call_components.push_back(std::get<sc::call_component>(value));
+        else if (std::holds_alternative<pair<string, string>>(value))
+            _context->global_external_args.push_back(std::get<pair<string, string>>(value));
 }
 
 #endif

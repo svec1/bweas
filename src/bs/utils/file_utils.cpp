@@ -41,51 +41,9 @@ std::string file_utils::get_path_program() {
 std::string file_utils::get_current_path() {
     return fs::current_path().string();
 }
-vec<file_utils::file>& bweas::utils::file_utils::get_files() {
-    static vec<file_utils::file> files;
-    return files;
+file_utils::file file_utils::open_file(std::string_view name_file, file::mode_file::open mode) {
+    return file_utils::file{fs::absolute(name_file), mode};
 }
-file_utils::file_it file_utils::open_file(std::string_view name_file, file::mode_file::open mode) {
-    auto &files = get_files();
-
-    file_it it = get_iterator_file(name_file);
-    if (exist_file(it)) {
-        if (files[it].file_opened)
-            return it;
-
-        files[it].open(mode);
-        return it;
-    }
-    files.emplace_back(fs::absolute(name_file), mode);
-
-    return files.size() - 1;
-}
-void file_utils::close_file(file_utils::file_it file) {
-    auto &files = get_files();
-
-    if (!exist_file(file))
-        throw std::runtime_error("There are no files with this index.");
-    files.erase(files.begin() + file);
-}
-bool file_utils::exist_file(file_it file) {
-    auto &files = get_files();
-    if ((files.begin() + file) == files.end())
-        return 0;
-    return 1;
-}
-file_utils::file_it file_utils::get_iterator_file(std::string_view name_file) {
-    auto &files = get_files();
-    return std::distance(files.begin(),
-                         std::find_if(files.begin(), files.end(), [name_file](const file_utils::file &file) {
-                             return file.path_to == fs::absolute(name_file);
-                         }));
-}
-
-file_utils::file &file_utils::get_ref_file(file_it file) {
-    auto &files = get_files();
-    return *(files.begin() + file);
-}
-
 std::string file_utils::read_file(file &file, file::mode_file::input mode) {
     std::string data_file;
     if (mode == file::mode_file::input::read_binary) {
@@ -104,11 +62,17 @@ std::string file_utils::read_file(file &file, file::mode_file::input mode) {
 
     return data_file;
 }
+std::string file_utils::read_file(file &&file, file::mode_file::input mode) {
+    return read_file(file, mode);
+}
 void file_utils::write_file(file &file, string_v buf, file::mode_file::output mode) {
     if (mode == file::mode_file::output::write_binary)
         file.stream.write(buf.data(), buf.size());
     else
         file.stream << buf;
+}
+void file_utils::write_file(file &&file, string_v buf, file::mode_file::output mode) {
+    write_file(file, buf, mode);
 }
 vec<string> file_utils::file_slc_mask(string mask, const vec<string> &files) {
     if (mask.empty())

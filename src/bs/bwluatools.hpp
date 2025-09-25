@@ -59,10 +59,5 @@ class bweas::lua_tools {
     static sc::template_command conv_to_template(table<string, any> &tcmd);
     static sc::call_component conv_to_call_components(table<string, any> &ccmp);
     static sc::target conv_to_target(table<string, any> &trg_o_t);
-
-    // Auxiliary functions for lua scripts for interacting with bweas (wrappers over bweas functions)
-  public:
-    static int get_var(lua_State *L);
-    static int set_var(lua_State *L);
 };
 #endif

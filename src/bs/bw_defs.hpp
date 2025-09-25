@@ -15,17 +15,15 @@
 #include <memory>
 
 #include <bwaliases.hpp>
-#include <bwmacros_platform.h>
+#include <bwstructs_context.hpp>
 
 #include <bwlogger.hpp>
-#include <lang/interpreter.hpp>
 
 #include <bwdepends_api.hpp>
 
 namespace bweas {
 
-using mf      = utils::file_utils::file::mode_file;
-using file_it = utils::file_utils::file_it;
+using mf = utils::file_utils::file::mode_file;
 
 inline constexpr char VERSION_MAJOR_C = '0';
 inline constexpr char VERSION_MINOR_C = '1';

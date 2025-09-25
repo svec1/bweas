@@ -50,7 +50,7 @@ string package::create_data_package(data_bw_package _data) {
     string data_str = PACKAGE_PREFIX_BYTE + PACKAGE_VERSION + _data.json_config + PACKAGE_SEPARATE_JSON_BYTES +
                       _data.src_lua_cache + PACKAGE_SEPARATE_LUA_CACHE;
 
-    for (const auto &src_lua_generator : _data.src_lua_finders)
+    for (const auto &src_lua_generator : _data.src_finders)
         data_str += src_lua_generator + PACKAGE_SEPARATE_LUA_DEPENDENCY_FINDER;
 
     return lz4::compress_data(data_str);
@@ -77,8 +77,7 @@ string package::init(data_bw_package _data, bool is_create_pckg) {
         cfg.cache.name = metainf_ch["name"];
 
         if (is_create_pckg) {
-            cfg.cache.src_lua =
-                file_utils::read_file(file_utils::get_ref_file(file_utils::open_file((string)metainf_ch["lua-file"])));
+            cfg.cache.src_lua   = file_utils::read_file(file_utils::open_file((string)metainf_ch["lua-file"]));
             _data.src_lua_cache = cfg.cache.src_lua;
         }
         else
@@ -104,12 +103,11 @@ string package::init(data_bw_package _data, bool is_create_pckg) {
 
             auto lua_file_finder_source = file_utils::open_file((string)metainf_fn["lua-file"]);
             if (is_create_pckg) {
-                cfg.finders.emplace_back(finder.key(),
-                                         file_utils::read_file(file_utils::get_ref_file(lua_file_finder_source)));
-                _data.src_lua_finders.push_back(cfg.finders[cfg.finders.size() - 1].src_lua);
+                cfg.finders.emplace_back(finder.key(), file_utils::read_file(lua_file_finder_source));
+                _data.src_finders.push_back(cfg.finders[cfg.finders.size() - 1].src);
             }
             else {
-                cfg.finders.emplace_back(finder.key(), _data.src_lua_finders[i]);
+                cfg.finders.emplace_back(finder.key(), _data.src_finders[i]);
                 ++i;
             }
         }
@@ -152,10 +150,10 @@ string package::init(data_bw_package _data, bool is_create_pckg) {
 
                     for (const auto &[key, value] : profile_info.items()) {
                         if (value.is_object()) {
-                            if (key == "RELEASE")
+                            if (key == "release")
                                 for (const auto &[release_key, release_value] : value.items())
                                     profile_tmp.release_fields[release_key] = get_field(release_value);
-                            else if (key == "DEBUG") {
+                            else if (key == "debug") {
                                 profile_tmp.debug_fields = sc::profile::fields{};
                                 for (const auto &[debug_key, debug_value] : value.items())
                                     profile_tmp.debug_fields.value()[debug_key] = get_field(debug_value);
@@ -183,6 +181,10 @@ string package::init(data_bw_package _data, bool is_create_pckg) {
                                         else
                                             profile_tmp.debug_fields = profiles[derive_profile].debug_fields;
                                     }
+                                    else
+                                        _log << (log_message(log_type::fatal)
+                                                 << "It is impossible to inherit from a non-existent profile[" +
+                                                        derive_profile + "].");
                             }
                             else if (key == "export" && value.is_boolean()) {
                                 if (!static_cast<bool>(value))
@@ -195,17 +197,14 @@ string package::init(data_bw_package _data, bool is_create_pckg) {
                     if (!profile_tmp.global_fields.contains(sc::profile::FIELD_SOURCE_FILES) ||
                         !std::holds_alternative<vec<string>>(
                             profile_tmp.global_fields[sc::profile::FIELD_SOURCE_FILES]))
-                        _log << (log_message(log_type::fatal) << "The profile[" << profile.key()
-                                                              << "] must have source files field of type string.");
+                        _log << (log_message(log_type::fatal)
+                                 << "The profile[" << profile.key()
+                                 << "] must have source files field of type array string.");
                     else if (!profile_tmp.global_fields.contains(sc::profile::FIELD_INCLUDE_PATHS) ||
                              !std::holds_alternative<vec<string>>(
                                  profile_tmp.global_fields[sc::profile::FIELD_INCLUDE_PATHS]))
                         _log << (log_message(log_type::fatal) << "The profile[" << profile.key()
                                                               << "] must have include paths field of type string.");
-                    else if (!profile_tmp.global_fields.contains(sc::profile::FIELD_TARGET_TYPE) ||
-                             !std::holds_alternative<string>(profile_tmp.global_fields[sc::profile::FIELD_TARGET_TYPE]))
-                        _log << (log_message(log_type::fatal) << "The profile[" << profile.key()
-                                                              << "] must have type of target field of type string.");
                     else if (!profile_tmp.global_fields.contains(sc::profile::FIELD_LANGUAGE) ||
                              !std::holds_alternative<string>(profile_tmp.global_fields[sc::profile::FIELD_LANGUAGE]))
                         _log << (log_message(log_type::fatal)
@@ -222,40 +221,19 @@ string package::init(data_bw_package _data, bool is_create_pckg) {
                 }
             }
 
-            umap<string, decl_func> funcs;
-            string lua_file;
-            if (metainf_md.contains("functions")) {
-                if (!metainf_md.contains("lua-file") || !metainf_md["lua-file"].is_string())
+            string name_src_file;
+            if (metainf_md.contains("name-src-file")) {
+                if (!metainf_md["name-src-file"].is_string())
                     _log << (log_message(log_type::fatal)
-                             << "Module metadata must include the name of the lua source file");
+                             << "Module metadata must include the name of the source file of module");
 
-                lua_file = metainf_md["lua-file"];
-                for (const auto &func : metainf_md["functions"].items()) {
-                    auto it_func = func.value();
-                    decl_func def_func_tmp;
-                    def_func_tmp.name = func.key();
-                    for (const auto &field : it_func.items()) {
-                        if (field.key() == "accepted") {
-                            if (!field.value().is_array())
-                                _log << (log_message(log_type::fatal)
-                                         << "The field for listing the types of function parameters must be an array");
-                            for (size_t i = 0; i < field.value().size(); ++i) {
-                                if (field.value()[i].is_string())
-                                    def_func_tmp.expected_params.push_back(
-                                        param{get_string_param_type((string)field.value()[i])});
-                                else
-                                    def_func_tmp.expected_params.push_back(param{field.value()[i]});
-                            }
-                        }
-                    }
-                    funcs[func.key()] = def_func_tmp;
-                }
+                name_src_file = metainf_md["name-src-file"];
             }
 
             for (const auto &name_profile : no_export_profiles)
                 profiles.extract(name_profile);
 
-            cfg.modules.emplace_back(_module.key(), lua_file, std::move(funcs), std::move(profiles));
+            cfg.modules.emplace_back(_module.key(), name_src_file, profiles);
         }
     }
 
@@ -298,7 +276,7 @@ void package::load(string_v raw_data_package) {
     while (src_finders.size()) {
         current_src_finder = src_finders;
         current_src_finder.erase(current_src_finder.find(PACKAGE_SEPARATE_LUA_DEPENDENCY_FINDER));
-        data_package.src_lua_finders.push_back(current_src_finder);
+        data_package.src_finders.push_back(current_src_finder);
 
         src_finders.erase(0, current_src_finder.size() + PACKAGE_SEPARATE_LUA_DEPENDENCY_FINDER_LENGHT);
     }

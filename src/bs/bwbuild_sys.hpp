@@ -128,11 +128,12 @@ class bweas::builder final {
 
   private:
     module_manager module_m;
-    umap<string, scope::module_data> modules;
+    vec<module_manager::_module> modules;
 
   private:
     sc::version version{VERSION_FULL_STR};
     mode_working mode_bweas{mode_working::undef};
+    size_t count_threads = 4;
 };
 
 #endif
