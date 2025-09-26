@@ -23,16 +23,18 @@ inline constexpr char number_t[]    = "number";
 inline constexpr char string_t[]    = "string";
 inline constexpr char cc_t[]        = "cc";
 inline constexpr char ctemplate_t[] = "ctemplate";
+inline constexpr char profile_t[]   = "profile";
 inline constexpr char target_t[]    = "target";
 
 inline constexpr char anumber_t[] = "anumber";
 inline constexpr char astring_t[] = "astring";
 inline constexpr char atarget_t[] = "atarget";
 
-static constexpr array<string_v, 15> keywords = {_is,   _not,   _import,  _func,    _endfunc, _if,         _return,
-                                                 _else, _endif, number_t, string_t, cc_t,     ctemplate_t, target_t};
+static constexpr array<string_v, 15> keywords = {_is,      _not,    _import,     _func,     _endfunc,
+                                                 _if,      _return, _else,       _endif,    number_t,
+                                                 string_t, cc_t,    ctemplate_t, profile_t, target_t};
 
-static constexpr array<string_v, 5> types{number_t, string_t, cc_t, ctemplate_t, target_t};
+static constexpr array<string_v, 6> types{number_t, string_t, cc_t, ctemplate_t, profile_t, target_t};
 
 } // namespace string_matching
 
@@ -108,6 +110,7 @@ struct number_t : public keyword<string_matching::number_t> {};
 struct string_t : public keyword<string_matching::string_t> {};
 struct cc_t : public keyword<string_matching::cc_t> {};
 struct ctemplate_t : public keyword<string_matching::ctemplate_t> {};
+struct profile_t : public keyword<string_matching::profile_t> {};
 struct target_t : public keyword<string_matching::target_t> {};
 
 using token =

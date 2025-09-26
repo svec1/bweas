@@ -1,8 +1,12 @@
 #include <lang/parser.hpp>
 
-using namespace bweas;
 using namespace bwlang;
 using namespace expression::ext;
+
+static parser_utils::context g_ctx_s;
+
+parser::parser(string_v src) : lexer(src), g_ctx(&g_ctx_s) {
+}
 
 void parser::parse() {
     try {
@@ -15,7 +19,7 @@ void parser::parse() {
 
         string output = number_last_line + ":\t" + last_line + "\n";
         if (pdiff it = last_line.find(tk); tk.size() && it != last_line.npos) {
-            output += string(it + number_last_line.size() + 6, ' ') + "\033[91m" + string(tk.size(), '^') + "\033[0m";
+            output += string(it + number_last_line.size() + 7, ' ') + "\033[91m" + string(tk.size(), '^') + "\033[0m";
         }
         else {
             pdiff output_prev_size = output.size();
@@ -99,12 +103,12 @@ parser_utils::value parser::parse_if_else_branche(bool in_skip_branche, bool is_
 void parser::parse_import() {
     string name_module = std::get<tokens::literal_string>(expect_token<tokens::literal_string>()).value;
     auto it            = std::find_if(modules.begin(), modules.end(),
-                                      [&](const module_manager::_module &md) { return md.name == name_module; });
+                                      [&](const bweas::module_manager::_module &md) { return md.name == name_module; });
     if (it == modules.end())
         throw parser_utils::parser_error("Unknown module.", tokens::literal_string{name_module});
 
-    g_sc.merge(it->sc);
-    g_ctx.funcs.merge(it->ctx.funcs);
+    g_ctx->sc.merge(it->ctx.sc);
+    g_ctx->funcs.merge(it->ctx.funcs);
 }
 void parser::parse_function() {
     static umap<string, vec<tokens::token>> decl_funcs;
@@ -119,23 +123,31 @@ void parser::parse_function() {
 
         current_token = expect_tokens<tokens::comma, tokens::close_round_bracket>();
     }
-    if (std::holds_alternative<tokens::close_round_bracket>(peek()))
-        consume();
 
-    while (!tokens::is_keyword<tokens::_endfunc>(current_token)) {
-        if (current_token = consume_if(); std::holds_alternative<std::monostate>(current_token))
-            expect_keyword<tokens::_endfunc>();
+    std::function<void()> copy_all_token = [&]() {
+        while (!tokens::is_keyword<tokens::_endfunc>(current_token)) {
+            if (current_token = consume_if(); std::holds_alternative<std::monostate>(current_token))
+                expect_keyword<tokens::_endfunc>();
 
-        decl_funcs[name_func].push_back(current_token);
-    }
+            if (tokens::is_keyword<tokens::_func>(current_token)) {
+                decl_funcs[name_func].push_back(current_token);
+                copy_all_token();
+                current_token = consume_if();
+            }
 
-    g_ctx.funcs[name_func] = parser_utils::func{
-        [&](string name_func, parser_utils::scope &sc) -> parser_utils::value {
+            decl_funcs[name_func].push_back(current_token);
+        }
+    };
+
+    copy_all_token();
+
+    g_ctx->funcs[name_func] = parser_utils::func{
+        [&](string name_func, parser_utils::context &c_ctx) -> parser_utils::value {
             get_tokens().insert(get_tokens().begin(), decl_funcs.at(name_func).begin(), decl_funcs.at(name_func).end());
 
-            g_ctx.sc                         = &sc;
+            g_ctx                            = &c_ctx;
             parser_utils::value return_value = parse_statements(false, false, true);
-            g_ctx.sc                         = &g_sc;
+            g_ctx                            = &g_ctx_s;
             if (!std::holds_alternative<std::monostate>(return_value))
                 while (!std::holds_alternative<std::monostate>(peek()) && !tokens::is_keyword<tokens::_endfunc>(peek()))
                     consume();
@@ -155,10 +167,10 @@ std::unique_ptr<base> parser::parse_expression(pdiff lbinding_power) {
     auto lhs                    = std::visit(
         parser_utils::func_wrapper{
             [&](tokens::literal_number lnum) -> std::unique_ptr<base> {
-                return std::make_unique<constant>(g_ctx, lnum.value);
+                return std::make_unique<constant>(*g_ctx, lnum.value);
             },
             [&](tokens::literal_string lstr) -> std::unique_ptr<base> {
-                return std::make_unique<constant>(g_ctx, lstr.value);
+                return std::make_unique<constant>(*g_ctx, lstr.value);
             },
             [&](tokens::keyword<> kw) -> std::unique_ptr<base> {
                 if (tokens::is_type(kw.value)) {
@@ -168,13 +180,13 @@ std::unique_ptr<base> parser::parse_expression(pdiff lbinding_power) {
 
                         kw.value = tokens::make_array_type(kw.value);
                     }
-                    return std::make_unique<keyword>(g_ctx, kw.value, true);
+                    return std::make_unique<keyword>(*g_ctx, kw.value, true);
                 }
                 else if (tokens::is_keyword<tokens::_not>(kw)) {
-                    return std::make_unique<unary_operation::negative>(g_ctx, parse_expression(3));
+                    return std::make_unique<unary_operation::negative>(*g_ctx, parse_expression(3));
                 }
 
-                return std::make_unique<keyword>(g_ctx, kw.value);
+                return std::make_unique<keyword>(*g_ctx, kw.value);
             },
             [&](tokens::identifier id) -> std::unique_ptr<base> {
                 if (std::holds_alternative<tokens::open_round_bracket>(peek())) {
@@ -188,11 +200,12 @@ std::unique_ptr<base> parser::parse_expression(pdiff lbinding_power) {
                         current_token = expect_tokens<tokens::comma, tokens::close_round_bracket>();
                     }
 
-                    if (!g_ctx.funcs.contains(id.value))
+                    if (!g_ctx->is_function(id.value))
                         throw parser_utils::parser_error("Calling a non-existent function.", id);
-                    return std::make_unique<call>(g_ctx, id.value, std::move(args));
+
+                    return std::make_unique<call>(*g_ctx, id.value, std::move(args));
                 }
-                return std::make_unique<identifier>(g_ctx, id.value);
+                return std::make_unique<identifier>(*g_ctx, id.value);
             },
             [&](tokens::open_init_bracket) -> std::unique_ptr<base> {
                 parser_utils::match_pack args;
@@ -223,13 +236,13 @@ std::unique_ptr<base> parser::parse_expression(pdiff lbinding_power) {
                 if (!args.contains("name"))
                     args["name"] = lhs_id;
 
-                const auto &lhs_value = g_ctx.sc->at(lhs_id);
-                if (std::holds_alternative<sc::call_component>(lhs_value))
-                    return std::make_unique<pack<sc::call_component>>(g_ctx, std::move(args));
-                else if (std::holds_alternative<sc::template_command>(lhs_value))
-                    return std::make_unique<pack<sc::template_command>>(g_ctx, std::move(args));
-                else if (std::holds_alternative<sc::target>(lhs_value))
-                    return std::make_unique<pack<sc::target>>(g_ctx, std::move(args));
+                const auto &lhs_value = g_ctx->sc.at(lhs_id);
+                if (std::holds_alternative<bweas::sc::call_component>(lhs_value))
+                    return std::make_unique<pack<bweas::sc::call_component>>(*g_ctx, std::move(args));
+                else if (std::holds_alternative<bweas::sc::template_command>(lhs_value))
+                    return std::make_unique<pack<bweas::sc::template_command>>(*g_ctx, std::move(args));
+                else if (std::holds_alternative<bweas::sc::target>(lhs_value))
+                    return std::make_unique<pack<bweas::sc::target>>(*g_ctx, std::move(args));
                 else
                     throw parser_utils::parser_error("It is not possible to define a pack for the "
                                                                                            "specified "
@@ -258,8 +271,8 @@ std::unique_ptr<base> parser::parse_expression(pdiff lbinding_power) {
                                     arr = vec<pdiff>{std::get<pdiff>(value)};
                                 else if (std::holds_alternative<string>(value))
                                     arr = vec<string>{std::get<string>(value)};
-                                else if (std::holds_alternative<sc::target>(value))
-                                    arr = vec<sc::target>{std::get<sc::target>(value)};
+                                else if (std::holds_alternative<bweas::sc::target>(value))
+                                    arr = vec<bweas::sc::target>{std::get<bweas::sc::target>(value)};
                                 else
                                     throw parser_utils::parser_error("Unexpected type expression.", peek());
                             },
@@ -275,11 +288,12 @@ std::unique_ptr<base> parser::parse_expression(pdiff lbinding_power) {
                                         "Expected \'" + parser_utils::get_type_name<string>() + "\' type.", peek());
                                 std::get<vec<string>>(arr).push_back(std::get<string>(value));
                             },
-                            [&](sc::target) {
-                                if (!std::holds_alternative<sc::target>(value))
+                            [&](bweas::sc::target) {
+                                if (!std::holds_alternative<bweas::sc::target>(value))
                                     throw parser_utils::parser_error(
-                                        "Expected \'" + parser_utils::get_type_name<sc::target>() + "\' type.", peek());
-                                std::get<vec<sc::target>>(arr).push_back(std::get<sc::target>(value));
+                                        "Expected \'" + parser_utils::get_type_name<bweas::sc::target>() + "\' type.",
+                                        peek());
+                                std::get<vec<bweas::sc::target>>(arr).push_back(std::get<bweas::sc::target>(value));
                             },
                             [&](auto &&) { throw parser_utils::parser_error("Unexpected type.", peek()); }},
                         type_value);
@@ -287,7 +301,7 @@ std::unique_ptr<base> parser::parse_expression(pdiff lbinding_power) {
                     current_token = expect_tokens<tokens::comma, tokens::close_square_bracket>();
                 }
 
-                return std::make_unique<constant>(g_ctx, arr);
+                return std::make_unique<constant>(*g_ctx, arr);
             },
             [&](auto &&tk) -> std::unique_ptr<base> { throw parser_utils::parser_error("Unexpected token.", tk); }},
         current_token);
@@ -296,19 +310,19 @@ std::unique_ptr<base> parser::parse_expression(pdiff lbinding_power) {
         if (convention::is_identifier(expr)) {
             string name_var = std::get<string>(expr->get_value());
             if (convention::is_variable(expr))
-                expr = std::move(std::unique_ptr<base>(new constant(g_ctx, g_ctx.sc->at(name_var))));
+                expr = std::move(std::unique_ptr<base>(new constant(*g_ctx, g_ctx->get_variable(name_var))));
             else
                 throw parser_utils::parser_error("A non-existent variable.", tokens::identifier(name_var));
         }
         else if (convention::is_accessing_variable(expr)) {
             auto access_info = std::get<parser_utils::access>(expr->get_value());
 
-            expr = std::move(std::unique_ptr<base>(new constant(g_ctx, std::visit(
-                                                                           [&](auto &&obj) -> parser_utils::value {
-                                                                               return parser_utils::get_field(
-                                                                                   obj, access_info.second);
-                                                                           },
-                                                                           g_ctx.sc->at(access_info.first)))));
+            expr = std::move(std::unique_ptr<base>(new constant(*g_ctx, std::visit(
+                                                                            [&](auto &&obj) -> parser_utils::value {
+                                                                                return parser_utils::get_field(
+                                                                                    obj, access_info.second);
+                                                                            },
+                                                                            g_ctx->get_variable(access_info.first)))));
         }
     };
     static auto check_sameless_expr = [&](auto &&type, const std::unique_ptr<base> &lhs,
@@ -360,12 +374,12 @@ std::unique_ptr<base> parser::parse_expression(pdiff lbinding_power) {
                         if (check_sameless_expr(pdiff{}, lhs, rhs)) {
                             return std::make_unique<
                                           binary_operation::basic<parser_utils::basic_operation::equals<pdiff>>>(
-                                g_ctx, std::move(lhs), std::move(rhs));
+                                *g_ctx, std::move(lhs), std::move(rhs));
                         }
                         else if (check_sameless_expr(string{}, lhs, rhs)) {
                             return std::make_unique<
                                           binary_operation::basic<parser_utils::basic_operation::equals<string>>>(
-                                g_ctx, std::move(lhs), std::move(rhs));
+                                *g_ctx, std::move(lhs), std::move(rhs));
                         }
                         else
                             throw parser_utils::parser_error(
@@ -373,12 +387,12 @@ std::unique_ptr<base> parser::parse_expression(pdiff lbinding_power) {
                                 tokens::token{tokens::keyword<>{tokens::string_matching::_is}});
                     },
                     [&](tokens::dot) -> std::unique_ptr<base> {
-                        return std::make_unique<binary_operation::access>(g_ctx, std::move(lhs), std::move(rhs));
+                        return std::make_unique<binary_operation::access>(*g_ctx, std::move(lhs), std::move(rhs));
                     },
                     [&](tokens::init_type) -> std::unique_ptr<base> {
                         lhs_id.clear();
                         std::unique_ptr<binary_operation::init> new_lhs =
-                            std::make_unique<binary_operation::init>(g_ctx, std::move(lhs), std::move(rhs));
+                            std::make_unique<binary_operation::init>(*g_ctx, std::move(lhs), std::move(rhs));
                         new_lhs->get_value();
                         lhs_id = std::get<string>(new_lhs->get_lhs()->get_value());
 
@@ -386,7 +400,7 @@ std::unique_ptr<base> parser::parse_expression(pdiff lbinding_power) {
                     },
                     [&](tokens::equal) -> std::unique_ptr<base> {
                         std::unique_ptr<binary_operation::assign> new_lhs =
-                            std::make_unique<binary_operation::assign>(g_ctx, std::move(lhs), std::move(rhs));
+                            std::make_unique<binary_operation::assign>(*g_ctx, std::move(lhs), std::move(rhs));
                         lhs_id.clear();
                         return std::move(new_lhs);
                     },
@@ -396,12 +410,12 @@ std::unique_ptr<base> parser::parse_expression(pdiff lbinding_power) {
                         if (check_sameless_expr(pdiff{}, lhs, rhs)) {
                             return std::make_unique<
                                           binary_operation::basic<parser_utils::basic_operation::plus<pdiff>>>(
-                                g_ctx, std::move(lhs), std::move(rhs));
+                                *g_ctx, std::move(lhs), std::move(rhs));
                         }
                         else if (check_sameless_expr(string{}, lhs, rhs)) {
                             return std::make_unique<
                                           binary_operation::basic<parser_utils::basic_operation::plus<string>>>(
-                                g_ctx, std::move(lhs), std::move(rhs));
+                                *g_ctx, std::move(lhs), std::move(rhs));
                         }
                         else
                             throw parser_utils::parser_error("Invalid type for the operation.", tokens::plus{});
@@ -411,7 +425,7 @@ std::unique_ptr<base> parser::parse_expression(pdiff lbinding_power) {
                         if (check_sameless_expr(pdiff{}, lhs, rhs))
                             return std::make_unique<
                                           binary_operation::basic<parser_utils::basic_operation::minus<pdiff>>>(
-                                g_ctx, std::move(lhs), std::move(rhs));
+                                *g_ctx, std::move(lhs), std::move(rhs));
                         else
                             throw parser_utils::parser_error("Invalid type for the operation", tokens::minus{});
                     },
@@ -420,7 +434,7 @@ std::unique_ptr<base> parser::parse_expression(pdiff lbinding_power) {
                         if (check_sameless_expr(pdiff{}, lhs, rhs))
                             return std::make_unique<
                                           binary_operation::basic<parser_utils::basic_operation::multiplies<pdiff>>>(
-                                g_ctx, std::move(lhs), std::move(rhs));
+                                *g_ctx, std::move(lhs), std::move(rhs));
                         else
                             throw parser_utils::parser_error("Invalid type for the operation", tokens::multiply{});
                     },
@@ -429,7 +443,7 @@ std::unique_ptr<base> parser::parse_expression(pdiff lbinding_power) {
                         if (check_sameless_expr(pdiff{}, lhs, rhs))
                             return std::make_unique<
                                           binary_operation::basic<parser_utils::basic_operation::divides<pdiff>>>(
-                                g_ctx, std::move(lhs), std::move(rhs));
+                                *g_ctx, std::move(lhs), std::move(rhs));
                         else
                             throw parser_utils::parser_error("Invalid type for the operation", tokens::devide{});
                     },

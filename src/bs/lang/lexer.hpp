@@ -15,6 +15,8 @@ class lexer {
 
     tokens::token consume_if();
 
+    const vec<tokens::token> &get_tokens() const;
+
   protected:
     vec<tokens::token> &get_tokens();
 

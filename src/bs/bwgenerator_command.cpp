@@ -271,9 +271,15 @@ commands generator_command::generate() {
     return cmd_s;
 }
 string generator_command::get_name_output_file(string_v pattern_file, string_v name_file, size_t index) {
-    if (pattern_file.find(".") == pattern_file.npos)
+    if (pattern_file.find(".") == pattern_file.npos) {
+        if (size_t it = name_file.find("."), it2 = name_file.find_last_of("/\\");
+            pattern_file.find("{}") != pattern_file.npos) {
+            return string(pattern_file.substr(0, pattern_file.size() - 2)) +
+                   string((it != name_file.npos ? name_file.substr(it2 + 1, name_file.size() - it + 1)
+                                                : name_file.substr(it2 + 1)));
+        }
         return pattern_file.data() + (index ? std::to_string(index) : "");
-
+    }
     string name_output_file_curr = pattern_file.data(), extension_output_file_curr = pattern_file.data();
 
     name_output_file_curr.erase(name_output_file_curr.find("."), name_output_file_curr.size());

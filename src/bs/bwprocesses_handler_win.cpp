@@ -13,6 +13,8 @@ using namespace bweas;
 
 static logger _log{"BWPROCESS[WIN]"};
 
+static vec<PROCESS_INFORMATION> pids_win;
+
 size_t processes_handler::wait_process(size_t pid) {
     if (!pids_win.size() ||
         (pid && std::find_if(pids_win.begin(), pids_win.end(),

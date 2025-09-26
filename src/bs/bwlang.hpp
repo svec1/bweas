@@ -39,8 +39,8 @@ class bweas::lang {
     inline void import_modules(vec<module_manager::_module> modules);
 
     template <typename T> inline T get_variable(string name_var) {
-        if (std::holds_alternative<T>((*p.get_context().sc)[name_var]))
-            return std::get<T>(p.get_context().sc->at(name_var));
+        if (std::holds_alternative<T>(p.get_context().get_variable(name_var)))
+            return std::get<T>(p.get_context().get_variable(name_var));
         return T{};
     }
 
@@ -48,7 +48,7 @@ class bweas::lang {
 
   private:
     template <typename t> inline void create_variable(string name_var, t val = {}) {
-        (*p.get_context().sc)[name_var] = val;
+        p.get_context().sc[name_var] = val;
     }
     void create_function(string name_func, bwlang::parser_utils::func::func_t func_ref) {
         p.get_context().funcs[name_func] = bwlang::parser_utils::func{func_ref, {}, false};
@@ -76,12 +76,17 @@ void bweas::lang::init_scope() {
     create_variable<pdiff>("true", 1);
     create_variable<pdiff>("executable", 0);
     create_variable<pdiff>("library", 1);
+    create_variable<pdiff>("message", 0);
+    create_variable<pdiff>("warning", 1);
+    create_variable<pdiff>("error", 2);
     create_variable<pdiff>("get_files", 0);
     create_variable<string>("config_path", fs::current_path().string());
 
     auto expected_argument = [](auto &&type, bwlang::parser_utils::scope &sc,
-                                string name_arg) -> std::decay_t<decltype(type)> {
+                                pdiff number_arg) -> std::decay_t<decltype(type)> {
         using T = std::decay_t<decltype(type)>;
+
+        string name_arg = std::to_string(number_arg);
 
         if (!sc.contains(name_arg) || !std::holds_alternative<T>(sc.at(name_arg)))
             throw std::runtime_error("Expected " + name_arg + " args as " + bwlang::parser_utils::get_type_name<T>());
@@ -91,8 +96,43 @@ void bweas::lang::init_scope() {
         return val;
     };
 
-    create_function("build", [&](string, bwlang::parser_utils::scope &sc) -> bwlang::parser_utils::value {
-        for (const auto &[key, value] : sc) {
+    create_function("status", [&](string, bwlang::parser_utils::context &c_ctx) -> bwlang::parser_utils::value {
+        static constexpr pdiff MESSAGE = 0;
+        static constexpr pdiff WARNING = 1;
+        static constexpr pdiff ERROR   = 2;
+
+        pdiff number_type_output = expected_argument(pdiff{}, c_ctx.sc, 0);
+
+        string output;
+
+        for (const auto &[key, value] : c_ctx.sc) {
+            if (std::holds_alternative<string>(value))
+                output += std::get<string>(value) + " ";
+            else if (std::holds_alternative<vec<string>>(value)) {
+                for (const auto &str : std::get<vec<string>>(value)) {
+                    output += str + " ";
+                }
+            }
+            else
+                std::runtime_error("Expected string type.");
+        }
+
+        switch (number_type_output) {
+        case MESSAGE:
+        default:
+            bweas::logger{""} << (log_message(log_type::msg) << output);
+            break;
+        case WARNING:
+            bweas::logger{""} << (log_message(log_type::warning) << output);
+            break;
+        case ERROR:
+            bweas::logger{""} << (log_message(log_type::error) << output);
+            break;
+        }
+        return {};
+    });
+    create_function("build", [&](string, bwlang::parser_utils::context &c_ctx) -> bwlang::parser_utils::value {
+        for (const auto &[key, value] : c_ctx.sc) {
             if (std::holds_alternative<sc::target>(value))
                 _context->targets.emplace_back(std::move(std::get<sc::target>(value)));
             else if (std::holds_alternative<vec<sc::target>>(value)) {
@@ -105,7 +145,7 @@ void bweas::lang::init_scope() {
         }
         return {};
     });
-    create_function("file", [&](string, bwlang::parser_utils::scope &sc) -> bwlang::parser_utils::value {
+    create_function("file", [&](string, bwlang::parser_utils::context &c_ctx) -> bwlang::parser_utils::value {
         static constexpr pdiff GET_FILES = 0;
         static auto get_files            = [](string file) -> vec<string> {
             if (fs::exists(file))
@@ -134,14 +174,14 @@ void bweas::lang::init_scope() {
             }
         };
 
-        if (sc.size() < 2)
+        if (c_ctx.sc.size() < 2)
             std::runtime_error("Expected a more args.");
 
         vec<string> return_value;
-        pdiff number_function = expected_argument(pdiff{}, sc, "0");
+        pdiff number_function = expected_argument(pdiff{}, c_ctx.sc, 0);
 
         if (number_function == GET_FILES) {
-            for (const auto &[key, value] : sc) {
+            for (const auto &[key, value] : c_ctx.sc) {
                 if (std::holds_alternative<string>(value)) {
                     vec<string> vec_tmp = get_files(std::get<string>(value));
                     return_value.insert(return_value.end(), vec_tmp.begin(), vec_tmp.end());
@@ -168,7 +208,7 @@ void bweas::lang::import_modules(vec<module_manager::_module> modules) {
 }
 
 void bweas::lang::init_context() {
-    for (auto &[key, value] : *p.get_context().sc)
+    for (auto &[key, value] : p.get_context().sc)
         if (std::holds_alternative<sc::template_command>(value)) {
             auto &tcmd = std::get<sc::template_command>(value);
             if (size_t it = tcmd.name_call_component.find(":"); it != tcmd.name_call_component.npos) {

@@ -80,13 +80,10 @@ class bweas::logger {
 
   public:
     void set_global_log(bool _log);
-    void set_global_status();
     void set_debug();
 
-    bweas::log_type get_status();
-    void dump_status();
-
-    bool error_status();
+    bool request_yes_no(bool condition, string_v out);
+    void set_next_yes();
 
   public:
     void operator<<(const bweas::log_message &obj);
@@ -98,14 +95,15 @@ class bweas::logger {
 
   public:
     static bweas::log_type global_status;
+    static bool error_status();
 
   private:
     static bool log, debug, output_to_console;
     static bweas::utils::file_utils::file file_log;
 
     string_v owner;
-    bweas::log_type status;
     bool is_main;
+    bool next_yes = false;
 
   private:
     static constexpr auto NAME_FILE_LOG = "bweas-last.log";

@@ -166,37 +166,37 @@ class pack : public base<T> {
 
 template <typename T> class call : public base<T> {
   public:
-    call(parser_utils::context &_ctx, string _name, vec<parser_utils::value> &&_args)
-        : base<T>(_ctx), name(_name), args(_args) {
-    }
-    ~call() override = default;
-
-  public:
-    base<T>::value_type get_value() override {
-        parser_utils::scope sc;
-        const auto &func = this->ctx.funcs.at(name);
+    call(parser_utils::context &_ctx, string name, vec<parser_utils::value> &&args) : base<T>(_ctx) {
+        parser_utils::context c_ctx;
+        c_ctx.g_ctx      = &this->ctx;
+        const auto &func = c_ctx.get_function(name);
         if (func.declared) {
             if (func.name_args.size() != args.size())
                 throw parser_utils::parser_error("The number of values passed does not match the number "
                                                  "accepted by the function.");
 
             for (pdiff i = 0; i < func.name_args.size(); ++i)
-                sc[func.name_args[i]] = args[i];
+                c_ctx.sc[func.name_args[i]] = args[i];
         }
         else
             for (pdiff i = 0; i < args.size(); ++i)
-                sc[std::to_string(i)] = args[i];
+                c_ctx.sc[std::to_string(i)] = args[i];
         try {
-            return func.ref(name, sc);
+            return_value = func.ref(name, c_ctx);
         }
         catch (std::exception &excp) {
             throw parser_utils::parser_error(excp.what());
         }
     }
+    ~call() override = default;
+
+  public:
+    base<T>::value_type get_value() override {
+        return return_value;
+    }
 
   private:
-    string name;
-    vec<parser_utils::value> args;
+    T return_value;
 };
 
 namespace ext {
@@ -220,13 +220,13 @@ static bool is_keyword(const std::unique_ptr<base> &expr) {
     return expr->is_keyword() && std::holds_alternative<string>(expr->get_value());
 }
 static bool is_variable(const std::unique_ptr<base> &expr) {
-    return is_identifier(expr) && expr->ctx.sc->contains(std::get<string>(expr->get_value()));
+    return is_identifier(expr) && expr->ctx.is_variable(std::get<string>(expr->get_value()));
 }
 static bool is_accessing_variable(const std::unique_ptr<base> &expr) {
-    return expr->is_access() && expr->ctx.sc->contains(std::get<parser_utils::access>(expr->get_value()).first);
+    return expr->is_access() && expr->ctx.is_variable(std::get<parser_utils::access>(expr->get_value()).first);
 }
 static bool is_value(const std::unique_ptr<base> &expr) {
-    return !expr->is_identifier() && !expr->is_keyword();
+    return !expr->is_identifier() && !expr->is_keyword() && !std::holds_alternative<std::monostate>(expr->get_value());
 }
 } // namespace convention
 
@@ -237,7 +237,7 @@ struct init_binary_operation {
                                           const parser_utils::value &rhs) {
         using namespace bweas;
 
-        decltype(auto) sc = *ctx.sc;
+        parser_utils::scope &sc = ctx.sc;
 
         string name_var    = std::get<string>(lhs);
         string kw_var_type = std::get<string>(rhs);
@@ -250,6 +250,8 @@ struct init_binary_operation {
             sc[name_var] = sc::call_component{};
         else if (kw_var_type == tokens::ctemplate_t::s_value)
             sc[name_var] = sc::template_command{};
+        else if (kw_var_type == tokens::profile_t::s_value)
+            sc[name_var] = sc::profile{};
         else if (kw_var_type == tokens::target_t::s_value)
             sc[name_var] = sc::target{};
         else if (kw_var_type == tokens::string_matching::anumber_t)
@@ -276,7 +278,7 @@ struct assign_binary_operation {
 
         if (std::holds_alternative<parser_utils::access>(lhs)) {
             const auto &acc = std::get<parser_utils::access>(lhs);
-            std::visit([&](auto &&val) { parser_utils::set_field(val, acc.second, rhs); }, ctx.sc->at(acc.first));
+            std::visit([&](auto &&val) { parser_utils::set_field(val, acc.second, rhs); }, ctx.get_variable(acc.first));
             return rhs;
         }
 
@@ -289,7 +291,7 @@ struct assign_binary_operation {
                     throw parser_utils::parser_error("Expected \'" + parser_utils::get_type_name<T>() + "\' type.");
                 val = std::get<T>(rhs);
             },
-            ctx.sc->at(name));
+            ctx.get_variable(name));
 
         return rhs;
     }

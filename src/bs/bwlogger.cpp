@@ -19,7 +19,7 @@ file_utils::file logger::file_log;
 log_type logger::global_status;
 bool logger::output_to_console = true;
 
-logger::logger(string_v _owner, bool _is_main) : owner(_owner), status(log_type::msg), is_main(_is_main) {
+logger::logger(string_v _owner, bool _is_main) : owner(_owner), is_main(_is_main) {
 }
 logger::~logger() {
     if (file_log.is_open)
@@ -39,8 +39,7 @@ log_message::log_message(log_type _log_t) : log_t(_log_t) {
         break;
     case log_type::fatal:
         ss << "FATAL ";
-
-    case log_type::msg:
+        break;
     default:
         break;
     }
@@ -48,30 +47,41 @@ log_message::log_message(log_type _log_t) : log_t(_log_t) {
 void logger::set_global_log(bool _log) {
     log = _log;
 }
-void logger::set_global_status() {
-    global_status = status;
-}
 void logger::set_debug() {
     debug = true;
 }
-log_type logger::get_status() {
-    return status;
-}
-void logger::dump_status() {
-    status = bweas::log_type::msg;
-}
 bool logger::error_status() {
-    return status == log_type::error || status == log_type::fatal;
+    return global_status == log_type::error || global_status == log_type::fatal;
 }
 
+bool logger::request_yes_no(bool condition, string_v out) {
+    if (!condition)
+        return false;
+    else if (next_yes) {
+        next_yes = false;
+        return true;
+    }
+    (*this) << (log_message(log_type::warning) << out);
+
+    std::fprintf(stdout, "(y/n): ");
+    char ch = std::getchar();
+
+    if (ch == 'y')
+        return true;
+    else
+        return false;
+}
+void logger::set_next_yes() {
+    next_yes = true;
+}
 void logger::operator<<(const log_message &obj) {
     if (!log)
         return;
 
-    status = obj.log_t;
+    global_status = obj.log_t;
 
     size_t text_color;
-    switch (status) {
+    switch (global_status) {
     case log_type::error:
     case log_type::fatal:
         text_color = 1;
@@ -92,7 +102,7 @@ void logger::operator<<(const log_message &obj) {
     handle(std::move(out_str));
 }
 void logger::handle_exception(const bweas::exception &excp) {
-    status = log_type::fatal;
+    global_status = log_type::fatal;
     handle(excp.what());
 }
 void logger::handle(string &&str) {
@@ -107,7 +117,7 @@ void logger::handle(string &&str) {
     if (output_to_console || debug)
         std::fprintf(stdout, "%s\n", str.data());
 
-    if (status == log_type::fatal) {
+    if (global_status == log_type::fatal) {
         if (!is_main)
             throw bweas::exception(str);
         exit(1);

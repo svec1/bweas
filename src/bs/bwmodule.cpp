@@ -23,15 +23,13 @@ vec<module_manager::_module> module_manager::init_modules(vec<module_cfg> &modul
             auto src_file = file_utils::open_file(module_cfg.name_src_file);
             bwlang::parser p(file_utils::read_file(src_file));
             p.parse();
-            md_s.emplace_back(module_cfg.name, p.get_context());
+            md_s.emplace_back(module_cfg.name, std::move(p.get_context()));
         }
-        else {
-            static bwlang::parser_utils::scope sc;
-            static bwlang::parser_utils::context t_ctx{sc};
-            md_s.emplace_back(module_cfg.name, t_ctx);
-        }
+        else
+            md_s.emplace_back(module_cfg.name);
+
         for (const auto &[name, profile] : module_cfg.profiles)
-            md_s[md_s.size() - 1].sc[name] = profile;
+            md_s[md_s.size() - 1].ctx.sc[name] = profile;
     }
 
     return md_s;

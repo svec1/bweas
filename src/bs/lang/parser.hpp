@@ -9,31 +9,32 @@ namespace bwlang {
 
 class parser : private lexer {
   public:
-    parser(string_v src) : lexer(src) {
-    }
+    parser(string_v src);
 
   public:
     void parse();
 
     parser_utils::context &get_context() & {
-        return g_ctx;
+        return *g_ctx;
     }
     void import_modules(vec<bweas::module_manager::_module> &&_modules) {
         modules = _modules;
     }
 
-  private:
+  protected:
     parser_utils::value parse_statements(bool skip = 0, bool is_branche = 0, bool is_func = 0);
+    std::unique_ptr<expression::ext::base> parse_expression(pdiff lbinding_power = 0);
     parser_utils::value parse_if_else_branche(bool in_skip_branche = 0, bool is_func = 0);
     void parse_import();
     void parse_function();
-    std::unique_ptr<expression::ext::base> parse_expression(pdiff lbinding_power = 0);
 
+  private:
     template <typename... Tokens> tokens::token expect_tokens() {
         tokens::token tk;
-        string expected   = "Expected token ";
+        string expected;
         bool is_not_token = true;
-        auto _            = [&](auto &&type) -> std::void_t<decltype(tokens::token{std::decay_t<decltype(type)>{}})> {
+
+        auto _ = [&](auto &&type) -> std::void_t<decltype(tokens::token{std::decay_t<decltype(type)>{}})> {
             using Token = std::decay_t<decltype(type)>;
             try {
                 if (is_not_token) {
@@ -51,11 +52,12 @@ class parser : private lexer {
                 return;
             }
         };
+
         skip_token_end_line();
         (_(Tokens{}), ...);
 
         if (is_not_token)
-            throw parser_utils::parser_error(expected + ".", consume_if());
+            throw parser_utils::parser_error("Expected token " + expected + ".", consume_if());
         return tk;
     }
     template <typename Token> tokens::token expect_token() {
@@ -82,8 +84,7 @@ class parser : private lexer {
 
   private:
     vec<bweas::module_manager::_module> modules;
-    parser_utils::scope g_sc;
-    parser_utils::context g_ctx{g_sc};
+    parser_utils::context *g_ctx;
 };
 
 } // namespace bwlang

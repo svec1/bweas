@@ -37,10 +37,6 @@ class bweas::processes_handler {
 
     // Platform-independent running process counter
     size_t count_runable_processes = 0;
-
-#if defined(WIN)
-    vec<PROCESS_INFORMATION> pids_win;
-#endif
 };
 
 #endif

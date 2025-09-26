@@ -89,15 +89,20 @@ tokens::token lexer::consume() {
         previous_line = string_last_line;
         string_last_line.clear();
     }
-    else
+    else {
         string_last_line += get_string(tmp);
+        if (std::holds_alternative<tokens::keyword<>>(tmp))
+            string_last_line += " ";
+    }
 
     return tmp;
 }
 tokens::token lexer::consume_if() {
     return tokens.size() ? consume() : tokens::token{};
 }
-
+const vec<tokens::token> &lexer::get_tokens() const {
+    return tokens;
+}
 vec<tokens::token> &lexer::get_tokens() {
     return tokens;
 }

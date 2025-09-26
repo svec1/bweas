@@ -74,12 +74,13 @@ template <typename T> struct divides : binary_operation_one_type<T> {
 using access = std::pair<string, string>;
 using match_pack =
     umap<string, std::variant<std::monostate, pdiff, string, vec<pdiff>, vec<string>, bweas::sc::profile>>;
-using value = std::variant<std::monostate, pdiff, string, bweas::sc::call_component, bweas::sc::template_command,
-                           bweas::sc::profile, bweas::sc::target, vec<pdiff>, vec<string>, vec<bweas::sc::profile>,
-                           vec<bweas::sc::target>, access>;
+using value =
+    std::variant<std::monostate, pdiff, string, bweas::sc::call_component, bweas::sc::template_command,
+                 bweas::sc::profile, bweas::sc::target, vec<pdiff>, vec<string>, vec<bweas::sc::target>, access>;
 using scope = umap<string, value>;
+struct context;
 struct func {
-    using func_t = std::function<value(string, scope &)>;
+    using func_t = std::function<value(string, context &)>;
 
     func() = default;
     func(func_t _ref, vec<string> _name_args, bool _declared) : ref(_ref), name_args(_name_args), declared(_declared) {
@@ -91,11 +92,61 @@ struct func {
     bool declared = false;
 };
 struct context {
-    context(scope &_sc) : sc(&_sc) {
+    value &get_variable(string_v name) {
+        if (sc.contains(name.data()))
+            return sc.at(name.data());
+        else if (g_ctx) {
+            context *t_ctx = g_ctx;
+            while (t_ctx && !t_ctx->sc.contains(name.data()))
+                t_ctx = t_ctx->g_ctx;
+
+            if (t_ctx)
+                return t_ctx->sc.at(name.data());
+        }
+        throw std::runtime_error("Unknown variable \'" + string(name) + "\'.");
+    }
+    func &get_function(string_v name) {
+        if (funcs.contains(name.data()))
+            return funcs.at(name.data());
+        else if (g_ctx) {
+            context *t_ctx = g_ctx;
+            while (t_ctx && !t_ctx->funcs.contains(name.data()))
+                t_ctx = t_ctx->g_ctx;
+
+            if (t_ctx)
+                return t_ctx->funcs.at(name.data());
+        }
+        throw std::runtime_error("Unknown function \'" + string(name) + "\'.");
     }
 
   public:
-    scope *sc;
+    bool is_variable(string_v name) {
+        if (g_ctx) {
+            context *t_ctx = g_ctx;
+            while (t_ctx && !t_ctx->sc.contains(name.data()))
+                t_ctx = t_ctx->g_ctx;
+
+            if (t_ctx)
+                return t_ctx->sc.contains(name.data());
+        }
+        return sc.contains(name.data());
+    }
+    bool is_function(string_v name) {
+        if (g_ctx) {
+            context *t_ctx = g_ctx;
+            while (t_ctx && !t_ctx->funcs.contains(name.data()))
+                t_ctx = t_ctx->g_ctx;
+
+            if (t_ctx)
+                return t_ctx->funcs.contains(name.data());
+        }
+        return funcs.contains(name.data());
+    }
+
+  public:
+    context *g_ctx = nullptr;
+
+    scope sc;
     umap<string, func> funcs;
 };
 
@@ -139,6 +190,9 @@ template <typename T> value get_field(T &obj, string name) {
         else
             throw std::runtime_error("A non-existent field.");
     }
+    else if constexpr (std::is_same_v<T, sc::profile>) {
+        return std::visit([](auto &&val) -> value { return val; }, obj.get_fields()[name]);
+    }
     else if constexpr (std::is_same_v<T, sc::target>) {
         if (name == "name")
             return obj.name;
@@ -180,13 +234,28 @@ template <typename T> void set_field(T &obj, string name, value val) {
         else
             throw std::runtime_error("A non-existent field.");
     }
+    else if constexpr (std::is_same_v<T, sc::profile>) {
+        if (name == "derive") {
+            if (!std::holds_alternative<sc::profile>(val))
+                throw std::runtime_error("Undefined type for match.");
+            obj.merge(std::get<sc::profile>(val));
+        }
+        else {
+            if (std::holds_alternative<string>(val))
+                obj.get_fields()[name] = std::get<string>(val);
+            else if (std::holds_alternative<vec<string>>(val))
+                obj.get_fields()[name] = std::get<vec<string>>(val);
+            else
+                throw std::runtime_error("A non-existent field \'" + name + "\'.");
+        }
+    }
     else if constexpr (std::is_same_v<T, sc::target>) {
         if (name == "name") {
             if (!std::holds_alternative<string>(val))
                 throw std::runtime_error("Undefined type for match.");
             obj.name = std::get<string>(val);
         }
-        else if (name == "profile") {
+        else if (name == "extenstion") {
             if (!std::holds_alternative<sc::profile>(val))
                 throw std::runtime_error("Undefined type for match.");
             obj.ext.merge(std::get<sc::profile>(val));

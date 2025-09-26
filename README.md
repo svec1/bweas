@@ -88,7 +88,7 @@ t_exe: ctemplate = {str =' clang++:my_program(OBJECTS) -> EXECUTABLE: {OBJECT} -
 # Creating a target object that will continue to be built
 my_target: target = {
                     type = executable,
-                    profile = cpp,
+                    extenstion = cpp,
                     templates = ['t_exe', 't_obj'],
                     compile_flags = ['-std=gnu++23', '-Wall'],
                     source_files = file(get_files, 'main.cpp')

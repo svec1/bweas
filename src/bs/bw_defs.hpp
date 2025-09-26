@@ -26,7 +26,7 @@ namespace bweas {
 using mf = utils::file_utils::file::mode_file;
 
 inline constexpr char VERSION_MAJOR_C = '0';
-inline constexpr char VERSION_MINOR_C = '1';
+inline constexpr char VERSION_MINOR_C = '2';
 inline constexpr char VERSION_PATCH_C = '1';
 
 inline const string VERSION_FULL_STR = {VERSION_MAJOR_C, '.', VERSION_MINOR_C, '.', VERSION_PATCH_C};
@@ -35,6 +35,8 @@ inline constexpr auto CONFIG_FILE    = "bweasconf.txt";
 inline constexpr auto CACHE_FILE     = "bwcache";
 inline constexpr auto DEPENDS_FILE   = "bwdependencies";
 inline constexpr auto FORMAT_PACKAGE = ".bweas-package";
+
+inline constexpr auto THREADS_COUNT_DEFAULT = 4;
 
 // The structure defining the main data for the build
 struct context {

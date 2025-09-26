@@ -26,7 +26,7 @@ using namespace bweas::utils;
 static logger _log{"", 1};
 
 static constexpr auto JSON_CONFIG_FILE          = "bweas-config.json";
-static constexpr auto DEFAULT_BWEAS_JSON_CONFIG = "{\n\t\"cache-gn\": \"fast_bwcache\",\n\t\"packages\": []\n}";
+static constexpr auto DEFAULT_BWEAS_JSON_CONFIG = "{\n\t\"cache-gn\": \"fast_bwcache\",\n}";
 
 static const string INFO_STR =
     "bweas version " + std::string(VERSION_FULL_STR) + "\nrep on github - https://github.com/svec1/bweas";
@@ -98,6 +98,8 @@ void builder::handle_args(vec<string> &args) {
                 _log << (log_message(log_type::msg) << HELP_STR);
             else if (args[i] == "version")
                 _log << (log_message(log_type::msg) << INFO_STR);
+            else if (args[i] == "ry")
+                _log.set_next_yes();
             else if (size_t it = args[i].find("="); it != args[i].npos) {
                 if (args[i].find("threads") == 0 && it == 7) {
                     string value = args[i].substr(8);
@@ -105,9 +107,15 @@ void builder::handle_args(vec<string> &args) {
                         count_threads = -1;
                     else
                         count_threads = std::atoll(value.c_str());
-                    continue;
+
+                    if (!_log.request_yes_no(count_threads > 10, "A large number of threads may cause the system to "
+                                                                 "malfunction or crash, do you really need this?")) {
+
+                        count_threads = THREADS_COUNT_DEFAULT;
+                    }
                 }
-                goto unknown_arg;
+                else
+                    goto unknown_arg;
             }
             else {
             unknown_arg:
@@ -158,7 +166,7 @@ void builder::create_package(string path_json_config_package) {
 
     package loaded_package;
     string pckg = loaded_package.init(data_package, 1);
-    if (_log.error_status()) {
+    if (logger::error_status()) {
         _log << (log_message(log_type::error) << "Failed to create a bweas package");
         return;
     }
@@ -285,6 +293,9 @@ void builder::start() {
             fs::current_path(fs::path(_context.path_bweas_config).parent_path());
             run_interpreter();
 
+            if (logger::global_status == log_type::error)
+                return;
+
             fs::current_path(_context.path_bweas_to_build);
             if (gen_cache_target())
                 return;
@@ -301,8 +312,6 @@ void builder::start() {
 }
 
 void builder::run_interpreter() {
-    _log << (log_message(log_type::msg) << "Interpreting the configuration file...");
-
     try {
         lang bwlang{&_context};
 

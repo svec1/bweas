@@ -133,7 +133,7 @@ class bweas::builder final {
   private:
     sc::version version{VERSION_FULL_STR};
     mode_working mode_bweas{mode_working::undef};
-    size_t count_threads = 4;
+    size_t count_threads = THREADS_COUNT_DEFAULT;
 };
 
 #endif
