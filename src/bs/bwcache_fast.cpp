@@ -16,13 +16,11 @@ string fast_cache::create_cache() {
     string serel_target_tmp;
 
     uset<string> used_templates;
-    uset<string> all_used_globally_args;
     uset<string> all_used_call_component;
 
-    auto &targets                    = _context->targets;
-    const auto &templates            = _context->templates;
-    const auto &call_components      = _context->call_components;
-    const auto &global_external_args = _context->global_external_args;
+    auto &targets               = _context->targets;
+    const auto &templates       = _context->templates;
+    const auto &call_components = _context->call_components;
 
     serel_target_tmp += "\"" + _context->path_bweas_config + "\" ";
 
@@ -32,10 +30,14 @@ string fast_cache::create_cache() {
 
         serel_target_tmp += std::to_string(ext_fields.size()) + " " + std::to_string(targets[i].templates.size()) +
                             " " + std::to_string(targets[i].dependencies.size()) + " ";
+        serel_target_tmp += targets[i].ext.lang.name + " " + targets[i].ext.lang.dfinder_data.search_regex + " " +
+                            string(1, targets[i].ext.lang.dfinder_data.char_global_search) + " ";
 
         for (const auto &[key, value] : ext_fields) {
             serel_target_tmp += key + " ";
-            if (std::holds_alternative<string>(value))
+            if (std::holds_alternative<pdiff>(value))
+                serel_target_tmp += "1" + string(" ") + std::to_string(std::get<pdiff>(value)) + " ";
+            else if (std::holds_alternative<string>(value))
                 serel_target_tmp += "\"" + std::get<string>(value) + "\" ";
             else {
                 const auto &str_s = std::get<vec<string>>(value);
@@ -45,8 +47,7 @@ string fast_cache::create_cache() {
             }
         }
 
-        serel_target_tmp += sc::target_type_str(targets[i].type) + " " + sc::target_cfg_str(targets[i].cfg) + " " +
-                            targets[i].name + " " + targets[i].ver.get_str_version() + " ";
+        serel_target_tmp += targets[i].name + " " + targets[i].ver.get_str_version() + " ";
         for (size_t j = 0; j < targets[i].templates.size(); ++j) {
             used_templates.emplace(targets[i].templates[j]);
             serel_target_tmp += targets[i].templates[j] + " ";
@@ -68,9 +69,6 @@ string fast_cache::create_cache() {
         for (size_t j = 0; j < templates[i].name_accept_params.size(); ++j)
             serel_target_tmp += templates[i].name_accept_params[j] + " ";
         for (size_t j = 0; j < templates[i].args.size(); ++j) {
-            if (templates[i].args[j].type == sc::template_command::arg::e_type::extglobal)
-                all_used_globally_args.emplace(templates[i].args[j].value);
-
             serel_target_tmp +=
                 "\"" + (templates[i].args[j].prefix.empty() ? string("null") : templates[i].args[j].prefix) + "\" " +
                 "\"" + templates[i].args[j].value + "\" " + std::to_string((pdiff)templates[i].args[j].type) + " ";
@@ -89,20 +87,7 @@ string fast_cache::create_cache() {
             _log << (log_message(log_type::fatal)
                      << "It is impossible to get a used call_component \'" + call_component + "\'.");
     }
-
-    serel_target_tmp += std::to_string(all_used_globally_args.size()) + " ";
-
-    for (const auto &g_arg : all_used_globally_args) {
-        if (const auto &it = std::find_if(global_external_args.begin(), global_external_args.end(),
-                                          [g_arg](const pair<string, string> &global_external_arg) {
-                                              return global_external_arg.first == g_arg;
-                                          });
-            it != global_external_args.end())
-            serel_target_tmp += it->first + "-\"" + it->second + "\" ";
-        else
-            _log << (log_message(log_type::fatal)
-                     << "It is impossible to get a used global external arg \'" + g_arg + "\'.");
-    }
+    serel_target_tmp += "EOECC "; // end of enum targets
 
     return serel_target_tmp;
 }
@@ -132,9 +117,10 @@ void fast_cache::extract_cache_data(const string &cache_str) {
     pdiff count_word = 0, offset_byte_ccmp = 0;
     pdiff size_ext_fields = 0, size_use_templates = 0, size_dependencies = 0;
     pdiff size_templates     = 0;
-    pdiff size_internal_args = 0, size_external_args = 0, size_call_components = 0, size_global_extern_args = 0;
+    pdiff size_internal_args = 0, size_external_args = 0, size_call_components = 0;
 
     pdiff end_extension = 0, end_templates = 0, end_dependencies = 0;
+    pdiff lang_fields = 0;
 
     size_t count_el_field = 0;
 
@@ -143,11 +129,10 @@ void fast_cache::extract_cache_data(const string &cache_str) {
     bool is_beg_file  = 1;
     bool is_key_field = 0;
 
-    bool open_sk                 = 0;
-    bool was_sk                  = 0;
-    bool enum_templates          = 0;
-    bool enum_call_component     = 0;
-    bool enum_global_extern_args = 0;
+    bool open_sk             = 0;
+    bool was_sk              = 0;
+    bool enum_templates      = 0;
+    bool enum_call_component = 0;
 
     bool expected_arg_prefix_str = 1;
     bool expected_arg_param_str  = 0;
@@ -155,7 +140,7 @@ void fast_cache::extract_cache_data(const string &cache_str) {
     try {
         for (pdiff i = 0; i < cache_str.size(); ++i) {
             try {
-                if (cache_str[i] == '\"') {
+                if (cache_str[i] == '\"' && ((!open_sk && str_tmp.empty()) || open_sk)) {
                     open_sk = !open_sk;
                     was_sk  = 1;
                     continue;
@@ -169,16 +154,9 @@ void fast_cache::extract_cache_data(const string &cache_str) {
                         is_beg_file = 0;
                         goto next;
                     }
+
                     ++count_word;
-                    if (enum_global_extern_args) {
-                        if (!size_global_extern_args)
-                            break;
-                        string name_arg = str_tmp;
-                        name_arg.erase(name_arg.find("-"));
-                        str_tmp.erase(0, str_tmp.find("-") + 1);
-                        _context->global_external_args.push_back(pair<string, string>(name_arg, str_tmp));
-                    }
-                    else if (enum_call_component) {
+                    if (enum_call_component) {
                         if (offset_byte_ccmp / sizeof(string) == 3) {
                             _context->call_components.push_back(ccmp_tmp);
                             offset_byte_ccmp = 0;
@@ -186,11 +164,9 @@ void fast_cache::extract_cache_data(const string &cache_str) {
                             --size_call_components;
 
                             if (!size_call_components) {
-                                enum_global_extern_args = 1;
-                                enum_call_component     = 0;
-
-                                size_global_extern_args = std::stoi(str_tmp);
-                                goto next;
+                                if (str_tmp != "EOECC" || i != cache_str.size() - 2)
+                                    throw std::runtime_error("The end of the cache was expected.");
+                                break;
                             }
                         }
                         *(string *)(ccmp_p + offset_byte_ccmp) = str_tmp;
@@ -273,12 +249,26 @@ void fast_cache::extract_cache_data(const string &cache_str) {
                             end_dependencies  = size_dependencies;
 
                             end_extension = count_words_before_first_list;
-
-                            is_key_field = 1;
+                            lang_fields   = 3;
                         }
                         else if (count_word >= count_words_before_first_list) {
                             if (size_ext_fields) {
                                 ++end_extension;
+
+                                if (lang_fields) {
+                                    if (lang_fields == 3)
+                                        trg_tmp.ext.lang.name = str_tmp;
+                                    else if (lang_fields == 2)
+                                        trg_tmp.ext.lang.dfinder_data.search_regex = str_tmp;
+                                    else if (lang_fields == 1) {
+                                        trg_tmp.ext.lang.dfinder_data.char_global_search = str_tmp[0];
+
+                                        is_key_field = 1;
+                                    }
+
+                                    --lang_fields;
+                                    goto next;
+                                }
 
                                 if (is_key_field) {
                                     str_tmp_key  = str_tmp;
@@ -286,10 +276,15 @@ void fast_cache::extract_cache_data(const string &cache_str) {
                                 }
                                 else {
                                     if (count_el_field) {
-
                                         static vec<string> tmp_vec_values;
+                                        if (count_el_field == 1 && std::isdigit(str_tmp[0])) {
+                                            trg_tmp.ext.get_fields()[str_tmp_key] = std::atoll(str_tmp.c_str());
+                                            --count_el_field;
+                                            goto new_field;
+                                        }
+                                        else
+                                            tmp_vec_values.push_back(str_tmp);
 
-                                        tmp_vec_values.push_back(str_tmp);
                                         --count_el_field;
                                         if (!count_el_field) {
                                             trg_tmp.ext.get_fields()[str_tmp_key] = tmp_vec_values;
@@ -315,17 +310,12 @@ void fast_cache::extract_cache_data(const string &cache_str) {
                                 }
                             }
                             else if (count_word == end_extension) {
-                                end_templates += end_extension + 4;
+                                end_templates += end_extension + 2;
                                 end_dependencies += end_templates;
 
-                                trg_tmp.type = sc::to_target_type(str_tmp);
-                            }
-                            else if (count_word == end_extension + 1)
-                                trg_tmp.cfg = sc::to_target_cfg(str_tmp);
-                            else if (count_word == end_extension + 2) {
                                 trg_tmp.name = str_tmp;
                             }
-                            else if (count_word == end_extension + 3)
+                            else if (count_word == end_extension + 1)
                                 trg_tmp.ver = str_tmp;
                             else if (count_word < end_templates)
                                 trg_tmp.templates.push_back(str_tmp);
@@ -357,14 +347,16 @@ void fast_cache::extract_cache_data(const string &cache_str) {
                     was_sk = 0;
                     continue;
                 }
+                else if (cache_str[i] == ' ' && !open_sk)
+                    continue;
                 str_tmp += cache_str[i];
             }
-            catch (const std::logic_error &) {
+            catch (std::logic_error &) {
                 throw std::runtime_error(str_tmp);
             }
         }
     }
-    catch (const std::exception &_excp) {
+    catch (std::exception &_excp) {
         _log << (log_message(log_type::fatal)
                  << "Invalid structure of the bweas cache file(Last word: " << _excp.what() << ")");
     }

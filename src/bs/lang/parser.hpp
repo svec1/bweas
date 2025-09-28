@@ -6,7 +6,6 @@
 #include <lang/lexer.hpp>
 
 namespace bwlang {
-
 class parser : private lexer {
   public:
     parser(string_v src);
@@ -17,9 +16,12 @@ class parser : private lexer {
     parser_utils::context &get_context() & {
         return *g_ctx;
     }
-    void import_modules(vec<bweas::module_manager::_module> &&_modules) {
+    void import_modules(const vec<bweas::module_manager::_module> &_modules) {
         modules = _modules;
     }
+
+  public:
+    static void dump_global_context();
 
   protected:
     parser_utils::value parse_statements(bool skip = 0, bool is_branche = 0, bool is_func = 0);

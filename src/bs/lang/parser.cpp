@@ -8,6 +8,10 @@ static parser_utils::context g_ctx_s;
 parser::parser(string_v src) : lexer(src), g_ctx(&g_ctx_s) {
 }
 
+void parser::dump_global_context() {
+    g_ctx_s.sc.clear();
+    g_ctx_s.funcs.clear();
+}
 void parser::parse() {
     try {
         parse_statements();
@@ -212,18 +216,14 @@ std::unique_ptr<base> parser::parse_expression(pdiff lbinding_power) {
 
                 while (!std::holds_alternative<tokens::close_init_bracket>(current_token)) {
                     string match_name = expect_identifier().value;
-
                     expect_token<tokens::equal>();
 
                     args.emplace(std::visit(
                         [&](auto &&val) -> parser_utils::match_pack::value_type {
                             using T = std::decay_t<decltype(val)>;
-
                             if constexpr (std::is_constructible_v<parser_utils::match_pack::mapped_type, T>)
-
                                 return parser_utils::match_pack::value_type{match_name, val};
-                            else
-                                throw parser_utils::parser_error("Unexpected match type.", peek());
+                            throw parser_utils::parser_error("Unexpected match type.", peek());
                         },
                         parse_expression()->get_value()));
 
@@ -237,7 +237,11 @@ std::unique_ptr<base> parser::parse_expression(pdiff lbinding_power) {
                     args["name"] = lhs_id;
 
                 const auto &lhs_value = g_ctx->sc.at(lhs_id);
-                if (std::holds_alternative<bweas::sc::call_component>(lhs_value))
+                if (std::holds_alternative<bweas::sc::language>(lhs_value))
+                    return std::make_unique<pack<bweas::sc::language>>(*g_ctx, std::move(args));
+                else if (std::holds_alternative<bweas::sc::profile>(lhs_value))
+                    return std::make_unique<pack<bweas::sc::profile>>(*g_ctx, std::move(args));
+                else if (std::holds_alternative<bweas::sc::call_component>(lhs_value))
                     return std::make_unique<pack<bweas::sc::call_component>>(*g_ctx, std::move(args));
                 else if (std::holds_alternative<bweas::sc::template_command>(lhs_value))
                     return std::make_unique<pack<bweas::sc::template_command>>(*g_ctx, std::move(args));
@@ -306,7 +310,7 @@ std::unique_ptr<base> parser::parse_expression(pdiff lbinding_power) {
             [&](auto &&tk) -> std::unique_ptr<base> { throw parser_utils::parser_error("Unexpected token.", tk); }},
         current_token);
 
-    static auto get_if_variable = [&](auto &&expr) {
+    auto get_if_variable = [&](auto &&expr) {
         if (convention::is_identifier(expr)) {
             string name_var = std::get<string>(expr->get_value());
             if (convention::is_variable(expr))
@@ -325,8 +329,7 @@ std::unique_ptr<base> parser::parse_expression(pdiff lbinding_power) {
                                                                             g_ctx->get_variable(access_info.first)))));
         }
     };
-    static auto check_sameless_expr = [&](auto &&type, const std::unique_ptr<base> &lhs,
-                                          const std::unique_ptr<base> &rhs) {
+    auto check_sameless_expr = [&](auto &&type, const std::unique_ptr<base> &lhs, const std::unique_ptr<base> &rhs) {
         using T = std::decay_t<decltype(type)>;
         if (!std::holds_alternative<T>(lhs->get_value()))
             return false;

@@ -21,7 +21,7 @@ class lang;
 // the standard bweas functions and also provides interaction with the global scope
 class bweas::lang {
   public:
-    lang(context *const __context);
+    inline lang(context *const __context, string_v src);
 
     lang(lang &&)            = delete;
     lang(const lang &)       = delete;
@@ -29,14 +29,21 @@ class bweas::lang {
 
   private:
     // Sets standard functions and keyword operators corresponding to the bweas specification
-    void init_scope();
+    inline void init_scope();
 
   public:
     // Starts the internal interpreter
-    void execute();
+    inline void execute();
 
     // Loads external functions (passed into this function) into the interpreter (semantic analyzer)
     inline void import_modules(vec<module_manager::_module> modules);
+
+    inline void init_context();
+
+  public:
+    bwlang::parser_utils::context get_context() {
+        return p.get_context();
+    }
 
     template <typename T> inline T get_variable(string name_var) {
         if (std::holds_alternative<T>(p.get_context().get_variable(name_var)))
@@ -44,10 +51,8 @@ class bweas::lang {
         return T{};
     }
 
-    void init_context();
-
   private:
-    template <typename t> inline void create_variable(string name_var, t val = {}) {
+    template <typename T> inline void create_variable(string name_var, T val = {}) {
         p.get_context().sc[name_var] = val;
     }
     void create_function(string name_func, bwlang::parser_utils::func::func_t func_ref) {
@@ -64,12 +69,13 @@ class bweas::lang {
     context *const _context;
     bwlang::parser p;
 };
-bweas::lang::lang(context *const __context)
-    : _context(__context), p(utils::file_utils::read_file(utils::file_utils::open_file(_context->path_bweas_config))) {
+bweas::lang::lang(context *const __context, string_v src) : _context(__context), p(src) {
     init_scope();
 }
 
 void bweas::lang::init_scope() {
+    bwlang::parser::dump_global_context();
+
     create_variable<pdiff>("debug", 0);
     create_variable<pdiff>("release", 1);
     create_variable<pdiff>("false", 0);
@@ -82,8 +88,8 @@ void bweas::lang::init_scope() {
     create_variable<pdiff>("get_files", 0);
     create_variable<string>("config_path", fs::current_path().string());
 
-    auto expected_argument = [](auto &&type, bwlang::parser_utils::scope &sc,
-                                pdiff number_arg) -> std::decay_t<decltype(type)> {
+    static auto expected_argument = [](auto &&type, bwlang::parser_utils::scope &sc,
+                                       pdiff number_arg) -> std::decay_t<decltype(type)> {
         using T = std::decay_t<decltype(type)>;
 
         string name_arg = std::to_string(number_arg);
@@ -91,12 +97,30 @@ void bweas::lang::init_scope() {
         if (!sc.contains(name_arg) || !std::holds_alternative<T>(sc.at(name_arg)))
             throw std::runtime_error("Expected " + name_arg + " args as " + bwlang::parser_utils::get_type_name<T>());
 
-        const auto &val = std::get<T>(sc.at(name_arg));
+        auto val = std::get<T>(sc.at(name_arg));
         sc.erase(name_arg);
         return val;
     };
 
-    create_function("status", [&](string, bwlang::parser_utils::context &c_ctx) -> bwlang::parser_utils::value {
+    create_function("build", [&](string, bwlang::parser_utils::context &c_ctx) -> bwlang::parser_utils::value {
+        if (!_context)
+            throw std::runtime_error("Bweas the context is nullptr.");
+
+        for (const auto &[key, value] : c_ctx.sc) {
+            if (std::holds_alternative<sc::target>(value))
+                _context->targets.emplace_back(std::move(std::get<sc::target>(value)));
+            else if (std::holds_alternative<vec<sc::target>>(value)) {
+                const auto &targets = std::get<vec<sc::target>>(value);
+                for (const auto &target : targets)
+                    _context->targets.emplace_back(std::move(target));
+            }
+            else
+                throw std::runtime_error("Expected target type.");
+        }
+        return {};
+    });
+
+    create_function("status", [](string, bwlang::parser_utils::context &c_ctx) -> bwlang::parser_utils::value {
         static constexpr pdiff MESSAGE = 0;
         static constexpr pdiff WARNING = 1;
         static constexpr pdiff ERROR   = 2;
@@ -114,7 +138,7 @@ void bweas::lang::init_scope() {
                 }
             }
             else
-                std::runtime_error("Expected string type.");
+                throw std::runtime_error("Expected string type.");
         }
 
         switch (number_type_output) {
@@ -131,21 +155,7 @@ void bweas::lang::init_scope() {
         }
         return {};
     });
-    create_function("build", [&](string, bwlang::parser_utils::context &c_ctx) -> bwlang::parser_utils::value {
-        for (const auto &[key, value] : c_ctx.sc) {
-            if (std::holds_alternative<sc::target>(value))
-                _context->targets.emplace_back(std::move(std::get<sc::target>(value)));
-            else if (std::holds_alternative<vec<sc::target>>(value)) {
-                const auto &targets = std::get<vec<sc::target>>(value);
-                for (const auto &target : targets)
-                    _context->targets.emplace_back(std::move(target));
-            }
-            else
-                std::runtime_error("Expected target type.");
-        }
-        return {};
-    });
-    create_function("file", [&](string, bwlang::parser_utils::context &c_ctx) -> bwlang::parser_utils::value {
+    create_function("file", [](string, bwlang::parser_utils::context &c_ctx) -> bwlang::parser_utils::value {
         static constexpr pdiff GET_FILES = 0;
         static auto get_files            = [](string file) -> vec<string> {
             if (fs::exists(file))
@@ -175,7 +185,7 @@ void bweas::lang::init_scope() {
         };
 
         if (c_ctx.sc.size() < 2)
-            std::runtime_error("Expected a more args.");
+            throw std::runtime_error("Expected a more args.");
 
         vec<string> return_value;
         pdiff number_function = expected_argument(pdiff{}, c_ctx.sc, 0);
@@ -193,7 +203,7 @@ void bweas::lang::init_scope() {
                     }
                 }
                 else
-                    std::runtime_error("Expected string type.");
+                    throw std::runtime_error("Expected string type.");
             }
         }
         return return_value;
@@ -208,6 +218,9 @@ void bweas::lang::import_modules(vec<module_manager::_module> modules) {
 }
 
 void bweas::lang::init_context() {
+    if (!_context)
+        bweas::logger{""} << (log_message(log_type::fatal) << "Bweas the context is nullptr.");
+
     for (auto &[key, value] : p.get_context().sc)
         if (std::holds_alternative<sc::template_command>(value)) {
             auto &tcmd = std::get<sc::template_command>(value);
@@ -222,8 +235,6 @@ void bweas::lang::init_context() {
         }
         else if (std::holds_alternative<sc::call_component>(value))
             _context->call_components.push_back(std::get<sc::call_component>(value));
-        else if (std::holds_alternative<pair<string, string>>(value))
-            _context->global_external_args.push_back(std::get<pair<string, string>>(value));
 }
 
 #endif

@@ -5,8 +5,8 @@
 // ------------------------------------------
 //
 
+#include <bwlang.hpp>
 #include <bwmodule.hpp>
-#include <lang/parser.hpp>
 
 #include <bwluatools.hpp>
 
@@ -21,9 +21,19 @@ vec<module_manager::_module> module_manager::init_modules(vec<module_cfg> &modul
     for (const auto &module_cfg : modules_cfg) {
         if (!module_cfg.name_src_file.empty()) {
             auto src_file = file_utils::open_file(module_cfg.name_src_file);
-            bwlang::parser p(file_utils::read_file(src_file));
-            p.parse();
-            md_s.emplace_back(module_cfg.name, std::move(p.get_context()));
+            if (!src_file.is_open)
+                _log << (log_message(log_type::fatal)
+                         << "The module file \'" << module_cfg.name_src_file << "\' could not be opened.");
+
+            try {
+                lang l(nullptr, file_utils::read_file(src_file));
+                l.execute();
+                md_s.emplace_back(module_cfg.name, l.get_context());
+            }
+            catch (std::runtime_error &excp) {
+                _log << (log_message(log_type::fatal) << "\'" << module_cfg.name << "\' module initialization error: \n"
+                                                      << excp.what());
+            }
         }
         else
             md_s.emplace_back(module_cfg.name);

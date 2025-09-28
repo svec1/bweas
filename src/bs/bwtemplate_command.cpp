@@ -43,24 +43,20 @@ template_command template_command::create_template_command(string_v template_nam
             template_command::arg arg_tmp;
             string value = (*it_match)[0].str();
 
-            if (value.find_first_of("<{[") != value.npos) {
-                if (value[0] == '<')
-                    arg_tmp.type = template_command::arg::e_type::extglobal;
-                else if (value[0] == '{')
+            if (value.find_first_of("{[") != value.npos) {
+                if (value[0] == '{')
                     arg_tmp.type = template_command::arg::e_type::internal;
                 else if (value[0] == '[')
                     arg_tmp.type = template_command::arg::e_type::trgfield;
                 else {
-                    if (value.find("<") != value.npos)
-                        arg_tmp.type = template_command::arg::e_type::extglobal;
-                    else if (value.find("{") != value.npos)
+                    if (value.find("{") != value.npos)
                         arg_tmp.type = template_command::arg::e_type::internal;
                     else if (value.find("[") != value.npos)
                         arg_tmp.type = template_command::arg::e_type::trgfield;
                     else
                         throw std::runtime_error("Unexpected type of arg(" + value + "): " + template_str);
 
-                    size_t offset_to_start_arg = value.find_last_of("<{[");
+                    size_t offset_to_start_arg = value.find_last_of("{[");
 
                     arg_tmp.prefix = value.substr(0, offset_to_start_arg);
                     value.erase(0, offset_to_start_arg);
@@ -85,8 +81,8 @@ template_command template_command::create_template_command(string_v template_nam
         throw std::runtime_error("Invalid syntax. Expected: call_component(PARAM1, PARAM2, "
                                  "...) -> "
                                  "returnable: ARG_FEATURE "
-                                 "<ARG_EXTERNAL> <'ARG_STRING'> <{ARG_PARAM}> "
-                                 "<[ARG_TARGET_FIELD]>:\n" +
+                                 "ARG_STRING {ARG_PARAM} "
+                                 "[ARG_TARGET_FIELD]:\n" +
                                  template_str);
 
     return tcmd_tmp;

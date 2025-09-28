@@ -8,7 +8,7 @@
 #ifndef BWLUATOOLS_HPP
 #define BWLUATOOLS_HPP
 
-#include <bwdepends_api.hpp>
+#include <bwdependency_finder.hpp>
 
 #include <bwstructs_context.hpp>
 #include <utils/lua_wrapper.hpp>
@@ -39,7 +39,6 @@ class bweas::lua_tools {
     using param_targets     = lua_tools::array<lua_tools::table<string_v, any>>;
     using param_templates   = lua_tools::array<lua_tools::table<string_v, any>>;
     using param_ccomponents = lua_tools::array<lua_tools::table<string_v, string>>;
-    using param_geargs      = lua_tools::array<lua_tools::key_value<string, string>>;
 
     // Functions for converting standard bweas structures into appropriate containers for lua
   public:
@@ -49,7 +48,7 @@ class bweas::lua_tools {
     static table<string_v, any> conv_to_table(const sc::template_command &tmp_c);
     static table<string_v, string> conv_to_table(const sc::call_component &ccmp);
     static table<string_v, any> conv_to_table(const sc::target &trg_o);
-    static table<string, array<string>> conv_to_table(const bweas::depends_files::depends_map &dfiles);
+    static table<string, array<string>> conv_to_table(const bweas::dependency_finder::dependency_map &dfiles);
 
     // Functions for converting containers for lua to the corresponding bweas structures
   public:

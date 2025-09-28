@@ -54,7 +54,6 @@ class bweas::builder final {
         collect_cfg_w_build, /*!< [--cfg --build]: Collaborative mode, in which, after the interpretation process,
                               * context bweas is initialized, without reading the cache file.
                               */
-        build_package,       ///< [--package]: Package creation mode based on the transmitted json file.
         undef
     };
 
@@ -107,8 +106,9 @@ class bweas::builder final {
      */
     size_t gen_cache_target();
 
-    depends_files::depends_map &load_depends_file(std::shared_ptr<depends_files> &_depends_files,
-                                                  const vec<string> &include_paths, const vec<string> &source_files);
+    dependency_finder::dependency_map &load_depends_file(dependency_finder &_depends_files,
+                                                         const vec<string> &include_paths,
+                                                         const vec<string> &source_files);
 
   private:
     /** \brief Collects projects(out_targets) by initializing the generator and calling(bwIGenerator::gen_commands)
@@ -124,10 +124,8 @@ class bweas::builder final {
 
   private:
     std::unique_ptr<cache_api::base_cache> cache;
-    map<string, std::shared_ptr<depends_files>> dependency_finders;
 
   private:
-    module_manager module_m;
     vec<module_manager::_module> modules;
 
   private:

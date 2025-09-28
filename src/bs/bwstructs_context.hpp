@@ -12,65 +12,16 @@
 
 namespace bweas {
 
-// The name of a variable that, when set to 1,
-// will allow project functions and many target functions
-// to create configuration variables for quick access to their internals.
-inline constexpr auto DECL_VAR_STRUCT = "DECL_CONFIG_VAR";
-
-// enum of str postfix name var a project
-inline constexpr auto PRJ_VAR_NAME                   = "_NAME";
-inline constexpr auto PRJ_VAR_NAME_DFLAGS_C          = "_DFLAGS_COMPILER";
-inline constexpr auto PRJ_VAR_NAME_DFLAGS_L          = "_DFLAGS_LINKER";
-inline constexpr auto PRJ_VAR_NAME_RFLAGS_C          = "_RFLAGS_COMPILER";
-inline constexpr auto PRJ_VAR_NAME_RFLAGS_L          = "_RFLAGS_LINKER";
-inline constexpr auto PRJ_VAR_NAME_PTH_C             = "_PATH_COMPILER";
-inline constexpr auto PRJ_VAR_NAME_PTH_L             = "_PATH_LINKER";
-inline constexpr auto PRJ_VAR_NAME_STD_C             = "_STANDART_C";
-inline constexpr auto PRJ_VAR_NAME_STD_CPP           = "_STANDART_CPP";
-inline constexpr auto PRJ_VAR_NAME_SRC_FILES         = "_SRC_FILES";
-inline constexpr auto PRJ_VAR_NAME_LIBS              = "_LIBS";
-inline constexpr auto PRJ_VAR_NAME_INCLUDE_PATHS     = "_INCLUDE_PATHS";
-inline constexpr auto PRJ_VAR_NAME_CUSTOM_EXT_FIELDS = "_CUSTOM_EXTENSION_FIELDS";
-
 // enum of str postfix name var a target
 inline constexpr auto TRG_VAR_NAME              = "_NAME";
 inline constexpr auto TRG_VAR_NAME_VER          = "_VERSION";
-inline constexpr auto TRG_VAR_NAME_CFG          = "_CFG";
-inline constexpr auto TRG_VAR_NAME_TYPE         = "_TYPE_TARGET";
-inline constexpr auto TRG_VAR_NAME_GENERATOR    = "_GENERATOR_NAME";
 inline constexpr auto TRG_VAR_NAME_TEMPLATES    = "_TEMPLATES";
 inline constexpr auto TRG_VAR_NAME_DEPENDENCIES = "_DEPENDENCIES";
 
 // name of additional fields, which are also part of structures,
 // but which cannot be changed by the user
 inline constexpr auto TRG_NAME_FIELD_EXTENSION = "_EXTENSION";
-inline constexpr auto TRG_NAME_FIELD_NTARGET   = "_NAME_TARGET";
-
-// enum of the name field of target struct
-inline constexpr auto NAME_FIELD_TARGET_NAME         = "TARGET_NAME";
-inline constexpr auto NAME_FIELD_TARGET_VER          = "TARGET_VER";
-inline constexpr auto NAME_FIELD_TARGET_CFG          = "TARGET_CFG";
-inline constexpr auto NAME_FIELD_TARGET_TYPE         = "TARGET_TYPE";
-inline constexpr auto NAME_FIELD_TARGET_GENERATOR    = "_GENERATOR_NAME";
-inline constexpr auto NAME_FIELD_TARGET_TEMPLATES    = "TARGET_TEMPLATES";
-inline constexpr auto NAME_FIELD_TARGET_DEPENDENCIES = "TARGET_DEPENDENCIES";
-
-// enum of the name field of project struct
-inline constexpr auto NAME_FIELD_PROJECT_LANG          = "T_PROJECT_LANG";
-inline constexpr auto NAME_FIELD_PROJECT_PCOMPILER     = "T_PROJECT_PATH_COMPILER";
-inline constexpr auto NAME_FIELD_PROJECT_PLINKER       = "T_PROJECT_PATH_LINKER";
-inline constexpr auto NAME_FIELD_PROJECT_RFCOMPILER    = "T_PROJECT_RFLAGS_COMPILER";
-inline constexpr auto NAME_FIELD_PROJECT_RFLINKER      = "T_PROJECT_RFLAGS_LINKER";
-inline constexpr auto NAME_FIELD_PROJECT_DFCOMPILER    = "T_PROJECT_DFLAGS_COMPILER";
-inline constexpr auto NAME_FIELD_PROJECT_DFLINKER      = "T_PROJECT_DFLAGS_LINKER";
-inline constexpr auto NAME_FIELD_PROJECT_STD_C         = "T_PROJECT_STANDART_C";
-inline constexpr auto NAME_FIELD_PROJECT_STD_CPP       = "T_PROJECT_STANDART_CPP";
-inline constexpr auto NAME_FIELD_PROJECT_SRC_FILES     = "T_PROJECT_SRC_FILES";
-inline constexpr auto NAME_FIELD_PROJECT_LIBS          = "T_PROJECT_LIBS";
-inline constexpr auto NAME_FIELD_PROJECT_INCLUDE_PATHS = "T_PROJECT_INCLUDE_PATHS";
-
-inline constexpr auto FEATURE_ARG_IF = "INPUT_FILE";
-inline constexpr auto FEATURE_ARG_OF = "OUTPUT_FILE";
+inline constexpr auto TRG_NAME_FIELD_NTARGET   = "_NAME";
 
 inline constexpr auto NAME_FIELD_TEMPLATE_COMMAND_NAME              = "_NAME";
 inline constexpr auto NAME_FIELD_TEMPLATE_COMMAND_NAME_CCMP         = "_NCALL_C";
@@ -78,12 +29,12 @@ inline constexpr auto NAME_FIELD_TEMPLATE_COMMAND_NAME_ACCEPTS_ARGS = "_ACP_ARGS
 inline constexpr auto NAME_FIELD_TEMPLATE_COMMAND_RET               = "_RETURN";
 inline constexpr auto NAME_FIELD_TEMPLATE_COMMAND_NAME_ARGS         = "_ARGS";
 
-inline constexpr auto NAME_FIELD_TEMPLATE_COMMAND_IFILES           = "_IFILES";
-inline constexpr auto NAME_FIELD_TEMPLATE_COMMAND_SINGLE_GENERATES = "_SINGLE_GENERATE";
-
 inline constexpr auto NAME_FIELD_CALL_COMPONENT_NAME          = "_NAME";
 inline constexpr auto NAME_FIELD_CALL_COMPONENT_NAME_PROGRAM  = "_NAME_PROGRAM";
 inline constexpr auto NAME_FIELD_CALL_COMPONENT_PATTERN_FILES = "_PATTERN_FILES";
+
+inline constexpr auto FEATURE_ARG_IF = "INPUT_FILE";
+inline constexpr auto FEATURE_ARG_OF = "OUTPUT_FILE";
 
 namespace structs_context {
 
@@ -154,17 +105,40 @@ struct version {
     size_t patch{0};
 };
 
+struct language {
+    struct dependency_finder {
+        dependency_finder() = default;
+        dependency_finder(string_v _search_regex, char _char_global_search)
+            : search_regex(_search_regex), char_global_search(_char_global_search) {
+        }
+
+      public:
+        string search_regex;
+        char char_global_search;
+    };
+
+  public:
+    language() = default;
+    language(string _name, dependency_finder &&_dfinder_data = {}) : name(_name), dfinder_data(_dfinder_data) {
+    }
+
+  public:
+    string name;
+    dependency_finder dfinder_data;
+};
+
 struct profile {
-    using fields = umap<string, std::variant<string, vec<string>>>;
+    using fields = umap<string, std::variant<pdiff, string, vec<string>>>;
 
     profile() = default;
-    profile(fields _release_fields, std::optional<fields> _debug_fields = std::nullopt)
-        : release_fields(_release_fields), debug_fields(_debug_fields) {
+    profile(language _lang, fields _release_fields, std::optional<fields> _debug_fields = std::nullopt)
+        : lang(_lang), release_fields(_release_fields), debug_fields(_debug_fields) {
     }
 
   public:
     void merge(const profile &prf) {
-        cfg = prf.cfg;
+        cfg  = prf.cfg;
+        lang = prf.lang;
         for (const auto &[key, value] : prf.global_fields)
             if (!global_fields.contains(key))
                 global_fields[key] = value;
@@ -210,38 +184,47 @@ struct profile {
     }
 
     template <typename T,
-              typename = std::enable_if<std::is_same_v<T, string> || std::is_same_v<T, vec<string>>, void>::type>
-    T &get(string key) {
-        return std::get<T>(this->operator[](key));
+              typename = std::enable_if<
+                  std::is_same_v<T, pdiff> || std::is_same_v<T, string> || std::is_same_v<T, vec<string>>, void>::type>
+    T &get(string_v key) {
+        return std::get<T>(this->operator[](key.data()));
     }
     template <typename T,
-              typename = std::enable_if<std::is_same_v<T, string> || std::is_same_v<T, vec<string>>, void>::type>
-    const T &get(string key) const {
-        return std::get<T>(this->operator[](key));
+              typename = std::enable_if<
+                  std::is_same_v<T, pdiff> || std::is_same_v<T, string> || std::is_same_v<T, vec<string>>, void>::type>
+    const T &get(string_v key) const {
+        return std::get<T>(this->operator[](key.data()));
     }
 
-    bool contains(string key) const {
-        return get_fields().contains(key);
+    bool contains(string_v key) const {
+        return get_fields().contains(key.data());
     }
 
-    bool is_string(string key) const {
-        if (std::holds_alternative<string>(this->operator[](key)))
-            return true;
-        return false;
+    template <typename T> T *get_if(string_v key) {
+        if (contains(key) && std::holds_alternative<T>(this->operator[](key.data())))
+            return &get<T>(key);
+        return nullptr;
+    }
+    template <typename T> const T *get_if(string_v key) const {
+        if (contains(key) && std::holds_alternative<T>(this->operator[](key.data())))
+            return &get<T>(key);
+        return nullptr;
     }
 
   public:
+    size_t cfg = 0;
+    language lang;
+
     fields release_fields;
     std::optional<fields> debug_fields;
 
+  public:
     fields global_fields; // in package impl
-
-    size_t cfg = 0;
 
   public:
     static constexpr auto FIELD_SOURCE_FILES  = "source_files";
     static constexpr auto FIELD_INCLUDE_PATHS = "include_paths";
-    static constexpr auto FIELD_LANGUAGE      = "language";
+    static constexpr auto FIELD_TARGET_TYPE   = "type";
 };
 // target structure for build system
 // ---------------------------------
@@ -260,9 +243,6 @@ struct target {
 
   public:
     profile ext;
-
-    e_type type;
-    e_cfg cfg;
 
     string name;
     version ver;
@@ -305,14 +285,12 @@ struct template_command {
     };
     struct arg {
         enum class e_type {
-            extglobal = 0,
-            trgfield,
-            string,
-            internal
+            trgfield = 0,
+            internal,
+            string
         };
 
-        arg()            = default;
-        arg(const arg &) = default;
+        arg() = default;
         arg(string _value, e_type _type, string _prefix = "") : value(_value), type(_type), prefix(_prefix) {
         }
 

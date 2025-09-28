@@ -106,20 +106,26 @@ void logger::handle_exception(const bweas::exception &excp) {
     handle(excp.what());
 }
 void logger::handle(string &&str) {
+    if (!log)
+        return;
     if (!file_log.is_open)
         file_log = file_utils::open_file(NAME_FILE_LOG, file_utils::file::mode_file::open::w);
 
     string out_to_file = str;
     out_to_file.erase(str.find("\033[3"), 5);
     out_to_file.erase(out_to_file.size() - 4, 4);
-    file_utils::write_file(file_log, out_to_file + "\n");
 
+    if (global_status == log_type::fatal && !is_main)
+        throw bweas::exception(str);
+
+    file_utils::write_file(file_log, out_to_file + "\n");
     if (output_to_console || debug)
         std::fprintf(stdout, "%s\n", str.data());
 
-    if (global_status == log_type::fatal) {
-        if (!is_main)
-            throw bweas::exception(str);
+    if (global_status == log_type::fatal)
         exit(1);
-    }
+}
+void logger::init() {
+    if (!file_log.is_open)
+        file_log = file_utils::open_file(NAME_FILE_LOG, file_utils::file::mode_file::open::w);
 }

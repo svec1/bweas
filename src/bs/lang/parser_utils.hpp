@@ -1,40 +1,13 @@
 #ifndef PARSER_UTILS_HPP
 #define PARSER_UTILS_HPP
 
+#include <functional>
+
 #include <bwstructs_context.hpp>
 #include <lang/tokens.hpp>
 
 namespace bwlang {
-
 namespace parser_utils {
-
-template <typename... Types> struct func_wrapper : Types... {
-    using Types::operator()...;
-};
-
-template <typename... Types> func_wrapper(Types...) -> func_wrapper<Types...>;
-
-class parser_error : public std::exception {
-  public:
-    parser_error(string _what_str, tokens::token _tk = {}) noexcept : what_str(_what_str), tk(_tk) {
-    }
-
-    ~parser_error() override = default;
-
-  public:
-    const char *what() const noexcept override {
-        return what_str.c_str();
-    }
-
-    string get_token() {
-        return tokens::get_string(tk);
-    }
-
-  private:
-    string what_str;
-    tokens::token tk;
-};
-
 namespace basic_operation {
 
 template <typename TArgs, typename R> struct binary_operation {
@@ -71,12 +44,39 @@ template <typename T> struct divides : binary_operation_one_type<T> {
 };
 } // namespace basic_operation
 
+template <typename... Types> struct func_wrapper : Types... {
+    using Types::operator()...;
+};
+template <typename... Types> func_wrapper(Types...) -> func_wrapper<Types...>;
+
+class parser_error : public std::exception {
+  public:
+    parser_error(string _what_str, tokens::token _tk = {}) noexcept : what_str(_what_str), tk(_tk) {
+    }
+
+    ~parser_error() override = default;
+
+  public:
+    const char *what() const noexcept override {
+        return what_str.c_str();
+    }
+
+    string get_token() {
+        return tokens::get_string(tk);
+    }
+
+  private:
+    string what_str;
+    tokens::token tk;
+};
+
 using access = std::pair<string, string>;
 using match_pack =
-    umap<string, std::variant<std::monostate, pdiff, string, vec<pdiff>, vec<string>, bweas::sc::profile>>;
-using value =
-    std::variant<std::monostate, pdiff, string, bweas::sc::call_component, bweas::sc::template_command,
-                 bweas::sc::profile, bweas::sc::target, vec<pdiff>, vec<string>, vec<bweas::sc::target>, access>;
+    umap<string,
+         std::variant<std::monostate, pdiff, string, vec<pdiff>, vec<string>, bweas::sc::language, bweas::sc::profile>>;
+using value = std::variant<std::monostate, pdiff, string, bweas::sc::call_component, bweas::sc::template_command,
+                           bweas::sc::language, bweas::sc::profile, bweas::sc::target, vec<pdiff>, vec<string>,
+                           vec<bweas::sc::target>, access>;
 using scope = umap<string, value>;
 struct context;
 struct func {
@@ -163,6 +163,8 @@ template <typename T> static constexpr string get_type_name() {
         return "call_component";
     else if constexpr (std::is_same_v<T, bweas::sc::template_command>)
         return "template_command";
+    else if constexpr (std::is_same_v<T, bweas::sc::language>)
+        return "language";
     else if constexpr (std::is_same_v<T, bweas::sc::profile>)
         return "profile";
     else if constexpr (std::is_same_v<T, bweas::sc::target>)
@@ -190,14 +192,24 @@ template <typename T> value get_field(T &obj, string name) {
         else
             throw std::runtime_error("A non-existent field.");
     }
+    else if constexpr (std::is_same_v<T, sc::language>) {
+        if (name == "name")
+            return obj.name;
+        else if (name == "search_regex")
+            return obj.dfinder_data.search_regex;
+        else if (name == "char_global_search")
+            return obj.dfinder_data.char_global_search;
+        else
+            throw std::runtime_error("A non-existent field.");
+    }
     else if constexpr (std::is_same_v<T, sc::profile>) {
         return std::visit([](auto &&val) -> value { return val; }, obj.get_fields()[name]);
     }
     else if constexpr (std::is_same_v<T, sc::target>) {
         if (name == "name")
             return obj.name;
-        else if (name == "type")
-            return (pdiff)obj.type;
+        else if (name == "extension")
+            return obj.ext;
         else if (name == "templates")
             return obj.templates;
         else if (name == "dependencies")
@@ -234,19 +246,58 @@ template <typename T> void set_field(T &obj, string name, value val) {
         else
             throw std::runtime_error("A non-existent field.");
     }
+    else if constexpr (std::is_same_v<T, sc::language>) {
+        if (!std::holds_alternative<string>(val))
+            throw std::runtime_error("Undefined type for match.");
+
+        if (name == "name")
+            obj.name = std::get<string>(val);
+        else if (name == "search_regex")
+            obj.dfinder_data.search_regex = std::get<string>(val);
+        else if (name == "char_global_search")
+            obj.dfinder_data.char_global_search = std::get<string>(val)[0];
+        else
+            throw std::runtime_error("A non-existent field.");
+    }
     else if constexpr (std::is_same_v<T, sc::profile>) {
         if (name == "derive") {
             if (!std::holds_alternative<sc::profile>(val))
                 throw std::runtime_error("Undefined type for match.");
             obj.merge(std::get<sc::profile>(val));
         }
+        else if (name == "lang") {
+            if (!std::holds_alternative<sc::language>(val))
+                throw std::runtime_error("Undefined type for match.");
+
+            obj.lang = std::get<sc::language>(val);
+        }
+        else if (name == "cfg") {
+            if (!std::holds_alternative<pdiff>(val))
+                throw std::runtime_error("Undefined type for match.");
+            obj.set_fields(std::get<pdiff>(val));
+        }
         else {
-            if (std::holds_alternative<string>(val))
-                obj.get_fields()[name] = std::get<string>(val);
-            else if (std::holds_alternative<vec<string>>(val))
-                obj.get_fields()[name] = std::get<vec<string>>(val);
-            else
-                throw std::runtime_error("A non-existent field \'" + name + "\'.");
+            bool exists = obj.get_fields().contains(name);
+            std::visit(
+                [&](auto &&var) {
+                    using T2 = std::decay_t<decltype(var)>;
+                    if (exists && !std::holds_alternative<T2>(val))
+                        throw std::runtime_error("Undefined type for match.");
+                    else if (!exists)
+                        obj.get_fields()[name] = std::visit(
+                            func_wrapper{[](pdiff &val) -> sc::profile::fields::mapped_type { return val; },
+                                         [](string &val) -> sc::profile::fields::mapped_type { return val; },
+                                         [](vec<string> &val) -> sc::profile::fields::mapped_type { return val; },
+                                         [](auto &&val) -> sc::profile::fields::mapped_type {
+                                             throw std::runtime_error("Unexpected type \'" +
+                                                                      get_type_name<std::decay_t<decltype(val)>>() +
+                                                                      "\'");
+                                         }},
+                            val);
+                    else
+                        var = std::get<T2>(val);
+                },
+                obj.get_fields()[name]);
         }
     }
     else if constexpr (std::is_same_v<T, sc::target>) {
@@ -255,15 +306,10 @@ template <typename T> void set_field(T &obj, string name, value val) {
                 throw std::runtime_error("Undefined type for match.");
             obj.name = std::get<string>(val);
         }
-        else if (name == "extenstion") {
+        else if (name == "extension") {
             if (!std::holds_alternative<sc::profile>(val))
                 throw std::runtime_error("Undefined type for match.");
             obj.ext.merge(std::get<sc::profile>(val));
-        }
-        else if (name == "type") {
-            if (!std::holds_alternative<pdiff>(val))
-                throw std::runtime_error("Undefined type for match.");
-            obj.type = (sc::target::e_type)std::get<pdiff>(val);
         }
         else if (name == "cfg") {
             if (!std::holds_alternative<pdiff>(val))
@@ -281,12 +327,27 @@ template <typename T> void set_field(T &obj, string name, value val) {
             obj.dependencies = std::get<vec<string>>(val);
         }
         else {
-            if (std::holds_alternative<string>(val))
-                obj.ext.get_fields()[name] = std::get<string>(val);
-            else if (std::holds_alternative<vec<string>>(val))
-                obj.ext.get_fields()[name] = std::get<vec<string>>(val);
-            else
-                throw std::runtime_error("A non-existent field \'" + name + "\'.");
+            bool exists = obj.ext.get_fields().contains(name);
+            std::visit(
+                [&](auto &&var) {
+                    using T2 = std::decay_t<decltype(var)>;
+                    if (exists && !std::holds_alternative<T2>(val))
+                        throw std::runtime_error("Undefined type for match.");
+                    else if (!exists)
+                        obj.ext.get_fields()[name] = std::visit(
+                            func_wrapper{[](pdiff &val) -> sc::profile::fields::mapped_type { return val; },
+                                         [](string &val) -> sc::profile::fields::mapped_type { return val; },
+                                         [](vec<string> &val) -> sc::profile::fields::mapped_type { return val; },
+                                         [](auto &&val) -> sc::profile::fields::mapped_type {
+                                             throw std::runtime_error("Unexpected type \'" +
+                                                                      get_type_name<std::decay_t<decltype(val)>>() +
+                                                                      "\'");
+                                         }},
+                            val);
+                    else
+                        var = std::get<T2>(val);
+                },
+                obj.ext.get_fields()[name]);
         }
     }
     else

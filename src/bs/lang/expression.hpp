@@ -250,6 +250,8 @@ struct init_binary_operation {
             sc[name_var] = sc::call_component{};
         else if (kw_var_type == tokens::ctemplate_t::s_value)
             sc[name_var] = sc::template_command{};
+        else if (kw_var_type == tokens::language_t::s_value)
+            sc[name_var] = sc::language{};
         else if (kw_var_type == tokens::profile_t::s_value)
             sc[name_var] = sc::profile{};
         else if (kw_var_type == tokens::target_t::s_value)

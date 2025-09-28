@@ -1,0 +1,20 @@
+cxx_lang: language = {
+    search_regex = '#include\s+((<[\/\w+]+(?:\.\w+)?>)|("[\/\w+]+(?:\.\w+)?"))',
+    char_global_search = '<'
+}
+
+cxx_base_profile: profile = {
+    lang = cxx_lang,
+    source_files = [''],
+    include_paths = ['/usr/include', '/usr/local/include'],
+    standart_cxx = 23
+}
+
+cxx_exec: profile = {
+    derive = cxx_base_profile,
+    type = executable
+}
+cxx_lib: profile = {
+    derive = cxx_base_profile,
+    type = library 
+}

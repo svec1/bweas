@@ -1,38 +1,10 @@
 {
 	"package-name": "base",
-	"bweas-version": "0.2.0",
+	"bweas-version": "0.2.1",
     
     "modules": {
-        "base": {    
-            "profiles": {
-                "compiled": {
-                    "export":      false,
-                    "language":    "",
-
-                    "source_files": [],
-                    "include_paths": ["/usr/include", "/usr/local/include"],
-                    "release": {
-                        "compile_flags": [] 
-                    },
-                    "debug": {
-                        "compile_flags": []
-                    }
-                },
-                "cpp": {
-                    "derive": "compiled",
-                    "language": "CPP",
-                
-                    "cxx_standart": "23"
-                },
-                "cpp_exec": {
-                    "derive": "cpp",
-                    "target_type": "EXECUTABLE"
-                },
-                "cpp_lib": {
-                    "derive": "cpp",
-                    "target_type": "LIBRARY" 
-                }
-            }
+        "base": {
+            "name-src-file": "base.bw"
         }
     }
 }

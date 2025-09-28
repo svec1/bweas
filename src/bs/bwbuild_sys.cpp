@@ -37,7 +37,7 @@ static constexpr auto HELP_STR =
     "\n   --build - builds the project (either by executing the configuration file or deserializing the cache file "
     "if it exists)"
     "\n   --cfg - executes the configuration file if it has been changed and creates a new cache file"
-    "\n   --package - creates a bweas package based on the transferred json file(json config)"
+    "\n   --threads - sets the default number of threads for the build"
     "\n   --help - outputs the syntax of the bweas call as well as its possible functions"
     "\n   --version - outputs the version of bweas";
 
@@ -49,10 +49,8 @@ builder::builder(size_t argv, char **args) {
     try {
         handle_args(vec_args);
 
-        if (mode_bweas != mode_working::build_package && mode_bweas != mode_working::undef) {
-            _log << (log_message(log_type::msg) << "bweas " + version.get_str_version());
+        if (mode_bweas != mode_working::undef)
             init();
-        }
     }
     catch (const bweas::exception &excp) {
         _log.handle_exception(excp);
@@ -67,7 +65,6 @@ void builder::handle_args(vec<string> &args) {
         mode_bweas = mode_working::collect_cfg;
 
     bool expected_path_bweas_config = 1, expected_path_to_build = 0;
-    bool expected_path_json_cfg_package = 0;
     for (size_t i = 1; i < args.size(); ++i) {
         if (args[i].find("--") == 0) {
             args[i].erase(args[i].find("--"), 2);
@@ -87,10 +84,6 @@ void builder::handle_args(vec<string> &args) {
             else if (args[i] == "cfg") {
                 mode_bweas                 = mode_working::collect_cfg;
                 expected_path_bweas_config = 1;
-            }
-            else if (args[i] == "package") {
-                mode_bweas                     = mode_working::build_package;
-                expected_path_json_cfg_package = 1;
             }
             else if (args[i] == "nolog")
                 _log.set_global_log(false);
@@ -136,43 +129,12 @@ void builder::handle_args(vec<string> &args) {
                 _context.path_bweas_to_build = fs::absolute(args[i]).lexically_normal().string();
                 expected_path_to_build       = 0;
             }
-            // --package <arg>
-            else if (expected_path_json_cfg_package) {
-                expected_path_json_cfg_package = 0;
-
-                create_package(args[i]);
-            }
             else {
                 _log << (log_message(log_type::error) << "Unknown argument: " + args[i]);
                 return;
             }
         }
     }
-
-    if (expected_path_json_cfg_package)
-        _log << (log_message(log_type::error) << "Invalid syntax.\n" << HELP_STR);
-}
-
-void builder::create_package(string path_json_config_package) {
-    package::data_bw_package data_package;
-
-    auto json_config_package = file_utils::open_file(path_json_config_package, mf::open::r);
-    if (!json_config_package.is_open) {
-        _log << (log_message(log_type::error) << "The bweas-json configuration for package package file was not found");
-        return;
-    }
-
-    data_package.json_config = file_utils::read_file(json_config_package, mf::input::read_default);
-
-    package loaded_package;
-    string pckg = loaded_package.init(data_package, 1);
-    if (logger::error_status()) {
-        _log << (log_message(log_type::error) << "Failed to create a bweas package");
-        return;
-    }
-    auto package =
-        file_utils::open_file(fs::current_path().string() + "/" + loaded_package.name + FORMAT_PACKAGE, mf::open::wb);
-    file_utils::write_file(package, pckg, mf::output::write_binary);
 }
 
 void builder::init() {
@@ -206,43 +168,34 @@ void builder::init() {
         cache = std::unique_ptr<cache_api::base_cache>(cache_api::base_cache::create_fast_cache());
 
     vec<package> loaded_packages;
-    package loaded_package;
 
     string path_to_packages{file_utils::get_path_program() + "packages"};
     if (!fs::is_directory(path_to_packages))
         _log << (log_message(log_type::error) << "\"" << path_to_packages << "\" package directory is expected.");
     else {
         for (const auto &fs_object : fs::directory_iterator(path_to_packages)) {
-            if (!fs::is_regular_file(fs_object))
+            string name_file = fs_object.path().string();
+            if (!fs::is_regular_file(fs_object) || name_file.find(".json") != name_file.size() - 5)
                 continue;
 
-            auto it_package = file_utils::open_file(fs_object.path().string(), mf::open::rb);
+            auto it_package = file_utils::open_file(name_file, mf::open::rb);
             if (!it_package.is_open) {
-                _log << (log_message(log_type::warning)
-                         << "\"" << fs_object.path().string() << "\" bweas package not found");
+                _log << (log_message(log_type::warning) << "\"" << name_file << "\" bweas package not found");
                 continue;
             }
-            string raw_data_package = file_utils::read_file(it_package, mf::input::read_binary);
 
-            loaded_package.load(raw_data_package);
-            loaded_packages.push_back(loaded_package);
+            package current_pkg(file_utils::read_file(it_package, mf::input::read_binary));
+            loaded_packages.push_back(current_pkg);
 
-            if (cache == NULL && loaded_package.cfg.cache.name == config_json["cache-gn"].template get<std::string>())
+            if (cache == NULL && current_pkg.cfg.cache.name == config_json["cache-gn"].template get<std::string>())
                 cache = std::unique_ptr<cache_api::base_cache>(
-                    cache_api::base_cache::create_lua_cache(loaded_package.cfg.cache.src_lua));
+                    cache_api::base_cache::create_lua_cache(current_pkg.cfg.cache.src_lua));
 
-            _log << (log_message(log_type::success)
-                     << "\"" << fs_object.path().string() << "\" loaded(" << raw_data_package.size() << " bytes)");
+            _log << (log_message(log_type::success) << "\'" << name_file << "\' loaded");
         }
 
-        dependency_finders.emplace("CPP", std::shared_ptr<depends_files>(depends_files::create_depends_integral_cxx()));
-
+        module_manager module_m;
         for (auto &package : loaded_packages) {
-            for (const auto &finder : package.cfg.finders) {
-                dependency_finders.emplace(
-                    finder.language, std::shared_ptr<depends_files>(depends_files::create_depends_lua(finder.src)));
-            }
-
             auto package_modules = module_m.init_modules(package.cfg.modules);
             modules.insert(modules.begin(), package_modules.begin(), package_modules.end());
         }
@@ -259,9 +212,7 @@ builder::mode_working builder::get_current_mode() {
 
 void builder::start() {
     try {
-        if (mode_bweas == mode_working::build_package)
-            return;
-        else if (mode_bweas == mode_working::build) {
+        if (mode_bweas == mode_working::build) {
             auto bweas_cache = file_utils::open_file(CACHE_FILE, mf::open::rb);
             string cache_str = file_utils::read_file(bweas_cache);
 
@@ -282,7 +233,8 @@ void builder::start() {
 
             cache->extract_cache_data(cache_str);
 
-            _log << (log_message(log_type::success) << "Cache deserialization was successful!");
+            _log << (log_message(log_type::success)
+                     << "Cache deserialization was successful(loaded " << _context.targets.size() << " targets)");
         }
         else if (mode_bweas == mode_working::collect_cfg || mode_bweas == mode_working::collect_cfg_w_build) {
             if (!fs::exists(_context.path_bweas_config))
@@ -302,7 +254,7 @@ void builder::start() {
         }
 
         if (mode_bweas == mode_working::build || mode_bweas == mode_working::collect_cfg_w_build) {
-            _log << (log_message(log_type::msg) << "*Build start time: " << file_utils::get_time());
+            _log << (log_message(log_type::msg) << "Build start time: " << file_utils::get_time());
             build_targets();
         }
     }
@@ -313,7 +265,7 @@ void builder::start() {
 
 void builder::run_interpreter() {
     try {
-        lang bwlang{&_context};
+        lang bwlang{&_context, utils::file_utils::read_file(utils::file_utils::open_file(_context.path_bweas_config))};
 
         bwlang.import_modules(modules);
         bwlang.execute();
@@ -322,6 +274,8 @@ void builder::run_interpreter() {
     catch (std::runtime_error &excp) {
         _log << (log_message(log_type::fatal) << "Error executing the configuration file.\n" << excp.what());
     }
+
+    _log << (log_message(log_type::msg) << "Successful configuration of targets.");
 }
 
 size_t builder::gen_cache_target() {
@@ -339,11 +293,10 @@ size_t builder::gen_cache_target() {
     return 0;
 }
 
-depends_files::depends_map &builder::load_depends_file(std::shared_ptr<depends_files> &dfinder,
-                                                       const vec<string> &include_paths,
-                                                       const vec<string> &source_files) {
+dependency_finder::dependency_map &builder::load_depends_file(dependency_finder &dfinder,
+                                                              const vec<string> &include_paths,
+                                                              const vec<string> &source_files) {
     log_console_unlock unlock_c;
-    dfinder->set_include_paths(include_paths);
     string depends_str;
 
     if (fs::exists(DEPENDS_FILE)) {
@@ -356,7 +309,7 @@ depends_files::depends_map &builder::load_depends_file(std::shared_ptr<depends_f
 
                 if ((it = depends_file_str.find(":")) != depends_file_str.npos)
                     depends_file_str.erase(it, depends_file_str.size());
-                dfinder->build_graph_depends_file_string(name_file, depends_file_str);
+                dfinder.build_graph_depends_file_string(name_file, depends_file_str);
             }
             else
                 goto find_depends_file;
@@ -365,14 +318,14 @@ depends_files::depends_map &builder::load_depends_file(std::shared_ptr<depends_f
     else {
     find_depends_file:
         for (const auto &name_file : source_files) {
-            dfinder->build_graphs_depends_file_v(name_file);
-            depends_str += name_file + ":\n" + dfinder->get_string_depends_file(name_file);
+            dfinder.build_graphs_depends_file_v(include_paths, name_file);
+            depends_str += name_file + ":\n" + dfinder.get_string_depends_file(name_file);
         }
 
         file_utils::write_file(file_utils::open_file(DEPENDS_FILE, mf::open::w), depends_str);
     }
 
-    return dfinder->get_graphs_depends_files();
+    return dfinder.get_graphs_depends_files();
 }
 
 void builder::build_targets() {
@@ -381,6 +334,19 @@ void builder::build_targets() {
     std::sort(_context.targets.begin(), _context.targets.end(), [](const sc::target &t1, const sc::target &t2) {
         return std::find(t1.dependencies.begin(), t1.dependencies.end(), t2.name) == t1.dependencies.end() ? 1 : 0;
     });
+
+    size_t current_count_threads;
+    static auto check_target_field = [&](const sc::target &trg) {
+        if (auto value = trg.ext.get_if<pdiff>("threads"); value)
+            current_count_threads = *value;
+
+        if (!trg.ext.contains(sc::profile::FIELD_SOURCE_FILES))
+            _log << (log_message(log_type::fatal) << "Expected \'" << sc::profile::FIELD_SOURCE_FILES << "\' field.");
+        else if (!trg.ext.contains(sc::profile::FIELD_INCLUDE_PATHS))
+            _log << (log_message(log_type::fatal) << "Expected \'" << sc::profile::FIELD_INCLUDE_PATHS << "\' field.");
+        else if (!trg.ext.contains(sc::profile::FIELD_TARGET_TYPE))
+            _log << (log_message(log_type::fatal) << "Expected \'" << sc::profile::FIELD_TARGET_TYPE << "\' field.");
+    };
 
     for (auto &target : _context.targets) {
         for (const auto &dependence : target.dependencies)
@@ -393,8 +359,13 @@ void builder::build_targets() {
             _log << (log_message(log_type::error) << "There are no templates for the target - " << target.name);
             return;
         }
+
+        current_count_threads = count_threads;
+        check_target_field(target);
+
         _log << (log_message(log_type::msg)
-                 << "Build target(" << ((count_threads == (size_t)-1) ? string("max") : std::to_string(count_threads))
+                 << "Build target("
+                 << ((current_count_threads == (size_t)-1) ? string("max") : std::to_string(current_count_threads))
                  << " threads): " << target.name);
 
         size_t count_errors = 0;
@@ -403,25 +374,29 @@ void builder::build_targets() {
 
             generator_command generator(&_context);
 
-            target.queue_templates =
-                sc::template_command::create_queue_target_templates(_context.templates, target.templates, target.type);
+            target.queue_templates = sc::template_command::create_queue_target_templates(
+                _context.templates, target.templates,
+                (sc::target::e_type)target.fields<pdiff>(sc::profile::FIELD_TARGET_TYPE));
             _context.current_target         = &target;
             _context.current_work_directory = _context.path_bweas_to_build + target.name;
 
             if (!fs::is_directory(_context.current_work_directory))
                 fs::create_directories(_context.current_work_directory);
 
-            if (dependency_finders.contains(target.fields<string>("language")))
-                _context.dfiles = load_depends_file(dependency_finders[target.fields<string>("language")],
-                                                    target.fields<vec<string>>("include_paths"),
-                                                    target.fields<vec<string>>("source_files"));
+            if (!target.ext.lang.dfinder_data.search_regex.empty()) {
+                dependency_finder dfinder(target.ext.lang.dfinder_data.search_regex,
+                                          target.ext.lang.dfinder_data.char_global_search);
+                _context.dfiles =
+                    load_depends_file(dfinder, target.fields<vec<string>>(sc::profile::FIELD_INCLUDE_PATHS),
+                                      target.fields<vec<string>>(sc::profile::FIELD_SOURCE_FILES));
+            }
 
             generator.get_input_files();
             commands cmd_s = generator.generate();
 
             double build_state = 0.f;
 
-            processes_handler p_handler(cmd_s, count_threads);
+            processes_handler p_handler(cmd_s, current_count_threads);
             p_handler.start([&cmd_s, &build_state, &count_errors](string_v name_output_file, bool success) {
                 log_console_unlock unlock_c;
                 if (!success) {
@@ -431,7 +406,7 @@ void builder::build_targets() {
                 else {
                     build_state += 1.f / (double)cmd_s.size() * 100;
                     _log << (log_message(log_type::success)
-                             << "["
+                             << "[" << std::right << std::setw(5)
                              << std::to_string(build_state).erase(std::to_string((size_t)build_state).size() + 2, 5)
                              << "%] " << name_output_file);
                 }

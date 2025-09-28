@@ -11,7 +11,6 @@ if(DEFINED VCPKG_TARGET_TRIPLET)
     set(LuaJIT_INCLUDE_DIRS "${CMAKE_SOURCE_DIR}/vcpkg/packages/luajit_x64-windows/include/luajit")
 
     find_package(nlohmann_json CONFIG REQUIRED)
-    find_package(lz4 CONFIG REQUIRED)
 
     set(BWEAS_LIBS ${LuaJIT_LIBRARIES} nlohmann_json::nlohmann_json lz4::lz4)
     set(BWEAS_INCLUDE ${LuaJIT_INCLUDE_DIRS} CACHE STRING "All header-files for bweas")
@@ -40,16 +39,7 @@ else()
         find_package(nlohmann_json REQUIRED)
     endif()
 
-    # LZ4
-    if(USER_BUILD_LZ4)
-        set(LZ4_BUILD_CLI OFF)
-        add_subdirectory(../external/lz4/build/cmake)
-        message(STATUS "Selected LZ4 in folder - external")
-    else()
-        find_library(LZ4_LIBRARY NAMES lz4)
-    endif()
-
-    set(BWEAS_LIBS ${LuaJIT_LIBRARIES} nlohmann_json::nlohmann_json lz4)
+    set(BWEAS_LIBS ${LuaJIT_LIBRARIES} nlohmann_json::nlohmann_json)
     set(BWEAS_INCLUDE ${NLOHMANN_JSON_INCLUDE_INSTALL_DIR} ${LuaJIT_SRC_DIR} CACHE STRING "All header-files for bweas")
 endif()
 

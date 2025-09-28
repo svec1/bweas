@@ -35,14 +35,11 @@ lua_tools::array<any> lua_tools::conv_to_table(const sc::template_command::retur
 }
 
 lua_tools::table<string_v, any> lua_tools::conv_to_table(const sc::template_command &tmp_c) {
-    return lua_tools::table<string_v, any>{
-        {NAME_FIELD_TEMPLATE_COMMAND_NAME, tmp_c.name},
-        {NAME_FIELD_TEMPLATE_COMMAND_NAME_CCMP, tmp_c.name_call_component},
-        {NAME_FIELD_TEMPLATE_COMMAND_NAME_ACCEPTS_ARGS, tmp_c.name_accept_params},
-        {NAME_FIELD_TEMPLATE_COMMAND_NAME_ARGS, conv_to_table(tmp_c.args)},
-        {NAME_FIELD_TEMPLATE_COMMAND_RET, conv_to_table(tmp_c.returnable)},
-        {NAME_FIELD_TEMPLATE_COMMAND_IFILES, tmp_c.ifiles},
-        {NAME_FIELD_TEMPLATE_COMMAND_SINGLE_GENERATES, (pdiff)tmp_c.single_generates}};
+    return lua_tools::table<string_v, any>{{NAME_FIELD_TEMPLATE_COMMAND_NAME, tmp_c.name},
+                                           {NAME_FIELD_TEMPLATE_COMMAND_NAME_CCMP, tmp_c.name_call_component},
+                                           {NAME_FIELD_TEMPLATE_COMMAND_NAME_ACCEPTS_ARGS, tmp_c.name_accept_params},
+                                           {NAME_FIELD_TEMPLATE_COMMAND_NAME_ARGS, conv_to_table(tmp_c.args)},
+                                           {NAME_FIELD_TEMPLATE_COMMAND_RET, conv_to_table(tmp_c.returnable)}};
 }
 
 lua_tools::table<string_v, string> lua_tools::conv_to_table(const sc::call_component &ccmp) {
@@ -52,14 +49,14 @@ lua_tools::table<string_v, string> lua_tools::conv_to_table(const sc::call_compo
 }
 
 lua_tools::table<string_v, any> lua_tools::conv_to_table(const sc::target &trg_o) {
-    return lua_tools::table<string_v, any>{
-        {TRG_NAME_FIELD_EXTENSION, conv_to_table(trg_o.ext)}, {TRG_VAR_NAME_TYPE, target_type_str(trg_o.type)},
-        {TRG_VAR_NAME_CFG, target_cfg_str(trg_o.cfg)},        {TRG_NAME_FIELD_NTARGET, trg_o.name},
-        {TRG_VAR_NAME_VER, trg_o.ver.get_str_version()},      {TRG_VAR_NAME_TEMPLATES, trg_o.templates},
-        {TRG_VAR_NAME_DEPENDENCIES, trg_o.dependencies}};
+    return lua_tools::table<string_v, any>{{TRG_NAME_FIELD_EXTENSION, conv_to_table(trg_o.ext)},
+                                           {TRG_NAME_FIELD_NTARGET, trg_o.name},
+                                           {TRG_VAR_NAME_VER, trg_o.ver.get_str_version()},
+                                           {TRG_VAR_NAME_TEMPLATES, trg_o.templates},
+                                           {TRG_VAR_NAME_DEPENDENCIES, trg_o.dependencies}};
 }
 lua_tools::table<string, lua_tools::array<string>> lua_tools::conv_to_table(
-    const bweas::depends_files::depends_map &dfiles) {
+    const bweas::dependency_finder::dependency_map &dfiles) {
     lua_tools::table<string, lua_tools::array<string>> _dfiles;
     for (const auto &dfile : dfiles)
         _dfiles.insert({dfile.first, {dfile.second.begin(), dfile.second.end()}});
@@ -82,8 +79,6 @@ sc::target lua_tools::conv_to_target(lua_tools::table<string, any> &trg_o_t) {
     sc::target trg;
 
     trg.ext       = conv_to_extension(std::any_cast<lua_tools::table<string, any>>(trg_o_t[TRG_NAME_FIELD_EXTENSION]));
-    trg.type      = sc::to_target_type(std::any_cast<string>(trg_o_t[TRG_VAR_NAME_TYPE]));
-    trg.cfg       = sc::to_target_cfg(std::any_cast<string>(trg_o_t[TRG_VAR_NAME_CFG]));
     trg.name      = std::any_cast<string>(trg_o_t[TRG_NAME_FIELD_NTARGET]);
     trg.ver       = std::any_cast<string>(trg_o_t[TRG_VAR_NAME_VER]);
     trg.templates = std::any_cast<vec<string>>(trg_o_t[TRG_VAR_NAME_TEMPLATES]);
@@ -119,8 +114,6 @@ sc::template_command lua_tools::conv_to_template(lua_tools::table<string, any> &
         std::any_cast<lua_tools::array<lua_tools::array<any>>>(tcmd[NAME_FIELD_TEMPLATE_COMMAND_NAME_ARGS]));
     _tcmd.returnable =
         conv_to_return_value(std::any_cast<lua_tools::array<any>>(tcmd[NAME_FIELD_TEMPLATE_COMMAND_RET]));
-    _tcmd.ifiles           = std::any_cast<vec<string>>(tcmd[NAME_FIELD_TEMPLATE_COMMAND_IFILES]);
-    _tcmd.single_generates = std::any_cast<pdiff>(tcmd[NAME_FIELD_TEMPLATE_COMMAND_SINGLE_GENERATES]);
 
     return _tcmd;
 }

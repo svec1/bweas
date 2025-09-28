@@ -32,7 +32,7 @@ class bweas::module_manager {
     };
 
     struct _module {
-        _module(string_v _name, bwlang::parser_utils::context &&_ctx = {}) : name(_name), ctx(std::move(_ctx)) {
+        _module(string_v _name, bwlang::parser_utils::context &&_ctx = {}) : name(_name), ctx(_ctx) {
         }
 
         string name;

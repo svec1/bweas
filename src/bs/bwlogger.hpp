@@ -94,6 +94,8 @@ class bweas::logger {
     void handle(string &&str);
 
   public:
+    static void init();
+
     static bweas::log_type global_status;
     static bool error_status();
 

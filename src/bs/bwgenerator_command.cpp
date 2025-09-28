@@ -88,7 +88,8 @@ void generator_command::get_input_files() {
         }
 
         if (current_template.returnable.type == sc::template_command::return_value::e_type::object &&
-            current_template.returnable.value == target_type_str(target.type))
+            current_template.returnable.value ==
+                target_type_str((sc::target::e_type)target.fields<pdiff>(sc::profile::FIELD_TARGET_TYPE)))
             current_template.returns_target = 1;
         else if (current_template.returnable.type == sc::template_command::return_value::e_type::extension_field) {
             if (!target.ext.contains(current_template.returnable.value) ||
@@ -148,35 +149,17 @@ commands generator_command::generate() {
         size_t real_count_use_ifiles = 0;
 
         for (auto &arg : current_template.args) {
-            if (arg.type == sc::template_command::arg::e_type::extglobal) {
-                const auto &extern_arg = std::find_if(
-                    _context->global_external_args.begin(), _context->global_external_args.end(),
-                    [&arg](const std::pair<string, string> extern_typemp) { return extern_typemp.first == arg.value; });
-                if (extern_arg == _context->global_external_args.end())
-                    _log << (log_message(log_type::fatal)
-                             << "The specified external parameter does not exist: " << arg.value);
+            if (arg.type == sc::template_command::arg::e_type::trgfield) {
+                if (auto value = target.ext.get_if<pdiff>(arg.value); value)
+                    cmd.args.push_back(std::to_string(*value));
+                else if (auto value = target.ext.get_if<string>(arg.value); value)
+                    cmd.args.push_back(*value);
+                else if (auto value = target.ext.get_if<vec<string>>(arg.value); value) {
+                    const auto &str_s = *value;
 
-                cmd.args.push_back(extern_arg->second);
-            }
-            else if (arg.type == sc::template_command::arg::e_type::trgfield) {
-                if (target.ext.contains(arg.value)) {
-                    if (target.ext.is_string(arg.value))
-                        cmd.args.push_back(target.fields<string>(arg.prefix + arg.value));
-                    else {
-                        const auto &str_s = target.fields<vec<string>>(arg.value);
-
-                        for (size_t k = 0; k < str_s.size(); ++k)
-                            cmd.args.push_back(arg.prefix + str_s[k]);
-                    }
+                    for (size_t k = 0; k < str_s.size(); ++k)
+                        cmd.args.push_back(arg.prefix + str_s[k]);
                 }
-                else if (arg.value == NAME_FIELD_TARGET_NAME)
-                    cmd.args.push_back(arg.prefix + target.name);
-                else if (arg.value == NAME_FIELD_TARGET_TYPE)
-                    cmd.args.push_back(arg.prefix + sc::target_type_str(target.type));
-                else if (arg.value == NAME_FIELD_TARGET_CFG)
-                    cmd.args.push_back(arg.prefix + sc::target_cfg_str(target.cfg));
-                else if (arg.value == NAME_FIELD_TARGET_VER)
-                    cmd.args.push_back(arg.prefix + target.ver.get_str_version());
                 else
                     _log << (log_message(log_type::fatal) << "There is no such parameter: " << arg.value);
             }

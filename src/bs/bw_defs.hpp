@@ -19,7 +19,7 @@
 
 #include <bwlogger.hpp>
 
-#include <bwdepends_api.hpp>
+#include <bwdependency_finder.hpp>
 
 namespace bweas {
 
@@ -36,17 +36,16 @@ inline constexpr auto CACHE_FILE     = "bwcache";
 inline constexpr auto DEPENDS_FILE   = "bwdependencies";
 inline constexpr auto FORMAT_PACKAGE = ".bweas-package";
 
-inline constexpr auto THREADS_COUNT_DEFAULT = 4;
+inline constexpr auto THREADS_COUNT_DEFAULT = 1;
 
 // The structure defining the main data for the build
 struct context {
     vec<sc::target> targets;
     vec<sc::template_command> templates;
     vec<sc::call_component> call_components;
-    vec<pair<string, string>> global_external_args;
 
   public:
-    depends_files::depends_map dfiles;
+    dependency_finder::dependency_map dfiles;
 
   public:
     sc::target *current_target;
