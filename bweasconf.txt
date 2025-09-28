@@ -4,7 +4,7 @@ t_object: ctemplate = {str = 'clang++:{}.o(NULL) -> objects: -c [source_files:*.
 t_lib: ctemplate = {str = 'ar:bweas.a(objects) -> LIBRARY: rcs OUTPUT_FILE {objects}'}
 t_exe: ctemplate = {str =' clang++:{}(bweas_slib) -> EXECUTABLE: INPUT_FILE {bweas_slib} -o OUTPUT_FILE -I[include_paths] -l[libs] [compile_flags]'}
 
-lib_names: string[] = ['lz4', 'lua', 'luajit-5.1']
+lib_names: string[] = ['lua', 'luajit-5.1']
 target_compile_flags: string[] = ['-std=gnu++23', '-Wall', '-fPIC']
 target_include_paths: string[] = ['/usr/include', '/usr/local/include', config_path+'/src/bs']
 

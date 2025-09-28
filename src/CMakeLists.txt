@@ -12,7 +12,7 @@ if(DEFINED VCPKG_TARGET_TRIPLET)
 
     find_package(nlohmann_json CONFIG REQUIRED)
 
-    set(BWEAS_LIBS ${LuaJIT_LIBRARIES} nlohmann_json::nlohmann_json lz4::lz4)
+    set(BWEAS_LIBS ${LuaJIT_LIBRARIES} nlohmann_json::nlohmann_json)
     set(BWEAS_INCLUDE ${LuaJIT_INCLUDE_DIRS} CACHE STRING "All header-files for bweas")
 
     message(STATUS "Install package with vcpkg")
