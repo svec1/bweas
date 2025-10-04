@@ -223,11 +223,7 @@ class bweas::utils::lua {
 
   private:
     template <typename> struct is_map : std::false_type {};
-    template <typename K, typename V>
-        requires requires(K k, V v) {
-            { lcomp_anymap(k, v) } noexcept;
-        }
-    struct is_map<table<K, V>> : std::true_type {};
+    template <typename K, typename V> struct is_map<table<K, V>> : std::true_type {};
 
     template <typename> struct is_vector : std::false_type {};
     template <typename U, typename A> struct is_vector<std::vector<U, A>> : std::true_type {};

@@ -1,3 +1,10 @@
+//
+// BWEAS is distributed under the gnu general public license 2.0 (gpl-2.0).
+// you can view the license text at the link:
+//     <https://www.gnu.org/licenses />
+// ------------------------------------------
+//
+
 #ifndef PARSER_UTILS_HPP
 #define PARSER_UTILS_HPP
 
@@ -49,6 +56,9 @@ template <typename... Types> struct func_wrapper : Types... {
 };
 template <typename... Types> func_wrapper(Types...) -> func_wrapper<Types...>;
 
+template <typename> struct is_vector : std::false_type {};
+template <typename U, typename A> struct is_vector<std::vector<U, A>> : std::true_type {};
+
 class parser_error : public std::exception {
   public:
     parser_error(string _what_str, tokens::token _tk = {}) noexcept : what_str(_what_str), tk(_tk) {
@@ -61,24 +71,23 @@ class parser_error : public std::exception {
         return what_str.c_str();
     }
 
-    string get_token() {
-        return tokens::get_string(tk);
+    tokens::token get_token() {
+        return tk;
     }
 
   private:
     string what_str;
     tokens::token tk;
 };
-
-using access = std::pair<string, string>;
-using match_pack =
-    umap<string,
-         std::variant<std::monostate, pdiff, string, vec<pdiff>, vec<string>, bweas::sc::language, bweas::sc::profile>>;
-using value = std::variant<std::monostate, pdiff, string, bweas::sc::call_component, bweas::sc::template_command,
-                           bweas::sc::language, bweas::sc::profile, bweas::sc::target, vec<pdiff>, vec<string>,
-                           vec<bweas::sc::target>, access>;
-using scope = umap<string, value>;
 struct context;
+struct func;
+
+using value      = std::variant<std::monostate, pdiff, string, bweas::sc::call_component, bweas::sc::template_command,
+                                bweas::sc::language, bweas::sc::profile, bweas::sc::target, vec<pdiff>, vec<string>,
+                                vec<bweas::sc::call_component>, vec<bweas::sc::template_command>, vec<bweas::sc::language>,
+                                vec<bweas::sc::profile>, vec<bweas::sc::target>, func>;
+using match_pack = vec<pair<string, value>>;
+using scope      = umap<string, value>;
 struct func {
     using func_t = std::function<value(string, context &)>;
 
@@ -92,10 +101,10 @@ struct func {
     bool declared = false;
 };
 struct context {
-    value &get_variable(string_v name) {
+    value &get(string_v name, bool is_local) {
         if (sc.contains(name.data()))
             return sc.at(name.data());
-        else if (g_ctx) {
+        else if (g_ctx && !is_local) {
             context *t_ctx = g_ctx;
             while (t_ctx && !t_ctx->sc.contains(name.data()))
                 t_ctx = t_ctx->g_ctx;
@@ -105,23 +114,10 @@ struct context {
         }
         throw std::runtime_error("Unknown variable \'" + string(name) + "\'.");
     }
-    func &get_function(string_v name) {
-        if (funcs.contains(name.data()))
-            return funcs.at(name.data());
-        else if (g_ctx) {
-            context *t_ctx = g_ctx;
-            while (t_ctx && !t_ctx->funcs.contains(name.data()))
-                t_ctx = t_ctx->g_ctx;
-
-            if (t_ctx)
-                return t_ctx->funcs.at(name.data());
-        }
-        throw std::runtime_error("Unknown function \'" + string(name) + "\'.");
-    }
 
   public:
-    bool is_variable(string_v name) {
-        if (g_ctx) {
+    bool contains(string_v name, bool is_local) {
+        if (g_ctx && !is_local) {
             context *t_ctx = g_ctx;
             while (t_ctx && !t_ctx->sc.contains(name.data()))
                 t_ctx = t_ctx->g_ctx;
@@ -131,34 +127,25 @@ struct context {
         }
         return sc.contains(name.data());
     }
-    bool is_function(string_v name) {
-        if (g_ctx) {
-            context *t_ctx = g_ctx;
-            while (t_ctx && !t_ctx->funcs.contains(name.data()))
-                t_ctx = t_ctx->g_ctx;
-
-            if (t_ctx)
-                return t_ctx->funcs.contains(name.data());
-        }
-        return funcs.contains(name.data());
-    }
 
   public:
     context *g_ctx = nullptr;
 
     scope sc;
-    umap<string, func> funcs;
 };
 
 template <typename T> static constexpr string get_type_name() {
+    if constexpr (is_vector<T>::value)
+        return "[" + get_type_name<typename T::value_type>() + "]";
+
     if constexpr (std::is_same_v<T, pdiff>)
         return "number";
     else if constexpr (std::is_same_v<T, string>)
         return "string";
     else if constexpr (std::is_same_v<T, vec<pdiff>>)
-        return "[number]";
+        return "number";
     else if constexpr (std::is_same_v<T, vec<string>>)
-        return "[string]";
+        return "string";
     else if constexpr (std::is_same_v<T, bweas::sc::call_component>)
         return "call_component";
     else if constexpr (std::is_same_v<T, bweas::sc::template_command>)
@@ -184,13 +171,13 @@ template <typename T> value get_field(T &obj, string name) {
         else if (name == "pattern_files")
             return obj.pattern_ret_files;
         else
-            throw std::runtime_error("A non-existent field.");
+            throw parser_utils::parser_error("A non-existent field.");
     }
     else if constexpr (std::is_same_v<T, sc::template_command>) {
         if (name == "name")
             return obj.name;
         else
-            throw std::runtime_error("A non-existent field.");
+            throw parser_utils::parser_error("A non-existent field.");
     }
     else if constexpr (std::is_same_v<T, sc::language>) {
         if (name == "name")
@@ -200,7 +187,7 @@ template <typename T> value get_field(T &obj, string name) {
         else if (name == "char_global_search")
             return obj.dfinder_data.char_global_search;
         else
-            throw std::runtime_error("A non-existent field.");
+            throw parser_utils::parser_error("A non-existent field.");
     }
     else if constexpr (std::is_same_v<T, sc::profile>) {
         return std::visit([](auto &&val) -> value { return val; }, obj.get_fields()[name]);
@@ -218,7 +205,7 @@ template <typename T> value get_field(T &obj, string name) {
             return std::visit([](auto &&val) -> value { return val; }, obj.ext.get_fields()[name]);
     }
     else
-        throw std::runtime_error("Unexpected type.");
+        throw parser_utils::parser_error("The " + get_type_name<T>() + " type is not a structure.");
 }
 
 template <typename T> void set_field(T &obj, string name, value val) {
@@ -226,7 +213,7 @@ template <typename T> void set_field(T &obj, string name, value val) {
 
     if constexpr (std::is_same_v<T, sc::call_component>) {
         if (!std::holds_alternative<string>(val))
-            throw std::runtime_error("Undefined type for match.");
+            throw parser_utils::parser_error("Expected " + get_type_name<string>() + " type.");
         if (name == "name")
             obj.name = std::get<string>(val);
         else if (name == "program")
@@ -234,21 +221,21 @@ template <typename T> void set_field(T &obj, string name, value val) {
         else if (name == "pattern_files")
             obj.pattern_ret_files = std::get<string>(val);
         else
-            throw std::runtime_error("A non-existent field.");
+            throw parser_utils::parser_error("A non-existent field.");
     }
     else if constexpr (std::is_same_v<T, sc::template_command>) {
         if (!std::holds_alternative<string>(val))
-            throw std::runtime_error("Undefined type for match.");
+            throw parser_utils::parser_error("Expected " + get_type_name<string>() + " type.");
         if (name == "name")
             obj.name = std::get<string>(val);
         else if (name == "str")
             obj = sc::template_command::create_template_command(obj.name, std::get<string>(val));
         else
-            throw std::runtime_error("A non-existent field.");
+            throw parser_utils::parser_error("A non-existent field.");
     }
     else if constexpr (std::is_same_v<T, sc::language>) {
         if (!std::holds_alternative<string>(val))
-            throw std::runtime_error("Undefined type for match.");
+            throw parser_utils::parser_error("Expected " + get_type_name<string>() + " type.");
 
         if (name == "name")
             obj.name = std::get<string>(val);
@@ -257,23 +244,23 @@ template <typename T> void set_field(T &obj, string name, value val) {
         else if (name == "char_global_search")
             obj.dfinder_data.char_global_search = std::get<string>(val)[0];
         else
-            throw std::runtime_error("A non-existent field.");
+            throw parser_utils::parser_error("A non-existent field.");
     }
     else if constexpr (std::is_same_v<T, sc::profile>) {
         if (name == "derive") {
             if (!std::holds_alternative<sc::profile>(val))
-                throw std::runtime_error("Undefined type for match.");
+                throw parser_utils::parser_error("Expected " + get_type_name<sc::profile>() + " type.");
             obj.merge(std::get<sc::profile>(val));
         }
         else if (name == "lang") {
             if (!std::holds_alternative<sc::language>(val))
-                throw std::runtime_error("Undefined type for match.");
+                throw parser_utils::parser_error("Expected " + get_type_name<sc::language>() + " type.");
 
             obj.lang = std::get<sc::language>(val);
         }
         else if (name == "cfg") {
             if (!std::holds_alternative<pdiff>(val))
-                throw std::runtime_error("Undefined type for match.");
+                throw parser_utils::parser_error("Expected " + get_type_name<pdiff>() + " type.");
             obj.set_fields(std::get<pdiff>(val));
         }
         else {
@@ -281,17 +268,18 @@ template <typename T> void set_field(T &obj, string name, value val) {
             std::visit(
                 [&](auto &&var) {
                     using T2 = std::decay_t<decltype(var)>;
+
                     if (exists && !std::holds_alternative<T2>(val))
-                        throw std::runtime_error("Undefined type for match.");
+                        throw parser_utils::parser_error("Expected " + get_type_name<T2>() + " type.");
                     else if (!exists)
                         obj.get_fields()[name] = std::visit(
                             func_wrapper{[](pdiff &val) -> sc::profile::fields::mapped_type { return val; },
                                          [](string &val) -> sc::profile::fields::mapped_type { return val; },
                                          [](vec<string> &val) -> sc::profile::fields::mapped_type { return val; },
                                          [](auto &&val) -> sc::profile::fields::mapped_type {
-                                             throw std::runtime_error("Unexpected type \'" +
-                                                                      get_type_name<std::decay_t<decltype(val)>>() +
-                                                                      "\'");
+                                             throw parser_utils::parser_error(
+                                                 "Unexpected type \'" + get_type_name<std::decay_t<decltype(val)>>() +
+                                                 "\'");
                                          }},
                             val);
                     else
@@ -303,27 +291,27 @@ template <typename T> void set_field(T &obj, string name, value val) {
     else if constexpr (std::is_same_v<T, sc::target>) {
         if (name == "name") {
             if (!std::holds_alternative<string>(val))
-                throw std::runtime_error("Undefined type for match.");
+                throw parser_utils::parser_error("Expected " + get_type_name<string>() + " type.");
             obj.name = std::get<string>(val);
         }
         else if (name == "extension") {
             if (!std::holds_alternative<sc::profile>(val))
-                throw std::runtime_error("Undefined type for match.");
-            obj.ext.merge(std::get<sc::profile>(val));
+                throw parser_utils::parser_error("Expected " + get_type_name<sc::profile>() + " type.");
+            obj.ext = std::get<sc::profile>(val);
         }
         else if (name == "cfg") {
             if (!std::holds_alternative<pdiff>(val))
-                throw std::runtime_error("Undefined type for match.");
+                throw parser_utils::parser_error("Expected " + get_type_name<pdiff>() + " type.");
             obj.ext.set_fields(std::get<pdiff>(val));
         }
         else if (name == "templates") {
             if (!std::holds_alternative<vec<string>>(val))
-                throw std::runtime_error("Undefined type for match.");
+                throw parser_utils::parser_error("Expected " + get_type_name<vec<string>>() + " type.");
             obj.templates = std::get<vec<string>>(val);
         }
         else if (name == "dependencies") {
             if (!std::holds_alternative<vec<string>>(val))
-                throw std::runtime_error("Undefined type for match.");
+                throw parser_utils::parser_error("Expected " + get_type_name<vec<string>>() + " type.");
             obj.dependencies = std::get<vec<string>>(val);
         }
         else {
@@ -332,16 +320,16 @@ template <typename T> void set_field(T &obj, string name, value val) {
                 [&](auto &&var) {
                     using T2 = std::decay_t<decltype(var)>;
                     if (exists && !std::holds_alternative<T2>(val))
-                        throw std::runtime_error("Undefined type for match.");
+                        throw parser_utils::parser_error("Expected " + get_type_name<T2>() + " type.");
                     else if (!exists)
                         obj.ext.get_fields()[name] = std::visit(
                             func_wrapper{[](pdiff &val) -> sc::profile::fields::mapped_type { return val; },
                                          [](string &val) -> sc::profile::fields::mapped_type { return val; },
                                          [](vec<string> &val) -> sc::profile::fields::mapped_type { return val; },
                                          [](auto &&val) -> sc::profile::fields::mapped_type {
-                                             throw std::runtime_error("Unexpected type \'" +
-                                                                      get_type_name<std::decay_t<decltype(val)>>() +
-                                                                      "\'");
+                                             throw parser_utils::parser_error(
+                                                 "Unexpected type \'" + get_type_name<std::decay_t<decltype(val)>>() +
+                                                 "\'");
                                          }},
                             val);
                     else
@@ -351,7 +339,7 @@ template <typename T> void set_field(T &obj, string name, value val) {
         }
     }
     else
-        throw std::runtime_error("Unexpected type.");
+        throw parser_utils::parser_error("Unexpected " + get_type_name<T>() + " type.");
 }
 
 } // namespace parser_utils

@@ -1,15 +1,15 @@
 import 'base'
 
-t_object: ctemplate = {str = 'clang++:{}.o(NULL) -> objects: -c [source_files:*.cpp] -o OUTPUT_FILE -I[include_paths] [compile_flags]'}
-t_lib: ctemplate = {str = 'ar:bweas.a(objects) -> LIBRARY: rcs OUTPUT_FILE {objects}'}
-t_exe: ctemplate = {str =' clang++:{}(bweas_slib) -> EXECUTABLE: INPUT_FILE {bweas_slib} -o OUTPUT_FILE -I[include_paths] -l[libs] [compile_flags]'}
+t_object: ctemplate = {str = 'clang++:{}.o() -> obj_s: -c [source_files:*.cpp] -o OUTPUT_FILE -I[include_paths] [compile_flags]'}
+t_lib: ctemplate    = {str = 'ar:{target_name}.a(obj_s) -> target: rcs OUTPUT_FILE {obj_s}'}
+t_exe: ctemplate    = {str =' clang++:{target_name}() -> target: INPUT_FILE DEPENDENCIES -o OUTPUT_FILE -I[include_paths] -l[libs] [compile_flags]'}
 
 lib_names: string[] = ['lua', 'luajit-5.1']
 target_compile_flags: string[] = ['-std=gnu++23', '-Wall', '-fPIC']
 target_include_paths: string[] = ['/usr/include', '/usr/local/include', config_path+'/src/bs']
 
 bweas_slib: target = {
-                        extension = cxx_lib,
+                        extension = cxx_base,
                         templates = ['t_object', 't_lib'],
                         compile_flags = target_compile_flags,
                         include_paths = target_include_paths,
@@ -18,7 +18,7 @@ bweas_slib: target = {
 }
 
 bweas_exe: target = {
-                    extension = cxx_exec,
+                    extension = cxx_base,
                     templates = ['t_exe'],
                     dependencies = ['bweas_slib'],
                     libs = lib_names,

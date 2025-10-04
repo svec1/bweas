@@ -344,8 +344,6 @@ void builder::build_targets() {
             _log << (log_message(log_type::fatal) << "Expected \'" << sc::profile::FIELD_SOURCE_FILES << "\' field.");
         else if (!trg.ext.contains(sc::profile::FIELD_INCLUDE_PATHS))
             _log << (log_message(log_type::fatal) << "Expected \'" << sc::profile::FIELD_INCLUDE_PATHS << "\' field.");
-        else if (!trg.ext.contains(sc::profile::FIELD_TARGET_TYPE))
-            _log << (log_message(log_type::fatal) << "Expected \'" << sc::profile::FIELD_TARGET_TYPE << "\' field.");
     };
 
     for (auto &target : _context.targets) {
@@ -374,9 +372,8 @@ void builder::build_targets() {
 
             generator_command generator(&_context);
 
-            target.queue_templates = sc::template_command::create_queue_target_templates(
-                _context.templates, target.templates,
-                (sc::target::e_type)target.fields<pdiff>(sc::profile::FIELD_TARGET_TYPE));
+            target.queue_templates =
+                sc::template_command::create_queue_target_templates(_context.templates, target.templates);
             _context.current_target         = &target;
             _context.current_work_directory = _context.path_bweas_to_build + target.name;
 

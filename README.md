@@ -31,23 +31,15 @@ You can also clone the LuaJit or nlohmann/json repositories and follow these ste
 > Required: Make
 ```
 cd external
+git clone https://github.com/nlohmann/json
 git clone https://github.com/LuaJIT/LuaJIT
 cd LuaJIT
 sudo make install
 ```
-**For lz4 and nlohmann-json**
-```
-cd external
-git clone https://github.com/nlohmann/json
-git clone https://github.com/lz4/lz4
-```
-> [!IMPORTANT]
-> You don't need to compile it yourself(nlohmann-json and lz4), the cmake call will do it for you next..
-
 > [!TIP]
 > If you did this, then you need to set the appropriate options for cmake when building:
 ```
-cmake -DUSER_BUILD_LUA=ON -DUSER_BUILD_JSON=ON -DUSER_BUILD_LZ4=ON ..
+cmake -DUSER_BUILD_LUA=ON -DUSER_BUILD_JSON=ON ..
 cmake --build .
 ```
 ***
@@ -62,7 +54,7 @@ vcpkg\bootstrap-vcpkg.bat
 vcpkg\vcpkg integrate install
 mkdir build
 cd build
-cmake -DCMAKE_TOOLCHAIN_FILE=D:\rep\bweas\vcpkg\scripts\buildsystems\vcpkg.cmake ..
+cmake -DCMAKE_TOOLCHAIN_FILE=..\vcpkg\scripts\buildsystems\vcpkg.cmake ..
 cmake --build . --config Release
 ```
 > [!TIP]
@@ -83,7 +75,7 @@ import 'base'
 # since the "feature" of the built-in generator is used: 
 # INPUT_FILE(single-generate parameter) in conjunction with OUTPUT_FILE.)
 t_obj: ctemplate = {str =' clang++:{}.o() -> OBJECTS: INPUT_FILE -o OUTPUT_FILE [compile_flags]'}
-t_exe: ctemplate = {str =' clang++:my_program(OBJECTS) -> EXECUTABLE: {OBJECT} -o OUTPUT_FILE'}
+t_exe: ctemplate = {str =' clang++:{target_name}(OBJECTS) -> target: {OBJECT} -o OUTPUT_FILE'}
 
 # Creating a target object that will continue to be built
 my_target: target = {

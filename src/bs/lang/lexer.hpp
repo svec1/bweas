@@ -1,3 +1,10 @@
+//
+// BWEAS is distributed under the gnu general public license 2.0 (gpl-2.0).
+// you can view the license text at the link:
+//     <https://www.gnu.org/licenses />
+// ------------------------------------------
+//
+
 #ifndef LEXER_HPP
 #define LEXER_HPP
 
@@ -20,30 +27,22 @@ class lexer {
   protected:
     vec<tokens::token> &get_tokens();
 
-    string get_string_last_line() {
-        if (!std::holds_alternative<tokens::end_line>(peek())) {
-            for (const auto &token : tokens) {
-                if (std::holds_alternative<tokens::end_line>(token))
-                    break;
-                string_last_line += tokens::get_string(token);
-            }
-        }
-        return string_last_line;
+    string get_string_line(const tokens::token &tk) const {
+        if (tk.line_index < lines.size())
+            return lines[tk.line_index];
+        return "?";
     }
-    string get_string_previous_line() {
-        return previous_line;
-    }
-
-    pdiff get_number_last_line() const {
-        return number_last_line;
+    string get_string_previous_line(const tokens::token &tk) const {
+        if (tk.line_index < lines.size() && tk.line_index)
+            return lines[tk.line_index - 1];
+        return "";
     }
 
   private:
     tokens::token get_token(string_v value, bool in_quote = 0);
 
     vec<tokens::token> tokens;
-    string string_last_line, previous_line;
-    pdiff number_last_line = 1;
+    vec<string> lines;
 };
 } // namespace bwlang
 

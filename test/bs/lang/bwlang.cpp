@@ -54,10 +54,10 @@ TEST(BWLANG, Lexer) {
         tokens = l.get_tokens();
     });
     ASSERT_EQ(tokens.size(), 145);
-    EXPECT_TRUE(std::holds_alternative<tokens::init_type>(tokens[1]));
-    EXPECT_TRUE(std::holds_alternative<tokens::keyword<>>(tokens[2]));
-    ASSERT_EQ(std::get<tokens::keyword<>>(tokens[2]).value, "ctemplate");
-    EXPECT_TRUE(std::holds_alternative<tokens::literal_string>(tokens[7]));
+    EXPECT_TRUE(tokens[1].is<tokens::init_type>());
+    EXPECT_TRUE(tokens[2].is<tokens::keyword<>>());
+    ASSERT_EQ(tokens[2].get<tokens::keyword<>>().value, "ctemplate");
+    EXPECT_TRUE(tokens[7].is<tokens::literal_string>());
 }
 TEST(BWLANG, Parser) {
 

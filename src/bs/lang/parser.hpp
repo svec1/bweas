@@ -1,3 +1,10 @@
+//
+// BWEAS is distributed under the gnu general public license 2.0 (gpl-2.0).
+// you can view the license text at the link:
+//     <https://www.gnu.org/licenses />
+// ------------------------------------------
+//
+
 #ifndef PARSER_HPP
 #define PARSER_HPP
 
@@ -40,7 +47,7 @@ class parser : private lexer {
             using Token = std::decay_t<decltype(type)>;
             try {
                 if (is_not_token) {
-                    if (!std::holds_alternative<Token>(peek()))
+                    if (!peek().is<Token>())
                         throw "";
 
                     tk           = consume();
@@ -50,7 +57,7 @@ class parser : private lexer {
                     return;
             }
             catch (...) {
-                expected += "\'" + tokens::get_string(Token{}) + "\' ";
+                expected += "\'" + tokens::get_string({Token{}}) + "\' ";
                 return;
             }
         };
@@ -74,13 +81,13 @@ class parser : private lexer {
     }
     tokens::identifier expect_identifier() {
         skip_token_end_line();
-        if (!std::holds_alternative<tokens::identifier>(peek()))
+        if (!peek().is<tokens::identifier>())
             throw parser_utils::parser_error("Expected identifier.", consume());
-        return std::get<tokens::identifier>(consume_if());
+        return consume_if().get<tokens::identifier>();
     }
 
     void skip_token_end_line() {
-        while (std::holds_alternative<tokens::end_line>(peek()))
+        while (peek().is<tokens::end_line>())
             consume();
     }
 

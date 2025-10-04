@@ -1,4 +1,3 @@
-option(USER_BUILD_LZ4 "Rep LZ4 on external" OFF)
 option(USER_BUILD_JSON "Rep JSON_C on external" OFF)
 option(USER_BUILD_LUA "Rep LuaJit on external" OFF)
 option(BWEAS_TEST "Build of bweas test" OFF)
@@ -7,7 +6,7 @@ cmake_minimum_required(VERSION 3.5 FATAL_ERROR)
 
 set(CMAKE_BUILD_TYPE Release)
 set(CMAKE_CXX_STANDARD 23)
-# set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -fsanitize=address -fsanitize=undefined -g")
+# set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -g")
 
 set(BW_NAME_PRJ bweas)
 set(BWEAS_SLIB slbweas)

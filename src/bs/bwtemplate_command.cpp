@@ -18,7 +18,7 @@ template_command template_command::create_template_command(string_v template_nam
     string tmp_param;
 
     std::regex template_command_syntax(
-        R"(^\s*(\w+|[^'"\]\[:]+:[^'"\]\[:]+)\(\s*(\w+(?:\s*,\s*\w+)*\s*)?\)\s*->\s+(?:(\w+)|\[(\w+)\]):((?:\s+(?:[^'"]+)?\{\w+\}|\s+(?:[^'"]+)?\[(?:\w+(?::[^'"]+)?)\]|\s+[^'"\]\[:]+\s*)+)\s*$)");
+        R"(^\s*([^'"\]\[:]+(?::[^'"\]\[:]+)?)\(\s*(\w+(?:\s*,\s*\w+)*\s*)?\)\s*->\s+(?:(\w+)|\[(\w+)\]):((?:\s+(?:[^'"]+)?\{\w+\}|\s+(?:[^'"]+)?\[(?:\w+(?::[^'"]+)?)\]|\s+[^'"\]\[:]+\s*)+)\s*$)");
 
     std::smatch args_match;
     if (std::regex_match(template_str, args_match, template_command_syntax)) {
@@ -88,8 +88,7 @@ template_command template_command::create_template_command(string_v template_nam
     return tcmd_tmp;
 }
 vec<template_command> template_command::create_queue_target_templates(const vec<template_command> &templates,
-                                                                      const vec<string> &templates_target,
-                                                                      target::e_type target_t) {
+                                                                      const vec<string> &templates_target) {
     vec<template_command> vec_templates_tmp;
     vec<template_command> target_queue_templates;
 
@@ -100,15 +99,14 @@ vec<template_command> template_command::create_queue_target_templates(const vec<
     }
 
     const auto &it_template =
-        find_if(vec_templates_tmp.begin(), vec_templates_tmp.end(), [target_t](const sc::template_command &_template) {
+        find_if(vec_templates_tmp.begin(), vec_templates_tmp.end(), [](const sc::template_command &_template) {
             return _template.returnable.type == sc::template_command::return_value::e_type::object &&
-                   _template.returnable.value == target_type_str(target_t);
+                   _template.returnable.value == sc::template_command::return_value::RETURN_VALUE_TARGET;
         });
 
     if (it_template == vec_templates_tmp.end())
         throw std::runtime_error("There is no template that returns a target with the given "
-                                 "type: " +
-                                 sc::target_type_str(target_t));
+                                 "target.");
 
     target_queue_templates.push_back(*it_template);
     for (size_t i = 0; i < it_template->name_accept_params.size(); ++i)

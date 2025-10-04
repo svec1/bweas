@@ -1,3 +1,10 @@
+//
+// BWEAS is distributed under the gnu general public license 2.0 (gpl-2.0).
+// you can view the license text at the link:
+//     <https://www.gnu.org/licenses />
+// ------------------------------------------
+//
+
 #ifndef TOKENS_HPP
 #define TOKENS_HPP
 
@@ -26,10 +33,6 @@ inline constexpr char ctemplate_t[] = "ctemplate";
 inline constexpr char language_t[]  = "language";
 inline constexpr char profile_t[]   = "profile";
 inline constexpr char target_t[]    = "target";
-
-inline constexpr char anumber_t[] = "anumber";
-inline constexpr char astring_t[] = "astring";
-inline constexpr char atarget_t[] = "atarget";
 
 static constexpr array<string_v, 16> keywords = {_is,         _not,       _import,   _func,    _endfunc, _if,
                                                  _return,     _else,      _endif,    number_t, string_t, cc_t,
@@ -115,12 +118,38 @@ struct language_t : public keyword<string_matching::language_t> {};
 struct profile_t : public keyword<string_matching::profile_t> {};
 struct target_t : public keyword<string_matching::target_t> {};
 
-using token =
+using token_value =
     std::variant<std::monostate, keyword<>, identifier, literal_string, literal_number, end_line, open_init_bracket,
                  open_round_bracket, open_square_bracket, close_init_bracket, close_round_bracket, close_square_bracket,
                  comma, dot, init_type, equal, plus, minus, multiply, devide, less, more>;
 
-template <typename Kw> static constexpr bool is_keyword(token tk) {
+struct token {
+    token() = default;
+    token(token_value _value, size_t _line_index) : value(_value), line_index(_line_index) {
+    }
+    token(token_value &&_value) : value(_value) {
+    }
+
+  public:
+    template <typename T> T &get() {
+        return std::get<T>(value);
+    }
+    template <typename T> const T &get() const {
+        return std::get<T>(value);
+    }
+    template <typename T> bool is() const {
+        return std::holds_alternative<T>(value);
+    }
+
+  public:
+    token_value value;
+    size_t line_index;
+};
+
+template <typename Kw> static constexpr bool is_keyword(const token &tk) {
+    return tk.is<keyword<>>() && tk.get<keyword<>>().value == Kw::s_value;
+}
+template <typename Kw> static constexpr bool is_keyword(const token_value &tk) {
     return std::holds_alternative<keyword<>>(tk) && std::get<keyword<>>(tk).value == Kw::s_value;
 }
 
@@ -129,20 +158,16 @@ static constexpr bool is_type(string kw) {
                         [&](string_v type) { return kw == type; }) != string_matching::types.end();
 }
 
-static constexpr string make_array_type(string type) {
-    return "a" + type;
-}
-
-static string get_string(token tk) {
+static inline constexpr string get_string(token tk) {
     return std::visit(
         [](auto &token) -> string {
             using Type = typename std::decay_t<decltype(token)>;
             if constexpr (std::is_same_v<Type, keyword<>> || std::is_same_v<Type, identifier>)
                 return token.value;
-            else if constexpr (std::is_same_v<Type, literal_string>)
-                return "\'" + token.value + "\'";
             else if constexpr (std::is_same_v<Type, literal_number>)
                 return std::to_string(token.value);
+            else if constexpr (std::is_same_v<Type, literal_string>)
+                return "\'" + token.value + "\'";
             else if constexpr (std::is_same_v<Type, end_line>)
                 return "\n";
             else if constexpr (std::is_same_v<Type, open_init_bracket>)
@@ -180,7 +205,7 @@ static string get_string(token tk) {
             else
                 return "";
         },
-        tk);
+        tk.value);
 }
 } // namespace tokens
 } // namespace bwlang

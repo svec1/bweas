@@ -1,3 +1,10 @@
+//
+// BWEAS is distributed under the gnu general public license 2.0 (gpl-2.0).
+// you can view the license text at the link:
+//     <https://www.gnu.org/licenses />
+// ------------------------------------------
+//
+
 #ifndef EXPRESSION_HPP
 #define EXPRESSION_HPP
 
@@ -14,14 +21,28 @@ namespace expression {
 
 template <typename T> class base {
   public:
-    base(parser_utils::context &_ctx) : ctx(_ctx) {
+    base(parser_utils::context &_ctx, tokens::token _tk) : ctx(_ctx), tk(std::move(_tk)) {
     }
     virtual ~base() = default;
 
     using value_type = T;
 
   public:
-    virtual value_type get_value() = 0;
+    const tokens::token &get_token() const {
+        return tk;
+    }
+
+  public:
+    virtual value_type get_value() const = 0;
+
+    virtual value_type &get_reference() {
+        throw parser_utils::parser_error("Invalid reference definition.", tk);
+    }
+    virtual bool is_context_member() const {
+        throw parser_utils::parser_error("Invalid check for existence in the context.", tk);
+    }
+
+  public:
     virtual constexpr bool is_identifier() const {
         return false;
     }
@@ -31,45 +52,69 @@ template <typename T> class base {
     virtual constexpr bool is_type() const {
         return false;
     }
-    virtual constexpr bool is_access() const {
+    virtual constexpr bool is_array() const {
         return false;
     }
 
-  public:
+  protected:
     parser_utils::context &ctx;
+    tokens::token tk;
 };
 
 template <typename T> class constant : public base<T> {
   public:
-    constant(parser_utils::context &_ctx, base<T>::value_type _val) : base<T>(_ctx), val(_val) {
+    constant(parser_utils::context &_ctx, tokens::token _tk, base<T>::value_type _val)
+        : base<T>(_ctx, _tk), val(std::move(_val)) {
     }
     virtual ~constant() = default;
 
   public:
-    base<T>::value_type get_value() override {
+    base<T>::value_type get_value() const override {
         return val;
     }
 
   private:
-    base<T>::value_type val;
+    const base<T>::value_type val;
 };
 
-template <typename T> class identifier : public constant<T> {
+template <typename T> class identifier final : public constant<T> {
   public:
-    identifier(parser_utils::context &_ctx, constant<T>::value_type _val) : constant<T>(_ctx, _val) {
+    identifier(parser_utils::context &_ctx, tokens::token _tk, string _val, bool _local = false)
+        : constant<T>(_ctx, _tk, _val), local(_local) {
     }
     ~identifier() override = default;
+
+  public:
+    constant<T>::value_type &get_reference() override {
+        auto name_variable = std::get<string>(this->get_value());
+
+        if (!is_context_member())
+            throw parser_utils::parser_error("Invalid access to a non-existent variable.", this->tk);
+
+        return this->ctx.get(name_variable, local);
+    }
+    bool is_context_member() const override {
+        return this->ctx.contains(std::get<string>(this->get_value()), local);
+    }
+
+  public:
+    constexpr bool is_local() const {
+        return local;
+    }
 
   public:
     constexpr bool is_identifier() const override {
         return true;
     }
+
+  private:
+    bool local;
 };
 
-template <typename T> class keyword : public constant<T> {
+template <typename T> class keyword final : public constant<T> {
   public:
-    keyword(parser_utils::context &_ctx, constant<T>::value_type _val, bool __is_type = false)
-        : constant<T>(_ctx, _val), _is_type(__is_type) {
+    keyword(parser_utils::context &_ctx, tokens::token _tk, string _val, bool __is_type = false, bool _is_array = false)
+        : constant<T>(_ctx, _tk, _val), _is_type(__is_type), _is_array(_is_array) {
     }
     ~keyword() override = default;
 
@@ -80,100 +125,111 @@ template <typename T> class keyword : public constant<T> {
     constexpr bool is_type() const override {
         return _is_type;
     }
+    constexpr bool is_array() const override {
+        return _is_array;
+    }
 
   private:
-    bool _is_type;
+    bool _is_type, _is_array;
 };
 
 template <typename T, typename A1, typename A2, typename Op,
           typename = std::enable_if_t<
-              std::is_same_v<T, decltype(std::declval<Op>()(std::declval<parser_utils::context &>(),
-                                                            std::declval<A1 &>(), std::declval<A2 &>()))>>>
-class binary : public base<T> {
+              std::is_same_v<decltype(std::declval<Op &>()(std::declval<parser_utils::context &>(),
+                                                           std::declval<const std::unique_ptr<base<A1>> &>(),
+                                                           std::declval<const std::unique_ptr<base<A2>> &>())),
+                             T>>>
+class binary : public Op, public constant<T> {
   public:
-    binary(parser_utils::context &_ctx, std::unique_ptr<base<A1>> _lhs, std::unique_ptr<base<A2>> _rhs)
-        : base<T>(_ctx), lhs(std::move(_lhs)), rhs(std::move(_rhs)) {
+    binary(parser_utils::context &_ctx, tokens::token _tk, std::unique_ptr<base<A1>> _lhs,
+           std::unique_ptr<base<A2>> _rhs)
+        : constant<T>(_ctx, _tk, this->operator()(_ctx, _lhs, _rhs)), lhs(std::move(_lhs)), rhs(std::move(_rhs)) {
     }
     virtual ~binary() = default;
 
   public:
-    base<T>::value_type get_value() override {
-        return Op{}(this->ctx, lhs->get_value(), rhs->get_value());
+    constexpr bool is_keyword() const override {
+        return false;
+    }
+    constexpr bool is_type() const override {
+        return false;
+    }
+    constexpr bool is_array() const override {
+        return false;
     }
 
   public:
-    const std::unique_ptr<base<A1>> &get_lhs() {
-        return lhs;
-    }
-    const std::unique_ptr<base<A2>> &get_rhs() {
-        return rhs;
-    }
-
-  private:
-    std::unique_ptr<base<A1>> lhs;
-    std::unique_ptr<base<A2>> rhs;
+    const std::unique_ptr<base<A1>> lhs;
+    const std::unique_ptr<base<A2>> rhs;
 };
 
 template <typename T, typename Op,
-          typename = std::enable_if_t<std::is_same_v<
-              decltype(std::declval<Op>()(std::declval<parser_utils::context &>(), std::declval<T &>())), T>>>
-class unary : public base<T> {
+          typename = std::enable_if_t<
+              std::is_same_v<decltype(std::declval<Op &>()(std::declval<parser_utils::context &>(),
+                                                           std::declval<const std::unique_ptr<base<T>> &>())),
+                             T>>>
+class unary : protected Op, public constant<T> {
   public:
-    unary(parser_utils::context &_ctx, std::unique_ptr<base<T>> _rhs) : base<T>(_ctx), rhs(std::move(_rhs)) {
+    unary(parser_utils::context &_ctx, tokens::token _tk, std::unique_ptr<base<T>> _rhs)
+        : constant<T>(_ctx, _tk, this->operator()(_ctx, _rhs)), rhs(std::move(_rhs)) {
     }
     virtual ~unary() = default;
 
   public:
-    base<T>::value_type get_value() override {
-        return Op{}(this->ctx, rhs->get_value());
+    constexpr bool is_keyword() const override {
+        return false;
+    }
+    constexpr bool is_type() const override {
+        return false;
+    }
+    constexpr bool is_array() const override {
+        return false;
     }
 
   public:
-    const std::unique_ptr<base<T>> &get_rhs() {
-        return rhs;
-    }
-
-  private:
-    std::unique_ptr<base<T>> rhs;
+    const std::unique_ptr<base<T>> rhs;
 };
 
 template <typename T, typename Construct, typename = std::void_t<decltype(T{Construct{}})>>
-class pack : public base<T> {
+class pack final : public constant<T> {
   public:
-    pack(parser_utils::context &_ctx, parser_utils::match_pack mpack) : base<T>(_ctx) {
+    static Construct build(parser_utils::context &ctx, const parser_utils::match_pack &mpack) {
         using namespace bweas;
+
+        Construct obj;
+
         for (const auto &[name, value] : mpack) {
             parser_utils::value gen_value = std::visit([](auto &&val) -> parser_utils::value { return val; }, value);
 
             try {
                 parser_utils::set_field(obj, name, gen_value);
             }
-            catch (std::runtime_error &excp) {
-                throw parser_utils::parser_error(excp.what() + string("\nMatch: \'") + name + "\'");
+            catch (parser_utils::parser_error &excp) {
+                throw parser_utils::parser_error(excp.what(), {tokens::identifier{name}});
             }
         }
-    }
-    ~pack() override = default;
-
-  public:
-    base<T>::value_type get_value() override {
         return obj;
     }
 
-  private:
-    Construct obj;
+  public:
+    pack(parser_utils::context &_ctx, tokens::token _tk, parser_utils::match_pack mpack)
+        : constant<T>(_ctx, _tk, build(_ctx, mpack)) {
+    }
+    ~pack() override = default;
 };
 
-template <typename T> class call : public base<T> {
+template <typename T> class call final : public constant<T> {
   public:
-    call(parser_utils::context &_ctx, string name, vec<parser_utils::value> &&args) : base<T>(_ctx) {
+    static T call_function(parser_utils::context &ctx, std::unique_ptr<identifier<T>> &&id,
+                           vec<parser_utils::value> &&args) {
         parser_utils::context c_ctx;
-        c_ctx.g_ctx      = &this->ctx;
-        const auto &func = c_ctx.get_function(name);
+        c_ctx.g_ctx      = &ctx;
+        const auto &func = std::get<parser_utils::func>(id->get_reference());
         if (func.declared) {
             if (func.name_args.size() != args.size())
                 throw parser_utils::parser_error("The number of values passed does not match the number "
-                                                 "accepted by the function.");
+                                                 "accepted by the function.",
+                                                 id->get_token());
 
             for (pdiff i = 0; i < func.name_args.size(); ++i)
                 c_ctx.sc[func.name_args[i]] = args[i];
@@ -182,21 +238,19 @@ template <typename T> class call : public base<T> {
             for (pdiff i = 0; i < args.size(); ++i)
                 c_ctx.sc[std::to_string(i)] = args[i];
         try {
-            return_value = func.ref(name, c_ctx);
+            return func.ref(std::get<string>(id->get_value()), c_ctx);
         }
-        catch (std::exception &excp) {
-            throw parser_utils::parser_error(excp.what());
+        catch (parser_utils::parser_error &excp) {
+            throw parser_utils::parser_error(excp.what(), excp.get_token());
         }
     }
-    ~call() override = default;
 
   public:
-    base<T>::value_type get_value() override {
-        return return_value;
+    call(parser_utils::context &_ctx, tokens::token _tk, std::unique_ptr<identifier<T>> id,
+         vec<parser_utils::value> &&args)
+        : constant<T>(_ctx, _tk, call_function(_ctx, std::move(id), std::move(args))) {
     }
-
-  private:
-    T return_value;
+    ~call() override = default;
 };
 
 namespace ext {
@@ -212,90 +266,184 @@ template <typename Op> using binary      = binary<parser_utils::value, parser_ut
 template <typename Op> using unary       = unary<parser_utils::value, Op>;
 
 namespace convention {
+static bool expect_identifier(const std::unique_ptr<base> &expr) {
+    if (!expr->is_identifier())
+        throw parser_utils::parser_error("An ID is expected.", expr->get_token());
+    return true;
+}
+static bool expect_n_existing_variable(const std::unique_ptr<base> &expr) {
+    expect_identifier(expr);
+    if (expr->is_context_member())
+        throw parser_utils::parser_error("A non-existing variable was expected.", expr->get_token());
+    return true;
+}
+static bool expect_existing_variable(const std::unique_ptr<base> &expr) {
+    expect_identifier(expr);
+    if (!expr->is_context_member())
+        throw parser_utils::parser_error("A existing variable was expected.", expr->get_token());
+    return true;
+}
+template <typename T = std::monostate>
+static std::integral_constant<
+    bool, std::is_same_v<decltype(parser_utils::value{std::declval<T &>()}), parser_utils::value>>::value_type
+expect_value(const std::unique_ptr<base> &expr) {
+    if (expr->is_identifier() || expr->is_keyword() || std::holds_alternative<std::monostate>(expr->get_value()))
+        throw parser_utils::parser_error("Expected value.", expr->get_token());
 
-static bool is_identifier(const std::unique_ptr<base> &expr) {
-    return expr->is_identifier() && std::holds_alternative<string>(expr->get_value());
+    if (!std::is_same_v<T, std::monostate> && !std::holds_alternative<T>(expr->get_value()))
+        throw parser_utils::parser_error("Expected " + parser_utils::get_type_name<T>() + " type.", expr->get_token());
+
+    return true;
 }
-static bool is_keyword(const std::unique_ptr<base> &expr) {
-    return expr->is_keyword() && std::holds_alternative<string>(expr->get_value());
-}
-static bool is_variable(const std::unique_ptr<base> &expr) {
-    return is_identifier(expr) && expr->ctx.is_variable(std::get<string>(expr->get_value()));
-}
-static bool is_accessing_variable(const std::unique_ptr<base> &expr) {
-    return expr->is_access() && expr->ctx.is_variable(std::get<parser_utils::access>(expr->get_value()).first);
-}
-static bool is_value(const std::unique_ptr<base> &expr) {
-    return !expr->is_identifier() && !expr->is_keyword() && !std::holds_alternative<std::monostate>(expr->get_value());
+static bool expect_type(const std::unique_ptr<base> &expr) {
+    if (!expr->is_keyword() || !expr->is_type())
+        throw parser_utils::parser_error("Expected keyword of type.", expr->get_token());
+    return true;
 }
 } // namespace convention
 
 namespace binary_operation {
 
-struct init_binary_operation {
-    static parser_utils::value operator()(parser_utils::context &ctx, const parser_utils::value &lhs,
-                                          const parser_utils::value &rhs) {
+struct init_variable {
+    template <bool is_vector> static void init(parser_utils::scope &sc, string_v type, const string &name_var) {
         using namespace bweas;
 
-        parser_utils::scope &sc = ctx.sc;
-
-        string name_var    = std::get<string>(lhs);
-        string kw_var_type = std::get<string>(rhs);
-
-        if (kw_var_type == tokens::number_t::s_value)
-            sc[name_var] = pdiff{};
-        else if (kw_var_type == tokens::string_t::s_value)
-            sc[name_var] = string{};
-        else if (kw_var_type == tokens::cc_t::s_value)
-            sc[name_var] = sc::call_component{};
-        else if (kw_var_type == tokens::ctemplate_t::s_value)
-            sc[name_var] = sc::template_command{};
-        else if (kw_var_type == tokens::language_t::s_value)
-            sc[name_var] = sc::language{};
-        else if (kw_var_type == tokens::profile_t::s_value)
-            sc[name_var] = sc::profile{};
-        else if (kw_var_type == tokens::target_t::s_value)
-            sc[name_var] = sc::target{};
-        else if (kw_var_type == tokens::string_matching::anumber_t)
-            sc[name_var] = vec<pdiff>{};
-        else if (kw_var_type == tokens::string_matching::astring_t)
-            sc[name_var] = vec<string>{};
-        else if (kw_var_type == tokens::string_matching::atarget_t)
-            sc[name_var] = vec<sc::target>{};
+        if (type == tokens::number_t::s_value)
+            sc[name_var] = typename std::conditional<is_vector, vec<pdiff>, pdiff>::type{};
+        else if (type == tokens::string_t::s_value)
+            sc[name_var] = typename std::conditional<is_vector, vec<string>, string>::type{};
+        else if (type == tokens::cc_t::s_value)
+            sc[name_var] = typename std::conditional<is_vector, vec<sc::call_component>, sc::call_component>::type{};
+        else if (type == tokens::ctemplate_t::s_value)
+            sc[name_var] =
+                typename std::conditional<is_vector, vec<sc::template_command>, sc::template_command>::type{};
+        else if (type == tokens::language_t::s_value)
+            sc[name_var] = typename std::conditional<is_vector, vec<sc::language>, sc::language>::type{};
+        else if (type == tokens::profile_t::s_value)
+            sc[name_var] = typename std::conditional<is_vector, vec<sc::profile>, sc::profile>::type{};
+        else if (type == tokens::target_t::s_value)
+            sc[name_var] = typename std::conditional<is_vector, vec<sc::target>, sc::target>::type{};
         else
-            throw parser_utils::parser_error("Unknown type \'" + kw_var_type + "\'");
+            throw parser_utils::parser_error("Unknown type.");
+    }
+    parser_utils::value operator()(parser_utils::context &ctx, const std::unique_ptr<base> &lhs,
+                                   const std::unique_ptr<base> &rhs) {
+        using namespace bweas;
+
+        string name_var = std::get<string>(lhs->get_value());
+        try {
+            if (!rhs->is_array())
+                init<false>(ctx.sc, std::get<string>(rhs->get_value()), name_var);
+            else
+                init<true>(ctx.sc, std::get<string>(rhs->get_value()), name_var);
+        }
+        catch (parser_utils::parser_error &excp) {
+            throw parser_utils::parser_error(excp.what(), rhs->get_token());
+        }
         return name_var;
     }
-};
-struct access_binary_operation {
-    static parser_utils::value operator()(parser_utils::context &ctx, const parser_utils::value &lhs,
-                                          const parser_utils::value &rhs) {
-        return parser_utils::access{std::get<string>(lhs), std::get<string>(rhs)};
+    parser_utils::value &get_reference(parser_utils::context &ctx, const std::unique_ptr<base> &lhs) {
+        return ctx.sc[std::get<string>(lhs->get_value())];
     }
 };
-struct assign_binary_operation {
-    static parser_utils::value operator()(parser_utils::context &ctx, const parser_utils::value &lhs,
-                                          const parser_utils::value &rhs) {
-        using namespace bweas;
+struct access_by_id {
+    static bool expect(const std::unique_ptr<base> &expr) {
+        return convention::expect_n_existing_variable(expr);
+    }
 
-        if (std::holds_alternative<parser_utils::access>(lhs)) {
-            const auto &acc = std::get<parser_utils::access>(lhs);
-            std::visit([&](auto &&val) { parser_utils::set_field(val, acc.second, rhs); }, ctx.get_variable(acc.first));
-            return rhs;
+  public:
+    parser_utils::value operator()(parser_utils::context &ctx, const std::unique_ptr<base> &lhs,
+                                   const std::unique_ptr<base> &rhs) {
+        try {
+            value =
+                std::visit([&](auto &&val) { return parser_utils::get_field(val, std::get<string>(rhs->get_value())); },
+                           lhs->get_reference());
         }
+        catch (parser_utils::parser_error &excp) {
+            throw parser_utils::parser_error(excp.what(), rhs->get_token());
+        }
+        return value;
+    }
+    parser_utils::value &get_reference() {
+        return value;
+    }
+    void update(parser_utils::context &ctx, const std::unique_ptr<base> &lhs, const std::unique_ptr<base> &rhs) {
+        try {
+            std::visit([&](auto &&var) { parser_utils::set_field(var, std::get<string>(rhs->get_value()), value); },
+                       lhs->get_reference());
+        }
+        catch (parser_utils::parser_error &excp) {
+            throw parser_utils::parser_error(excp.what(), rhs->get_token());
+        }
+    }
 
-        string name = std::get<string>(lhs);
+  private:
+    parser_utils::value value;
+};
+struct access_by_index {
+    static bool expect(const std::unique_ptr<base> &expr) {
+        return convention::expect_value<pdiff>(expr);
+    }
+
+  public:
+    parser_utils::value operator()(parser_utils::context &ctx, const std::unique_ptr<base> &lhs,
+                                   const std::unique_ptr<base> &rhs) {
+        value = std::visit(
+            [&](auto &&val) -> parser_utils::value {
+                size_t index = std::get<pdiff>(rhs->get_value());
+
+                if constexpr (!parser_utils::is_vector<std::decay_t<decltype(val)>>::value)
+                    throw parser_utils::parser_error("Expected array.", lhs->get_token());
+                else if (index > val.size())
+                    throw parser_utils::parser_error("The index is larger than the size of the array.",
+                                                     rhs->get_token());
+                else
+                    return val[index];
+            },
+            lhs->get_reference());
+
+        return value;
+    } // namespace binary_operation
+    parser_utils::value &get_reference() {
+        return value;
+    }
+    void update(parser_utils::context &ctx, const std::unique_ptr<base> &lhs, const std::unique_ptr<base> &rhs) {
+        std::visit(
+            [&](auto &&val) {
+                using T = std::decay_t<decltype(val)>;
+
+                if constexpr (!parser_utils::is_vector<T>::value)
+                    throw parser_utils::parser_error("Expected array.", lhs->get_token());
+                else {
+                    if (!std::holds_alternative<typename T::value_type>(value))
+                        throw parser_utils::parser_error(
+                            "Expected " + parser_utils::get_type_name<typename T::value_type>() + " type.",
+                            lhs->get_token());
+                    val[std::get<pdiff>(rhs->get_value())] = std::get<typename T::value_type>(value);
+                }
+            },
+            lhs->get_reference());
+    }
+
+  private:
+    parser_utils::value value;
+}; // namespace ext
+struct assign_variable {
+    parser_utils::value operator()(parser_utils::context &ctx, const std::unique_ptr<base> &lhs,
+                                   const std::unique_ptr<base> &rhs) {
+        auto rhs_value = rhs->get_value();
 
         std::visit(
             [&](auto &&val) {
                 using T = std::decay_t<decltype(val)>;
-                if (!std::holds_alternative<T>(rhs))
-                    throw parser_utils::parser_error("Expected \'" + parser_utils::get_type_name<T>() + "\' type.");
-                val = std::get<T>(rhs);
+                if (!std::holds_alternative<T>(rhs_value))
+                    throw parser_utils::parser_error("Expected " + parser_utils::get_type_name<T>() + " type.",
+                                                     lhs->get_token());
+                val = std::get<T>(rhs_value);
             },
-            ctx.get_variable(name));
+            lhs->get_reference());
 
-        return rhs;
+        return rhs_value;
     }
 };
 
@@ -304,112 +452,128 @@ template <typename Op,
                                                              std::declval<typename Op::arguments_type &>())),
                                  decltype(parser_utils::value{typename Op::result_type{}})>>
 struct basic_binary_operation {
-    static parser_utils::value operator()(parser_utils::context &ctx, const parser_utils::value &lhs,
-                                          const parser_utils::value &rhs) {
+    parser_utils::value operator()(parser_utils::context &ctx, const std::unique_ptr<base> &lhs,
+                                   const std::unique_ptr<base> &rhs) {
         using T = typename Op::arguments_type;
 
-        if (!std::holds_alternative<T>(lhs))
-            throw parser_utils::parser_error("Lhs is expected with type \'" + parser_utils::get_type_name<T>() + "\'");
-        if (!std::holds_alternative<T>(rhs))
-            throw parser_utils::parser_error("Rhs is expected with type \'" + parser_utils::get_type_name<T>() + "\'");
-        return Op{}(std::get<T>(lhs), std::get<T>(rhs));
+        return Op{}(std::get<T>(lhs->get_value()), std::get<T>(rhs->get_value()));
     }
 };
 
-template <typename Op> class basic : public binary<basic_binary_operation<Op>> {
-  public:
-    basic(parser_utils::context &_ctx, std::unique_ptr<base> _lhs, std::unique_ptr<base> _rhs)
-        : binary<basic_binary_operation<Op>>(_ctx, std::move(_lhs), std::move(_rhs)) {
-        const auto &lhs = this->get_lhs();
-        const auto &rhs = this->get_rhs();
+template <typename BinaryOperation> class binary_ext : public binary<BinaryOperation> {
+    using check_expression = std::function<bool(const std::unique_ptr<base> &)>;
 
-        if (!convention::is_value(lhs) || !convention::is_value(rhs))
-            throw parser_utils::parser_error("Lhs and rhs are expected values.");
-    };
+  public:
+    binary_ext(parser_utils::context &_ctx, tokens::token _tk, std::unique_ptr<base> _lhs, std::unique_ptr<base> _rhs,
+               check_expression lhs_check, check_expression rhs_check)
+        : binary<BinaryOperation>(_ctx, _tk, std::move(lhs_check(_lhs) ? _lhs : _lhs),
+                                  std::move(rhs_check(_rhs) ? _rhs : _rhs)) {
+    }
+    virtual ~binary_ext() = default;
+};
+template <typename Op> class basic final : public binary_ext<basic_binary_operation<Op>> {
+  public:
+    basic(parser_utils::context &_ctx, tokens::token _tk, std::unique_ptr<base> _lhs, std::unique_ptr<base> _rhs)
+        : binary_ext<basic_binary_operation<Op>>(_ctx, _tk, std::move(_lhs), std::move(_rhs),
+                                                 convention::expect_value<typename Op::arguments_type>,
+                                                 convention::expect_value<typename Op::arguments_type>) {
+    }
     ~basic() override = default;
 };
 
-class init : public binary<init_binary_operation> {
+class init final : public binary_ext<init_variable> {
   public:
-    init(parser_utils::context &_ctx, std::unique_ptr<base> _lhs, std::unique_ptr<base> _rhs)
-        : ext::binary<init_binary_operation>(_ctx, std::move(_lhs), std::move(_rhs)) {
-        const auto &lhs = get_lhs();
-        const auto &rhs = get_rhs();
-
-        if (!convention::is_identifier(lhs) || convention::is_variable(lhs))
-            throw parser_utils::parser_error("Expected non-existent variable identifier.", tokens::init_type{});
-        if (!convention::is_keyword(rhs) || !rhs->is_type())
-            throw parser_utils::parser_error("The type for initializing the variable was expected.",
-                                             tokens::init_type{});
-    };
+    init(parser_utils::context &_ctx, tokens::token _tk, std::unique_ptr<base> _lhs, std::unique_ptr<base> _rhs)
+        : binary_ext<init_variable>(_ctx, _tk, std::move(_lhs), std::move(_rhs), convention::expect_n_existing_variable,
+                                    convention::expect_type) {
+    }
     ~init() override = default;
 
+  public:
+    parser_utils::value &get_reference() override {
+        return init_variable::get_reference(this->ctx, this->lhs);
+    }
+    bool is_context_member() const override {
+        return true;
+    }
+
+  public:
     constexpr bool is_identifier() const override {
         return true;
     }
 };
-class access : public binary<access_binary_operation> {
+template <typename AccessBy> class access final : public binary_ext<AccessBy> {
   public:
-    access(parser_utils::context &_ctx, std::unique_ptr<base> _lhs, std::unique_ptr<base> _rhs)
-        : ext::binary<access_binary_operation>(_ctx, std::move(_lhs), std::move(_rhs)) {
-        const auto &lhs = get_lhs();
-        const auto &rhs = get_rhs();
+    access(parser_utils::context &_ctx, tokens::token _tk, std::unique_ptr<base> _lhs, std::unique_ptr<base> _rhs)
+        : binary_ext<AccessBy>(_ctx, _tk, std::move(_lhs), std::move(_rhs), convention::expect_existing_variable,
+                               AccessBy::expect) {};
+    ~access() override {
+        this->update(this->ctx, this->lhs, this->rhs);
+    }
 
-        if (!convention::is_variable(lhs))
-            throw parser_utils::parser_error("An existing variable is expected", tokens::dot{});
-        if (!convention::is_identifier(rhs))
-            throw parser_utils::parser_error("The ID of the structure field is expected.", tokens::dot{});
-    };
-    ~access() override = default;
+  public:
+    parser_utils::value &get_reference() override {
+        return AccessBy::get_reference();
+    }
+    bool is_context_member() const override {
+        return true;
+    }
 
+  public:
     constexpr bool is_identifier() const override {
         return true;
     }
-    constexpr bool is_access() const override {
-        return true;
-    }
 };
-class assign : public binary<assign_binary_operation> {
+class assign final : public binary_ext<assign_variable> {
   public:
-    assign(parser_utils::context &_ctx, std::unique_ptr<base> _lhs, std::unique_ptr<base> _rhs)
-        : ext::binary<assign_binary_operation>(_ctx, std::move(_lhs), std::move(_rhs)) {
-        const auto &lhs = get_lhs();
-        const auto &rhs = get_rhs();
-
-        if (!convention::is_variable(lhs) && !convention::is_accessing_variable(lhs))
-            throw parser_utils::parser_error("A reference to the variable is expected.", tokens::equal{});
-        if (!convention::is_value(rhs))
-            throw parser_utils::parser_error("Expected expression with value.", tokens::equal{});
-    };
+    assign(parser_utils::context &_ctx, tokens::token _tk, std::unique_ptr<base> _lhs, std::unique_ptr<base> _rhs)
+        : binary_ext<assign_variable>(_ctx, _tk, std::move(_lhs), std::move(_rhs), convention::expect_existing_variable,
+                                      convention::expect_value<>) {};
     ~assign() override = default;
 };
 } // namespace binary_operation
 
 namespace unary_operation {
 struct negative_unary_operation {
-    parser_utils::value operator()(parser_utils::context &ctx, const parser_utils::value &rhs) {
-        if (!std::holds_alternative<pdiff>(rhs))
-            throw parser_utils::parser_error("Expected number type",
-                                             tokens::token{tokens::keyword<>{tokens::string_matching::_not}});
+    parser_utils::value operator()(parser_utils::context &ctx, const std::unique_ptr<base> &rhs) const {
+        if (!std::holds_alternative<pdiff>(rhs->get_value()))
+            throw parser_utils::parser_error("Expected number type.", rhs->get_token());
 
-        return !std::get<pdiff>(rhs);
+        return -std::get<pdiff>(rhs->get_value());
+    }
+};
+struct not_unary_operation {
+    parser_utils::value operator()(parser_utils::context &ctx, const std::unique_ptr<base> &rhs) const {
+        if (!std::holds_alternative<pdiff>(rhs->get_value()))
+            throw parser_utils::parser_error("Expected number type.", rhs->get_token());
+
+        return !std::get<pdiff>(rhs->get_value());
     }
 };
 
-class negative : public unary<negative_unary_operation> {
-  public:
-    negative(parser_utils::context &_ctx, std::unique_ptr<base> _rhs)
-        : ext::unary<negative_unary_operation>(_ctx, std::move(_rhs)) {
-        const auto &rhs = get_rhs();
+template <typename UnaryOperation> class unary_ext : public unary<UnaryOperation> {
+    using check_expression = std::function<bool(const std::unique_ptr<base> &)>;
 
-        if (!convention::is_value(rhs))
-            throw parser_utils::parser_error("A reference to the variable is expected.",
-                                             tokens::token{tokens::keyword<>{tokens::string_matching::_not}});
-        if (!convention::is_value(rhs))
-            throw parser_utils::parser_error("Expected expression with value.",
-                                             tokens::token{tokens::keyword<>{tokens::string_matching::_not}});
-    };
+  public:
+    unary_ext(parser_utils::context &_ctx, tokens::token _tk, std::unique_ptr<base> _rhs, check_expression rhs_check)
+        : unary<UnaryOperation>(_ctx, _tk, std::move(rhs_check(_rhs) ? _rhs : _rhs)) {
+    }
+    virtual ~unary_ext() = default;
+};
+
+class negative final : public unary_ext<negative_unary_operation> {
+  public:
+    negative(parser_utils::context &_ctx, tokens::token _tk, std::unique_ptr<base> rhs)
+        : unary_ext<negative_unary_operation>(_ctx, _tk, std::move(rhs), convention::expect_value<pdiff>) {
+    }
     ~negative() override = default;
+};
+class logical_not final : public unary_ext<not_unary_operation> {
+  public:
+    logical_not(parser_utils::context &_ctx, tokens::token _tk, std::unique_ptr<base> rhs)
+        : unary_ext<not_unary_operation>(_ctx, _tk, std::move(rhs), convention::expect_value<pdiff>) {
+    }
+    ~logical_not() override = default;
 };
 } // namespace unary_operation
 } // namespace ext

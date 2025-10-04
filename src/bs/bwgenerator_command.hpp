@@ -54,7 +54,8 @@ class bweas::generator_command {
 
   private:
     // Generates a file name based on the pattern and the passed index of the given file.
-    static string get_name_output_file(string_v pattern_file, string_v name_file = "", size_t index = 0);
+    static string get_name_output_file(string pattern_file, string_v name_target, string_v name_file = "",
+                                       size_t index = 0);
     static bool should_uses_src_file(string_v src_file, string_v output_file, const uset<string> &dfiles);
 
   private:

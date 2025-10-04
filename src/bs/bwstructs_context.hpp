@@ -33,9 +33,6 @@ inline constexpr auto NAME_FIELD_CALL_COMPONENT_NAME          = "_NAME";
 inline constexpr auto NAME_FIELD_CALL_COMPONENT_NAME_PROGRAM  = "_NAME_PROGRAM";
 inline constexpr auto NAME_FIELD_CALL_COMPONENT_PATTERN_FILES = "_PATTERN_FILES";
 
-inline constexpr auto FEATURE_ARG_IF = "INPUT_FILE";
-inline constexpr auto FEATURE_ARG_OF = "OUTPUT_FILE";
-
 namespace structs_context {
 
 struct target;
@@ -100,9 +97,7 @@ struct version {
     }
 
   private:
-    size_t major{0};
-    size_t minor{0};
-    size_t patch{0};
+    size_t major = 0, minor = 0, patch = 0;
 };
 
 struct language {
@@ -224,22 +219,11 @@ struct profile {
   public:
     static constexpr auto FIELD_SOURCE_FILES  = "source_files";
     static constexpr auto FIELD_INCLUDE_PATHS = "include_paths";
-    static constexpr auto FIELD_TARGET_TYPE   = "type";
 };
 // target structure for build system
 // ---------------------------------
 struct target {
     target() = default;
-
-    enum class e_type {
-        exe = 0,
-        lib,
-        interpret
-    };
-    enum class e_cfg {
-        release = 0,
-        debug
-    };
 
   public:
     profile ext;
@@ -282,6 +266,9 @@ struct template_command {
       public:
         string value;
         e_type type;
+
+      public:
+        static constexpr auto RETURN_VALUE_TARGET = "target";
     };
     struct arg {
         enum class e_type {
@@ -306,8 +293,7 @@ struct template_command {
 
     // Creates a stack of templates for the correct sequential generation of commands(for every targets)
     static vec<template_command> create_queue_target_templates(const vec<template_command> &templates,
-                                                               const vec<string> &templates_target,
-                                                               target::e_type target_t);
+                                                               const vec<string> &templates_target);
 
   private:
     // Recursive function, for create_stack_target_templates
@@ -328,6 +314,11 @@ struct template_command {
     vec<string> ifiles;
     bool single_generates = 0;
     bool returns_target   = 0;
+
+  public:
+    static constexpr auto FEATURE_INPUT_FILE   = "INPUT_FILE";
+    static constexpr auto FEATURE_OUTPUT_FILE  = "OUTPUT_FILE";
+    static constexpr auto FEATURE_DEPENDENCIES = "DEPENDENCIES";
 };
 
 struct call_component {
@@ -343,33 +334,6 @@ struct call_component {
     // file.txt
     string pattern_ret_files;
 };
-
-inline string target_type_str(target::e_type target_t) {
-    if (target_t == target::e_type::lib)
-        return "LIBRARY";
-    else if (target_t == target::e_type::interpret)
-        return "RUN-TIME";
-    return "EXECUTABLE";
-}
-inline string target_cfg_str(target::e_cfg target_t) {
-    if (target_t == target::e_cfg::debug)
-        return "DEBUG";
-    return "RELEASE";
-}
-
-inline target::e_type to_target_type(string target_t) {
-    if (target_t == "LIBRARY")
-        return target::e_type::lib;
-    else if (target_t == "RUN-TIME")
-        return target::e_type::interpret;
-    return target::e_type::exe;
-}
-inline target::e_cfg to_target_cfg(string target_t) {
-    if (target_t == "DEBUG")
-        return target::e_cfg::debug;
-    return target::e_cfg::release;
-}
-
 } // namespace structs_context
 
 namespace sc = structs_context;
