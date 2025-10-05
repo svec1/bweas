@@ -357,8 +357,9 @@ std::unique_ptr<base> parser::parse_expression(pdiff lbinding_power) {
                     throw parser_utils::parser_error("Unexpected operator-keyword.", current_token);
                 },
                 [&](tokens::equal) -> pdiff { return 0; }, [&](tokens::plus) -> pdiff { return 1; },
-                [&](tokens::minus) -> pdiff { return 1; }, [&](tokens::multiply) -> pdiff { return 2; },
-                [&](tokens::devide) -> pdiff { return 2; }, [&](tokens::init_type) -> pdiff { return 3; },
+                [&](tokens::minus) -> pdiff { return 1; }, [&](tokens::less) -> pdiff { return 1; },
+                [&](tokens::more) -> pdiff { return 1; }, [&](tokens::multiply) -> pdiff { return 2; },
+                [&](tokens::divide) -> pdiff { return 2; }, [&](tokens::init_type) -> pdiff { return 3; },
                 [&](tokens::dot) -> pdiff { return lbinding_power < 4 ? 4 : lbinding_power - 1; },
                 [&](tokens::open_square_bracket) -> pdiff { return lbinding_power < 4 ? 4 : lbinding_power - 1; },
                 [&](auto &&tk) -> pdiff { throw parser_utils::parser_error("Unexpected operator.", current_token); }},
@@ -421,13 +422,13 @@ std::unique_ptr<base> parser::parse_expression(pdiff lbinding_power) {
                         get_if_variable(lhs);
 
                         if (check_sameless_expr(pdiff{}, lhs, rhs)) {
-                            return std::make_unique<
-                                     binary_operation::basic<parser_utils::basic_operation::plus<pdiff>>>(
+                            return std::make_unique<binary_operation::basic<
+                                     parser_utils::basic_operation::binary_operator<pdiff, std::plus<>>>>(
                                 *g_ctx, current_token, std::move(lhs), std::move(rhs));
                         }
                         else if (check_sameless_expr(string{}, lhs, rhs)) {
-                            return std::make_unique<
-                                     binary_operation::basic<parser_utils::basic_operation::plus<string>>>(
+                            return std::make_unique<binary_operation::basic<
+                                     parser_utils::basic_operation::binary_operator<string, std::plus<>>>>(
                                 *g_ctx, current_token, std::move(lhs), std::move(rhs));
                         }
                         else
@@ -436,8 +437,8 @@ std::unique_ptr<base> parser::parse_expression(pdiff lbinding_power) {
                     [&](tokens::minus) -> std::unique_ptr<base> {
                         get_if_variable(lhs);
                         if (check_sameless_expr(pdiff{}, lhs, rhs))
-                            return std::make_unique<
-                                     binary_operation::basic<parser_utils::basic_operation::minus<pdiff>>>(
+                            return std::make_unique<binary_operation::basic<
+                                     parser_utils::basic_operation::binary_operator<pdiff, std::minus<>>>>(
                                 *g_ctx, current_token, std::move(lhs), std::move(rhs));
                         else
                             throw parser_utils::parser_error("Invalid type for the operation.", current_token);
@@ -445,17 +446,35 @@ std::unique_ptr<base> parser::parse_expression(pdiff lbinding_power) {
                     [&](tokens::multiply) -> std::unique_ptr<base> {
                         get_if_variable(lhs);
                         if (check_sameless_expr(pdiff{}, lhs, rhs))
-                            return std::make_unique<
-                                     binary_operation::basic<parser_utils::basic_operation::multiplies<pdiff>>>(
+                            return std::make_unique<binary_operation::basic<
+                                     parser_utils::basic_operation::binary_operator<pdiff, std::multiplies<>>>>(
                                 *g_ctx, current_token, std::move(lhs), std::move(rhs));
                         else
                             throw parser_utils::parser_error("Invalid type for the operation", current_token);
                     },
-                    [&](tokens::devide) -> std::unique_ptr<base> {
+                    [&](tokens::divide) -> std::unique_ptr<base> {
                         get_if_variable(lhs);
                         if (check_sameless_expr(pdiff{}, lhs, rhs))
-                            return std::make_unique<
-                                     binary_operation::basic<parser_utils::basic_operation::divides<pdiff>>>(
+                            return std::make_unique<binary_operation::basic<
+                                     parser_utils::basic_operation::binary_operator<pdiff, std::divides<>>>>(
+                                *g_ctx, current_token, std::move(lhs), std::move(rhs));
+                        else
+                            throw parser_utils::parser_error("Invalid type for the operation", current_token);
+                    },
+                    [&](tokens::less) -> std::unique_ptr<base> {
+                        get_if_variable(lhs);
+                        if (check_sameless_expr(pdiff{}, lhs, rhs))
+                            return std::make_unique<binary_operation::basic<
+                                     parser_utils::basic_operation::binary_operator<pdiff, std::less<>>>>(
+                                *g_ctx, current_token, std::move(lhs), std::move(rhs));
+                        else
+                            throw parser_utils::parser_error("Invalid type for the operation", current_token);
+                    },
+                    [&](tokens::more) -> std::unique_ptr<base> {
+                        get_if_variable(lhs);
+                        if (check_sameless_expr(pdiff{}, lhs, rhs))
+                            return std::make_unique<binary_operation::basic<
+                                     parser_utils::basic_operation::binary_operator<pdiff, std::greater<>>>>(
                                 *g_ctx, current_token, std::move(lhs), std::move(rhs));
                         else
                             throw parser_utils::parser_error("Invalid type for the operation", current_token);

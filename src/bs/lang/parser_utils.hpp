@@ -29,24 +29,9 @@ template <typename T> struct equals : binary_operation<T, pdiff> {
         return v1 == v2;
     }
 };
-template <typename T> struct plus : binary_operation_one_type<T> {
+template <typename T, typename Op> struct binary_operator : binary_operation_one_type<T> {
     static constexpr binary_operation_one_type<T>::result_type operator()(T v1, T v2) {
-        return v1 + v2;
-    }
-};
-template <typename T> struct minus : binary_operation_one_type<T> {
-    static constexpr binary_operation_one_type<T>::result_type operator()(T v1, T v2) {
-        return v1 - v2;
-    }
-};
-template <typename T> struct multiplies : binary_operation_one_type<T> {
-    static constexpr binary_operation_one_type<T>::result_type operator()(T v1, T v2) {
-        return v1 * v2;
-    }
-};
-template <typename T> struct divides : binary_operation_one_type<T> {
-    static constexpr binary_operation_one_type<T>::result_type operator()(T v1, T v2) {
-        return v1 / v2;
+        return Op{}(v1, v2);
     }
 };
 } // namespace basic_operation

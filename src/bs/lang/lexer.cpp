@@ -155,7 +155,7 @@ tokens::token lexer::get_token(string_v value, bool in_quote) {
     case '*':
         return {tokens::multiply{}};
     case '/':
-        return {tokens::devide{}};
+        return {tokens::divide{}};
     case '<':
         return {tokens::less{}};
     case '>':

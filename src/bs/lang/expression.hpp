@@ -32,9 +32,9 @@ template <typename T> class base {
         return tk;
     }
 
-  public:
     virtual value_type get_value() const = 0;
 
+  public:
     virtual value_type &get_reference() {
         throw parser_utils::parser_error("Invalid reference definition.", tk);
     }
@@ -49,11 +49,10 @@ template <typename T> class base {
     virtual constexpr bool is_keyword() const {
         return false;
     }
-    virtual constexpr bool is_type() const {
-        return false;
-    }
-    virtual constexpr bool is_array() const {
-        return false;
+
+  public:
+    constexpr bool is_value() const {
+        return !is_identifier() && !is_keyword() && !std::holds_alternative<std::monostate>(get_value());
     }
 
   protected:
@@ -122,11 +121,13 @@ template <typename T> class keyword final : public constant<T> {
     constexpr bool is_keyword() const override {
         return true;
     }
-    constexpr bool is_type() const override {
+
+  public:
+    constexpr bool is_type() const {
         return _is_type;
     }
-    constexpr bool is_array() const override {
-        return _is_array;
+    constexpr bool is_array() const {
+        return _is_type && _is_array;
     }
 
   private:
@@ -151,12 +152,6 @@ class binary : public Op, public constant<T> {
     constexpr bool is_keyword() const override {
         return false;
     }
-    constexpr bool is_type() const override {
-        return false;
-    }
-    constexpr bool is_array() const override {
-        return false;
-    }
 
   public:
     const std::unique_ptr<base<A1>> lhs;
@@ -177,12 +172,6 @@ class unary : protected Op, public constant<T> {
 
   public:
     constexpr bool is_keyword() const override {
-        return false;
-    }
-    constexpr bool is_type() const override {
-        return false;
-    }
-    constexpr bool is_array() const override {
         return false;
     }
 
@@ -241,7 +230,9 @@ template <typename T> class call final : public constant<T> {
             return func.ref(std::get<string>(id->get_value()), c_ctx);
         }
         catch (parser_utils::parser_error &excp) {
-            throw parser_utils::parser_error(excp.what(), excp.get_token());
+            throw parser_utils::parser_error(excp.what(), std::holds_alternative<std::monostate>(excp.get_token().value)
+                                                              ? id->get_token()
+                                                              : excp.get_token());
         }
     }
 
@@ -266,6 +257,9 @@ template <typename Op> using binary      = binary<parser_utils::value, parser_ut
 template <typename Op> using unary       = unary<parser_utils::value, Op>;
 
 namespace convention {
+
+using check_expression = std::function<bool(const std::unique_ptr<base> &)>;
+
 static bool expect_identifier(const std::unique_ptr<base> &expr) {
     if (!expr->is_identifier())
         throw parser_utils::parser_error("An ID is expected.", expr->get_token());
@@ -287,7 +281,7 @@ template <typename T = std::monostate>
 static std::integral_constant<
     bool, std::is_same_v<decltype(parser_utils::value{std::declval<T &>()}), parser_utils::value>>::value_type
 expect_value(const std::unique_ptr<base> &expr) {
-    if (expr->is_identifier() || expr->is_keyword() || std::holds_alternative<std::monostate>(expr->get_value()))
+    if (!expr->is_value())
         throw parser_utils::parser_error("Expected value.", expr->get_token());
 
     if (!std::is_same_v<T, std::monostate> && !std::holds_alternative<T>(expr->get_value()))
@@ -296,7 +290,7 @@ expect_value(const std::unique_ptr<base> &expr) {
     return true;
 }
 static bool expect_type(const std::unique_ptr<base> &expr) {
-    if (!expr->is_keyword() || !expr->is_type())
+    if (!expr->is_keyword() || !dynamic_cast<keyword *>(expr.get())->is_type())
         throw parser_utils::parser_error("Expected keyword of type.", expr->get_token());
     return true;
 }
@@ -332,7 +326,7 @@ struct init_variable {
 
         string name_var = std::get<string>(lhs->get_value());
         try {
-            if (!rhs->is_array())
+            if (!dynamic_cast<keyword *>(rhs.get())->is_array())
                 init<false>(ctx.sc, std::get<string>(rhs->get_value()), name_var);
             else
                 init<true>(ctx.sc, std::get<string>(rhs->get_value()), name_var);
@@ -461,11 +455,9 @@ struct basic_binary_operation {
 };
 
 template <typename BinaryOperation> class binary_ext : public binary<BinaryOperation> {
-    using check_expression = std::function<bool(const std::unique_ptr<base> &)>;
-
   public:
     binary_ext(parser_utils::context &_ctx, tokens::token _tk, std::unique_ptr<base> _lhs, std::unique_ptr<base> _rhs,
-               check_expression lhs_check, check_expression rhs_check)
+               convention::check_expression lhs_check, convention::check_expression rhs_check)
         : binary<BinaryOperation>(_ctx, _tk, std::move(lhs_check(_lhs) ? _lhs : _lhs),
                                   std::move(rhs_check(_rhs) ? _rhs : _rhs)) {
     }
@@ -536,26 +528,20 @@ class assign final : public binary_ext<assign_variable> {
 namespace unary_operation {
 struct negative_unary_operation {
     parser_utils::value operator()(parser_utils::context &ctx, const std::unique_ptr<base> &rhs) const {
-        if (!std::holds_alternative<pdiff>(rhs->get_value()))
-            throw parser_utils::parser_error("Expected number type.", rhs->get_token());
-
         return -std::get<pdiff>(rhs->get_value());
     }
 };
 struct not_unary_operation {
     parser_utils::value operator()(parser_utils::context &ctx, const std::unique_ptr<base> &rhs) const {
-        if (!std::holds_alternative<pdiff>(rhs->get_value()))
-            throw parser_utils::parser_error("Expected number type.", rhs->get_token());
-
         return !std::get<pdiff>(rhs->get_value());
     }
 };
 
 template <typename UnaryOperation> class unary_ext : public unary<UnaryOperation> {
-    using check_expression = std::function<bool(const std::unique_ptr<base> &)>;
 
   public:
-    unary_ext(parser_utils::context &_ctx, tokens::token _tk, std::unique_ptr<base> _rhs, check_expression rhs_check)
+    unary_ext(parser_utils::context &_ctx, tokens::token _tk, std::unique_ptr<base> _rhs,
+              convention::check_expression rhs_check)
         : unary<UnaryOperation>(_ctx, _tk, std::move(rhs_check(_rhs) ? _rhs : _rhs)) {
     }
     virtual ~unary_ext() = default;

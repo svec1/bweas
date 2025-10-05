@@ -97,7 +97,7 @@ struct equal {};     // =
 struct plus {};      // +
 struct minus {};     // -
 struct multiply {};  // *
-struct devide {};    // /
+struct divide {};    // /
 struct less {};      // <
 struct more {};      // >
 
@@ -121,7 +121,7 @@ struct target_t : public keyword<string_matching::target_t> {};
 using token_value =
     std::variant<std::monostate, keyword<>, identifier, literal_string, literal_number, end_line, open_init_bracket,
                  open_round_bracket, open_square_bracket, close_init_bracket, close_round_bracket, close_square_bracket,
-                 comma, dot, init_type, equal, plus, minus, multiply, devide, less, more>;
+                 comma, dot, init_type, equal, plus, minus, multiply, divide, less, more>;
 
 struct token {
     token() = default;
@@ -196,7 +196,7 @@ static inline constexpr string get_string(token tk) {
                 return "-";
             else if constexpr (std::is_same_v<Type, multiply>)
                 return "*";
-            else if constexpr (std::is_same_v<Type, devide>)
+            else if constexpr (std::is_same_v<Type, divide>)
                 return "/";
             else if constexpr (std::is_same_v<Type, less>)
                 return "<";

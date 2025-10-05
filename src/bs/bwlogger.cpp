@@ -22,11 +22,11 @@ bool logger::output_to_console = true;
 logger::logger(string_v _owner, bool _is_main) : owner(_owner), is_main(_is_main) {
 }
 logger::~logger() {
-    if (file_log.is_open)
-        file_log.close();
-
-    if (!log && fs::exists(NAME_FILE_LOG))
+    if (!log && fs::exists(NAME_FILE_LOG)) {
+        if (file_log.is_open)
+            file_log.close();
         fs::remove(NAME_FILE_LOG);
+    }
 }
 
 log_message::log_message(log_type _log_t) : log_t(_log_t) {
@@ -108,8 +108,7 @@ void logger::handle_exception(const bweas::exception &excp) {
 void logger::handle(string &&str) {
     if (!log)
         return;
-    if (!file_log.is_open)
-        file_log = file_utils::open_file(NAME_FILE_LOG, file_utils::file::mode_file::open::w);
+    init();
 
     string out_to_file = str;
     out_to_file.erase(str.find("\033[3"), 5);

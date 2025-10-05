@@ -417,4 +417,3 @@ void builder::build_targets() {
             target.built_success = 1;
     }
 }
-
