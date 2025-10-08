@@ -93,7 +93,7 @@ void generator_command::get_input_files() {
             vec<string> vec_tmp;
             for (size_t i = 0; i < current_template.ifiles.size(); ++i)
                 vec_tmp.push_back(
-                    get_name_output_file(_context->current_work_directory + "/" + call_component->pattern_ret_files,
+                    get_name_output_file((_context->current_work_directory / call_component->pattern_ret_files).c_str(),
                                          current_template.ifiles[i]));
             if (auto it = target.ext.get_if<vec<string>>(current_template.returnable.value); it)
                 it->insert(it->end(), vec_tmp.begin(), vec_tmp.end());
@@ -121,7 +121,7 @@ commands generator_command::generate() {
                              return call_component.name == current_template.name_call_component;
                          });
 
-        string pattern_output_file = _context->current_work_directory + "/" + call_component->pattern_ret_files;
+        string pattern_output_file = (_context->current_work_directory / call_component->pattern_ret_files).c_str();
 
         command cmd;
         cmd.name = current_template.name + std::to_string(count_use_ifiles);

@@ -49,9 +49,9 @@ struct context {
 
   public:
     sc::target *current_target;
-    string current_work_directory;
 
-    string path_bweas_config, path_bweas_to_build;
+    fs::path current_work_directory;
+    fs::path path_bweas_config, path_bweas_to_build;
 };
 
 } // namespace bweas

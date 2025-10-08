@@ -22,7 +22,7 @@ string fast_cache::create_cache() {
     const auto &templates       = _context->templates;
     const auto &call_components = _context->call_components;
 
-    serel_target_tmp += "\"" + _context->path_bweas_config + "\" ";
+    serel_target_tmp += "\"" + _context->path_bweas_config.string() + "\" ";
 
     for (pdiff i = 0; i < targets.size(); ++i) {
 

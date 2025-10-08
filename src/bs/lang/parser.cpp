@@ -361,7 +361,7 @@ std::unique_ptr<base> parser::parse_expression(pdiff lbinding_power) {
                 [&](tokens::more) -> pdiff { return 1; }, [&](tokens::multiply) -> pdiff { return 2; },
                 [&](tokens::divide) -> pdiff { return 2; }, [&](tokens::init_type) -> pdiff { return 3; },
                 [&](tokens::dot) -> pdiff { return lbinding_power < 4 ? 4 : lbinding_power - 1; },
-                [&](tokens::open_square_bracket) -> pdiff { return lbinding_power < 4 ? 4 : lbinding_power - 1; },
+                [&](tokens::open_square_bracket) -> pdiff { return 0; },
                 [&](auto &&tk) -> pdiff { throw parser_utils::parser_error("Unexpected operator.", current_token); }},
             current_token.value);
 

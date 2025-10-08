@@ -175,7 +175,7 @@ void json_cache::extract_cache_data(const string &cache_str) {
     try {
         nlohmann::json cache_data = nlohmann::json::parse(cache_str);
 
-        _context->path_bweas_config = cache_data["config_file"];
+        cache_data.at("config_file").get_to(_context->path_bweas_config);
 
         auto init_vector = [](const auto &j_items, auto &vec) {
             for (const auto &it : j_items) {

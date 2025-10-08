@@ -58,8 +58,8 @@ builder::builder(size_t argv, char **args) {
 }
 
 void builder::handle_args(vec<string> &args) {
-    _context.path_bweas_config   = fs::current_path().string() + "/";
-    _context.path_bweas_to_build = fs::current_path().string() + "/";
+    _context.path_bweas_config   = fs::current_path();
+    _context.path_bweas_to_build = fs::current_path();
 
     if (args.size() == 1)
         mode_bweas = mode_working::collect_cfg;
@@ -119,14 +119,14 @@ void builder::handle_args(vec<string> &args) {
         else {
             // --cfg <arg> or arg
             if (expected_path_bweas_config) {
-                _context.path_bweas_config = fs::absolute(args[i]).lexically_normal().string();
+                _context.path_bweas_config = fs::absolute(args[i]).lexically_normal();
                 mode_bweas                 = mode_working::collect_cfg;
 
                 expected_path_bweas_config = 0;
             }
             // --build <arg>
             else if (expected_path_to_build) {
-                _context.path_bweas_to_build = fs::absolute(args[i]).lexically_normal().string();
+                _context.path_bweas_to_build = fs::absolute(args[i]).lexically_normal();
                 expected_path_to_build       = 0;
             }
             else {
@@ -140,10 +140,11 @@ void builder::handle_args(vec<string> &args) {
 void builder::init() {
     fs::current_path(_context.path_bweas_config);
 
-    _context.path_bweas_config = _context.path_bweas_config + CONFIG_FILE;
+    _context.path_bweas_config = _context.path_bweas_config / CONFIG_FILE;
 
     nlohmann::json config_json;
-    auto file_json_config = file_utils::open_file(file_utils::get_path_program() + JSON_CONFIG_FILE, mf::open::r);
+    auto file_json_config =
+        file_utils::open_file((file_utils::get_path_program() / JSON_CONFIG_FILE).c_str(), mf::open::r);
     if (!file_json_config.is_open) {
         file_json_config.open(mf::open::w);
         file_utils::write_file(file_json_config, DEFAULT_BWEAS_JSON_CONFIG);
@@ -169,7 +170,7 @@ void builder::init() {
 
     vec<package> loaded_packages;
 
-    string path_to_packages{file_utils::get_path_program() + "packages"};
+    string path_to_packages{file_utils::get_path_program() / "packages"};
     if (!fs::is_directory(path_to_packages))
         _log << (log_message(log_type::error) << "\"" << path_to_packages << "\" package directory is expected.");
     else {
@@ -217,7 +218,7 @@ void builder::start() {
             string cache_str = file_utils::read_file(bweas_cache);
 
             _context.path_bweas_config = cache->get_path_config(cache_str);
-            string path_bweas_cache    = _context.path_bweas_to_build + CACHE_FILE;
+            fs::path path_bweas_cache  = _context.path_bweas_to_build / CACHE_FILE;
 
             if (!fs::exists(_context.path_bweas_config))
                 _log << (log_message(log_type::fatal) << "Bweas config not found");
@@ -265,7 +266,8 @@ void builder::start() {
 
 void builder::run_interpreter() {
     try {
-        lang bwlang{&_context, utils::file_utils::read_file(utils::file_utils::open_file(_context.path_bweas_config))};
+        lang bwlang{&_context,
+                    utils::file_utils::read_file(utils::file_utils::open_file(_context.path_bweas_config.c_str()))};
 
         bwlang.import_modules(modules);
         bwlang.execute();
@@ -375,7 +377,7 @@ void builder::build_targets() {
             target.queue_templates =
                 sc::template_command::create_queue_target_templates(_context.templates, target.templates);
             _context.current_target         = &target;
-            _context.current_work_directory = _context.path_bweas_to_build + target.name;
+            _context.current_work_directory = _context.path_bweas_to_build / target.name;
 
             if (!fs::is_directory(_context.current_work_directory))
                 fs::create_directories(_context.current_work_directory);

@@ -131,8 +131,7 @@ class bweas::utils::file_utils {
   public:
     static string get_time();
 
-    static string get_path_program();
-    static string get_current_path();
+    static fs::path get_path_program();
 
   public:
     static file open_file(std::string_view name_file, file::mode_file::open mode = file::mode_file::open::r);

@@ -123,9 +123,9 @@ void bweas::lang::init_scope() {
 
     create_variable("status", bwlang::parser_utils::func{
                                   [](string, bwlang::parser_utils::context &c_ctx) -> bwlang::parser_utils::value {
-                                      static constexpr pdiff MESSAGE = 0;
-                                      static constexpr pdiff WARNING = 1;
-                                      static constexpr pdiff ERROR   = 2;
+                                      static constexpr pdiff MESSAGE_FUNC = 0;
+                                      static constexpr pdiff WARNING_FUNC = 1;
+                                      static constexpr pdiff ERROR_FUNC   = 2;
 
                                       pdiff number_type_output = expected_argument(pdiff{}, c_ctx.sc, 0);
 
@@ -144,14 +144,14 @@ void bweas::lang::init_scope() {
                                       }
 
                                       switch (number_type_output) {
-                                      case MESSAGE:
+                                      case MESSAGE_FUNC:
                                       default:
                                           bweas::logger{""} << (log_message(log_type::msg) << output);
                                           break;
-                                      case WARNING:
+                                      case WARNING_FUNC:
                                           bweas::logger{""} << (log_message(log_type::warning) << output);
                                           break;
-                                      case ERROR:
+                                      case ERROR_FUNC:
                                           bweas::logger{""} << (log_message(log_type::error) << output);
                                           break;
                                       }

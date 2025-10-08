@@ -26,7 +26,7 @@ std::string file_utils::get_time() {
            " " + std::to_string(time_now->tm_hour) + ":" + std::to_string(time_now->tm_min);
 }
 
-std::string file_utils::get_path_program() {
+fs::path file_utils::get_path_program() {
 #if defined(WIN)
     std::string str(MAX_PATH, '\0');
     GetModuleFileNameA(NULL, str.data(), MAX_PATH);
@@ -37,9 +37,6 @@ std::string file_utils::get_path_program() {
     str.erase(str.find_last_of("/\\") + 1, str.size());
 
     return str;
-}
-std::string file_utils::get_current_path() {
-    return fs::current_path().string();
 }
 file_utils::file file_utils::open_file(std::string_view name_file, file::mode_file::open mode) {
     return file_utils::file{fs::absolute(name_file), mode};
