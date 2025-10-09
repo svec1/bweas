@@ -170,7 +170,7 @@ void builder::init() {
 
     vec<package> loaded_packages;
 
-    string path_to_packages{file_utils::get_path_program() / "packages"};
+    string path_to_packages = (file_utils::get_path_program() / "packages").string();
     if (!fs::is_directory(path_to_packages))
         _log << (log_message(log_type::error) << "\"" << path_to_packages << "\" package directory is expected.");
     else {

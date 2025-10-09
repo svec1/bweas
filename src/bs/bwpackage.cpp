@@ -185,7 +185,8 @@ package::package(string_v json_config) {
                              << "Module metadata must include the name of the source file of module");
 
                 name_src_file =
-                    file_utils::get_path_program() / "packages" / static_cast<string>(metainf_md["name-src-file"]);
+                    (file_utils::get_path_program() / "packages" / static_cast<string>(metainf_md["name-src-file"]))
+                        .string();
             }
 
             for (const auto &name_profile : no_export_profiles)

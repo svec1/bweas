@@ -229,7 +229,7 @@ commands generator_command::generate() const {
                                 cmd.args.push_back(arg.prefix + str);
                         else
                             _log << (log_message(log_type::fatal)
-                                     << "The '" << arg.value << "' dependency was not found.\'");
+                                     << "The '" << dependency << "' dependency was not found.");
                     }
                 }
                 else
