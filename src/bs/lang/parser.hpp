@@ -13,7 +13,10 @@
 #include <lang/lexer.hpp>
 
 namespace bwlang {
-class parser : private lexer {
+class parser;
+}
+
+class bwlang::parser : private bwlang::lexer {
   public:
     parser(string_v src);
 
@@ -23,8 +26,15 @@ class parser : private lexer {
     parser_utils::context &get_context() & {
         return *g_ctx;
     }
+    const parser_utils::context &get_context() const & {
+        return *g_ctx;
+    }
     void import_modules(const vec<bweas::module_manager::_module> &_modules) {
-        modules = _modules;
+        for (const auto &_md : _modules)
+            if (std::find_if(modules.begin(), modules.end(), [&](const bweas::module_manager::_module &md) {
+                    return md.name == _md.name;
+                }) == modules.end())
+                modules.push_back(_md);
     }
 
   public:
@@ -62,7 +72,9 @@ class parser : private lexer {
             }
         };
 
-        skip_token_end_line();
+        if constexpr (!(std::is_same_v<Tokens, tokens::end_line> || ...))
+            skip_token_end_line();
+
         (_(Tokens{}), ...);
 
         if (is_not_token)
@@ -82,7 +94,7 @@ class parser : private lexer {
     tokens::identifier expect_identifier() {
         skip_token_end_line();
         if (!peek().is<tokens::identifier>())
-            throw parser_utils::parser_error("Expected identifier.", consume());
+            throw parser_utils::parser_error("Expected identifier.", consume_if());
         return consume_if().get<tokens::identifier>();
     }
 
@@ -96,5 +108,4 @@ class parser : private lexer {
     parser_utils::context *g_ctx;
 };
 
-} // namespace bwlang
 #endif

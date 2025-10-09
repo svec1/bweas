@@ -54,7 +54,7 @@ lexer::lexer(string_v src) {
     string current_line;
     string tk_value;
 
-    pdiff current_line_index = 0;
+    pdiff current_line_index = 1;
     bool open_quote          = 0;
 
     for (pdiff i = 0; i < src.size(); ++i) {

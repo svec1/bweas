@@ -144,7 +144,7 @@ void builder::init() {
 
     nlohmann::json config_json;
     auto file_json_config =
-        file_utils::open_file((file_utils::get_path_program() / JSON_CONFIG_FILE).c_str(), mf::open::r);
+        file_utils::open_file((file_utils::get_path_program() / JSON_CONFIG_FILE).string(), mf::open::r);
     if (!file_json_config.is_open) {
         file_json_config.open(mf::open::w);
         file_utils::write_file(file_json_config, DEFAULT_BWEAS_JSON_CONFIG);
@@ -267,8 +267,10 @@ void builder::start() {
 void builder::run_interpreter() {
     try {
         lang bwlang{&_context,
-                    utils::file_utils::read_file(utils::file_utils::open_file(_context.path_bweas_config.c_str()))};
+                    utils::file_utils::read_file(utils::file_utils::open_file(_context.path_bweas_config.string()))};
 
+        bwlang.import_std_module();
+        bwlang.import_bweas_build_module();
         bwlang.import_modules(modules);
         bwlang.execute();
         bwlang.init_context();
@@ -320,7 +322,7 @@ dependency_finder::dependency_map &builder::load_depends_file(dependency_finder 
     else {
     find_depends_file:
         for (const auto &name_file : source_files) {
-            dfinder.build_graphs_depends_file_v(include_paths, name_file);
+            dfinder.build_graph(include_paths, name_file);
             depends_str += name_file + ":\n" + dfinder.get_string_depends_file(name_file);
         }
 

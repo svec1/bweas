@@ -63,7 +63,7 @@ class bweas::log_message {
 };
 
 // A class for logging status
-class bweas::logger {
+class bweas::logger final {
     friend bweas::log_console_lock<0>;
     friend bweas::log_console_lock<1>;
 

@@ -11,8 +11,10 @@
 #include <lang/tokens.hpp>
 
 namespace bwlang {
+class lexer;
+} // namespace bwlang
 
-class lexer {
+class bwlang::lexer {
   public:
     lexer(string_v src);
 
@@ -28,13 +30,13 @@ class lexer {
     vec<tokens::token> &get_tokens();
 
     string get_string_line(const tokens::token &tk) const {
-        if (tk.line_index < lines.size())
-            return lines[tk.line_index];
+        if (tk.line_index - 1 < lines.size())
+            return lines[tk.line_index - 1];
         return "?";
     }
     string get_string_previous_line(const tokens::token &tk) const {
-        if (tk.line_index < lines.size() && tk.line_index)
-            return lines[tk.line_index - 1];
+        if (tk.line_index - 1 < lines.size() && tk.line_index)
+            return lines[tk.line_index - 2];
         return "";
     }
 
@@ -44,6 +46,5 @@ class lexer {
     vec<tokens::token> tokens;
     vec<string> lines;
 };
-} // namespace bwlang
 
 #endif

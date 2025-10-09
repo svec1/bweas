@@ -34,7 +34,7 @@ lua_cache::lua_cache(string_v src_lua) {
         _log << (log_message(log_type::fatal) << "No entry function for get data of cache");
 }
 
-string lua_cache::create_cache() {
+string lua_cache::create_cache() const {
     lua_tools::param_targets ltargets_o;
     lua_tools::param_templates ltcmd_s;
     lua_tools::param_ccomponents lccmp_s;
@@ -57,7 +57,7 @@ string lua_cache::create_cache() {
 
     std::unreachable();
 }
-string lua_cache::get_path_config(const string &cache_str) {
+string lua_cache::get_path_config(const string &cache_str) const {
     try {
         return lua.call_function<string, string>(NAME_FUNCTION_GET_PATH_CONFIG, cache_str);
     }
@@ -68,7 +68,7 @@ string lua_cache::get_path_config(const string &cache_str) {
     std::unreachable();
 }
 
-void lua_cache::extract_cache_data(const string &cache_str) {
+void lua_cache::extract_cache_data(const string &cache_str) const {
     vec<lua_tools::table<string, any>> ltargets_o;
     vec<lua_tools::table<string, any>> ltcmd_s;
     vec<lua_tools::table<string, any>> lccmp_s;

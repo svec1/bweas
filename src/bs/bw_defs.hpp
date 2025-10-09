@@ -38,7 +38,7 @@ inline constexpr auto FORMAT_PACKAGE = ".bweas-package";
 
 inline constexpr auto THREADS_COUNT_DEFAULT = 1;
 
-// The structure defining the main data for the build
+/** \brief The structure defining the main data for the build. */
 struct context {
     vec<sc::target> targets;
     vec<sc::template_command> templates;

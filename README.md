@@ -68,7 +68,7 @@ cmake --build . --config Release
 Simple configurations for assembly will be described here. These examples are for informational purposes only and do not include complex structures and new features.
 
 ```
-import 'base'
+import 'bweas-build', 'base'
 
 # Create a command template. You can use the capabilities that the current generator provides
 # In this case, the nth number of commands is generated (based on the number of source files), 

@@ -145,7 +145,7 @@ using namespace cache_api;
 
 static logger _log{"BWCACHE[JSON]"};
 
-string json_cache::create_cache() {
+string json_cache::create_cache() const {
     nlohmann::json cache_data;
 
     cache_data["config_file"] = _context->path_bweas_config;
@@ -159,7 +159,7 @@ string json_cache::create_cache() {
 
     return cache_data.dump(4);
 }
-string json_cache::get_path_config(const string &cache_str) {
+string json_cache::get_path_config(const string &cache_str) const {
     try {
         nlohmann::json cache_data = nlohmann::json::parse(cache_str);
         return cache_data["config_file"];
@@ -171,7 +171,7 @@ string json_cache::get_path_config(const string &cache_str) {
     std::unreachable();
 }
 
-void json_cache::extract_cache_data(const string &cache_str) {
+void json_cache::extract_cache_data(const string &cache_str) const {
     try {
         nlohmann::json cache_data = nlohmann::json::parse(cache_str);
 

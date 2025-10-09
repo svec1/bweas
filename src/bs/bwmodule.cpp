@@ -27,8 +27,11 @@ vec<module_manager::_module> module_manager::init_modules(vec<module_cfg> &modul
 
             try {
                 lang l(nullptr, file_utils::read_file(src_file));
+                l.import_std_module();
+                l.import_modules(md_s);
                 l.execute();
                 md_s.emplace_back(module_cfg.name, l.get_context());
+                bwlang::parser::dump_global_context();
             }
             catch (std::runtime_error &excp) {
                 _log << (log_message(log_type::fatal) << "\'" << module_cfg.name << "\' module initialization error: \n"

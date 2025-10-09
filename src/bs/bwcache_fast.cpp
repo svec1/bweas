@@ -12,7 +12,7 @@ using namespace cache_api;
 
 static logger _log{"BWCACHE[FAST]"};
 
-string fast_cache::create_cache() {
+string fast_cache::create_cache() const {
     string serel_target_tmp;
 
     uset<string> used_templates;
@@ -91,7 +91,7 @@ string fast_cache::create_cache() {
 
     return serel_target_tmp;
 }
-string fast_cache::get_path_config(const string &cache_str) {
+string fast_cache::get_path_config(const string &cache_str) const {
     try {
         string str_tmp = cache_str;
         str_tmp.erase(0, 1);
@@ -104,7 +104,7 @@ string fast_cache::get_path_config(const string &cache_str) {
 
     std::unreachable();
 }
-void fast_cache::extract_cache_data(const string &cache_str) {
+void fast_cache::extract_cache_data(const string &cache_str) const {
     sc::target trg_tmp;
     sc::template_command tcmd_tmp;
     sc::template_command::arg arg_tmp;

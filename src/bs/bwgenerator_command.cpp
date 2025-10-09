@@ -13,7 +13,7 @@ using namespace bweas::utils;
 
 static logger _log{"BWGENERATOR_COMMAND"};
 
-void generator_command::get_input_files() {
+void generator_command::get_input_files() const {
     auto &target              = *_context->current_target;
     vec<string> &source_files = target.fields<vec<string>>(sc::profile::FIELD_SOURCE_FILES);
     for (auto &current_template : target.queue_templates) {
@@ -92,9 +92,9 @@ void generator_command::get_input_files() {
         else if (current_template.returnable.type == sc::template_command::return_value::e_type::extension_field) {
             vec<string> vec_tmp;
             for (size_t i = 0; i < current_template.ifiles.size(); ++i)
-                vec_tmp.push_back(
-                    get_name_output_file((_context->current_work_directory / call_component->pattern_ret_files).c_str(),
-                                         current_template.ifiles[i]));
+                vec_tmp.push_back(get_name_output_file(
+                    (_context->current_work_directory / call_component->pattern_ret_files).string(),
+                    current_template.ifiles[i]));
             if (auto it = target.ext.get_if<vec<string>>(current_template.returnable.value); it)
                 it->insert(it->end(), vec_tmp.begin(), vec_tmp.end());
             else
@@ -102,7 +102,7 @@ void generator_command::get_input_files() {
         }
     }
 }
-commands generator_command::generate() {
+commands generator_command::generate() const {
     commands cmd_s;
 
     static umap<string, vec<string>> returnable_target;
@@ -121,7 +121,7 @@ commands generator_command::generate() {
                              return call_component.name == current_template.name_call_component;
                          });
 
-        string pattern_output_file = (_context->current_work_directory / call_component->pattern_ret_files).c_str();
+        string pattern_output_file = (_context->current_work_directory / call_component->pattern_ret_files).string();
 
         command cmd;
         cmd.name = current_template.name + std::to_string(count_use_ifiles);
@@ -282,10 +282,10 @@ string generator_command::get_name_output_file(string pattern_file, string_v nam
     return pattern_file;
 }
 
-bool generator_command::should_uses_src_file(string_v src_file, string_v output_file, const uset<string> &dfiles) {
+bool generator_command::should_uses_src_file(string_v name_file, string_v output_file, const uset<string> &dfiles) {
     if (fs::is_regular_file(output_file) && fs::last_write_time(CACHE_FILE) > fs::last_write_time(output_file))
         return 1;
-    else if (!fs::is_regular_file(output_file) || fs::last_write_time(output_file) < fs::last_write_time(src_file))
+    else if (!fs::is_regular_file(output_file) || fs::last_write_time(output_file) < fs::last_write_time(name_file))
         return 1;
 
     for (const auto &dfile : dfiles)

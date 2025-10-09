@@ -17,43 +17,70 @@ namespace bweas {
 class lang;
 }
 
-// A wrapper around the lang interpreter that installs all
-// the standard bweas functions and also provides interaction with the global scope
-class bweas::lang {
+/** \brief A wrapper around the lang interpreter that installs all the standard bweas functions and also provides
+ * interaction with the global scope.
+ */
+class bweas::lang final {
   public:
+    /** \brief Constructor.
+     * \param __context A pointer to the external context.
+     * \param src A string containing the source code (script) of bwlang.
+     */
     inline lang(context *const __context, string_v src);
 
     lang(lang &&)            = delete;
     lang(const lang &)       = delete;
     lang &operator=(lang &&) = delete;
 
-  private:
-    // Sets standard functions and keyword operators corresponding to the bweas specification
-    inline void init_scope();
+  public:
+    /** \brief Loads external functions (passed into this function) into the parser.
+     *  \param modules An array of modules to be imported.
+     */
+    inline void import_modules(const vec<module_manager::_module> &modules);
+
+    /** \brief Import base bweas module: standard functions and auxiliary variables. Initializes:
+     *  - v debug       0
+     *  - v release     1
+     *  - v false       0
+     *  - v true        1
+     *  - v executable  0
+     *  - v library     1
+     *  - v message     0
+     *  - v warning     1
+     *  - v error       2
+     *  - v get_files   0
+     *  - v config_path [path to config file]
+     *  - f status (number_status, msg...)
+     *  - f file   (number_func, ...)
+     */
+    inline void import_std_module();
+
+    /** Import base bweas module: context-dependent functions. Initializes:
+     *  - f build  (targets...)
+     */
+    inline void import_bweas_build_module();
 
   public:
-    // Starts the internal interpreter
+    /** \brief Starts the parser. */
     inline void execute();
 
-    // Loads external functions (passed into this function) into the interpreter (semantic analyzer)
-    inline void import_modules(vec<module_manager::_module> modules);
-
-    inline void init_context();
+    /** \brief Initializes the external context based on the internal state of the parser context. */
+    inline void init_context() const;
 
   public:
+    /** \brief Returns the internal context of the parser. */
     bwlang::parser_utils::context get_context() {
         return p.get_context();
     }
 
+    /** \brief Returns the value of a variable defined in the internal context of the parser.
+     * \param name_var The name of the existing variable.
+     * \return T value.
+     */
     template <typename T> inline T get_variable(string name_var) {
         if (std::holds_alternative<T>(p.get_context().get(name_var, true)))
             return std::get<T>(p.get_context().get(name_var, true));
         return T{};
-    }
-
-  private:
-    template <typename T> inline void create_variable(string name_var, T val = {}) {
-        p.get_context().sc[name_var] = val;
     }
 
   private:
@@ -67,23 +94,27 @@ class bweas::lang {
     bwlang::parser p;
 };
 bweas::lang::lang(context *const __context, string_v src) : _context(__context), p(src) {
-    init_scope();
 }
 
-void bweas::lang::init_scope() {
-    bwlang::parser::dump_global_context();
+void bweas::lang::import_modules(const vec<module_manager::_module> &modules) {
+    p.import_modules(modules);
+}
+void bweas::lang::import_std_module() {
+    bwlang::parser_utils::context t_ctx;
 
-    create_variable<pdiff>("debug", 0);
-    create_variable<pdiff>("release", 1);
-    create_variable<pdiff>("false", 0);
-    create_variable<pdiff>("true", 1);
-    create_variable<pdiff>("executable", 0);
-    create_variable<pdiff>("library", 1);
-    create_variable<pdiff>("message", 0);
-    create_variable<pdiff>("warning", 1);
-    create_variable<pdiff>("error", 2);
-    create_variable<pdiff>("get_files", 0);
-    create_variable<string>("config_path", fs::current_path().string());
+    auto create_variable = [&](string name_var, auto &&val = {}) { t_ctx.sc[name_var] = val; };
+
+    create_variable("debug", 0);
+    create_variable("release", 1);
+    create_variable("false", 0);
+    create_variable("true", 1);
+    create_variable("executable", 0);
+    create_variable("library", 1);
+    create_variable("message", 0);
+    create_variable("warning", 1);
+    create_variable("error", 2);
+    create_variable("get_files", 0);
+    create_variable("config_path", fs::current_path().string());
 
     static auto expected_argument = [](auto &&type, bwlang::parser_utils::scope &sc,
                                        pdiff number_arg) -> std::decay_t<decltype(type)> {
@@ -99,27 +130,6 @@ void bweas::lang::init_scope() {
         sc.erase(name_arg);
         return val;
     };
-
-    create_variable("build", bwlang::parser_utils::func{
-                                 [&](string, bwlang::parser_utils::context &c_ctx) -> bwlang::parser_utils::value {
-                                     if (!_context)
-                                         throw bwlang::parser_utils::parser_error("Bweas the context is nullptr.");
-
-                                     for (const auto &[key, value] : c_ctx.sc) {
-                                         if (std::holds_alternative<sc::target>(value))
-                                             _context->targets.emplace_back(std::move(std::get<sc::target>(value)));
-                                         else if (std::holds_alternative<vec<sc::target>>(value)) {
-                                             const auto &targets = std::get<vec<sc::target>>(value);
-                                             for (const auto &target : targets)
-                                                 _context->targets.emplace_back(std::move(target));
-                                         }
-                                         else
-                                             throw bwlang::parser_utils::parser_error("Expected target type.");
-                                     }
-                                     return {};
-                                 },
-                                 {},
-                                 false});
 
     create_variable("status", bwlang::parser_utils::func{
                                   [](string, bwlang::parser_utils::context &c_ctx) -> bwlang::parser_utils::value {
@@ -173,9 +183,9 @@ void bweas::lang::init_scope() {
                             string dir = file.substr(0, file.find_last_of("/\\"));
                             for (const auto &it : fs::directory_iterator{dir}) {
                                 if (fs::is_regular_file(it))
-                                    dir_files.push_back(utils::file_utils::get_path_file(it.path().c_str()));
+                                    dir_files.push_back(utils::file_utils::get_path_file(it.path().string()));
                                 else if (fs::is_directory(it)) {
-                                    auto vec_tmp = get_dir_files(string(it.path()) + "/");
+                                    auto vec_tmp = get_dir_files(it.path().string() + "/");
                                     dir_files.insert(dir_files.end(), vec_tmp.begin(), vec_tmp.end());
                                 }
                             }
@@ -217,22 +227,48 @@ void bweas::lang::init_scope() {
             },
             {},
             false});
+
+    import_modules({{"std", std::move(t_ctx)}});
+}
+void bweas::lang::import_bweas_build_module() {
+    bwlang::parser_utils::context t_ctx;
+
+    auto create_variable = [&](string name_var, auto &&val = {}) { t_ctx.sc[name_var] = val; };
+
+    create_variable("build", bwlang::parser_utils::func{
+                                 [&](string, bwlang::parser_utils::context &c_ctx) -> bwlang::parser_utils::value {
+                                     if (!_context)
+                                         throw bwlang::parser_utils::parser_error("Bweas the context is nullptr.");
+
+                                     for (const auto &[key, value] : c_ctx.sc) {
+                                         if (std::holds_alternative<sc::target>(value))
+                                             _context->targets.emplace_back(std::move(std::get<sc::target>(value)));
+                                         else if (std::holds_alternative<vec<sc::target>>(value)) {
+                                             const auto &targets = std::get<vec<sc::target>>(value);
+                                             for (const auto &target : targets)
+                                                 _context->targets.emplace_back(std::move(target));
+                                         }
+                                         else
+                                             throw bwlang::parser_utils::parser_error("Expected target type.");
+                                     }
+                                     return {};
+                                 },
+                                 {},
+                                 false});
+
+    import_modules({{"bweas-build", std::move(t_ctx)}});
 }
 
 void bweas::lang::execute() {
     p.parse();
 }
-void bweas::lang::import_modules(vec<module_manager::_module> modules) {
-    p.import_modules(std::move(modules));
-}
-
-void bweas::lang::init_context() {
+void bweas::lang::init_context() const {
     if (!_context)
         bweas::logger{""} << (log_message(log_type::fatal) << "Bweas the context is nullptr.");
 
-    for (auto &[key, value] : p.get_context().sc)
+    for (const auto &[key, value] : p.get_context().sc)
         if (std::holds_alternative<sc::template_command>(value)) {
-            auto &tcmd = std::get<sc::template_command>(value);
+            auto tcmd = std::get<sc::template_command>(value);
             if (size_t it = tcmd.name_call_component.find(":"); it != tcmd.name_call_component.npos) {
                 string name_ccmp = "anon_cc_" + tcmd.name;
                 _context->call_components.emplace_back(name_ccmp, tcmd.name_call_component.substr(0, it),

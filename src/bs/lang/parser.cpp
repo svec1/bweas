@@ -111,14 +111,20 @@ parser_utils::value parser::parse_if_else_branche(bool in_skip_branche, bool is_
     return return_value;
 }
 void parser::parse_import() {
-    tokens::token current_token = expect_token<tokens::literal_string>();
-    auto it                     = std::find_if(modules.begin(), modules.end(),
-                                               [name_module = current_token.get<tokens::literal_string>().value](
-                               const bweas::module_manager::_module &md) { return md.name == name_module; });
-    if (it == modules.end())
-        throw parser_utils::parser_error("Unknown module.", current_token);
+    tokens::token current_token;
+    while (!current_token.is<tokens::end_line>()) {
+        current_token = expect_token<tokens::literal_string>();
 
-    g_ctx->sc.merge(it->ctx.sc);
+        auto it = std::find_if(modules.begin(), modules.end(),
+                               [name_module = current_token.get<tokens::literal_string>().value](
+                                   const bweas::module_manager::_module &md) { return md.name == name_module; });
+        if (it == modules.end())
+            throw parser_utils::parser_error("Unknown module.", current_token);
+
+        g_ctx->sc.merge(it->ctx.sc);
+
+        current_token = expect_tokens<tokens::comma, tokens::end_line>();
+    }
 }
 void parser::parse_function() {
     static umap<string, vec<tokens::token>> decl_funcs;

@@ -12,8 +12,8 @@ using namespace bweas;
 
 static bweas::logger _log{"BWDEPENDENCY_FINDER"};
 
-dependency_finder::dependency_map &dependency_finder::build_graphs_depends_files(const vec<string> &_include_paths,
-                                                                                 const vec<string> &src_files) {
+dependency_finder::dependency_map &dependency_finder::build_graphs(const vec<string> &_include_paths,
+                                                                   const vec<string> &src_files) {
     include_paths = _include_paths;
     for (const auto &file : src_files) {
         try {
@@ -26,8 +26,8 @@ dependency_finder::dependency_map &dependency_finder::build_graphs_depends_files
     }
     return mdepends;
 }
-dependency_finder::dependency_map &dependency_finder::build_graphs_depends_file_v(const vec<string> &_include_paths,
-                                                                                  const string &name_file) {
+dependency_finder::dependency_map &dependency_finder::build_graph(const vec<string> &_include_paths,
+                                                                  const string &name_file) {
     try {
         include_paths = _include_paths;
         build_graph_depends_file(name_file, mdepends[name_file]);
