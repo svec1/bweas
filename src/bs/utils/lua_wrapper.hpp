@@ -218,7 +218,7 @@ class bweas::utils::lua {
     using cfunc = int (*)(lua_State *);
 
     using string_param = std::string_view;
-    using integer      = int;
+    using integer      = std::ptrdiff_t;
     using number       = double;
 
   private:
