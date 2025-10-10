@@ -218,7 +218,7 @@ class bweas::utils::lua {
     using cfunc = int (*)(lua_State *);
 
     using string_param = std::string_view;
-    using integer      = ptrdiff_t;
+    using integer      = int;
     using number       = double;
 
   private:
@@ -258,7 +258,7 @@ class bweas::utils::lua {
   public:
     std::string get_string_stack() {
         std::string str = "STACK(" + std::to_string(lua_gettop(L)) + "):\n";
-        for (ptrdiff_t i = 1; i <= lua_gettop(L); ++i) {
+        for (integer i = 1; i <= lua_gettop(L); ++i) {
             if (i < lua_gettop(L))
                 str += "| " + std::to_string(lua_gettop(L) - i) + " ";
             else

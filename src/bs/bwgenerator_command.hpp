@@ -55,19 +55,29 @@ class bweas::generator_command final {
 
   public:
     /** \brief Defines the input files and a single-generate mod for each template.
+     * \detail Sets context::ifiles.
      * Parses the arguments: [source_files], INPUT_FILE.
-     * Sets context::ifiles.
+     * If the INPUT_FILE or [source_files:1] parameter has been parsed, the current template will be single-generate.
      * */
     void get_input_files() const;
     /**
      * \brief Generates a set of commands for the current context template,
      * which should be executed in the specified order.
+     *
+     * \detail If a single-generate mode is defined for the template, then as many commands will be generated as there
+     * are total input files for the current template. Otherwise, a single command will be generated based on such a
+     * template.
+     *
      * \return commands
      * */
     commands generate() const;
 
   private:
     /** \brief Generates a file name based on the pattern and the passed index of the given file.
+     *
+     * \detail If there is a '{}', it is replaced by the name of the input file. Otherwise, the transmitted index is
+     * added to the file name.
+     *
      * \param [in] pattern_file Template for the name of the future output file.
      * \param [in] name_target The name of the target object.
      * \param [in] name_file The name of the corresponding input file.
@@ -77,6 +87,10 @@ class bweas::generator_command final {
     static string get_name_output_file(string pattern_file, string_v name_target, string_v name_file = "",
                                        size_t index = 0);
     /** \brief Determines whether to use the input file to generate the command.
+     *
+     * \detail Returns true if there was a change in the cache file after creating the output file, if there was a
+     * change in the input file or one of its dependencies.
+     *
      * \param [in] name_file The name of the input file.
      * \param [in] output_file The name of the output file corresponds to the input file.
      * \param [in] dfiles An array of dependent files.

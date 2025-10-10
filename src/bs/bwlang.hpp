@@ -23,8 +23,8 @@ class lang;
 class bweas::lang final {
   public:
     /** \brief Constructor.
-     * \param __context A pointer to the external context.
-     * \param src A string containing the source code (script) of bwlang.
+     * \param [in] __context A pointer to the external context.
+     * \param [in] src A string containing the source code (script) of bwlang.
      */
     inline lang(context *const __context, string_v src);
 
@@ -34,11 +34,12 @@ class bweas::lang final {
 
   public:
     /** \brief Loads external functions (passed into this function) into the parser.
-     *  \param modules An array of modules to be imported.
+     *  \param [in] modules An array of modules to be imported.
      */
     inline void import_modules(const vec<module_manager::_module> &modules);
 
-    /** \brief Import base bweas module: standard functions and auxiliary variables. Initializes:
+    /** \brief Import base bweas module: standard functions and auxiliary variables.
+     * \detail Initializes:
      *  - v debug       0
      *  - v release     1
      *  - v false       0
@@ -55,7 +56,8 @@ class bweas::lang final {
      */
     inline void import_std_module();
 
-    /** Import base bweas module: context-dependent functions. Initializes:
+    /** \brief Import base bweas module: context-dependent functions.
+     * \detail Initializes:
      *  - f build  (targets...)
      */
     inline void import_bweas_build_module();
@@ -68,13 +70,15 @@ class bweas::lang final {
     inline void init_context() const;
 
   public:
-    /** \brief Returns the internal context of the parser. */
+    /** \brief Returns the internal context of the parser.
+     * \return bwlang::parser_utils::context The internal context of the parser, in which all variables are defined.
+     */
     bwlang::parser_utils::context get_context() {
         return p.get_context();
     }
 
     /** \brief Returns the value of a variable defined in the internal context of the parser.
-     * \param name_var The name of the existing variable.
+     * \param [in] name_var The name of the existing variable.
      * \return T value.
      */
     template <typename T> inline T get_variable(string name_var) {

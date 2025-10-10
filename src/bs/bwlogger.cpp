@@ -47,33 +47,13 @@ log_message::log_message(log_type _log_t) : log_t(_log_t) {
 void logger::set_global_log(bool _log) {
     log = _log;
 }
-void logger::set_debug() {
+void logger::set_global_debug() {
     debug = true;
 }
 bool logger::error_status() {
     return global_status == log_type::error || global_status == log_type::fatal;
 }
 
-bool logger::request_yes_no(bool condition, string_v out) {
-    if (!condition)
-        return false;
-    else if (next_yes) {
-        next_yes = false;
-        return true;
-    }
-    (*this) << (log_message(log_type::warning) << out);
-
-    std::fprintf(stdout, "(y/n): ");
-    char ch = std::getchar();
-
-    if (ch == 'y')
-        return true;
-    else
-        return false;
-}
-void logger::set_next_yes() {
-    next_yes = true;
-}
 void logger::operator<<(const log_message &obj) {
     if (!log)
         return;

@@ -38,13 +38,13 @@ class bweas::cache_api::interface_cache {
     /** \brief A function that should be defined in the child class and extract the path to the configuration file from
      * the cache file.
      *
-     * \param A cache data.
+     * \param [in] cache_str A cache data.
      * \return string Path to bweasconf.txt.
      */
     virtual string get_path_config(const string &cache_str) const = 0;
 
     /** \brief A function that must be defined in a child class and return cache data.
-     * \param cache_str A cache data.
+     * \param [in] cache_str A cache data.
      */
     virtual void extract_cache_data(const string &cache_str) const = 0;
 };
@@ -92,7 +92,8 @@ class bweas::cache_api::fast_cache final : private bweas::cache_api::base_cache 
     void extract_cache_data(const string &cache_str) const override;
 };
 
-/// \brief A basic cache generator, which in turn has a human readable form, but is also slow compared to fast_bwcache.
+/** \brief A basic cache generator, which in turn has a human readable form, but is also slow compared to fast_bwcache.
+ */
 class bweas::cache_api::json_cache final : private bweas::cache_api::base_cache {
     friend base_cache *base_cache::create_json_cache();
 

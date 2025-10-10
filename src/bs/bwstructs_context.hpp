@@ -12,7 +12,7 @@
 
 namespace bweas {
 
-// enum of str postfix name var a target
+/** enum of str postfix name var a target. */
 inline constexpr auto TRG_VAR_NAME              = "_NAME";
 inline constexpr auto TRG_VAR_NAME_VER          = "_VERSION";
 inline constexpr auto TRG_VAR_NAME_TEMPLATES    = "_TEMPLATES";
@@ -33,6 +33,7 @@ inline constexpr auto NAME_FIELD_CALL_COMPONENT_NAME          = "_NAME";
 inline constexpr auto NAME_FIELD_CALL_COMPONENT_NAME_PROGRAM  = "_NAME_PROGRAM";
 inline constexpr auto NAME_FIELD_CALL_COMPONENT_PATTERN_FILES = "_PATTERN_FILES";
 
+/** \brief Structures describing bweas concepts. */
 namespace structs_context {
 
 struct target;

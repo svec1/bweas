@@ -91,8 +91,6 @@ void builder::handle_args(vec<string> &args) {
                 _log << (log_message(log_type::msg) << HELP_STR);
             else if (args[i] == "version")
                 _log << (log_message(log_type::msg) << INFO_STR);
-            else if (args[i] == "ry")
-                _log.set_next_yes();
             else if (size_t it = args[i].find("="); it != args[i].npos) {
                 if (args[i].find("threads") == 0 && it == 7) {
                     string value = args[i].substr(8);
@@ -100,12 +98,6 @@ void builder::handle_args(vec<string> &args) {
                         count_threads = -1;
                     else
                         count_threads = std::atoll(value.c_str());
-
-                    if (!_log.request_yes_no(count_threads > 10, "A large number of threads may cause the system to "
-                                                                 "malfunction or crash, do you really need this?")) {
-
-                        count_threads = THREADS_COUNT_DEFAULT;
-                    }
                 }
                 else
                     goto unknown_arg;
@@ -246,7 +238,7 @@ void builder::start() {
             fs::current_path(fs::path(_context.path_bweas_config).parent_path());
             run_interpreter();
 
-            if (logger::global_status == log_type::error)
+            if (_log.error_status())
                 return;
 
             fs::current_path(_context.path_bweas_to_build);

@@ -40,9 +40,6 @@ vec<module_manager::_module> module_manager::init_modules(vec<module_cfg> &modul
         }
         else
             md_s.emplace_back(module_cfg.name);
-
-        for (const auto &[name, profile] : module_cfg.profiles)
-            md_s[md_s.size() - 1].ctx.sc[name] = profile;
     }
 
     return md_s;
