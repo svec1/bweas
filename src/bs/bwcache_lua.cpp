@@ -19,7 +19,6 @@ static constexpr auto NAME_FUNCTION_GET_DATA        = "get_cache_data";
 static constexpr auto NAME_VARIABLE_TARGETS     = "targets";
 static constexpr auto NAME_VARIABLE_TEMPLATES   = "templates";
 static constexpr auto NAME_VARIABLE_CCOMPONENTS = "call_components";
-static constexpr auto NAME_VARIABLE_GEARGS      = "global_external_args";
 
 static logger _log{"BWCACHE[LUA]"};
 static utils::lua lua;
@@ -35,7 +34,7 @@ lua_cache::lua_cache(string_v src_lua) {
         _log << (log_message(log_type::fatal) << "No entry function for get data of cache");
 }
 
-string lua_cache::create_cache() {
+string lua_cache::create_cache() const {
     lua_tools::param_targets ltargets_o;
     lua_tools::param_templates ltcmd_s;
     lua_tools::param_ccomponents lccmp_s;
@@ -48,9 +47,9 @@ string lua_cache::create_cache() {
         lccmp_s.push_back(lua_tools::conv_to_table(lccmp));
 
     try {
-        return lua.call_function<string, lua_tools::param_targets, lua_tools::param_templates,
-                                 lua_tools::param_ccomponents, lua_tools::param_geargs>(
-            NAME_FUNCTION_CREATE, ltargets_o, ltcmd_s, lccmp_s, _context->global_external_args);
+        return lua
+            .call_function<string, lua_tools::param_targets, lua_tools::param_templates, lua_tools::param_ccomponents>(
+                NAME_FUNCTION_CREATE, ltargets_o, ltcmd_s, lccmp_s);
     }
     catch (std::exception &what) {
         _log << (log_message(log_type::fatal) << what.what());
@@ -58,7 +57,7 @@ string lua_cache::create_cache() {
 
     std::unreachable();
 }
-string lua_cache::get_path_config(const string &cache_str) {
+string lua_cache::get_path_config(const string &cache_str) const {
     try {
         return lua.call_function<string, string>(NAME_FUNCTION_GET_PATH_CONFIG, cache_str);
     }
@@ -69,7 +68,7 @@ string lua_cache::get_path_config(const string &cache_str) {
     std::unreachable();
 }
 
-void lua_cache::extract_cache_data(const string &cache_str) {
+void lua_cache::extract_cache_data(const string &cache_str) const {
     vec<lua_tools::table<string, any>> ltargets_o;
     vec<lua_tools::table<string, any>> ltcmd_s;
     vec<lua_tools::table<string, any>> lccmp_s;
@@ -78,10 +77,9 @@ void lua_cache::extract_cache_data(const string &cache_str) {
     try {
         lua.call_function<void, string>(NAME_FUNCTION_GET_DATA, cache_str);
 
-        ltargets_o            = lua[NAME_VARIABLE_TARGETS].getval<vec<lua_tools::table<string, any>>>();
-        ltcmd_s               = lua[NAME_VARIABLE_TEMPLATES].getval<vec<lua_tools::table<string, any>>>();
-        lccmp_s               = lua[NAME_VARIABLE_CCOMPONENTS].getval<vec<lua_tools::table<string, any>>>();
-        lglobal_external_args = lua[NAME_VARIABLE_GEARGS].getval<vec<pair<string, string>>>();
+        ltargets_o = lua[NAME_VARIABLE_TARGETS].getval<vec<lua_tools::table<string, any>>>();
+        ltcmd_s    = lua[NAME_VARIABLE_TEMPLATES].getval<vec<lua_tools::table<string, any>>>();
+        lccmp_s    = lua[NAME_VARIABLE_CCOMPONENTS].getval<vec<lua_tools::table<string, any>>>();
     }
     catch (std::exception &what) {
         _log << (log_message(log_type::fatal) << what.what());
@@ -93,6 +91,4 @@ void lua_cache::extract_cache_data(const string &cache_str) {
         _context->templates.push_back(lua_tools::conv_to_template(ltcmd));
     for (auto &lccmp : lccmp_s)
         _context->call_components.push_back(lua_tools::conv_to_call_components(lccmp));
-
-    _context->global_external_args = lglobal_external_args;
 }

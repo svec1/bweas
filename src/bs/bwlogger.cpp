@@ -7,27 +7,26 @@
 
 #include <format>
 
-#include <iostream>
 #include <bwlogger.hpp>
+#include <iostream>
 
 using namespace bweas;
 using namespace bweas::utils;
 
-bool logger::log = true;
+bool logger::log = true, logger::debug = false;
 
-file_utils::file_it logger::file_log;
+file_utils::file logger::file_log;
 log_type logger::global_status;
 bool logger::output_to_console = true;
 
-logger::logger(string_v _owner) : owner(_owner), status(log_type::msg) {
-    file_log = file_utils::open_file(NAME_FILE_LOG, file_utils::file::mode_file::open::w);
+logger::logger(string_v _owner, bool _is_main) : owner(_owner), is_main(_is_main) {
 }
 logger::~logger() {
-    if (file_utils::exist_file(file_log) && file_utils::get_ref_file(file_log).file_opened)
-        file_utils::close_file(file_log);
-
-        if (!log && fs::exists(NAME_FILE_LOG))
-            fs::remove(NAME_FILE_LOG);
+    if (!log && fs::exists(NAME_FILE_LOG)) {
+        if (file_log.is_open)
+            file_log.close();
+        fs::remove(NAME_FILE_LOG);
+    }
 }
 
 log_message::log_message(log_type _log_t) : log_t(_log_t) {
@@ -40,8 +39,7 @@ log_message::log_message(log_type _log_t) : log_t(_log_t) {
         break;
     case log_type::fatal:
         ss << "FATAL ";
-
-    case log_type::msg:
+        break;
     default:
         break;
     }
@@ -49,27 +47,21 @@ log_message::log_message(log_type _log_t) : log_t(_log_t) {
 void logger::set_global_log(bool _log) {
     log = _log;
 }
-void logger::set_global_status() {
-    global_status = status;
-}
-log_type logger::get_status() {
-    return status;
-}
-void logger::dump_status() {
-    status = bweas::log_type::msg;
+void logger::set_global_debug() {
+    debug = true;
 }
 bool logger::error_status() {
-    return status == log_type::error || status == log_type::fatal;
+    return global_status == log_type::error || global_status == log_type::fatal;
 }
 
 void logger::operator<<(const log_message &obj) {
     if (!log)
         return;
 
-    status = obj.log_t;
+    global_status = obj.log_t;
 
     size_t text_color;
-    switch (status) {
+    switch (global_status) {
     case log_type::error:
     case log_type::fatal:
         text_color = 1;
@@ -84,14 +76,35 @@ void logger::operator<<(const log_message &obj) {
         text_color = 7;
     }
 
-    string _owner  = !owner.empty() ? string("[") + owner.data() + string("]: ") : "";
+    string _owner  = !owner.empty() ? string(" - [") + owner.data() + string("]: ") : " - ";
     string out_str = std::format("{}\033[3{}m{}\033[0m", _owner, text_color, obj.ss.str());
 
-    file_utils::write_file(file_utils::get_ref_file(file_log), _owner + obj.ss.str() + "\n");
+    handle(std::move(out_str));
+}
+void logger::handle_exception(const bweas::exception &excp) {
+    global_status = log_type::fatal;
+    handle(excp.what());
+}
+void logger::handle(string &&str) {
+    if (!log)
+        return;
+    init();
 
-    if (output_to_console)
-        std::fprintf(stdout, "%s\n", out_str.data());
+    string out_to_file = str;
+    out_to_file.erase(str.find("\033[3"), 5);
+    out_to_file.erase(out_to_file.size() - 4, 4);
 
-    if (status == log_type::fatal)
+    if (global_status == log_type::fatal && !is_main)
+        throw bweas::exception(str);
+
+    file_utils::write_file(file_log, out_to_file + "\n");
+    if (output_to_console || debug)
+        std::fprintf(stdout, "%s\n", str.data());
+
+    if (global_status == log_type::fatal)
         exit(1);
+}
+void logger::init() {
+    if (!file_log.is_open)
+        file_log = file_utils::open_file(NAME_FILE_LOG, file_utils::file::mode_file::open::w);
 }

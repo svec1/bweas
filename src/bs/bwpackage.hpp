@@ -15,60 +15,41 @@ namespace bweas {
 class package;
 }
 
-// Class defining bweas packages
+/** \brief Bweas package. */
 class bweas::package {
   public:
-    package() = default;
+    /** Constructor.
+     * \param [in] json_config Data about the bweas package, which is presented in json format.
+     */
+    package(string_v json_config);
 
   public:
-    // Data for creating a bweas package
-    struct data_bw_package {
-        string json_config;
-        string src_lua_cache;
-        vec<string> src_lua_finders;
-    };
-
-    // All its configuration is stored here in the usual format.
+    /** \brief The structure defining the configuration of the bweas package. */
     struct config {
+        /** \brief The structure defining the configuration of the lua cache generator. */
         struct cache_lua {
+            /** \brief Constructor.*/
             cache_lua() = default;
-            cache_lua(string _name, string src_lua) : name(_name), src_lua(src_lua) {
-            }
-            string name;
-            string src_lua;
-        };
-        struct dependency_finder {
-            dependency_finder() = default;
-            dependency_finder(string _language, string _src_lua) : language(_language), src_lua(_src_lua) {
+            /** \brief Constructor.
+             * \param [in] _name
+             * \param [in] _src_lua
+             */
+            cache_lua(string _name, string _src_lua) : name(_name), src_lua(_src_lua) {
             }
 
-            string language;
-            string src_lua;
+          public:
+            string name;    ///< The name of the generator.
+            string src_lua; ///< The source code of the lua generator cache.
         };
 
-        cache_lua cache;
-        vec<dependency_finder> finders;
-        vec<module_manager::module_cfg> modules;
+      public:
+        cache_lua cache;                         ///< Configuration of the lua cache generator.
+        vec<module_manager::module_cfg> modules; ///< An array of module configurations.
     };
 
-    // Returns a packet compressed by the lz4 algorithm, with the signature of a bweas packet
-    static string create_data_package(data_bw_package _data);
-
-    // Initializes the current package based on data
-    string init(data_bw_package _data, bool is_create_pckg = 0);
-
-    // Decompresses the read bweas packet, and also determines the correctness of its structure
-    void load(string_v raw_data_package);
-
   public:
-    // Returns 1 - if the package is initialized (*package name is not non-zero), otherwise 0
-    bool is_init();
-
-  public:
-    string name;
-    sc::version bw_version;
-
-    config cfg;
+    string name; ///< The name of the package.
+    config cfg;  ///< Package configuration.
 };
 
 #endif

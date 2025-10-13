@@ -5,6 +5,7 @@
 // ------------------------------------------
 //
 
+#include <bwlang.hpp>
 #include <bwmodule.hpp>
 
 #include <bwluatools.hpp>
@@ -14,26 +15,32 @@ using namespace bweas::utils;
 
 static logger _log{"BWMODULE"};
 
-umap<string, scope::module_data> module_manager::init_modules(vec<module_cfg> &modules_cfg) {
-    umap<string, scope::module_data> modules;
-    for (auto &md : modules_cfg) {
-        scope::module_data module_data_tmp;
-        module_data_tmp.profiles = std::move(md.profiles);
+vec<module_manager::_module> module_manager::init_modules(vec<module_cfg> &modules_cfg) {
+    vec<module_manager::_module> md_s;
 
-        for (auto &[name, _decl_func] : md.funcs) {
-            _decl_func.func = [&md, &_decl_func](const expressions &expr_s, scope &curr_scope) {
-                static umap<string, lua> lua_stream_s;
-                if (!lua_stream_s[md.name].is_created())
-                    lua_stream_s.emplace(md.name, file_utils::read_file(file_utils::get_ref_file(
-                                                      file_utils::open_file(md.name_lua_source_file))));
+    for (const auto &module_cfg : modules_cfg) {
+        if (!module_cfg.name_src_file.empty()) {
+            auto src_file = file_utils::open_file(module_cfg.name_src_file);
+            if (!src_file.is_open)
+                _log << (log_message(log_type::fatal)
+                         << "The module file \'" << module_cfg.name_src_file << "\' could not be opened.");
 
-                lua_stream_s[md.name].call_function<string_v, lua_tools::integer, lua_tools::integer>(
-                    _decl_func.name, *((lua_tools::integer *)&expr_s), *((lua_tools::integer *)&curr_scope));
-            };
+            try {
+                lang l(nullptr, file_utils::read_file(src_file));
+                l.import_std_module();
+                l.import_modules(md_s);
+                l.execute();
+                md_s.emplace_back(module_cfg.name, l.get_context());
+                bwlang::parser::dump_global_context();
+            }
+            catch (std::runtime_error &excp) {
+                _log << (log_message(log_type::fatal) << "\'" << module_cfg.name << "\' module initialization error: \n"
+                                                      << excp.what());
+            }
         }
-
-        modules[md.name] = module_data_tmp;
+        else
+            md_s.emplace_back(module_cfg.name);
     }
 
-    return modules;
+    return md_s;
 }

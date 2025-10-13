@@ -14,9 +14,7 @@
 #include "bwmodule.hpp"
 #include "bwpackage.hpp"
 
-/*
- * \brief Main namespace bweas
- */
+/// \brief Main namespace bweas
 namespace bweas {
 class builder;
 } // namespace bweas
@@ -47,14 +45,13 @@ class bweas::builder final {
     ~builder() = default;
 
   public:
-    /// \brief All possible bweas operating modes
+    /** \brief All possible bweas operating modes. */
     enum mode_working {
-        collect_cfg = 0,     ///< [--cfg]: Interpreting a configuration file and creating a cache file based on it.
-        build,               ///< [--build]: Building targets based on a cache file.
+        collect_cfg = 0,     /**< [--cfg]: Interpreting a configuration file and creating a cache file based on it.*/
+        build,               /**< [--build]: Building targets based on a cache file.*/
         collect_cfg_w_build, /*!< [--cfg --build]: Collaborative mode, in which, after the interpretation process,
                               * context bweas is initialized, without reading the cache file.
                               */
-        build_package,       ///< [--package]: Package creation mode based on the transmitted json file.
         undef
     };
 
@@ -66,13 +63,11 @@ class bweas::builder final {
      *
      * Depending on the presence of a cache file and its parameters passed when the program is launched, it reproduces
      * processes inherent to bweas.
-     *
-     *
-     *
+     * The function reproduces the processes inherent in the specified mode_working mode.
      */
     void start();
 
-  private:
+  protected:
     /**
      * \brief Controls how bweas works, depending on the arguments provided.
      *
@@ -91,14 +86,13 @@ class bweas::builder final {
     /** \brief Creates a package based on the json package configuration file.
      *
      *  \param [in] path_json_config_package The path to the package configuration json file.
-     *  \return The packet size in bytes.
      */
     void create_package(string path_json_config_package);
 
-    /// \brief Loads the bweas json config.
+    /** \brief Loads the bweas json config. */
     void init();
 
-    /// \brief Running the interpreter with the configuration.
+    /** \brief Running the interpreter with the configuration. */
     void run_interpreter();
 
     /** \brief Generates a cache file of all targets that were created by the interpreter.
@@ -107,32 +101,30 @@ class bweas::builder final {
      */
     size_t gen_cache_target();
 
-    depends_files::depends_map &load_depends_file(std::shared_ptr<depends_files> &_depends_files,
-                                                  const vec<string> &include_paths, const vec<string> &source_files);
-
-  private:
-    /** \brief Collects projects(out_targets) by initializing the generator and calling(bwIGenerator::gen_commands)
+    /** \brief Loads all dependencies for each file from the file that will be created if it is missing.
      *
+     *  \param [in] _depends_files The dependency_finder object
+     *  \param [in] include_paths The array of source files
+     *  \param [in] source_files The array of include_files files
+     *  \return dependency_map Each file has its own array of dependencies.
      */
+    dependency_finder::dependency_map &load_depends_file(dependency_finder &_depends_files,
+                                                         const vec<string> &include_paths,
+                                                         const vec<string> &source_files);
+
+  protected:
+    /** \brief Collects projects(out_targets) by initializing the generator and calling(generator_command::generate) */
     void build_targets();
 
   protected:
-    /**
-     * \brief The state of the entire build system.
-     */
-    context _context;
-
-  private:
-    std::unique_ptr<cache_api::base_cache> cache;
-    map<string, std::shared_ptr<depends_files>> dependency_finders;
-
-  private:
-    module_manager module_m;
-    umap<string, scope::module_data> modules;
+    context _context;                             ///< The state of the entire build system.
+    std::unique_ptr<cache_api::base_cache> cache; ///< A pointer to the installed cache generator.
+    vec<module_manager::_module> modules;         ///< An array of modules obtained from bweas packages.
 
   private:
     sc::version version{VERSION_FULL_STR};
     mode_working mode_bweas{mode_working::undef};
+    size_t count_threads = THREADS_COUNT_DEFAULT;
 };
 
 #endif

@@ -11,10 +11,10 @@
       	pkgs = import nixpkgs { inherit system; };
       	cmakeBuild = pkgs.stdenv.mkDerivation {
         	pname = "bweas";
-        	version = "0.1.0";
+        	version = "0.2.1";
         	src = ./.;
 
-        	buildInputs = [ pkgs.cmake pkgs.lz4 pkgs.nlohmann_json pkgs.luajit];
+        	buildInputs = [ pkgs.cmake pkgs.nlohmann_json pkgs.luajit];
 		  };
        in {
          packages.default = cmakeBuild;

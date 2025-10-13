@@ -1,0 +1,13 @@
+import 'std'
+
+cxx_lang: language = {
+    search_regex = '#include\s+((<[\/\w+]+(?:\.\w+)?>)|("[\/\w+]+(?:\.\w+)?"))',
+    char_global_search = '<'
+}
+
+cxx_base: profile = {
+    lang = cxx_lang,
+    source_files = [''],
+    include_paths = ['/usr/include', '/usr/local/include'],
+    standart_cxx = 23
+}

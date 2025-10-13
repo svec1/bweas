@@ -1,6 +1,8 @@
 project(bweas_test LANGUAGES CXX C)
 
-add_executable(${PROJECT_NAME} mtest.cpp)
+file(GLOB_RECURSE SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/bs/*.cpp)
+
+add_executable(${PROJECT_NAME} mtest.cpp ${SOURCE_FILES})
 
 find_package(GTest CONFIG REQUIRED)
 

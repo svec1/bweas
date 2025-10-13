@@ -8,7 +8,7 @@
 #ifndef BWLUATOOLS_HPP
 #define BWLUATOOLS_HPP
 
-#include <bwdepends_api.hpp>
+#include <bwdependency_finder.hpp>
 
 #include <bwstructs_context.hpp>
 #include <utils/lua_wrapper.hpp>
@@ -17,7 +17,7 @@ namespace bweas {
 class lua_tools;
 }
 
-// A class providing tools for simplified interaction between bweas and lua structures
+/** A class providing tools for simplified interaction between bweas and lua structures. */
 class bweas::lua_tools {
   public:
     lua_tools() = delete;
@@ -34,25 +34,30 @@ class bweas::lua_tools {
 
     using nil = utils::lua::nil;
 
-    // Ready-made alias parameters for standard bweas structures.
+    /** \brief Ready-made alias parameters for standard bweas structures.*/
   public:
     using param_targets     = lua_tools::array<lua_tools::table<string_v, any>>;
     using param_templates   = lua_tools::array<lua_tools::table<string_v, any>>;
     using param_ccomponents = lua_tools::array<lua_tools::table<string_v, string>>;
-    using param_geargs      = lua_tools::array<lua_tools::key_value<string, string>>;
 
-    // Functions for converting standard bweas structures into appropriate containers for lua
   public:
+    /**
+     *  @{
+     *  \name Functions for converting standard bweas structures into appropriate containers for lua.
+     */
     static table<string, any> conv_to_table(const sc::profile &ext);
     static array<any> conv_to_table(const vec<sc::template_command::arg> &args);
     static array<any> conv_to_table(const sc::template_command::return_value &returnable);
     static table<string_v, any> conv_to_table(const sc::template_command &tmp_c);
     static table<string_v, string> conv_to_table(const sc::call_component &ccmp);
     static table<string_v, any> conv_to_table(const sc::target &trg_o);
-    static table<string, array<string>> conv_to_table(const bweas::depends_files::depends_map &dfiles);
+    static table<string, array<string>> conv_to_table(const bweas::dependency_finder::dependency_map &dfiles);
 
-    // Functions for converting containers for lua to the corresponding bweas structures
+    /** @} */
   public:
+    /** @{
+     * \name Functions for converting containers for lua to the corresponding bweas structures.
+     */
     static sc::profile conv_to_extension(table<string, any> ext);
     static vec<sc::template_command::arg> conv_to_args(array<array<any>> args);
     static sc::template_command::return_value conv_to_return_value(lua_tools::array<any> returnable);
@@ -60,9 +65,6 @@ class bweas::lua_tools {
     static sc::call_component conv_to_call_components(table<string, any> &ccmp);
     static sc::target conv_to_target(table<string, any> &trg_o_t);
 
-    // Auxiliary functions for lua scripts for interacting with bweas (wrappers over bweas functions)
-  public:
-    static int get_var(lua_State *L);
-    static int set_var(lua_State *L);
+    /** @} */
 };
 #endif

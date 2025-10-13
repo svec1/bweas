@@ -15,20 +15,18 @@
 #include <memory>
 
 #include <bwaliases.hpp>
-#include <bwmacros_platform.h>
+#include <bwstructs_context.hpp>
 
 #include <bwlogger.hpp>
-#include <lang/interpreter.hpp>
 
-#include <bwdepends_api.hpp>
+#include <bwdependency_finder.hpp>
 
 namespace bweas {
 
-using mf      = utils::file_utils::file::mode_file;
-using file_it = utils::file_utils::file_it;
+using mf = utils::file_utils::file::mode_file;
 
 inline constexpr char VERSION_MAJOR_C = '0';
-inline constexpr char VERSION_MINOR_C = '1';
+inline constexpr char VERSION_MINOR_C = '2';
 inline constexpr char VERSION_PATCH_C = '1';
 
 inline const string VERSION_FULL_STR = {VERSION_MAJOR_C, '.', VERSION_MINOR_C, '.', VERSION_PATCH_C};
@@ -38,21 +36,22 @@ inline constexpr auto CACHE_FILE     = "bwcache";
 inline constexpr auto DEPENDS_FILE   = "bwdependencies";
 inline constexpr auto FORMAT_PACKAGE = ".bweas-package";
 
-// The structure defining the main data for the build
+inline constexpr auto THREADS_COUNT_DEFAULT = 1;
+
+/** \brief The structure defining the main data for the build. */
 struct context {
     vec<sc::target> targets;
     vec<sc::template_command> templates;
     vec<sc::call_component> call_components;
-    vec<pair<string, string>> global_external_args;
 
   public:
-    depends_files::depends_map dfiles;
+    dependency_finder::dependency_map dfiles;
 
   public:
     sc::target *current_target;
-    string current_work_directory;
 
-    string path_bweas_config, path_bweas_to_build;
+    fs::path current_work_directory;
+    fs::path path_bweas_config, path_bweas_to_build;
 };
 
 } // namespace bweas

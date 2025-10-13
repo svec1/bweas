@@ -14,4 +14,4 @@ AlignConsecutiveAssignments:
   AcrossEmptyLines: false 
   AcrossComments: false
 
-StatementMacros: [call_err_tk_inf_lex, wrap_interpreter, debug_init_time, debug_mark_time_func]
+SortUsingDeclarations: true

@@ -10,11 +10,31 @@
 #include <nlohmann/json.hpp>
 
 namespace nlohmann {
+template <> struct adl_serializer<bweas::sc::language::dependency_finder> {
+    static void to_json(json &j, const bweas::sc::language::dependency_finder &value) {
+        j = {{"search_regex", value.search_regex}, {"char_global_search", string(1, value.char_global_search)}};
+    }
+    static void from_json(const json &j, bweas::sc::language::dependency_finder &value) {
+        j.at("search_regex").get_to(value.search_regex);
+        value.char_global_search = static_cast<string>(j.at("char_global_search"))[0];
+    }
+};
+template <> struct adl_serializer<bweas::sc::language> {
+    static void to_json(json &j, const bweas::sc::language &value) {
+        j = {{"name", value.name}, {"dependency_finder", value.dfinder_data}};
+    }
+    static void from_json(const json &j, bweas::sc::language &value) {
+        j.at("name").get_to(value.name);
+        j.at("dependency_finder").get_to(value.dfinder_data);
+    }
+};
 template <> struct adl_serializer<bweas::sc::profile::fields::mapped_type> {
     static void to_json(json &j, const bweas::sc::profile::fields::mapped_type &value) {
         std::visit([&](auto &&_value) { j = std::forward<decltype(_value)>(_value); }, value);
     }
     static void from_json(const json &j, bweas::sc::profile::fields::mapped_type &value) {
+        if (j.is_number())
+            value = j.get<pdiff>();
         if (j.is_string())
             value = j.get<string>();
         else if (j.is_array())
@@ -25,26 +45,24 @@ template <> struct adl_serializer<bweas::sc::profile::fields::mapped_type> {
 };
 template <> struct adl_serializer<bweas::sc::profile> {
     static void to_json(json &j, const bweas::sc::profile &value) {
-        j = value.get_fields();
+        j["language"] = value.lang;
+        j["fields"]   = value.get_fields();
     }
     static void from_json(const json &j, bweas::sc::profile &value) {
-        value.get_fields() = j;
+        j.at("language").get_to(value.lang);
+        j.at("fields").get_to(value.get_fields());
     }
 };
 template <> struct adl_serializer<bweas::sc::target> {
     static void to_json(json &j, const bweas::sc::target &value) {
-        j = {{"type", bweas::sc::target_type_str(value.type)},
-             {"cfg", bweas::sc::target_cfg_str(value.cfg)},
-             {"version", value.ver.get_str_version()},
+        j = {{"version", value.ver.get_str_version()},
              {"templates", value.templates},
              {"dependencies", value.dependencies},
              {"extension", value.ext}};
     }
     static void from_json(const json &j, bweas::sc::target &value) {
         try {
-            value.type = bweas::sc::to_target_type(j["type"]);
-            value.cfg  = bweas::sc::to_target_cfg(j["cfg"]);
-            value.ver  = j["version"].template get<string>();
+            value.ver = j["version"].template get<string>();
 
             j.at("templates").get_to(value.templates);
             j.at("dependencies").get_to(value.dependencies);
@@ -127,11 +145,10 @@ using namespace cache_api;
 
 static logger _log{"BWCACHE[JSON]"};
 
-string json_cache::create_cache() {
+string json_cache::create_cache() const {
     nlohmann::json cache_data;
 
-    cache_data["config_file"]          = _context->path_bweas_config;
-    cache_data["global_external_args"] = _context->global_external_args;
+    cache_data["config_file"] = _context->path_bweas_config;
 
     for (const auto &target : _context->targets)
         cache_data["targets"][target.name] = target;
@@ -142,7 +159,7 @@ string json_cache::create_cache() {
 
     return cache_data.dump(4);
 }
-string json_cache::get_path_config(const string &cache_str) {
+string json_cache::get_path_config(const string &cache_str) const {
     try {
         nlohmann::json cache_data = nlohmann::json::parse(cache_str);
         return cache_data["config_file"];
@@ -154,11 +171,11 @@ string json_cache::get_path_config(const string &cache_str) {
     std::unreachable();
 }
 
-void json_cache::extract_cache_data(const string &cache_str) {
+void json_cache::extract_cache_data(const string &cache_str) const {
     try {
         nlohmann::json cache_data = nlohmann::json::parse(cache_str);
 
-        _context->path_bweas_config = cache_data["config_file"];
+        cache_data.at("config_file").get_to(_context->path_bweas_config);
 
         auto init_vector = [](const auto &j_items, auto &vec) {
             for (const auto &it : j_items) {
@@ -171,7 +188,6 @@ void json_cache::extract_cache_data(const string &cache_str) {
         init_vector(cache_data["targets"].items(), _context->targets);
         init_vector(cache_data["templates"].items(), _context->templates);
         init_vector(cache_data["call_components"].items(), _context->call_components);
-        _context->global_external_args = cache_data["global_external_args"].template get<vec<pair<string, string>>>();
     }
     catch (std::exception &what) {
         _log << (log_message(log_type::fatal) << "Invalid structure of the bweas cache file: \n" << what.what());

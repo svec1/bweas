@@ -62,26 +62,29 @@
 namespace bweas {
 namespace utils {
 
-// Special utils - Wrappers over the lua class,
-// for simple interaction with the lua stack and others.
-
 class lua;
 
-inline void get_symbol(lua_State *L, std::string_view name_symbol);
-template <typename T> inline void push_stack(lua_State *L, T param);
-template <typename T> inline T pop_stack(lua_State *L, int idx = -1);
-
-// Calls a function that is on the top of the stack
-template <typename T, typename... Types> inline T call_function(lua_State *L, Types... param);
-template <typename T> inline T call_function(lua_State *L, int count_param);
 } // namespace utils
 } // namespace bweas
 
-// A wrapper class for luajit.
-// It contains basic functions for interacting with lua scripts.
-// If an error occurs in any function, an exception is thrown, which at best should be handled!
-// If a function (any) sees that lua_state is not defined, it will not do anything.
-class bweas::utils::lua {
+/** \brief A wrapper class for luajit.
+ * \detail It contains basic functions for interacting with lua scripts.
+ * If an error occurs in any function, an exception is thrown, which at best should be handled!
+ * If a function (any) sees that lua_state is not defined, it will not do anything.
+ * Available types of lua variables:
+ *  - + ---------------------
+ *  - | std::string         |
+ *  - | std::string_view    | > string
+ *  - | const char*         |
+ *  - + ---------------------
+ *  - + std::ptrdiff_t      > integer
+ *  - + double              > number
+ *  - + std::vector<>       > array<???>
+ *  - + std::any            > ???
+ *  - + lua::table<>        > table<???>
+ *  - + lua::nil            > nil
+ */
+class bweas::utils::lua final {
   public:
     lua() = default;
     explicit lua(lua_State *_L) : L(_L) {
@@ -98,13 +101,15 @@ class bweas::utils::lua {
     lua &operator=(lua &&) = delete;
 
   public:
-    // Used to call a function that does not take parameters, however you can also use it to indicate its return type
-    // (i.e. it does not return anything)
+    /** \brief Plug.
+     * \detail Used to call a function that does not take parameters, however you can also use it to indicate its return
+     * type (i.e. it does not return anything)
+     */
     struct nil {
         // nothing
     };
 
-    // special object - symbol, for accessing global lua symbols
+    /** The Symbol object is designed to access global lua symbols. */
     struct symbol {
         friend class lua;
         enum class type {
@@ -125,7 +130,7 @@ class bweas::utils::lua {
         }
 
       public:
-        // creates or modifies a variable with the specified value pointed to by the symbol object itself
+        /** \brief Creates or modifies a variable. */
         template <typename T> void operator=(T &&value) const {
             if (!L->is_created())
                 throw std::runtime_error(LUA_SYMBOL_NE_LUA_STATE);
@@ -136,7 +141,7 @@ class bweas::utils::lua {
             L->create_var(name_sym, value);
         }
 
-        // registers a function in lua state
+        /** \brief Registers a function in lua state. */
         template <typename T> void operator<<(T value) const {
             if (!L->is_created())
                 throw std::runtime_error(LUA_SYMBOL_NE_LUA_STATE);
@@ -150,7 +155,7 @@ class bweas::utils::lua {
             L->register_function(name_sym, value);
         }
 
-        // calls a function with the specified parameters pointed to by the symbol object itself
+        /** Calls a function*/
         template <typename T, typename... Types> T operator()(Types... param) const {
             if (!L->is_created())
                 throw std::runtime_error(LUA_SYMBOL_NE_LUA_STATE);
@@ -165,7 +170,7 @@ class bweas::utils::lua {
             }
         }
 
-        // returns the value of the variable pointed to by the symbol object
+        /** Returns the value of the variable. */
         template <typename T> T getval() const {
             if (!L->is_created())
                 throw std::runtime_error(LUA_SYMBOL_NE_LUA_STATE);
@@ -218,16 +223,14 @@ class bweas::utils::lua {
     using cfunc = int (*)(lua_State *);
 
     using string_param = std::string_view;
-    using integer      = ptrdiff_t;
+    using integer      = std::ptrdiff_t;
     using number       = double;
 
   private:
+    friend struct symbol;
+
     template <typename> struct is_map : std::false_type {};
-    template <typename K, typename V>
-        requires requires(K k, V v) {
-            { lcomp_anymap(k, v) } noexcept;
-        }
-    struct is_map<table<K, V>> : std::true_type {};
+    template <typename K, typename V> struct is_map<table<K, V>> : std::true_type {};
 
     template <typename> struct is_vector : std::false_type {};
     template <typename U, typename A> struct is_vector<std::vector<U, A>> : std::true_type {};
@@ -239,11 +242,22 @@ class bweas::utils::lua {
     template <typename A, typename K, typename V>
     struct is_vec_pairs<std::vector<std::pair<K, V>, A>> : std::true_type {};
 
-    friend struct symbol;
-    template <typename T> friend inline void utils::push_stack(lua_State *L, T param);
-    template <typename T> friend inline T utils::pop_stack(lua_State *L, int idx);
-    template <typename T, typename... Types> friend inline T utils::call_function(lua_State *L, Types... param);
-    template <typename T> friend inline T utils::call_function(lua_State *L, int count_param);
+  public:
+    template <typename T> static inline void push_stack(lua_State *L, T param) {
+        lua(L).push_stack_param(param);
+    }
+    template <typename T> static inline T pop_stack(lua_State *L, int idx) {
+        return lua(L).template get_valsymbol<T>(idx);
+    }
+    template <typename T, typename... Types> static inline T call_function(lua_State *L, Types... param) {
+        return lua(L).template call_symbol<T>(param...);
+    }
+    template <typename T> static inline T call_function(lua_State *L, int count_params) {
+        return lua(L).template call_symbol<T>(count_params);
+    }
+    static inline void get_symbol(lua_State *L, std::string_view name_symbol) {
+        (void)lua(L).get_global_symbol(name_symbol);
+    }
 
   public:
     template <typename Key, typename Value> static std::map<Key, Value> to_map(table<Key, Value> _table) {
@@ -262,7 +276,7 @@ class bweas::utils::lua {
   public:
     std::string get_string_stack() {
         std::string str = "STACK(" + std::to_string(lua_gettop(L)) + "):\n";
-        for (ptrdiff_t i = 1; i <= lua_gettop(L); ++i) {
+        for (integer i = 1; i <= lua_gettop(L); ++i) {
             if (i < lua_gettop(L))
                 str += "| " + std::to_string(lua_gettop(L) - i) + " ";
             else
@@ -294,7 +308,7 @@ class bweas::utils::lua {
     }
 
   public:
-    // Initializes Lua state
+    /** \brief Initializes Lua state. */
     void create(std::string src) {
         if (L)
             lua_close(L);
@@ -303,7 +317,7 @@ class bweas::utils::lua {
             LUA_EXCEPTION()
     }
 
-    // Resets Lua state
+    /** \brief Resets Lua state. */
     void close() {
         if (L) {
             lua_close(L);
@@ -311,12 +325,12 @@ class bweas::utils::lua {
         }
     }
 
-    // Includes lua libs
+    /** \brief Includes lua libs. */
     void include_libs() {
         luaL_openlibs(L);
     }
 
-    // Interprets (executes) the code that was provided when initializing the lua state
+    /** \brief Interprets (executes) the code. */
     void run_script() {
         if (!is_created())
             return;
@@ -329,20 +343,21 @@ class bweas::utils::lua {
         return !lua_isnoneornil(L, -1);
     }
 
-    // Calls a function, provided that it exists and all parameters match.
-    // The first parameter of the template is the return type of the function. The remaining parameters are the types of
-    // function parameters accepted
-    template <typename T, typename... Types> T call_function(std::string name_func, Types... param) {
+    /** \brief Calls a function.
+     * \tparam R The type of value returned by the lua function.
+     * \tparam Types... The types of values that the lua function accepts.
+     */
+    template <typename R, typename... Types> R call_function(std::string name_func, Types... param) {
         if (!is_created()) {
-            if constexpr (std::is_same_v<T, void>)
+            if constexpr (std::is_same_v<R, void>)
                 return;
             else
-                return T{};
+                return R{};
         }
 
         lua_getglobal(L, name_func.data());
         try {
-            return call_symbol<T, Types...>(param...);
+            return call_symbol<R, Types...>(param...);
         }
         catch (std::runtime_error &what) {
             throw std::runtime_error(what.what() + (" " + name_func));
@@ -354,7 +369,7 @@ class bweas::utils::lua {
         lua_setglobal(L, name_func.data());
     }
 
-    // execute lua code as a string
+    /** \brief Execute lua code as a string. */
     void execute_str(std::string_view str_code) {
         if (!is_created())
             return;
@@ -362,8 +377,7 @@ class bweas::utils::lua {
             LUA_EXCEPTION()
     }
 
-    // gets the value of a variable of the given type
-    // Possible types: string, integer, number, boolean and table
+    /** \brief Gets the value of a variable of the given type. */
     template <typename T> T get_var(std::string name_var) {
         lua_getglobal(L, name_var.data());
 
@@ -375,7 +389,7 @@ class bweas::utils::lua {
         }
     }
 
-    // creates a global variable with the provided name
+    /** \brief Creates a global variable with the provided name. */
     template <typename T> void create_var(std::string name_var, T &&value = {}) {
         try {
             push_stack_param(value);
@@ -386,14 +400,14 @@ class bweas::utils::lua {
         lua_setglobal(L, name_var.c_str());
     }
 
-    // Returns true if lua state is initialized
+    /** \brief Returns true if lua state is initialized. */
     inline bool is_created() {
         if (!L)
             return 0;
         return 1;
     }
 
-    // Returns true if exists function(global) in lua state
+    /** \brief Returns true if exists function(global) in lua state. */
     inline bool is_function(std::string_view name_func) {
         if (!is_created())
             return 0;
@@ -409,7 +423,7 @@ class bweas::utils::lua {
         return 1;
     }
 
-    // Returns true if exists variable(global) in lua state
+    /** \brief Returns true if exists variable(global) in lua state. */
     inline bool is_var(std::string_view name_var) {
         if (!is_created())
             return 0;
@@ -623,7 +637,7 @@ class bweas::utils::lua {
         return std::any_cast<T>(value);
     }
 
-    // call symbol(function) in top of stack
+    /** \brief Call symbol(function) in top of stack. */
     template <typename T, typename... Types> T call_symbol(Types... param) {
         std::tuple<Types...> params(param...);
         size_t count_params = std::tuple_size<decltype(params)>::value;
@@ -648,8 +662,9 @@ class bweas::utils::lua {
             return get_valsymbol<T>();
     }
 
-    // call symbol(function) in top of stack
-    // Assumes that the user parameters are already on the stack
+    /** \brief Call symbol(function) in top of stack.
+     * \detail Assumes that the user parameters are already on the stack.
+     */
     template <typename T> T call_symbol(int count_params) {
         if (!lua_isfunction(L, -count_params - 1))
             throw std::runtime_error(LUA_FUNCTION_NFOUND);
@@ -667,7 +682,7 @@ class bweas::utils::lua {
             return get_valsymbol<T>();
     }
 
-    // returns an object of class symbol, which is a temporary object (it points to a lua object)
+    /** \brief Returns an object of class symbol. */
     symbol get_symbol(const std::string &&name_sym) {
         lua_getglobal(L, name_sym.c_str());
 
@@ -678,7 +693,7 @@ class bweas::utils::lua {
         return symbol(symbol::type::nil, name_sym, this);
     }
 
-    // checks the last element (is it an array, that is, the index is the key)
+    /** \brief Checks the last element (is it an array, that is, the index is the key). */
     int lua_isarray() {
         lua_pushvalue(L, -1);
         lua_pushnil(L);
@@ -694,7 +709,7 @@ class bweas::utils::lua {
         return 1;
     }
 
-    // checks that the last element is a table with one key-value pair
+    /** \brief Checks that the last element is a table with one key-value pair. */
     int lua_ispair() {
         lua_pushvalue(L, -1);
         lua_pushnil(L);
@@ -712,27 +727,7 @@ class bweas::utils::lua {
     }
 
   private:
-    lua_State *L{NULL};
+    lua_State *L{nullptr};
 };
-
-namespace bweas::utils {
-template <typename T> inline void push_stack(lua_State *L, T param) {
-    lua(L).push_stack_param(param);
-}
-template <typename T> inline T pop_stack(lua_State *L, int idx) {
-    return lua(L).template get_valsymbol<T>(idx);
-}
-
-// Calls a function that is on the top of the stack
-template <typename T, typename... Types> inline T call_function(lua_State *L, Types... param) {
-    return lua(L).template call_symbol<T>(param...);
-}
-template <typename T> inline T call_function(lua_State *L, int count_params) {
-    return lua(L).template call_symbol<T>(count_params);
-}
-inline void get_symbol(lua_State *L, std::string_view name_symbol) {
-    (void)lua(L).get_global_symbol(name_symbol);
-}
-} // namespace bweas::utils
 
 #endif

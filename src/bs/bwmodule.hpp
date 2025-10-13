@@ -9,33 +9,42 @@
 #define BWMODULE_HPP
 
 #include <bw_defs.hpp>
+#include <lang/parser_utils.hpp>
 
 namespace bweas {
 class module_manager;
 }
 
-// Class defining modules
+/** \brief Modules manager. */
 class bweas::module_manager {
   public:
-    module_manager()  = default;
-    ~module_manager() = default;
+    /** \brief Constructor. */
+    module_manager() = default;
 
   public:
+    /** \brief The structure is the defining module configuration. */
     struct module_cfg {
-        module_cfg(string _name, string _name_lua_source_file, umap<string, decl_func> _funcs,
-                   umap<string, sc::profile> _profiles)
-            : name(_name), name_lua_source_file(_name_lua_source_file), funcs(_funcs), profiles(_profiles) {
+        module_cfg(string _name, string _name_src_file) : name(_name), name_src_file(_name_src_file) {
         }
-        string name;
-        string name_lua_source_file;
+        string name;          ///< The name of the module.
+        string name_src_file; ///< The path to the module file.
+    };
 
-        umap<string, decl_func> funcs;
-        umap<string, sc::profile> profiles;
+    /** \brief The structure is the defining module. */
+    struct _module {
+        _module(string_v _name, bwlang::parser_utils::context &&_ctx = {}) : name(_name), ctx(_ctx) {
+        }
+
+        string name;                       ///< The name of the module.
+        bwlang::parser_utils::context ctx; ///< The context that defines the state of the module.
     };
 
   public:
-    // Initializes lua modules functions for subsequent calls
-    umap<string, scope::module_data> init_modules(vec<module_cfg> &modules_cfg);
+    /** \brief Initializes modules based on its configuration.
+     * \param [in] modules_cfg An array of module configurations.
+     * \return vec<_module>
+     */
+    vec<_module> init_modules(vec<module_cfg> &modules_cfg);
 };
 
 #endif

@@ -13,6 +13,8 @@ int main(int argc, char **argv) {
     bweas::utils::virtual_terminal::init();
 #endif
 
+    bweas::logger::init();
+
     bweas::builder bw(argc, argv);
     bw.start();
 
