@@ -117,9 +117,9 @@ class bweas::builder final {
     void build_targets();
 
   protected:
-    context _context;                             /**< \brief The state of the entire build system.*/
-    std::unique_ptr<cache_api::base_cache> cache; /**< \brief A pointer to the installed cache generator.*/
-    vec<module_manager::_module> modules;         /**< \brief An array of modules obtained from bweas packages.*/
+    context _context;                             ///< The state of the entire build system.
+    std::unique_ptr<cache_api::base_cache> cache; ///< A pointer to the installed cache generator.
+    vec<module_manager::_module> modules;         ///< An array of modules obtained from bweas packages.
 
   private:
     sc::version version{VERSION_FULL_STR};

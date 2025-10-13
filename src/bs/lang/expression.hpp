@@ -15,10 +15,13 @@
 #include <lang/parser_utils.hpp>
 #include <lang/tokens.hpp>
 
+/** \brief Defines the bweas scripting language. */
 namespace bwlang {
 
+/** \brief Possible expressions in bwlang are described. */
 namespace expression {
 
+/** \brief The base class of the expression. */
 template <typename T> class base {
   public:
     base(parser_utils::context &_ctx, tokens::token _tk) : ctx(_ctx), tk(std::move(_tk)) {
@@ -60,6 +63,7 @@ template <typename T> class base {
     tokens::token tk;
 };
 
+/** \brief A class describing an expression that is a constant value. */
 template <typename T> class constant : public base<T> {
   public:
     constant(parser_utils::context &_ctx, tokens::token _tk, base<T>::value_type _val)
@@ -76,6 +80,7 @@ template <typename T> class constant : public base<T> {
     const base<T>::value_type val;
 };
 
+/** \brief A class describing an expression that is an identifier. */
 template <typename T> class identifier final : public constant<T> {
   public:
     identifier(parser_utils::context &_ctx, tokens::token _tk, string _val, bool _local = false)
@@ -110,6 +115,7 @@ template <typename T> class identifier final : public constant<T> {
     bool local;
 };
 
+/** \brief A class describing an expression that is an keyword. */
 template <typename T> class keyword final : public constant<T> {
   public:
     keyword(parser_utils::context &_ctx, tokens::token _tk, string _val, bool __is_type = false, bool _is_array = false)
@@ -134,6 +140,7 @@ template <typename T> class keyword final : public constant<T> {
     bool _is_type, _is_array;
 };
 
+/** \brief A class describing binary expressions. */
 template <typename T, typename A1, typename A2, typename Op,
           typename = std::enable_if_t<
               std::is_same_v<decltype(std::declval<Op &>()(std::declval<parser_utils::context &>(),
@@ -158,6 +165,7 @@ class binary : public Op, public constant<T> {
     const std::unique_ptr<base<A2>> rhs;
 };
 
+/** \brief A class describing unary expressions. */
 template <typename T, typename Op,
           typename = std::enable_if_t<
               std::is_same_v<decltype(std::declval<Op &>()(std::declval<parser_utils::context &>(),
@@ -179,6 +187,7 @@ class unary : protected Op, public constant<T> {
     const std::unique_ptr<base<T>> rhs;
 };
 
+/** \brief A class describing an expression that constructs an object Construct. */
 template <typename T, typename Construct, typename = std::void_t<decltype(T{Construct{}})>>
 class pack final : public constant<T> {
   public:
@@ -207,6 +216,7 @@ class pack final : public constant<T> {
     ~pack() override = default;
 };
 
+/** \brief A class describing the expression of a function call. */
 template <typename T> class call final : public constant<T> {
   public:
     static T call_function(parser_utils::context &ctx, std::unique_ptr<identifier<T>> &&id,
@@ -244,6 +254,7 @@ template <typename T> class call final : public constant<T> {
     ~call() override = default;
 };
 
+/** \brief Describes an extension that satisfies the bwlang syntax. */
 namespace ext {
 
 using base       = base<parser_utils::value>;
@@ -256,6 +267,7 @@ template <typename Construct> using pack = pack<parser_utils::value, Construct>;
 template <typename Op> using binary      = binary<parser_utils::value, parser_utils::value, parser_utils::value, Op>;
 template <typename Op> using unary       = unary<parser_utils::value, Op>;
 
+/** \brief Describes the rules for checking an expression for any semantic affiliation. */
 namespace convention {
 
 using check_expression = std::function<bool(const std::unique_ptr<base> &)>;
@@ -296,6 +308,7 @@ static bool expect_type(const std::unique_ptr<base> &expr) {
 }
 } // namespace convention
 
+/** \brief Binary bwlang expressions. */
 namespace binary_operation {
 
 struct init_variable {
@@ -454,6 +467,9 @@ struct basic_binary_operation {
     }
 };
 
+/** \brief A wrapper over a simple binary expression.
+ * \detail Adds the ability to check the semantic affiliation of lhs and rhs.
+ */
 template <typename BinaryOperation> class binary_ext : public binary<BinaryOperation> {
   public:
     binary_ext(parser_utils::context &_ctx, tokens::token _tk, std::unique_ptr<base> _lhs, std::unique_ptr<base> _rhs,
@@ -463,6 +479,10 @@ template <typename BinaryOperation> class binary_ext : public binary<BinaryOpera
     }
     virtual ~binary_ext() = default;
 };
+/** \brief A binary expression that accepts two values of the same type.
+ * \detail It is used for mathematical and logical operations.
+ * Expects lhs and rhs values corresponding to type c Op::arguments_type.
+ */
 template <typename Op> class basic final : public binary_ext<basic_binary_operation<Op>> {
   public:
     basic(parser_utils::context &_ctx, tokens::token _tk, std::unique_ptr<base> _lhs, std::unique_ptr<base> _rhs)
@@ -473,6 +493,9 @@ template <typename Op> class basic final : public binary_ext<basic_binary_operat
     ~basic() override = default;
 };
 
+/** \brief An expression that initializes a variable in the context.
+ * \detail Expects that lhs is not an existing identifier in the context, and rhs is a keyword of the type.
+ */
 class init final : public binary_ext<init_variable> {
   public:
     init(parser_utils::context &_ctx, tokens::token _tk, std::unique_ptr<base> _lhs, std::unique_ptr<base> _rhs)
@@ -494,6 +517,9 @@ class init final : public binary_ext<init_variable> {
         return true;
     }
 };
+/** \brief An expression that accesses the internal data of a variable, if it has one.
+ * \detail Expects lhs to be an existing identifier in the context, and rhs to be a non-existing identifier.
+ */
 template <typename AccessBy> class access final : public binary_ext<AccessBy> {
   public:
     access(parser_utils::context &_ctx, tokens::token _tk, std::unique_ptr<base> _lhs, std::unique_ptr<base> _rhs)
@@ -516,6 +542,9 @@ template <typename AccessBy> class access final : public binary_ext<AccessBy> {
         return true;
     }
 };
+/** \brief An expression that assigns a variable.
+ * \detail Expects lhs to be an existing identifier in the context, and rhs to be a value.
+ */
 class assign final : public binary_ext<assign_variable> {
   public:
     assign(parser_utils::context &_ctx, tokens::token _tk, std::unique_ptr<base> _lhs, std::unique_ptr<base> _rhs)
@@ -525,6 +554,7 @@ class assign final : public binary_ext<assign_variable> {
 };
 } // namespace binary_operation
 
+/** \brief Unary bwlang expressions. */
 namespace unary_operation {
 struct negative_unary_operation {
     parser_utils::value operator()(parser_utils::context &ctx, const std::unique_ptr<base> &rhs) const {
@@ -537,6 +567,9 @@ struct not_unary_operation {
     }
 };
 
+/** \brief A wrapper over a simple unary expression.
+ * \detail Adds the ability to check the semantic affiliation of lhs and rhs.
+ */
 template <typename UnaryOperation> class unary_ext : public unary<UnaryOperation> {
 
   public:
@@ -547,6 +580,9 @@ template <typename UnaryOperation> class unary_ext : public unary<UnaryOperation
     virtual ~unary_ext() = default;
 };
 
+/** \brief An expression that changes the sign of an integer.
+ * \detail Expects the rhs to be a value(num).
+ */
 class negative final : public unary_ext<negative_unary_operation> {
   public:
     negative(parser_utils::context &_ctx, tokens::token _tk, std::unique_ptr<base> rhs)
@@ -554,6 +590,9 @@ class negative final : public unary_ext<negative_unary_operation> {
     }
     ~negative() override = default;
 };
+/** \brief An expression that performs the logical negation of an integer.
+ * \detail Expects the rhs to be a value(num).
+ */
 class logical_not final : public unary_ext<not_unary_operation> {
   public:
     logical_not(parser_utils::context &_ctx, tokens::token _tk, std::unique_ptr<base> rhs)

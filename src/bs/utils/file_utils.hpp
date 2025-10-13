@@ -11,13 +11,15 @@
 #include <bwaliases.hpp>
 
 namespace bweas {
+
+/** \brief Defines auxiliary utilities for bweas.*/
 namespace utils {
 class file_utils;
 }
 } // namespace bweas
 
-class bweas::utils::file_utils {
-  public:
+/** \brief Defines functions for easy interaction with files. */
+class bweas::utils::file_utils final {
     file_utils() = delete;
 
   public:
@@ -27,36 +29,25 @@ class bweas::utils::file_utils {
             mode_file() = delete;
 
           public:
-            // mode of open
+            /** \brief Mode of open. */
             enum class open {
-                // open for read of binary
-                rb = 0,
-                // open for default reading
-                r,
-                // open for overwrite or create file with writing
-                w,
-                // open for writes to the end of the file
-                wa,
-                // open for overwrite or create file with writing of binary
-                wb,
-                // open for writes to the end of the file of binary
-                wba
+                rb = 0, ///< Open for read of binary.
+                r,      ///< Open for default reading.
+                w,      ///< Open for overwrite or create file with writing.
+                wa,     ///< Open for writes to the end of the file.
+                wb,     ///< Open for overwrite or create file with writing of binary.
+                wba     ///< Open for writes to the end of the file of binary.
             };
 
-            // mode of reading
+            /** \brief Mode of reading. */
             enum class input {
-                // read of binary
-                read_binary,
-                // default reading
-                read_default
+                read_binary, ///< Read of binary.
+                read_default ///< Default reading.
             };
-            // mode of writing
+            /** \brief Mode of writing. */
             enum class output {
-                // write of binary(all bytes)
-                write_binary,
-
-                // default writing
-                write_default
+                write_binary, ///< Write of binary(all bytes).
+                write_default ///< Default writing.
             };
         };
 
@@ -129,30 +120,138 @@ class bweas::utils::file_utils {
     };
 
   public:
-    static string get_time();
+    static std::string get_time() {
+        auto time    = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+        tm *time_now = std::localtime(&time);
 
-    static fs::path get_path_program();
+        return (time_now->tm_mon < 10 ? "0" + std::to_string(time_now->tm_mon) : std::to_string(time_now->tm_mon)) +
+               "." +
+               (time_now->tm_mday < 10 ? "0" + std::to_string(time_now->tm_mday) : std::to_string(time_now->tm_mday)) +
+               " " + std::to_string(time_now->tm_hour) + ":" + std::to_string(time_now->tm_min);
+    }
+
+    static fs::path get_path_program() {
+#if defined(WIN)
+        std::string str(MAX_PATH, '\0');
+        GetModuleFileNameA(NULL, str.data(), MAX_PATH);
+#elif defined(UNIX)
+        std::string str(PATH_MAX, '\0');
+        readlink("/proc/self/exe", str.data(), PATH_MAX);
+#endif
+        str.erase(str.find_last_of("/\\") + 1, str.size());
+
+        return str;
+    }
 
   public:
-    static file open_file(std::string_view name_file, file::mode_file::open mode = file::mode_file::open::r);
+    static file open_file(string_v name_file, file::mode_file::open mode = file::mode_file::open::rb) {
+        return file_utils::file{fs::absolute(name_file), mode};
+    }
 
-    static string read_file(file &file, file::mode_file::input mode = file::mode_file::input::read_default);
-    static string read_file(file &&file, file::mode_file::input mode = file::mode_file::input::read_default);
+    static string read_file(file &file, file::mode_file::input mode = file::mode_file::input::read_default) {
+        std::string data_file;
+        if (mode == file::mode_file::input::read_binary) {
+            size_t size_file;
+            file.stream.seekg(0, std::ios::end);
+            size_file = file.stream.tellg();
+            file.stream.seekg(0, std::ios::beg);
+            data_file.resize(size_file);
+            file.stream.read(data_file.data(), size_file);
+        }
+        else {
+            std::string tmp;
+            while (std::getline(file.stream, tmp))
+                data_file += tmp + "\n";
+        }
+
+        return data_file;
+    }
+    static string read_file(file &&file, file::mode_file::input mode = file::mode_file::input::read_default) {
+        return read_file(file, mode);
+    }
     static void write_file(file &file, string_v buf,
-                           file::mode_file::output mode = file::mode_file::output::write_default);
+                           file::mode_file::output mode = file::mode_file::output::write_default) {
+        if (mode == file::mode_file::output::write_binary)
+            file.stream.write(buf.data(), buf.size());
+        else
+            file.stream << buf;
+    }
     static void write_file(file &&file, string_v buf,
-                           file::mode_file::output mode = file::mode_file::output::write_default);
+                           file::mode_file::output mode = file::mode_file::output::write_default) {
+        write_file(file, buf, mode);
+    }
 
   public:
-    // Creates an array of file names based on the mask
-    // passed to the function and an array of all files.
-    // ### The syntax is fully compliant with the glob() standard.
-    static vec<string> file_slc_mask(string mask, const vec<string> &files);
+    /** \brief Creates an array of files matching the name mask.
+     * The syntax is fully compliant with the glob() standard.
+     */
+    static vec<string> file_slc_mask(string mask, const vec<string> &files) {
+        if (mask.empty())
+            return files;
 
-    // Returns the absolute path to an existing file, considering the current directory.
-    static string get_path_file(string name_file);
-    // Returns the absolute path to an existing file, considering all possible paths, including the current directory.
-    static string get_path_file(string name_file, const vec<string> &possible_paths);
+        vec<string> slc_files;
+        string files_str;
+
+        for (const auto &file : files)
+            files_str += file + " ";
+
+        string mask_regex;
+        for (size_t j = 0; j < mask.size(); ++j)
+            if (mask[j] == '*')
+                mask_regex += "\\w+";
+            else if (mask[j] == '.')
+                mask_regex += "\\.";
+            else if (mask[j] == '?')
+                mask_regex += "\\w";
+            else if (mask[j] == '/')
+                mask_regex += "\\/";
+            else
+                mask_regex += mask[j];
+
+        if (mask_regex.find("/") == mask_regex.npos) {
+            std::regex file_mask("[\\/\\w+]*" + mask_regex);
+            for (auto it_match = std::sregex_iterator(files_str.begin(), files_str.end(), file_mask);
+                 it_match != std::sregex_iterator(); ++it_match)
+                slc_files.push_back(it_match->str());
+        }
+        else {
+
+            std::regex file_mask(mask_regex);
+            for (auto it_match = std::sregex_iterator(files_str.begin(), files_str.end(), file_mask);
+                 it_match != std::sregex_iterator(); ++it_match)
+                slc_files.push_back(it_match->str());
+        }
+        return slc_files;
+    }
+
+    /** \brief Returns the absolute path to an existing file, considering the current directory. */
+    static string get_path_file(string name_file) {
+        if (auto path_file = fs::weakly_canonical(fs::current_path() / name_file); fs::is_regular_file(path_file))
+            return path_file.string();
+
+        return {};
+    }
+
+    /** \brief Returns the absolute path to an existing file. */
+    static string get_path_file(string name_file, const vec<string> &possible_paths) {
+        if (auto path_file = get_path_file(name_file); !path_file.empty())
+            return path_file;
+
+        fs::path current_path_tmp = fs::current_path();
+        fs::path find_path_file;
+
+        for (const auto &path : possible_paths) {
+            fs::current_path(fs::weakly_canonical(path));
+            if (auto path_file = fs::weakly_canonical(fs::current_path() / name_file); fs::is_regular_file(path_file)) {
+                find_path_file = path_file;
+                break;
+            }
+        }
+
+        fs::current_path(current_path_tmp);
+
+        return find_path_file.string();
+    }
 };
 
 #endif

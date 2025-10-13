@@ -14,17 +14,19 @@ namespace bwlang {
 class lexer;
 } // namespace bwlang
 
+/** \brief A class describing lexical analysis. */
 class bwlang::lexer {
   public:
     lexer(string_v src);
 
   public:
+    const vec<tokens::token> &get_tokens() const;
+
+  protected:
     tokens::token peek();
     tokens::token consume();
 
     tokens::token consume_if();
-
-    const vec<tokens::token> &get_tokens() const;
 
   protected:
     vec<tokens::token> &get_tokens();

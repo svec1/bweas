@@ -16,6 +16,7 @@ namespace bwlang {
 class parser;
 }
 
+/** \brief A class describing syntactic analysis. */
 class bwlang::parser : private bwlang::lexer {
   public:
     parser(string_v src);

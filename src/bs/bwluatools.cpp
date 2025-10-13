@@ -12,6 +12,23 @@
 using namespace bweas;
 using namespace bweas::utils;
 
+/** @{ \name enum of str postfix name var a target. */
+inline constexpr auto NAME_FIELD_TARGET_NAME         = "_NAME";
+inline constexpr auto NAME_FIELD_TARGET_VER          = "_VERSION";
+inline constexpr auto NAME_FIELD_TARGET_TEMPLATES    = "_TEMPLATES";
+inline constexpr auto NAME_FIELD_TARGET_DEPENDENCIES = "_DEPENDENCIES";
+inline constexpr auto NAME_FIELD_TARGET_EXTENSION    = "_EXTENSION";
+
+inline constexpr auto NAME_FIELD_TEMPLATE_COMMAND_NAME              = "_NAME";
+inline constexpr auto NAME_FIELD_TEMPLATE_COMMAND_NAME_CCMP         = "_NCALL_C";
+inline constexpr auto NAME_FIELD_TEMPLATE_COMMAND_NAME_ACCEPTS_ARGS = "_ACP_ARGS";
+inline constexpr auto NAME_FIELD_TEMPLATE_COMMAND_RET               = "_RETURN";
+inline constexpr auto NAME_FIELD_TEMPLATE_COMMAND_NAME_ARGS         = "_ARGS";
+
+inline constexpr auto NAME_FIELD_CALL_COMPONENT_NAME          = "_NAME";
+inline constexpr auto NAME_FIELD_CALL_COMPONENT_NAME_PROGRAM  = "_NAME_PROGRAM";
+inline constexpr auto NAME_FIELD_CALL_COMPONENT_PATTERN_FILES = "_PATTERN_FILES";
+
 lua_tools::table<string, any> lua_tools::conv_to_table(const sc::profile &ext) {
     lua_tools::table<string, any> _ext;
 
@@ -49,11 +66,11 @@ lua_tools::table<string_v, string> lua_tools::conv_to_table(const sc::call_compo
 }
 
 lua_tools::table<string_v, any> lua_tools::conv_to_table(const sc::target &trg_o) {
-    return lua_tools::table<string_v, any>{{TRG_NAME_FIELD_EXTENSION, conv_to_table(trg_o.ext)},
-                                           {TRG_NAME_FIELD_NTARGET, trg_o.name},
-                                           {TRG_VAR_NAME_VER, trg_o.ver.get_str_version()},
-                                           {TRG_VAR_NAME_TEMPLATES, trg_o.templates},
-                                           {TRG_VAR_NAME_DEPENDENCIES, trg_o.dependencies}};
+    return lua_tools::table<string_v, any>{{NAME_FIELD_TARGET_EXTENSION, conv_to_table(trg_o.ext)},
+                                           {NAME_FIELD_TARGET_NAME, trg_o.name},
+                                           {NAME_FIELD_TARGET_VER, trg_o.ver.get_str_version()},
+                                           {NAME_FIELD_TARGET_TEMPLATES, trg_o.templates},
+                                           {NAME_FIELD_TARGET_DEPENDENCIES, trg_o.dependencies}};
 }
 lua_tools::table<string, lua_tools::array<string>> lua_tools::conv_to_table(
     const bweas::dependency_finder::dependency_map &dfiles) {
@@ -78,11 +95,11 @@ sc::profile lua_tools::conv_to_extension(lua_tools::table<string, any> ext) {
 sc::target lua_tools::conv_to_target(lua_tools::table<string, any> &trg_o_t) {
     sc::target trg;
 
-    trg.ext       = conv_to_extension(std::any_cast<lua_tools::table<string, any>>(trg_o_t[TRG_NAME_FIELD_EXTENSION]));
-    trg.name      = std::any_cast<string>(trg_o_t[TRG_NAME_FIELD_NTARGET]);
-    trg.ver       = std::any_cast<string>(trg_o_t[TRG_VAR_NAME_VER]);
-    trg.templates = std::any_cast<vec<string>>(trg_o_t[TRG_VAR_NAME_TEMPLATES]);
-    trg.dependencies = std::any_cast<vec<string>>(trg_o_t[TRG_VAR_NAME_DEPENDENCIES]);
+    trg.ext  = conv_to_extension(std::any_cast<lua_tools::table<string, any>>(trg_o_t[NAME_FIELD_TARGET_EXTENSION]));
+    trg.name = std::any_cast<string>(trg_o_t[NAME_FIELD_TARGET_NAME]);
+    trg.ver  = std::any_cast<string>(trg_o_t[NAME_FIELD_TARGET_VER]);
+    trg.templates    = std::any_cast<vec<string>>(trg_o_t[NAME_FIELD_TARGET_TEMPLATES]);
+    trg.dependencies = std::any_cast<vec<string>>(trg_o_t[NAME_FIELD_TARGET_DEPENDENCIES]);
 
     return trg;
 }

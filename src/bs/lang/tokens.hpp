@@ -12,7 +12,9 @@
 
 namespace bwlang {
 
+/** \brief Defines tokens corresponding to the bwlang syntax. */
 namespace tokens {
+/** \brief Defines string matching for keywords. */
 namespace string_matching {
 
 inline constexpr char _empty[] = "";
@@ -84,22 +86,22 @@ struct literal_string : public string_value {
 };
 
 struct end_line {};
-struct open_init_bracket {};   // {
-struct open_round_bracket {};  // (
-struct open_square_bracket {}; // [
-struct close_init_bracket {};
-struct close_round_bracket {};
-struct close_square_bracket {};
-struct comma {};     // ,
-struct dot {};       // .
-struct init_type {}; // :
-struct equal {};     // =
-struct plus {};      // +
-struct minus {};     // -
-struct multiply {};  // *
-struct divide {};    // /
-struct less {};      // <
-struct more {};      // >
+struct open_init_bracket {};    ///< '{'
+struct open_round_bracket {};   ///< '('
+struct open_square_bracket {};  ///< '['
+struct close_init_bracket {};   ///< '}'
+struct close_round_bracket {};  ///< '('
+struct close_square_bracket {}; ///< '['
+struct comma {};                ///< ','
+struct dot {};                  ///< '.'
+struct init_type {};            ///< ':'
+struct equal {};                ///< '='
+struct plus {};                 ///< '+'
+struct minus {};                ///< '-'
+struct multiply {};             ///< '*'
+struct divide {};               ///< '/'
+struct less {};                 ///< '<'
+struct more {};                 ///< '>'
 
 struct _is : public keyword<string_matching::_is> {};
 struct _not : public keyword<string_matching::_not> {};
@@ -118,12 +120,13 @@ struct language_t : public keyword<string_matching::language_t> {};
 struct profile_t : public keyword<string_matching::profile_t> {};
 struct target_t : public keyword<string_matching::target_t> {};
 
-using token_value =
-    std::variant<std::monostate, keyword<>, identifier, literal_string, literal_number, end_line, open_init_bracket,
-                 open_round_bracket, open_square_bracket, close_init_bracket, close_round_bracket, close_square_bracket,
-                 comma, dot, init_type, equal, plus, minus, multiply, divide, less, more>;
-
 struct token {
+    using token_value =
+        std::variant<std::monostate, keyword<>, identifier, literal_string, literal_number, end_line, open_init_bracket,
+                     open_round_bracket, open_square_bracket, close_init_bracket, close_round_bracket,
+                     close_square_bracket, comma, dot, init_type, equal, plus, minus, multiply, divide, less, more>;
+
+  public:
     token() = default;
     token(token_value _value, size_t _line_index) : value(_value), line_index(_line_index) {
     }
@@ -149,7 +152,7 @@ struct token {
 template <typename Kw> static constexpr bool is_keyword(const token &tk) {
     return tk.is<keyword<>>() && tk.get<keyword<>>().value == Kw::s_value;
 }
-template <typename Kw> static constexpr bool is_keyword(const token_value &tk) {
+template <typename Kw> static constexpr bool is_keyword(const token::token_value &tk) {
     return std::holds_alternative<keyword<>>(tk) && std::get<keyword<>>(tk).value == Kw::s_value;
 }
 

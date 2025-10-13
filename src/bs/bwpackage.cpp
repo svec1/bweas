@@ -21,7 +21,7 @@ package::package(string_v json_config) {
     else if (!config_json.contains("bweas-version") || !config_json["bweas-version"].is_string())
         _log << (log_message(log_type::fatal) << "Build system version field is empty");
 
-    if (sc::version(config_json["bweas-version"]) < sc::version(VERSION_FULL_STR))
+    if (sc::version(static_cast<string>(config_json["bweas-version"])) < sc::version(VERSION_FULL_STR))
         _log << (log_message(log_type::fatal) << "The Bweas package '" +
                                                      static_cast<string>(config_json.at("bweas-version")) +
                                                      "' is not supported");

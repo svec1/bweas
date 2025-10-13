@@ -20,6 +20,7 @@ class virtual_terminal;
 }
 } // namespace bweas
 
+/** \brief A class that includes a virtual terminal on windows. */
 class bweas::utils::virtual_terminal {
   private:
     virtual_terminal() {

@@ -14,7 +14,9 @@
 #include <lang/tokens.hpp>
 
 namespace bwlang {
+/** \brief Auxiliary utilities for the parser. */
 namespace parser_utils {
+/** \brief Defines operators for a simple binary expression, where lhs and rhs have the same type. */
 namespace basic_operation {
 
 template <typename TArgs, typename R> struct binary_operation {
